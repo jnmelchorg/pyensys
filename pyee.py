@@ -87,8 +87,16 @@ class pyeeClass():
         EM = de()
         EM.initialise(FileNameE)
         EModel = self.SingleLP(EM)
+        
+        # Get size of network model
+        NM = dn()
+        NM.initialise(FileNameN)
+        
+        # Get number of required network model copies
+        NoNM = 1+EM.NodeTime[EM.s_LL_time][1] - EM.NodeTime[EM.s_LL_time][0]
+        print("\nNo copies: %d\n" % NoNM)
 
-        # Get connection nodes
+        # Get connection nodes between energy and water engines
         for xc in range(EM.NodeTime[EM.s_LL_time][0],
                         1+EM.NodeTime[EM.s_LL_time][1]):
             print(xc)
