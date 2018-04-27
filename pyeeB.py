@@ -135,6 +135,13 @@ class EnergyClass:
         # Beginning of the final time level
         LL_TimeLevel[s_LL_time] = LL_TimeLevel[s_LL_time-1]+aux1
 
+        # Get nodes at each time level
+        NodeTime = np.zeros((s_LL_time+1, 2), dtype=int)
+        xacu = -1
+        for xt in range(s_LL_time+1):
+            NodeTime[xt][:] = [xacu+1, xacu+LL_TimeLevel[xt]]
+            xacu += LL_TimeLevel[xt]
+
         # Adding cnnection to the last set of scenarios
         aux1 = aux1*sv_LL_time[s_LL_time-2]
         aux3 = 0
@@ -189,7 +196,7 @@ class EnergyClass:
 
         # Outputs
         return (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-                LL_TimeNodeBeforeSequence, LL_TimeLevel, s_LL_Nodes)
+                LL_TimeNodeBeforeSequence, LL_TimeLevel, s_LL_Nodes, NodeTime)
 
     # Build parameters for optimisation
     # This information should ultimately be included in the input file
@@ -281,19 +288,19 @@ class EnergyClass:
         Input_Data = self.Read(FileName)
 
         # Measure the size of the data arrays
-        (s_LL_time, sv_LL_time, s_LL_timeVar,
+        (self.s_LL_time, sv_LL_time, s_LL_timeVar,
          s_LL_timeSum) = self.Measure(Input_Data)
 
         # Summarize the data as inputs, outputs, weights and uncertainty
         (WIn, WOut, Wght,
-         Unc) = self.Process(Input_Data, s_LL_time,
+         Unc) = self.Process(Input_Data, self.s_LL_time,
                                s_LL_timeVar, s_LL_timeSum)
 
         # Produce connectivity matrices
         (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-         LL_TimeNodeBeforeSequence, LL_TimeLevel,
-         s_LL_Nodes) = self.Connect(s_LL_time, sv_LL_time,
-                                    s_LL_timeVar, Unc)
+         LL_TimeNodeBeforeSequence, LL_TimeLevel, s_LL_Nodes,
+         self.NodeTime) = self.Connect(self.s_LL_time, sv_LL_time,
+                                       s_LL_timeVar, Unc)
 
         # Define inputs, outpurs and weights per node
         (self.WInFull, self.WOutFull,

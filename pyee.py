@@ -89,6 +89,9 @@ class pyeeClass():
         EModel = self.SingleLP(EM)
 
         # Get connection nodes
+        for xc in range(EM.NodeTime[EM.s_LL_time][0],
+                        1+EM.NodeTime[EM.s_LL_time][1]):
+            print(xc)
         
 
 
