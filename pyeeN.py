@@ -496,7 +496,7 @@ class ENetworkClass:
                       domain=NonNegativeReals, initialize=0.0)        
         m.vFeaN = Var(range(Noh*self.ENet.number_of_nodes()),
                       domain=NonNegativeReals, initialize=0.0)        
-        m.vGen = Var(range(Noh*self.NoGen+1), m.sTim, domain=NonNegativeReals,
+        m.vGen = Var(range(Noh*(self.NoGen+1)), m.sTim, domain=NonNegativeReals,
                      initialize=0.0)
         m.vGCost = Var(range(Noh*self.NoGen), m.sTim, domain=NonNegativeReals,
                        initialize=0.0)

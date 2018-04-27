@@ -94,12 +94,55 @@ class pyeeClass():
         
         # Get number of required network model copies
         NoNM = 1+EM.NodeTime[EM.s_LL_time][1] - EM.NodeTime[EM.s_LL_time][0]
-        print("\nNo copies: %d\n" % NoNM)
 
-        # Get connection nodes between energy and water engines
+        # Settings for copying the network model
+        NM.h = range(NoNM)
+        NM.hFE = np.zeros(NoNM)
+        NM.hVA = np.zeros(NoNM)
+        NM.hEL = np.zeros(NoNM)
+        NM.hFB = np.zeros(NoNM)
+        NM.hFN = np.zeros(NoNM)
+        NM.hG = np.zeros(NoNM)
+        NM.hGC = np.zeros(NoNM)
+        # Location of each copy
+        for xc in NM.h:
+            NM.hFE[xc] = int(xc*(NM.NoBranch+1))
+            NM.hVA[xc] = int(xc*(NM.NoBuses+1))
+            NM.hEL[xc] = int(xc*(NM.ENet.number_of_edges()+1))
+            NM.hFB[xc] = int(xc*NM.ENet.number_of_edges())
+            NM.hFN[xc] = int(xc*NM.ENet.number_of_nodes())
+            NM.hG[xc] = int(xc*(NM.NoGen+1))
+            NM.hGC[xc] = int(xc*NM.NoGen)
+
         for xc in range(EM.NodeTime[EM.s_LL_time][0],
                         1+EM.NodeTime[EM.s_LL_time][1]):
             print(xc)
+
+        #                                 Sets                                #
+        mod = EM.getSets(mod)
+        mod = NM.getSets(mod)
+
+        #                              Parameters                             #
+        mod = EM.getPar(mod)
+        mod = NM.getPar(mod)
+
+        #                           Model Variables                           #
+        mod = EM.getVars(mod)
+        mod = NM.getVars(mod)
+
+        #                             Constraints                             #
+        mod = EM.addCon(mod)
+        mod = NM.addCon(mod)
+
+        #                          Objective function                         #
+        mod.OF = Objective(rule=NM.OF_rule, sense=minimize)
+
+        # Optimise
+        opt = SolverFactory('glpk')
+
+        # Print
+        results = opt.solve(mod)
+        #NM.print(mod)
         
 
 
