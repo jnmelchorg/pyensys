@@ -78,18 +78,71 @@ class pyeeClass():
         results = opt.solve(EModel)
         EM.print(EModel)
 
+    #                           Objective function                            #
+    def OF_rule(self, m): 
+        return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
+                           for xt in m.sTim) +
+                   1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
+                   1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus)
+                   for xh in self.h)
+    
+    # Water consumption depends on water use by the electricity system
+    def EMNM_rule(self, m, xL, xv):
+        return (m.WOutFull[m.LLENM[xL][0], xv] == 
+                sum(m.vGen[m.LLENM[xL][1]+xv, xt] for xt in m.sTim))
+
+    #                               Constraints                               #
+    def addCon(self, m):
+        # Link water consumption from both models
+        m.EMNM = Constraint(m.sLLEN, m.sVec, rule=self.EMNM_rule)
+
+        return m
+        
+    #                                   Sets                                  #
+    def getSets(self, m):
+        m.sLLEN = range(self.NoLL)
+
+        return m
+
+    #                                Parameters                               #
+    def getPar(self, m):
+        m.LLENM = self.LLENM
+
+        return m
+
+    #                             Model Variables                             #
+    def getVars(self, m):
+        # Converting some parameters to variables
+        del m.WOutFull
+        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
+                         initialize=0.0)
+        return m
+
     # Energy and network simulation
     def ENSim(self, FileNameE, FileNameN):
         # Declare pyomo model
         mod = ConcreteModel()
 
-        # Get Energy model
+        # Degine Energy model and network models
         EM = de()
+        NM = dn()
+
+        # Get components of energy model
         EM.initialise(FileNameE)
         EModel = self.SingleLP(EM)
-        
+
+        # Add hydropower units to network model
+        # CURRENLTY ASSIMUNC CHARACTERISTICS OF HYDRO
+        NM.NoHyd = EM.NosVec
+        NM.PosHyd = np.zeros(NM.NoHyd, dtype=int)
+        NM.HydPMax = np.zeros(NM.NoHyd, dtype=int)
+        NM.HydQMax = np.zeros(NM.NoHyd, dtype=int)
+        for xv in range(EM.NosVec):
+            NM.PosHyd[xv] = xv+1
+            NM.HydPMax[xv] = 1000
+            NM.HydQMax[xv] = 1000
+
         # Get size of network model
-        NM = dn()
         NM.initialise(FileNameN)
         
         # Get number of required network model copies
@@ -97,52 +150,65 @@ class pyeeClass():
 
         # Settings for copying the network model
         NM.h = range(NoNM)
-        NM.hFE = np.zeros(NoNM)
-        NM.hVA = np.zeros(NoNM)
-        NM.hEL = np.zeros(NoNM)
-        NM.hFB = np.zeros(NoNM)
-        NM.hFN = np.zeros(NoNM)
-        NM.hG = np.zeros(NoNM)
-        NM.hGC = np.zeros(NoNM)
+        NM.hFE = np.zeros(NoNM, dtype=int)
+        NM.hVA = np.zeros(NoNM, dtype=int)
+        NM.hEL = np.zeros(NoNM, dtype=int)
+        NM.hFB = np.zeros(NoNM, dtype=int)
+        NM.hFN = np.zeros(NoNM, dtype=int)
+        NM.hG = np.zeros(NoNM, dtype=int)
+        NM.hGC = np.zeros(NoNM, dtype=int)
         # Location of each copy
         for xc in NM.h:
-            NM.hFE[xc] = int(xc*(NM.NoBranch+1))
-            NM.hVA[xc] = int(xc*(NM.NoBuses+1))
-            NM.hEL[xc] = int(xc*(NM.ENet.number_of_edges()+1))
-            NM.hFB[xc] = int(xc*NM.ENet.number_of_edges())
-            NM.hFN[xc] = int(xc*NM.ENet.number_of_nodes())
-            NM.hG[xc] = int(xc*(NM.NoGen+1))
-            NM.hGC[xc] = int(xc*NM.NoGen)
+            NM.hFE[xc] = xc*(NM.NoBranch+1)
+            NM.hVA[xc] = xc*(NM.NoBuses+1)
+            NM.hEL[xc] = xc*(NM.ENet.number_of_edges()+1)
+            NM.hFB[xc] = xc*NM.ENet.number_of_edges()
+            NM.hFN[xc] = xc*NM.ENet.number_of_nodes()
+            NM.hG[xc] = xc*(NM.NoGen+1)
+            NM.hGC[xc] = xc*NM.NoGen
 
-        for xc in range(EM.NodeTime[EM.s_LL_time][0],
-                        1+EM.NodeTime[EM.s_LL_time][1]):
-            print(xc)
+        # Build LL to link the models through hydro consumption
+        self.NoLL = 1+EM.NodeTime[EM.s_LL_time][1]-EM.NodeTime[EM.s_LL_time][0]
+        self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
+        for xc in range(self.NoLL):
+            self.LLENM[xc][:] = [EM.NodeTime[EM.s_LL_time][0]+xc,
+                                 NM.hG[xc]+NM.NoOGen+1]
+
+        # Taking sets for modelling
+        self.hGC = NM.hGC
+        self.hFB = NM.hFB
+        self.hFN = NM.hFN
+        self.h = NM.h
 
         #                                 Sets                                #
         mod = EM.getSets(mod)
         mod = NM.getSets(mod)
+        mod = self.getSets(mod)
 
         #                              Parameters                             #
         mod = EM.getPar(mod)
         mod = NM.getPar(mod)
+        mod = self.getPar(mod)
 
         #                           Model Variables                           #
         mod = EM.getVars(mod)
         mod = NM.getVars(mod)
+        mod = self.getVars(mod)
 
         #                             Constraints                             #
         mod = EM.addCon(mod)
         mod = NM.addCon(mod)
+        mod = self.addCon(mod)
 
         #                          Objective function                         #
-        mod.OF = Objective(rule=NM.OF_rule, sense=minimize)
+        mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
         # Optimise
         opt = SolverFactory('glpk')
 
         # Print
         results = opt.solve(mod)
-        #NM.print(mod)
+        NM.print(mod)
         
 
 

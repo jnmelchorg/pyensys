@@ -13,6 +13,39 @@ import json
 
 
 class ENetworkClass:
+    # Initialize
+    def __init__(self):
+        # Default security considerations
+        self.Sec = [2, 3]
+        # Default consideration of losses
+        self.Add_Loss = True
+        # Defaulr demand time series
+        self.DemProf = [1, 1.05, 1.1]
+        # Default hydropower
+        self.NoHyd = 0  #3
+        self.PosHyd = [0]  #[1, 2, 3]
+        self.HydPMax = [1000, 1000, 1000]
+        self.HydQMax = [1000, 1000, 1000]
+        # Default intermittent renewables
+        self.NoGRes = 2
+        self.PosGRes = [1, 2]
+        # Default List of copies to be made
+        self.h = range(1)
+        # Default shift factor for vFlow_EPower
+        self.hFE = [0]
+        # Default shift factor for vVoltage_Angle
+        self.hVA = [0]
+        # Default shift factor for vEPower_Loss
+        self.hEL = [0]
+        # Default shift factor for vFeaB
+        self.hFB = [0]
+        # Shift factor for vFeaN
+        self.hFN = [0]
+        # Default shift factor for vGen
+        self.hG = [0]
+        # Default shift factor for vGenvGCost
+        self.hGC = [0]        
+
     # Read input data
     def Read(self, FileName):
         # Load file
@@ -48,53 +81,108 @@ class ENetworkClass:
                 'QD': np.array(mpc['bus']['QD'], dtype=float),
                 }
 
+        # Gen generation nodes (to mesure it)
+        GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
+        NoOGen = len(GenNCost)
+        NoCst = len(GenNCost[0])
+        NoGen = NoOGen+self.NoHyd+self.NoGRes
+
+        # Defime generation data
         ENetGen = {
-                'GEN_BUS': np.array(mpc['gen']['GEN_BUS'], dtype=int),
-                'PG': np.array(mpc['gen']['PG'], dtype=float),
-                'QG': np.array(mpc['gen']['QG'], dtype=float),
-                'QMAX': np.array(mpc['gen']['QMAX'], dtype=float),
-                'QMIN': np.array(mpc['gen']['QMIN'], dtype=float),
-                'VG': np.array(mpc['gen']['VG'], dtype=float),
-                'MBASE': np.array(mpc['gen']['MBASE'], dtype=float),
-                'GEN': np.array(mpc['gen']['GEN'], dtype=int),
-                'PMAX': np.array(mpc['gen']['PMAX'], dtype=float),
-                'PMIN': np.array(mpc['gen']['PMIN'], dtype=float),
-                'PC1': np.array(mpc['gen']['PC1'], dtype=float),
-                'PC2': np.array(mpc['gen']['PC2'], dtype=float),
-                'QC1MIN': np.array(mpc['gen']['QC1MIN'], dtype=float),
-                'QC1MAX': np.array(mpc['gen']['QC1MAX'], dtype=float),
-                'QC2MIN': np.array(mpc['gen']['QC2MIN'], dtype=float),
-                'QC2MAX': np.array(mpc['gen']['QC2MAX'], dtype=float),
-                'RAMP_AGC': np.array(mpc['gen']['RAMP_AGC'], dtype=float),
-                'RAMP_10': np.array(mpc['gen']['RAMP_10'], dtype=float),
-                'RAMP_30': np.array(mpc['gen']['RAMP_30'], dtype=float),
-                'RAMP_Q': np.array(mpc['gen']['RAMP_Q'], dtype=float),
-                'APF': np.array(mpc['gen']['APF'])
+                'GEN_BUS': np.zeros(NoGen, dtype=int),
+                'PG': np.zeros(NoGen, dtype=float),
+                'QG': np.zeros(NoGen, dtype=float),
+                'QMAX': np.zeros(NoGen, dtype=float),
+                'QMIN': np.zeros(NoGen, dtype=float),
+                'VG': np.zeros(NoGen, dtype=float),
+                'MBASE': np.zeros(NoGen, dtype=float),
+                'GEN': np.zeros(NoGen, dtype=int),
+                'PMAX': np.zeros(NoGen, dtype=float),
+                'PMIN': np.zeros(NoGen, dtype=float),
+                'PC1': np.zeros(NoGen, dtype=float),
+                'PC2': np.zeros(NoGen, dtype=float),
+                'QC1MIN': np.zeros(NoGen, dtype=float),
+                'QC1MAX': np.zeros(NoGen, dtype=float),
+                'QC2MIN': np.zeros(NoGen, dtype=float),
+                'QC2MAX': np.zeros(NoGen, dtype=float),
+                'RAMP_AGC': np.zeros(NoGen, dtype=float),
+                'RAMP_10': np.zeros(NoGen, dtype=float),
+                'RAMP_30': np.zeros(NoGen, dtype=float),
+                'RAMP_Q': np.zeros(NoGen, dtype=float),
+                'APF': np.zeros(NoGen, dtype=float)
                 }
-
         ENetCost = {
-                'MODEL': np.array(mpc['gencost']['MODEL'], dtype=int),
-                'STARTUP': np.array(mpc['gencost']['STARTUP'], dtype=float),
-                'SHUTDOWN': np.array(mpc['gencost']['SHUTDOWN'], dtype=float),
-                'NCOST': np.array(mpc['gencost']['NCOST'], dtype=float),
-                'COST': np.array(mpc['gencost']['COST'], dtype=float),
+                'MODEL': np.zeros(NoGen, dtype=int),
+                'STARTUP': np.zeros(NoGen, dtype=float),
+                'SHUTDOWN': np.zeros(NoGen, dtype=float),
+                'NCOST': np.zeros(NoGen, dtype=float),
+                'COST': np.zeros((NoGen, NoCst), dtype=float)
                 }
 
-        return ENet, ENetDem, ENetGen, ENetCost
+        ENetGen['GEN_BUS'][0:NoOGen] = mpc['gen']['GEN_BUS']
+        ENetGen['PG'][0:NoOGen] = mpc['gen']['PG']
+        ENetGen['QG'][0:NoOGen] = mpc['gen']['QG']
+        ENetGen['QMAX'][0:NoOGen] = mpc['gen']['QMAX']
+        ENetGen['QMIN'][0:NoOGen] = mpc['gen']['QMIN']
+        ENetGen['VG'][0:NoOGen] = mpc['gen']['VG']
+        ENetGen['MBASE'][0:NoOGen] = mpc['gen']['MBASE']
+        ENetGen['GEN'][0:NoOGen] = mpc['gen']['GEN']
+        ENetGen['PMAX'][0:NoOGen] = mpc['gen']['PMAX']
+        ENetGen['PMIN'][0:NoOGen] = mpc['gen']['PMIN']
+        ENetGen['PC1'][0:NoOGen] = mpc['gen']['PC1']
+        ENetGen['PC2'][0:NoOGen] = mpc['gen']['PC2']
+        ENetGen['QC1MIN'][0:NoOGen] = mpc['gen']['QC1MIN']
+        ENetGen['QC1MAX'][0:NoOGen] = mpc['gen']['QC1MAX']
+        ENetGen['QC2MIN'][0:NoOGen] = mpc['gen']['QC2MIN']
+        ENetGen['QC2MAX'][0:NoOGen] = mpc['gen']['QC2MAX']
+        ENetGen['RAMP_AGC'][0:NoOGen] = mpc['gen']['RAMP_AGC']
+        ENetGen['RAMP_10'][0:NoOGen] = mpc['gen']['RAMP_10']
+        ENetGen['RAMP_30'][0:NoOGen] = mpc['gen']['RAMP_30']
+        ENetGen['RAMP_Q'][0:NoOGen] = mpc['gen']['RAMP_Q']
+        ENetGen['APF'][0:NoOGen] = mpc['gen']['APF']
+
+        ENetCost['MODEL'][0:NoOGen] = mpc['gencost']['MODEL']
+        ENetCost['STARTUP'][0:NoOGen] = mpc['gencost']['STARTUP']
+        ENetCost['SHUTDOWN'][0:NoOGen] = mpc['gencost']['SHUTDOWN']
+        ENetCost['NCOST'][0:NoOGen] = mpc['gencost']['NCOST']
+        ENetCost['COST'][0:NoOGen][:] = mpc['gencost']['COST']
+
+        # Add renewable generation
+        if self.NoHyd > 0:
+            # Adding hydro
+            aux1 = NoOGen
+            aux2 = NoOGen+self.NoHyd
+            ENetGen['GEN_BUS'][aux1:aux2] = self.PosHyd
+            ENetGen['PMAX'][aux1:aux2] = self.HydPMax
+            ENetGen['QMAX'][aux1:aux2] = self.HydQMax
+            for xg in range(aux1, aux2):
+                ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
+
+        if self.NoGRes > 0:
+            # Adding intermittent generation
+            aux1 = NoOGen+self.NoHyd
+            aux2 = NoGen
+            ENetGen['GEN_BUS'][aux1:aux2] = self.PosGRes
+            for xg in range(aux1, aux2):
+                ENetGen['PMAX'][xg] = 1000000
+                ENetGen['QMAX'][xg] = 1000000
+                ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
+
+        return ENet, ENetDem, ENetGen, ENetCost, NoOGen, NoGen
 
     # Process information for optimisation purposes
-    def ProcessENet(self, ENet, Sec, Add_Loss):
+    def ProcessENet(self):
         # Map connections between nodes and branches (non-sequential search)
-        NoN2B = ENet.number_of_edges()*2+1  # Number of data points
+        NoN2B = self.ENet.number_of_edges()*2+1  # Number of data points
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
         LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
         LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
         # Position of first connection and number of cinnections
-        LLN2B2 = np.zeros((ENet.number_of_nodes(), 4), dtype=int)
+        LLN2B2 = np.zeros((self.ENet.number_of_nodes(), 4), dtype=int)
 
         x0 = 0  # Initial position (LLaux)
         x1 = 0  # Initial position (branches)
-        for (xf, xt) in ENet.edges:
+        for (xf, xt) in self.ENet.edges:
             x1 += 1
             auxNode = [xf-1, xt-1]
             auxX = [3, 1]
@@ -119,7 +207,7 @@ class ENetworkClass:
         x0 = 0  # Position LLN2B1
         xacu = 1  # Total number of positions addressed so far
         for x2 in [2, 0]:
-            for xn in range(ENet.number_of_nodes()):
+            for xn in range(self.ENet.number_of_nodes()):
                 # Get first branch position for this node
                 xpos = LLN2B2[xn][x2+1]
                 if xpos != 0:
@@ -133,42 +221,46 @@ class ENetworkClass:
                         xpos = LLnext[xpos]
 
         # Set line limits
-        branchNo = np.zeros((ENet.number_of_edges(), 2), dtype=int)
-        branchData = np.zeros((ENet.number_of_edges(), 4), dtype=float)
+        branchNo = np.zeros((self.ENet.number_of_edges(), 2), dtype=int)
+        branchData = np.zeros((self.ENet.number_of_edges(), 4), dtype=float)
         xb = 0
-        for (xf, xt) in ENet.edges:
+        for (xf, xt) in self.ENet.edges:
             branchNo[xb, :] = [xf-1, xt-1]
-            branchData[xb, :4] = [ENet[xf][xt]['BR_R'], ENet[xf][xt]['BR_X'],
-                                  ENet[xf][xt]['BR_B'],
-                                  ENet[xf][xt]['RATE_A']/ENet.graph['baseMVA']]
+            branchData[xb, :4] = [self.ENet[xf][xt]['BR_R'],
+                                  self.ENet[xf][xt]['BR_X'],
+                                  self.ENet[xf][xt]['BR_B'],
+                                  self.ENet[xf][xt]['RATE_A'] /
+                                  self.ENet.graph['baseMVA']]
             xb += 1
 
         # Add security considerations
-        NoSec2 = len(Sec)  # number of scenarios for security checks
+        NoSec2 = len(self.Sec)  # number of scenarios for security checks
         # Number of parameters required for simulating security
-        NoSec1 = ENet.number_of_edges()+(ENet.number_of_edges()-1)*NoSec2
+        NoSec1 = self.ENet.number_of_edges()+(self.ENet.number_of_edges() -
+                                              1)*NoSec2
         # Auxiliaries for modelling security considerations
         # Position of the variables
         LLESec1 = np.zeros((NoSec1, 2), dtype=int)
         # Connection between the branch number and the position of the data
-        LLESec2 = np.zeros((ENet.number_of_edges()+1, NoSec2+1), dtype=int)
+        LLESec2 = np.zeros((self.ENet.number_of_edges()+1, NoSec2+1),
+                           dtype=int)
 
-        for xb in range(ENet.number_of_edges()):
+        for xb in range(self.ENet.number_of_edges()):
             LLESec1[xb][0] = xb
             LLESec2[xb][0] = xb
-        LLESec2[ENet.number_of_edges()][0] = ENet.number_of_edges()
-        x0 = ENet.number_of_edges()
+        LLESec2[self.ENet.number_of_edges()][0] = self.ENet.number_of_edges()
+        x0 = self.ENet.number_of_edges()
         xacu = 0
         for xs in range(NoSec2):
-            xacu += ENet.number_of_nodes()
-            for xb in range(ENet.number_of_edges()):
-                if xb+1 != Sec[xs]:
+            xacu += self.ENet.number_of_nodes()
+            for xb in range(self.ENet.number_of_edges()):
+                if xb+1 != self.Sec[xs]:
                     LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
                     x0 += 1
 
         # Add power losses estimation
-        if Add_Loss:
+        if self.Add_Loss:
             # Auxiliar for the cuadratic function to model losses
             # Choosing points for the lines
             aux = [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2, 1.6,
@@ -193,30 +285,29 @@ class ENetworkClass:
                 LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1, Loss_Con2)
 
     # Process demand and generation parameters
-    def ProcessEDem(self, ENet, ENetDem, DemProf):
+    def ProcessEDem(self, ENetDem):
         # Set demand profile
-        Number_Time = len(DemProf)
-        busData = np.zeros((ENet.number_of_nodes(), Number_Time), dtype=float)
-        for xn in range(ENet.number_of_nodes()):
-            busData[xn][0] = ENetDem['PD'][xn]/ENet.graph['baseMVA']
+        Number_Time = len(self.DemProf)
+        busData = np.zeros((self.ENet.number_of_nodes(), Number_Time),
+                           dtype=float)
+        for xn in range(self.ENet.number_of_nodes()):
+            busData[xn][0] = ENetDem['PD'][xn]/self.ENet.graph['baseMVA']
             for xt in range(Number_Time):
-                busData[xn][xt] = busData[xn][0]*DemProf[xt]
+                busData[xn][xt] = busData[xn][0]*self.DemProf[xt]
 
         return Number_Time, busData
 
     # Process generator parameters
-    def ProcessEGen(self, ENet, ENetGen, ENetCost):
-        GenNode = ENetGen['GEN_BUS']
-        NoGen = len(GenNode)
+    def ProcessEGen(self, ENetGen, ENetCost):
         GenMax = ENetGen['PMAX']
         GenMin = ENetGen['PMIN']
 
         NoGenC = int(sum(ENetCost['NCOST']))
-        LLGen1 = np.zeros(ENet.number_of_nodes(), dtype=int)
+        LLGen1 = np.zeros(self.ENet.number_of_nodes(), dtype=int)
         LLGen2 = np.zeros(NoGenC, dtype=int)
         GenLCst = np.zeros((NoGenC, 2), dtype=float)
         acu = 0
-        for xg in range(NoGen):
+        for xg in range(self.NoGen):
             # Add location of the generator
             LLGen1[ENetGen['GEN_BUS'][xg]-1] = xg+1
             # Number of cost parameters
@@ -235,7 +326,7 @@ class ENetworkClass:
                     xv += 1
                     xc += 2
                 auxNo -= 1
-            else:  # Polynomial model
+            elif ENetCost['MODEL'][xg] > 1:  # Polynomial model
                 # Get costs function
                 fc = ENetCost['COST'][xg][:]
                 xval = np.zeros(auxNo+1, dtype=float)
@@ -259,14 +350,13 @@ class ENetworkClass:
             acu += auxNo
 
         # Changing to pu
-        for xg in range(NoGen):
-            GenMax[xg] /= ENet.graph['baseMVA']
-            GenMin[xg] /= ENet.graph['baseMVA']
+        for xg in range(self.NoGen):
+            GenMax[xg] /= self.ENet.graph['baseMVA']
+            GenMin[xg] /= self.ENet.graph['baseMVA']
         for xc in range(NoGenC):
-            GenLCst[xc][0] *= ENet.graph['baseMVA']
+            GenLCst[xc][0] *= self.ENet.graph['baseMVA']
 
-        return (GenNode, NoGen, GenMax, GenMin, LLGen1,
-                LLGen2, NoGenC, GenLCst)
+        return (GenMax, GenMin, LLGen1, LLGen2, NoGenC, GenLCst)
 
     # Print results
     def print(self, mod):
@@ -319,45 +409,23 @@ class ENetworkClass:
                 print("%8.4f " % mod.vFeaN[self.hFN[xh]+xb].value)
             print("];")
 
-    # Initialize
-    def __init__(self):
-        self.Sec = [2, 3]
-        self.Add_Loss = True
-        self.DemProf = [1, 1.05, 1.1]
-        # List of copies to be made
-        self.h = range(1)
-        # Shift factor for vFlow_EPower
-        self.hFE = [0]
-        # Shift factor for vVoltage_Angle
-        self.hVA = [0]
-        # Shift factor for vEPower_Loss
-        self.hEL = [0]
-        # Shift factor for vFeaB
-        self.hFB = [0]
-        # Shift factor for vFeaN
-        self.hFN = [0]
-        # Shift factor for vGen
-        self.hG = [0]
-        # Shift factor for vGenvGCost
-        self.hGC = [0]
-        
     # Initialize externally
     def initialise(self, FileName):
         # Read network data
-        (self.ENet, ENetDem, ENetGen,
-         ENetCost) = self.Read(FileName)
+        (self.ENet, ENetDem, ENetGen, ENetCost, self.NoOGen,
+         self.NoGen) = self.Read(FileName)
+        
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
          self.NoSec1, self.NoSec2, self.Loss_Con1,
-         self.Loss_Con2) = self.ProcessENet(self.ENet, self.Sec, self.Add_Loss)
+         self.Loss_Con2) = self.ProcessENet()
 
         (self.Number_Time,
-         self.busData) = self.ProcessEDem(self.ENet, ENetDem, self.DemProf)
+         self.busData) = self.ProcessEDem(ENetDem)
 
-        (GenNode, self.NoGen, self.GenMax, self.GenMin, self.LLGen1,
-         self.LLGen2, self.NoGenC,
-         self.GenLCst) = self.ProcessEGen(self.ENet, ENetGen, ENetCost)
+        (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.NoGenC,
+         self.GenLCst) = self.ProcessEGen(ENetGen, ENetCost)
 
         self.NoBuses = self.ENet.number_of_nodes()*(1+self.NoSec2)-1
         self.NoBranch = (self.ENet.number_of_edges() +
@@ -418,7 +486,7 @@ class ENetworkClass:
         return (m.vGen[self.hG[xh]+m.LLGen1[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs],
-                                   xt]- 
+                                   xt] - 
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
@@ -448,7 +516,7 @@ class ENetworkClass:
         return m.vEPower_Loss[self.hEL[xh]+xb+1, xt] == 0
 
     #                                   Sets                                  #
-    def getSets(self, m):        
+    def getSets(self, m):
         m.sBra = range(self.ENet.number_of_edges())
         m.sBraP = range(self.ENet.number_of_edges()+1)
         m.sBus = range(self.ENet.number_of_nodes())
