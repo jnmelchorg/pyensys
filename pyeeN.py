@@ -28,9 +28,9 @@ class ENetworkClass:
         self.HydQMax = [0]  # [1000, 1000, 1000]
         self.HydCst = [0]  # [0, 0, 0]
         # Default intermittent renewables
-        self.NoGRes = 2
-        self.PosGRes = [1, 2]
-        self.GResCst = [0, 0]
+        self.NoGRes = 0  # 2
+        self.PosGRes = [0] #[1, 2]
+        self.GResCst = [0]  # [0, 0]
         # Default List of copies to be made
         self.h = range(1)
         # Default shift factor for vFlow_EPower

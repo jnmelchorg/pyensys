@@ -64,7 +64,7 @@ class pyeeClass():
         EM = de()
 
         # Chose to load data from file
-        EM.fRea = True
+#        EM.fRea = True
 
         # Initialise
         EM.initialise(FileName)
@@ -81,11 +81,13 @@ class pyeeClass():
 
     #                           Objective function                            #
     def OF_rule(self, m): 
-        return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
-                           for xt in m.sTim) +
-                   1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
-                   1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus)
-                   for xh in self.h)
+        return (sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
+                            for xt in m.sTim) +
+                    1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
+                    1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus)
+                    for xh in self.h) + 
+                sum(sum(sum(m.vDummyGen[xn, x1, xs] for xn in m.sNodz)
+                        for x1 in range(2)) for xs in m.sVec))
     
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
@@ -213,6 +215,13 @@ class pyeeClass():
         results = opt.solve(mod)
         EM.print(mod)
         NM.print(mod)
+        print('Water outputs:')
+        for xn in mod.sNodz:
+            for xv in mod.sVec:
+                aux = mod.WOutFull[xn, xv].value
+                print("%8.4f " % aux, end='')
+            print('')
+        print('Water inputs:\n', mod.WInFull)
         
 
 
@@ -222,8 +231,8 @@ FileNameE = "InputsTree4Periods.json"
 FileNameN = "case4.json"
 
 # Energy simulation
-EN.ESim(FileNameE)
+# EN.ESim(FileNameE)
 # Network simulation
-EN.NSim(FileNameN)
+#EN.NSim(FileNameN)
 # Joint simulation
 EN.ENSim(FileNameE, FileNameN)

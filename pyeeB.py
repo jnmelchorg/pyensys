@@ -323,6 +323,10 @@ class EnergyClass:
                 1000*sum(m.vDummyGen[xL1, 0, 2] +
                          m.vDummyGen[xL1, 1, 2] for xL1 in m.sNodz))
 
+    # SoC initialisation conditiona
+    def ZSoC_rule(self, m, x1, xv):
+        return m.vSoC[0, x1, xv] == 0
+
     # Balance at different time levels
     def SoCBalance_rule(self, m, xL1, xv):
         return (m.vSoC[xL1, 0, xv] ==
@@ -422,6 +426,8 @@ class EnergyClass:
 
 #                               Constraints                               #
     def addCon(self, m):
+        # Initialisation conditions
+        m.ZSoC = Constraint(range(2), m.sVec, rule=self.ZSoC_rule)
         # Balance at different time levels
         m.SoCBalance = Constraint(m.sNodz, m.sVec, rule=self.SoCBalance_rule)
         # Aggregating (deterministic case)
