@@ -87,7 +87,7 @@ class pyeeClass():
                     1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus)
                     for xh in self.h) + 
                 sum(sum(sum(m.vDummyGen[xn, x1, xs] for xn in m.sNodz)
-                        for x1 in range(2)) for xs in m.sVec))
+                        for x1 in range(2)) for xs in m.sVec)*1000000)
     
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
