@@ -13,8 +13,6 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 import numpy as np
-import networkx as nx
-import json
 from pyeeN import ENetworkClass as dn
 from pyeeB import EnergyClass as de
 
@@ -64,6 +62,9 @@ class pyeeClass():
     def ESim(self, FileName):
         # Get energy object
         EM = de()
+
+        # Chose to load data from file
+        EM.fRea = True
 
         # Initialise
         EM.initialise(FileName)
@@ -210,6 +211,7 @@ class pyeeClass():
 
         # Print
         results = opt.solve(mod)
+        EM.print(mod)
         NM.print(mod)
         
 

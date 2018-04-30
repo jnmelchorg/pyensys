@@ -19,6 +19,48 @@ import json
 
 # Linked lists
 class EnergyClass:
+    # Initialize
+    def __init__(self):
+        # Read from file
+        self.fRea = False
+        # Default time-step and map
+        self.Input_Data = {}
+        # Monthly resolution
+        self.Input_Data["0"] = {
+                "Title": "Month",
+                "Names": ["typical"],
+                "Weights": [1],
+                "Inputs": [10, 9, 8],
+                "Outputs": [0, 0, 0],
+                "Uncertainty": False
+                }
+        # Typical number of weeks in a month
+        self.Input_Data["1"] = {
+                "Title": "Weeks",
+                "Names": ["typical"],
+                "Weights": [7.0192],
+                "Inputs": [0, 0, 0],
+                "Outputs": [0, 0, 0],
+                "Uncertainty": False
+                }
+        # Representation of a week
+        self.Input_Data["2"] = {
+                "Title": "Days",
+                "Names": ["Weekday", "Weekend"],
+                "Weights": [5, 2],
+                "Inputs": [
+                        [0, 0],
+                        [0, 0],
+                        [0, 0]
+                        ],
+                "Outputs": [
+                        [0.2, 0.07],
+                        [0.15, 0.11],
+                        [0.1, 0.2]
+                        ],
+                "Uncertainty": False
+                }
+
     # Read input data
     def Read(self, FileName):
         mystring = 'json\\' + FileName
@@ -26,42 +68,42 @@ class EnergyClass:
         return Input_Data
 
     # Measure the size of the data arrays
-    def Measure(self, Input_Data):
+    def Measure(self):
         # Get number of time periods
-        s_LL_time = len(Input_Data)
+        s_LL_time = len(self.Input_Data)
 
         sv_LL_time = np.zeros(s_LL_time, dtype=int)
         s_LL_timeVar = 1
         s_LL_timeSum = 1
         for x1 in range(s_LL_time):
-            sv_LL_time[x1] = len(Input_Data[chr(48+x1)]["Names"])
+            sv_LL_time[x1] = len(self.Input_Data[chr(48+x1)]["Names"])
             s_LL_timeVar *= sv_LL_time[x1]
             s_LL_timeSum += sv_LL_time[x1]
 
         # Measuring the data
-        aux = np.asarray(Input_Data[chr(48)]["Inputs"])
+        aux = np.asarray(self.Input_Data[chr(48)]["Inputs"])
         if aux.ndim == 1:
-            NosVec = 1
+            NosVec = len(self.Input_Data[chr(48)]["Inputs"])
         else:
             NosVec = len(aux)
-            
+
         return s_LL_time, sv_LL_time, s_LL_timeVar, s_LL_timeSum, NosVec
 
     # Process the data as inputs, outputs, weights and uncertainty
-    def Process(self, Input_Data, s_LL_timeVar, s_LL_timeSum):
+    def Process(self, s_LL_timeVar, s_LL_timeSum):
         WIn = np.zeros((s_LL_timeSum, self.NosVec), dtype=int)
-        WOut = np.zeros((s_LL_timeSum, self.NosVec), dtype=int)
+        WOut = np.zeros((s_LL_timeSum, self.NosVec), dtype=float)
         Wght = np.ones(s_LL_timeSum, dtype=float)
         Unc = np.zeros(self.s_LL_time, dtype=bool)
 
         acu = 1
         for x1 in range(self.s_LL_time):
             xtxt = chr(48+x1)
-            auxI = np.asarray(Input_Data[xtxt]["Inputs"])
-            auxO = np.asarray(Input_Data[xtxt]["Outputs"])
-            auxW = Input_Data[xtxt]["Weights"]
+            auxI = np.asarray(self.Input_Data[xtxt]["Inputs"])
+            auxO = np.asarray(self.Input_Data[xtxt]["Outputs"])
+            auxW = self.Input_Data[xtxt]["Weights"]
             auxs = len(auxW)
-            auxU = Input_Data[xtxt]["Uncertainty"]
+            auxU = self.Input_Data[xtxt]["Uncertainty"]
             Unc[x1] = auxU
             for x2 in range(auxs):
                 Wght[acu+x2] = auxW[x2]
@@ -69,9 +111,14 @@ class EnergyClass:
                     WIn[acu+x2][0] = auxI[x2]
                     WOut[acu+x2][0] = auxO[x2]
                 else:
-                    for xv in range(self.NosVec):
-                        WIn[acu+x2][xv] = auxI[xv][x2]
-                        WOut[acu+x2][xv] = auxO[xv][x2]
+                    if auxI.ndim == 1:
+                        for xv in range(self.NosVec):
+                            WIn[acu+x2][xv] = auxI[xv]
+                            WOut[acu+x2][xv] = auxO[xv]
+                    else:
+                        for xv in range(self.NosVec):
+                            WIn[acu+x2][xv] = auxI[xv][x2]
+                            WOut[acu+x2][xv] = auxO[xv][x2]
             acu += auxs
 
         return WIn, WOut, Wght, Unc
@@ -112,7 +159,6 @@ class EnergyClass:
         for x1 in range(self.s_LL_time):
             aux = aux*sv_LL_time[x1]
             s_LL_Nodes = s_LL_Nodes + aux
-        print('\n\nNumber:',s_LL_Nodes,"\n\n")
 
         LL_TimeNodeTree = np.zeros((s_LL_Nodes, 2), dtype=int)
         LL_TimeScenarioTree = np.zeros((s_LL_Nodes, 2), dtype=int)
@@ -150,10 +196,12 @@ class EnergyClass:
 
         # Get nodes at each time level
         NodeTime = np.zeros((self.s_LL_time+1, 2), dtype=int)
-        xacu = -1
-        for xt in range(self.s_LL_time+1):
-            NodeTime[xt][:] = [xacu+1, xacu+LL_TimeLevel[xt]]
-            xacu += LL_TimeLevel[xt]
+        xacu1 = 0
+        xacu2 = 1
+        for xt in range(self.s_LL_time):
+            xacu2 *= sv_LL_time[xt]
+            NodeTime[xt+1][:] = [xacu1+1, xacu1+xacu2]
+            xacu1 += xacu2
 
         # Adding cnnection to the last set of scenarios
         aux1 = aux1*sv_LL_time[self.s_LL_time-2]
@@ -196,16 +244,16 @@ class EnergyClass:
 
         # Add Weights
         LL_WIO = np.zeros(s_LL_Nodes, dtype=int)
-        xacu = 0
+        xacu1 = 1
+        xacu2 = 0
+        xacu3 = 1
         for x1 in range(self.s_LL_time):
-            aux = LL_TimeLevel[x1+1]-LL_TimeLevel[x1]
-            for x2 in range(aux):
-                aux = LL_TimeNodeTree[x2][1]-LL_TimeNodeTree[x2][0]+1
-                x4 = LL_TimeNodeTree[x2+LL_TimeLevel[x1]-1][0]
-                for x3 in range(aux):
-                    x4 += x3
-                    LL_WIO[x4] = xacu + x3 + 1
-            xacu += sv_LL_time[x1]
+            for x2 in range(xacu1):
+                for x3 in range(sv_LL_time[x1]):
+                    xacu2 += 1
+                    LL_WIO[xacu2] = xacu3+x3
+            xacu1 *= sv_LL_time[x1]
+            xacu3 += sv_LL_time[x1]
 
         # Outputs
         return (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
@@ -239,7 +287,7 @@ class EnergyClass:
         NosNod = s_LL_Nodes-1
         if sum(Unc) == 0:
             NosLL2 = NosNod
-            NosLL3 = 0#1
+            NosLL3 = 0
             LL3 = np.zeros((NosLL3, 3), dtype=int)
         else:
             NosLL3 = sum(LL_Unc)-1
@@ -267,10 +315,10 @@ class EnergyClass:
     def OF_rule(self, m):
         return (m.vSoC[1, 0, 0]-m.vSoC[3, 0, 0] +
                 1000*sum(m.vDummyGen[xL1, 0, 0] +
-                         m.vDummyGen[xL1, 1, 0] for xL1 in m.sNodz) + 
+                         m.vDummyGen[xL1, 1, 0] for xL1 in m.sNodz) +
                 m.vSoC[1, 0, 1]-m.vSoC[3, 0, 1] +
                 1000*sum(m.vDummyGen[xL1, 0, 1] +
-                         m.vDummyGen[xL1, 1, 1] for xL1 in m.sNodz) + 
+                         m.vDummyGen[xL1, 1, 1] for xL1 in m.sNodz) +
                 m.vSoC[1, 0, 2]-m.vSoC[3, 0, 2] +
                 1000*sum(m.vDummyGen[xL1, 0, 2] +
                          m.vDummyGen[xL1, 1, 2] for xL1 in m.sNodz))
@@ -305,15 +353,16 @@ class EnergyClass:
     # Initialise externally
     def initialise(self, FileName):
         # Read input data
-        Input_Data = self.Read(FileName)
+        if self.fRea:
+            self.Input_Data = self.Read(FileName)
 
         # Measure the size of the data arrays
         (self.s_LL_time, sv_LL_time, s_LL_timeVar,
-         s_LL_timeSum, self.NosVec) = self.Measure(Input_Data)
+         s_LL_timeSum, self.NosVec) = self.Measure()
 
         # Summarize the data as inputs, outputs, weights and uncertainty
         (WIn, WOut, Wght,
-         Unc) = self.Process(Input_Data, s_LL_timeVar, s_LL_timeSum)
+         Unc) = self.Process(s_LL_timeVar, s_LL_timeSum)
 
         # Produce connectivity matrices
         (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
@@ -328,7 +377,6 @@ class EnergyClass:
          self.NosLL3) = self.Link(Unc, LL_Unc, s_LL_Nodes,
                                   LL_TimeNodeBeforeSequence, LL_TimeNodeTree)
 
-
     # Print results
     def print(self, mod):
         acu = 0
@@ -336,7 +384,7 @@ class EnergyClass:
             print('Vector No:', xv)
             for x1 in mod.sNodz:
                 print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
-                      % mod.vSoC[x1, 0, xv].value,", %10.2f"
+                      % mod.vSoC[x1, 0, xv].value, ", %10.2f"
                       % mod.vSoC[x1, 1, xv].value, "]")
                 for x2 in range(2):
                     acu += mod.vDummyGen[x1, x2, xv].value
@@ -361,6 +409,7 @@ class EnergyClass:
         m.WInFull = self.WInFull
         m.WOutFull = self.WOutFull
         m.WghtFull = self.WghtFull
+
         return m
 
     #                             Model Variables                             #
