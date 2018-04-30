@@ -22,13 +22,15 @@ class ENetworkClass:
         # Defaulr demand time series
         self.DemProf = [1, 1.05, 1.1]
         # Default hydropower
-        self.NoHyd = 0  #3
-        self.PosHyd = [0]  #[1, 2, 3]
-        self.HydPMax = [1000, 1000, 1000]
-        self.HydQMax = [1000, 1000, 1000]
+        self.NoHyd = 0  # 3
+        self.PosHyd = [0]  # [1, 2, 3]
+        self.HydPMax = [0]  # [1000, 1000, 1000]
+        self.HydQMax = [0]  # [1000, 1000, 1000]
+        self.HydCst = [0]  # [0, 0, 0]
         # Default intermittent renewables
         self.NoGRes = 2
         self.PosGRes = [1, 2]
+        self.GResCst = [0, 0]
         # Default List of copies to be made
         self.h = range(1)
         # Default shift factor for vFlow_EPower
@@ -44,7 +46,7 @@ class ENetworkClass:
         # Default shift factor for vGen
         self.hG = [0]
         # Default shift factor for vGenvGCost
-        self.hGC = [0]        
+        self.hGC = [0]
 
     # Read input data
     def Read(self, FileName):
@@ -155,18 +157,32 @@ class ENetworkClass:
             ENetGen['GEN_BUS'][aux1:aux2] = self.PosHyd
             ENetGen['PMAX'][aux1:aux2] = self.HydPMax
             ENetGen['QMAX'][aux1:aux2] = self.HydQMax
+            xg2 = -1
             for xg in range(aux1, aux2):
+                xg2 += 1
                 ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
+                # Add polinomial (linear) cost curve
+                if self.HydCst[xg2] != 0:
+                    ENetCost['MODEL'][xg] = 2
+                    ENetCost['NCOST'][xg] = 2
+                    ENetCost['COST'][xg][0] = self.HydCst[xg2]
 
         if self.NoGRes > 0:
             # Adding intermittent generation
             aux1 = NoOGen+self.NoHyd
             aux2 = NoGen
             ENetGen['GEN_BUS'][aux1:aux2] = self.PosGRes
+            xg2 = -1
             for xg in range(aux1, aux2):
+                xg2 += 1
                 ENetGen['PMAX'][xg] = 1000000
                 ENetGen['QMAX'][xg] = 1000000
                 ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
+                # Add polinomial (linear) cost curve
+                if self.GResCst[xg2] != 0:
+                    ENetCost['MODEL'][xg] = 2
+                    ENetCost['NCOST'][xg] = 2
+                    ENetCost['COST'][xg][0] = self.GResCst[xg2]
 
         return ENet, ENetDem, ENetGen, ENetCost, NoOGen, NoGen
 
@@ -321,12 +337,12 @@ class ENetworkClass:
                 xc = 0
                 xv = 0
                 while xc <= auxNo*2-1:
-                    xval[xv] = ENetGen['COST'][xc]
-                    yval[xv] = ENetGen['COST'][xc+1]
+                    xval[xv] = ENetCost['COST'][xg][xc]
+                    yval[xv] = ENetCost['COST'][xg][xc+1]
                     xv += 1
                     xc += 2
                 auxNo -= 1
-            elif ENetCost['MODEL'][xg] > 1:  # Polynomial model
+            elif ENetCost['MODEL'][xg] == 2:  # Polynomial model
                 # Get costs function
                 fc = ENetCost['COST'][xg][:]
                 xval = np.zeros(auxNo+1, dtype=float)
@@ -414,7 +430,6 @@ class ENetworkClass:
         # Read network data
         (self.ENet, ENetDem, ENetGen, ENetCost, self.NoOGen,
          self.NoGen) = self.Read(FileName)
-        
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
@@ -486,7 +501,7 @@ class ENetworkClass:
         return (m.vGen[self.hG[xh]+m.LLGen1[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs],
-                                   xt] - 
+                                   xt] -
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==

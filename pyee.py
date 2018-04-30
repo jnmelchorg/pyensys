@@ -137,10 +137,12 @@ class pyeeClass():
         NM.PosHyd = np.zeros(NM.NoHyd, dtype=int)
         NM.HydPMax = np.zeros(NM.NoHyd, dtype=int)
         NM.HydQMax = np.zeros(NM.NoHyd, dtype=int)
+        NM.HydCst = np.zeros(NM.NoHyd, dtype=float)
         for xv in range(EM.NosVec):
             NM.PosHyd[xv] = xv+1
             NM.HydPMax[xv] = 1000
             NM.HydQMax[xv] = 1000
+            NM.HydCst[xv] = 0.0001  # Assigning a small cost to hidropower
 
         # Get size of network model
         NM.initialise(FileNameN)
