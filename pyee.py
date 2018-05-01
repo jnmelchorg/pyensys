@@ -18,7 +18,7 @@ from pyeeB import EnergyClass as de
 
 
 class pyeeClass():
-# Get mathematical model
+    # Get mathematical model
     def SingleLP(self, ENM):
         # Define pyomo model
         mod = ConcreteModel()
@@ -31,9 +31,6 @@ class pyeeClass():
 
         #                           Model Variables                           #
         mod = ENM.getVars(mod)
-
-        #                          Objective function                         #
-        mod.OF = Objective(rule=ENM.OF_rule, sense=minimize)
 
         #                             Constraints                             #
         mod = ENM.addCon(mod)
@@ -51,11 +48,15 @@ class pyeeClass():
         # Build LP model
         NModel = self.SingleLP(NM)
 
+        #                          Objective function                         #
+        NModel.OF = Objective(rule=NM.OF_rule, sense=minimize)
+
         # Optimise
         opt = SolverFactory('glpk')
 
         # Print results
         results = opt.solve(NModel)
+        print(results)
         NM.print(NModel)
 
     # Energy only optimisation
@@ -64,7 +65,7 @@ class pyeeClass():
         EM = de()
 
         # Chose to load data from file
-#        EM.fRea = True
+        EM.fRea = True
 
         # Initialise
         EM.initialise(FileName)
@@ -72,26 +73,32 @@ class pyeeClass():
         # Build LP model
         EModel = self.SingleLP(EM)
 
+        #                          Objective function                         #
+        EModel.OF = Objective(rule=EM.OF_rule, sense=minimize)
+
         # Optimise
         opt = SolverFactory('glpk')
 
         # Print
         results = opt.solve(EModel)
+        print(results)
         EM.print(EModel)
 
     #                           Objective function                            #
-    def OF_rule(self, m): 
+    def OF_rule(self, m):
         return (sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
-                            for xt in m.sTim) +
+                        for xt in m.sTim) +
                     1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
-                    1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus)
-                    for xh in self.h) + 
+                    1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus) -
+                    sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
+                                         for xt in m.sTim) for xdl in m.sDL)
+                    for xh in self.h) +
                 sum(sum(sum(m.vDummyGen[xn, x1, xs] for xn in m.sNodz)
                         for x1 in range(2)) for xs in m.sVec)*1000000)
-    
+
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
-        return (m.WOutFull[m.LLENM[xL][0], xv] == 
+        return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 sum(m.vGen[m.LLENM[xL][1]+xv, xt] for xt in m.sTim))
 
     #                               Constraints                               #
@@ -100,7 +107,7 @@ class pyeeClass():
         m.EMNM = Constraint(m.sLLEN, m.sVec, rule=self.EMNM_rule)
 
         return m
-        
+
     #                                   Sets                                  #
     def getSets(self, m):
         m.sLLEN = range(self.NoLL)
@@ -162,6 +169,7 @@ class pyeeClass():
         NM.hFN = np.zeros(NoNM, dtype=int)
         NM.hG = np.zeros(NoNM, dtype=int)
         NM.hGC = np.zeros(NoNM, dtype=int)
+        NM.hDL = np.zeros(NoNM, dtype=int)
         # Location of each copy
         for xc in NM.h:
             NM.hFE[xc] = xc*(NM.NoBranch+1)
@@ -171,6 +179,7 @@ class pyeeClass():
             NM.hFN[xc] = xc*NM.ENet.number_of_nodes()
             NM.hG[xc] = xc*(NM.NoGen+1)
             NM.hGC[xc] = xc*NM.NoGen
+            NM.hDL[xc] = xc*(NM.NoDL+1)
 
         # Build LL to link the models through hydro consumption
         self.NoLL = 1+EM.NodeTime[EM.s_LL_time][1]-EM.NodeTime[EM.s_LL_time][0]
@@ -179,10 +188,11 @@ class pyeeClass():
             self.LLENM[xc][:] = [EM.NodeTime[EM.s_LL_time][0]+xc,
                                  NM.hG[xc]+NM.NoOGen+1]
 
-        # Taking sets for modelling
+        # Taking sets for modelling local objective function
         self.hGC = NM.hGC
         self.hFB = NM.hFB
         self.hFN = NM.hFN
+        self.hDL = NM.hDL
         self.h = NM.h
 
         #                                 Sets                                #
@@ -213,6 +223,8 @@ class pyeeClass():
 
         # Print
         results = opt.solve(mod)
+        #instance.solutions.store_to(results)
+        print(results)
         EM.print(mod)
         NM.print(mod)
         print('Water outputs:')
@@ -231,8 +243,8 @@ FileNameE = "InputsTree4Periods.json"
 FileNameN = "case4.json"
 
 # Energy simulation
-# EN.ESim(FileNameE)
+#EN.ESim(FileNameE)
 # Network simulation
-#EN.NSim(FileNameN)
+EN.NSim(FileNameN)
 # Joint simulation
-EN.ENSim(FileNameE, FileNameN)
+# EN.ENSim(FileNameE, FileNameN)

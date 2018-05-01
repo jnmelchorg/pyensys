@@ -29,7 +29,7 @@ class ENetworkClass:
         self.HydCst = [0]  # [0, 0, 0]
         # Default intermittent renewables
         self.NoGRes = 0  # 2
-        self.PosGRes = [0] #[1, 2]
+        self.PosGRes = [0]  # [1, 2]
         self.GResCst = [0]  # [0, 0]
         # Default List of copies to be made
         self.h = range(1)
@@ -47,6 +47,12 @@ class ENetworkClass:
         self.hG = [0]
         # Default shift factor for vGenvGCost
         self.hGC = [0]
+        # Add dynamic loads (e.g.,to model pumps)
+        self.hDL = [0]
+        self.NoDL = 0  # 2
+        self.PosDL = [0]  # [2, 3]
+        self.ValDL = [0]  # [0.001, 0.001]
+        self.MaxDL = [0]  # [1.5, 1.5]
 
     # Read input data
     def Read(self, FileName):
@@ -297,8 +303,14 @@ class ENetworkClass:
             Loss_Con1 = 0
             Loss_Con2 = 0
 
+        # Add LL for dinamic loads
+        LLDL = np.zeros(self.ENet.number_of_nodes(), dtype=int)
+        for xdl in range(self.NoDL):
+            LLDL[self.PosDL[xdl]-1] = xdl+1
+
         return (Number_LossCon, branchNo, branchData, NoN2B, LLN2B1,
-                LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1, Loss_Con2)
+                LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1,
+                Loss_Con2, LLDL)
 
     # Process demand and generation parameters
     def ProcessEDem(self, ENetDem):
@@ -413,6 +425,16 @@ class ENetworkClass:
                     aux = mod.vEPower_Loss[self.hEL[xh]+xb, xt].value
                     print("%8.4f " % aux, end='')
                 print()
+            print("];")
+
+            # Dinamic loads
+            print("\nvGenDL=[")
+            for xdl in mod.sDL:
+                for xt in mod.sTim:
+                    aux = mod.vGenDL[self.hDL[xh]+xdl, xt].value
+                    print("%8.4f " % aux, end='')
+                print()
+            print("];")
 
             # Feasibility constraints
             print("\nFeasB=[")
@@ -434,7 +456,7 @@ class ENetworkClass:
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
          self.NoSec1, self.NoSec2, self.Loss_Con1,
-         self.Loss_Con2) = self.ProcessENet()
+         self.Loss_Con2, self.LLDL) = self.ProcessENet()
 
         (self.Number_Time,
          self.busData) = self.ProcessEDem(ENetDem)
@@ -452,7 +474,9 @@ class ENetworkClass:
         return (sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
                     for xt in m.sTim) +
                 1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
-                1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus))
+                1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus) -
+                sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
+                                     for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
     def EPow0_rule(self, m, xt, xh):
@@ -505,7 +529,8 @@ class ENetworkClass:
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, xt]-m.vFeaN[self.hFN[xh]+xn] +
+                m.busData[xn, xt]-m.vFeaN[self.hFN[xh]+xn]
+                + m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
                                    xt] +
@@ -530,6 +555,14 @@ class ENetworkClass:
     def DCLossN_rule(self, m, xb, xt, xh):
         return m.vEPower_Loss[self.hEL[xh]+xb+1, xt] == 0
 
+    # Maximum capacity of dynamic loads
+    def LDMax_rule(self, m, xdl, xt, xh):
+        return m.vGenDL[self.hDL[xh]+xdl, xt] <= m.MaxDL[xdl]
+
+    # Initialising dynamic loads
+    def LDIni_rule(self, m, xt, xh):
+        return m.vGenDL[self.hDL[xh], xt] == 0
+
     #                                   Sets                                  #
     def getSets(self, m):
         m.sBra = range(self.ENet.number_of_edges())
@@ -546,6 +579,8 @@ class ENetworkClass:
         m.sGenP = range(self.NoGen+1)
         m.sGenC = range(self.NoGenC+1)
         m.sGenCM = range(self.NoGenC)
+        m.sDL = range(self.NoDL)
+
         return m
 
     #                                Parameters                               #
@@ -564,11 +599,15 @@ class ENetworkClass:
         m.LLGen1 = self.LLGen1
         m.LLGen2 = self.LLGen2
         m.GenLCst = self.GenLCst
+        m.ValDL = self.ValDL
+        m.MaxDL = self.MaxDL
+        m.LLDL = self.LLDL
+
         return m
 
     #                             Model Variables                             #
     def getVars(self, m):
-        Noh = len(self.h)        
+        Noh = len(self.h)
         m.vFlow_EPower = Var(range(Noh*(self.NoBranch+1)), m.sTim,
                              domain=Reals, initialize=0.0)
         m.vVoltage_Angle = Var(range(Noh*(self.NoBuses+1)), m.sTim,
@@ -583,10 +622,13 @@ class ENetworkClass:
                      initialize=0.0)
         m.vGCost = Var(range(Noh*self.NoGen), m.sTim, domain=NonNegativeReals,
                        initialize=0.0)
+        m.vGenDL = Var(range(Noh*(self.NoDL+1)), m.sTim,
+                       domain=NonNegativeReals, initialize=0.0)
+
         return m
 
     #                               Constraints                               #
-    def addCon(self, m):        
+    def addCon(self, m):
         # Reference line flow
         m.EPow0 = Constraint(m.sTim, self.h, rule=self.EPow0_rule)
         # Reference generation
@@ -606,6 +648,10 @@ class ENetworkClass:
         # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
         m.EBalance = Constraint(m.sBus, m.sTim, m.sSec2, self.h,
                                 rule=self.EBalance_rule)
+        # Dinamic load maximum capacity
+        m.DLMax = Constraint(m.sDL, m.sTim, self.h, rule=self.LDMax_rule)
+        # Dinamic load initialisation
+        m.DLIni = Constraint(m.sTim, self.h, rule=self.LDIni_rule)
         # Adding piece wise estimation of losses
         if self.Add_Loss:
             m.DCLossA = Constraint(m.sBra, m.sLoss,
@@ -614,5 +660,5 @@ class ENetworkClass:
                                    m.sTim, self.h, rule=self.DCLossB_rule)
         else:
             m.DCLossNo = Constraint(mod.sBra, mod.sTim, self.h,
-                                      rule=self.DCLossN_rule)
+                                    rule=self.DCLossN_rule)
         return m

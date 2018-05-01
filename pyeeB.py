@@ -26,21 +26,25 @@ class EnergyClass:
         # Default time-step and map
         self.Input_Data = {}
         # Monthly resolution
+        NoVec = 3
+        aux = np.zeros(NoVec, dtype=float)
+        for x in range(NoVec):
+            aux[x] = 5+x
         self.Input_Data["0"] = {
                 "Title": "Month",
                 "Names": ["typical"],
                 "Weights": [1],
-                "Inputs": [10, 9, 8],
-                "Outputs": [0, 0, 0],
+                "Inputs": aux,
+                "Outputs": np.zeros(NoVec, dtype=float),
                 "Uncertainty": False
                 }
         # Typical number of weeks in a month
         self.Input_Data["1"] = {
                 "Title": "Weeks",
                 "Names": ["typical"],
-                "Weights": [7.0192],
-                "Inputs": [0, 0, 0],
-                "Outputs": [0, 0, 0],
+                "Weights": [4.3333],
+                "Inputs": np.zeros(NoVec, dtype=float),
+                "Outputs": np.zeros(NoVec, dtype=float),
                 "Uncertainty": False
                 }
         # Representation of a week
@@ -48,16 +52,8 @@ class EnergyClass:
                 "Title": "Days",
                 "Names": ["Weekday", "Weekend"],
                 "Weights": [5, 2],
-                "Inputs": [
-                        [0, 0],
-                        [0, 0],
-                        [0, 0]
-                        ],
-                "Outputs": [
-                        [0.2, 0.07],
-                        [0.15, 0.11],
-                        [0.1, 0.2]
-                        ],
+                "Inputs": np.zeros((NoVec, 2), dtype=float),
+                "Outputs": np.zeros((NoVec, 2), dtype=float),
                 "Uncertainty": False
                 }
 
@@ -108,8 +104,13 @@ class EnergyClass:
             for x2 in range(auxs):
                 Wght[acu+x2] = auxW[x2]
                 if self.NosVec == 1:
-                    WIn[acu+x2][0] = auxI[x2]
-                    WOut[acu+x2][0] = auxO[x2]
+                    if auxI.ndim == 1:
+                        WIn[acu+x2][0] = auxI[x2]
+                        WOut[acu+x2][0] = auxO[x2]                        
+                    else:
+                        WIn[acu+x2][0] = auxI[0][x2]
+                        WOut[acu+x2][0] = auxO[0][x2]
+                        
                 else:
                     if auxI.ndim == 1:
                         for xv in range(self.NosVec):
@@ -313,15 +314,10 @@ class EnergyClass:
 
     # Objective function
     def OF_rule(self, m):
-        return (m.vSoC[1, 0, 0]-m.vSoC[3, 0, 0] +
-                1000*sum(m.vDummyGen[xL1, 0, 0] +
-                         m.vDummyGen[xL1, 1, 0] for xL1 in m.sNodz) +
-                m.vSoC[1, 0, 1]-m.vSoC[3, 0, 1] +
-                1000*sum(m.vDummyGen[xL1, 0, 1] +
-                         m.vDummyGen[xL1, 1, 1] for xL1 in m.sNodz) +
-                m.vSoC[1, 0, 2]-m.vSoC[3, 0, 2] +
-                1000*sum(m.vDummyGen[xL1, 0, 2] +
-                         m.vDummyGen[xL1, 1, 2] for xL1 in m.sNodz))
+        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] +
+                   1000*sum(m.vDummyGen[xL1, 0, xv] +
+                            m.vDummyGen[xL1, 1, xv] for xL1 in m.sNodz)
+                   for xv in m.sVec)
 
     # SoC initialisation conditiona
     def ZSoC_rule(self, m, x1, xv):
@@ -403,6 +399,7 @@ class EnergyClass:
         m.sLLTS3 = range(self.NosLL3+1)
         m.FUnc = self.NosLL3
         m.sVec = range(self.NosVec)
+
         return m
 
     #                                Parameters                               #
@@ -417,14 +414,14 @@ class EnergyClass:
         return m
 
     #                             Model Variables                             #
-    def getVars(self, m):        
+    def getVars(self, m):
         m.vSoC= Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
                     initialize=0.0)
         m.vDummyGen= Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
                          initialize=0.0)
         return m
 
-#                               Constraints                               #
+    #                               Constraints                               #
     def addCon(self, m):
         # Initialisation conditions
         m.ZSoC = Constraint(range(2), m.sVec, rule=self.ZSoC_rule)
