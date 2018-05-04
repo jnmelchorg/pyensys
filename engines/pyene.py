@@ -13,8 +13,8 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 import numpy as np
-from pyenM import ENetworkClass as dn
-from pyenB import EnergyClass as de
+from pyeneN import ENetworkClass as dn
+from pyeneE import EnergyClass as de
 
 
 class pyeneClass():
@@ -288,7 +288,7 @@ FileNameN = "case4.json"
 #EN.ESim(FileNameE)
 # Network simulation
 EN.NSim(FileNameN)
-aux[1000]
+
 # Joint simulation
 # Build coupled model
 (EM, NM)=EN.Initialise_ENSim(FileNameT,FileNameN)
