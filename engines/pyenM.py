@@ -21,6 +21,8 @@ class ENetworkClass:
         self.Add_Loss = True
         # Defaulr demand time series
         self.DemProf = [1, 1.05, 1.1]
+        # Consideration of feasibility constraints
+        self.Add_Fea = True
         # Default hydropower
         self.NoHyd = 0  # 3
         self.PosHyd = [0]  # [1, 2, 3]
@@ -47,6 +49,8 @@ class ENetworkClass:
         self.hG = [0]
         # Default shift factor for vGenvGCost
         self.hGC = [0]
+        # Default shift factor for feaibility constraints
+        self.hFea = [0]
         # Add dynamic loads (e.g.,to model pumps)
         self.hDL = [0]
         self.NoDL = 0  # 2
@@ -304,14 +308,23 @@ class ENetworkClass:
             Loss_Con1 = 0
             Loss_Con2 = 0
 
-        # Add LL for dinamic loads
+        # Add LL for dynamic loads
         LLDL = np.zeros(self.ENet.number_of_nodes(), dtype=int)
         for xdl in range(self.NoDL):
             LLDL[self.PosDL[xdl]-1] = xdl+1
 
+        # Add LL for feasibility constraints (Nodes)
+        LLFea = np.zeros(self.ENet.number_of_nodes()+1, dtype=int)
+        if self.Add_Fea:
+            NoFea = self.ENet.number_of_nodes()+1
+            for xn in range(1, NoFea):
+                LLFea[xn] = xn
+        else:
+            NoFea = 1
+
         return (Number_LossCon, branchNo, branchData, NoN2B, LLN2B1,
                 LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1,
-                Loss_Con2, LLDL)
+                Loss_Con2, LLDL, NoFea, LLFea)
 
     # Process demand and generation parameters
     def ProcessEDem(self, ENetDem):
@@ -438,14 +451,12 @@ class ENetworkClass:
             print("];")
 
             # Feasibility constraints
-            print("\nFeasB=[")
-            for xb in mod.sBra:
-                print("%8.4f " % mod.vFeaB[self.hFB[xh]+xb].value)
-            print("];")
-
-            print("\nFeasN=[")
-            for xb in mod.sBus:
-                print("%8.4f " % mod.vFeaN[self.hFN[xh]+xb].value)
+            print("\nFeas=[")
+            for xf in mod.sFea:
+                for xt in mod.sTim:
+                    aux = mod.vFea[self.hFea[xh]+xf, xt].value
+                    print("%8.4f " % aux, end='')
+                print()
             print("];")
 
     # Initialize externally
@@ -456,8 +467,8 @@ class ENetworkClass:
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
-         self.NoSec1, self.NoSec2, self.Loss_Con1,
-         self.Loss_Con2, self.LLDL) = self.ProcessENet()
+         self.NoSec1, self.NoSec2, self.Loss_Con1, self.Loss_Con2, self.LLDL,
+         self.NoFea, self.LLFea) = self.ProcessENet()
 
         (self.Number_Time,
          self.busData) = self.ProcessEDem(ENetDem)
@@ -472,10 +483,9 @@ class ENetworkClass:
     # Objective function
     def OF_rule(self, m):
         xh = self.h[0]
-        return (sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen)
-                    for xt in m.sTim) +
-                1000000*sum(m.vFeaB[self.hFB[xh]+xb] for xb in m.sBra) +
-                1000000*sum(m.vFeaN[self.hFN[xh]+xn] for xn in m.sBus) -
+        return (sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
+                    sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
+                    1000000 for xt in m.sTim) -
                 sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
@@ -512,14 +522,12 @@ class ENetworkClass:
     # Branch capacity constraint (positive)
     def EFMax_rule(self, m, xt, xb, xh):
         return (m.vFlow_EPower[self.hFE[xh]+xb+1, xt] >=
-                -m.branchData[m.LLESec1[xb, 0], 3] -
-                m.vFeaB[self.hFB[xh]+m.LLESec1[xb, 0]])
+                -m.branchData[m.LLESec1[xb, 0], 3])
 
     # Branch capacity constraint (negative)
     def EFMin_rule(self, m, xt, xb, xh):
         return (m.vFlow_EPower[self.hFE[xh]+xb+1, xt] <=
-                m.branchData[m.LLESec1[xb, 0], 3] +
-                m.vFeaB[self.hFB[xh]+m.LLESec1[xb, 0]])
+                m.branchData[m.LLESec1[xb, 0], 3])
 
     # Nodal balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
     def EBalance_rule(self, m, xn, xt, xs, xh):
@@ -530,8 +538,8 @@ class ENetworkClass:
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, xt]-m.vFeaN[self.hFN[xh]+xn]
-                + m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
+                m.busData[xn, xt]-m.vFea[self.hFea[xh]+m.LLFea[xn], xt] +
+                m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
                                    xt] +
@@ -564,6 +572,10 @@ class ENetworkClass:
     def LDIni_rule(self, m, xt, xh):
         return m.vGenDL[self.hDL[xh], xt] == 0
 
+    # Positions without feasibility constraints
+    def setFea_rule(self, m, xt, xh):
+        return m.vFea[self.hFea[xh], xt] == 0
+
     #                                   Sets                                  #
     def getSets(self, m):
         m.sBra = range(self.ENet.number_of_edges())
@@ -581,6 +593,7 @@ class ENetworkClass:
         m.sGenC = range(self.NoGenC+1)
         m.sGenCM = range(self.NoGenC)
         m.sDL = range(self.NoDL)
+        m.sFea = range(self.NoFea)
 
         return m
 
@@ -603,6 +616,7 @@ class ENetworkClass:
         m.ValDL = self.ValDL
         m.MaxDL = self.MaxDL
         m.LLDL = self.LLDL
+        m.LLFea = self.LLFea
 
         return m
 
@@ -615,10 +629,8 @@ class ENetworkClass:
                                domain=Reals, initialize=0.0)
         m.vEPower_Loss = Var(range(Noh*(self.ENet.number_of_edges()+1)),
                              m.sTim, domain=NonNegativeReals, initialize=0.0)
-        m.vFeaB = Var(range(Noh*self.ENet.number_of_edges()),
-                      domain=NonNegativeReals, initialize=0.0)        
-        m.vFeaN = Var(range(Noh*self.ENet.number_of_nodes()),
-                      domain=NonNegativeReals, initialize=0.0)        
+        m.vFea = Var(range(Noh*self.NoFea), m.sTim, domain=NonNegativeReals,
+                     initialize=0.0)
         m.vGen = Var(range(Noh*(self.NoGen+1)), m.sTim, domain=NonNegativeReals,
                      initialize=0.0)
         m.vGCost = Var(range(Noh*self.NoGen), m.sTim, domain=NonNegativeReals,
@@ -653,6 +665,8 @@ class ENetworkClass:
         m.DLMax = Constraint(m.sDL, m.sTim, self.h, rule=self.LDMax_rule)
         # Dinamic load initialisation
         m.DLIni = Constraint(m.sTim, self.h, rule=self.LDIni_rule)
+        # Feasibility constraints
+        m.setFea = Constraint(m.sTim, self.h, rule=self.setFea_rule)
         # Adding piece wise estimation of losses
         if self.Add_Loss:
             m.DCLossA = Constraint(m.sBra, m.sLoss,
