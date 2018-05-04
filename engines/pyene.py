@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# Python Energy & Network Engine
 """
 Created on Thu Mar 29 14:04:58 2018
 
@@ -13,11 +13,16 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 import numpy as np
-from pyeeN import ENetworkClass as dn
-from pyeeB import EnergyClass as de
+from pyenM import ENetworkClass as dn
+from pyenB import EnergyClass as de
 
 
-class pyeeClass():
+class pyeneClass():
+    # Initialisation
+    def __init__(self):
+        # Chose to load data from file
+        self.fRea = True
+
     # Get mathematical model
     def SingleLP(self, ENM):
         # Define pyomo model
@@ -56,7 +61,6 @@ class pyeeClass():
 
         # Print results
         results = opt.solve(NModel)
-        print(results)
         NM.print(NModel)
 
     # Energy only optimisation
@@ -81,7 +85,6 @@ class pyeeClass():
 
         # Print
         results = opt.solve(EModel)
-        print(results)
         EM.print(EModel)
 
     #                           Objective function                            #
@@ -128,21 +131,23 @@ class pyeeClass():
                          initialize=0.0)
         return m
 
-    # Energy and network simulation
-    def ENSim(self, FileNameE, FileNameN):
-        # Declare pyomo model
-        mod = ConcreteModel()
-
+    # Initialise energy and network simulation
+    def Initialise_ENSim(self, FileNameE,FileNameN):
         # Degine Energy model and network models
         EM = de()
         NM = dn()
 
         # Get components of energy model
+        if self.fRea == True:
+            # Chose to load data from file
+            EM.fRea = True
+        else:
+            FileNameE = "NoName"
+
         EM.initialise(FileNameE)
-        EModel = self.SingleLP(EM)
 
         # Add hydropower units to network model
-        # CURRENLTY ASSIMUNC CHARACTERISTICS OF HYDRO
+        # CURRENLTY ASSIMUNG CHARACTERISTICS OF HYDRO
         NM.NoHyd = EM.NosVec
         NM.PosHyd = np.zeros(NM.NoHyd, dtype=int)
         NM.HydPMax = np.zeros(NM.NoHyd, dtype=int)
@@ -156,7 +161,7 @@ class pyeeClass():
 
         # Get size of network model
         NM.initialise(FileNameN)
-        
+
         # Get number of required network model copies
         NoNM = 1+EM.NodeTime[EM.s_LL_time][1] - EM.NodeTime[EM.s_LL_time][0]
 
@@ -195,19 +200,44 @@ class pyeeClass():
         self.hDL = NM.hDL
         self.h = NM.h
 
+        return (EM, NM)
+
+    # Build pyomo model
+    def build_Mod(self, EM, NM):
+        # Declare pyomo model
+        mod = ConcreteModel()
+        mod = self.SingleLP(EM)
+        
         #                                 Sets                                #
         mod = EM.getSets(mod)
         mod = NM.getSets(mod)
         mod = self.getSets(mod)
+
+         #                           Model Variables                           #
+        mod = EM.getVars(mod)
+        mod = NM.getVars(mod)
 
         #                              Parameters                             #
         mod = EM.getPar(mod)
         mod = NM.getPar(mod)
         mod = self.getPar(mod)
 
-        #                           Model Variables                           #
-        mod = EM.getVars(mod)
-        mod = NM.getVars(mod)
+        return mod
+
+
+    def add_Hydro(self, mod, HydroIn):
+        aux=np.array(HydroIn)
+        if aux.size == 1:
+            mod.WInFull[1] = HydroIn
+        else:
+            mod.WInFull[1][:] = HydroIn
+
+        return mod
+
+    # Run pyomo model
+    def Run_Mod(self, mod, EM, NM):
+        # Finalise model
+        #                      Model additional variables                     #
         mod = self.getVars(mod)
 
         #                             Constraints                             #
@@ -218,14 +248,28 @@ class pyeeClass():
         #                          Objective function                         #
         mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
-        # Optimise
+        # Optimise        
         opt = SolverFactory('glpk')
-
         # Print
         results = opt.solve(mod)
-        #instance.solutions.store_to(results)
-        print(results)
-        EM.print(mod)
+
+        return mod
+
+    # Run Energy and network combined model
+    def Run_ENSim(self, mod, EM, NM, HydroIn):
+        # Build model
+        mod = build_Mod(EM, NM)
+        # Add water
+        mod = add_Hydro(mod, HydroIn)
+        # Run model
+        Run_Mod(mod, EM, NM)
+        
+
+    # Run Energy and network combined model
+    def Print_ENSim(self, mod, EM, NM):
+        print('\n\n\n\nSo far so good')
+        # Print results
+        EM.print(mod)        
         NM.print(mod)
         print('Water outputs:')
         for xn in mod.sNodz:
@@ -234,17 +278,24 @@ class pyeeClass():
                 print("%8.4f " % aux, end='')
             print('')
         print('Water inputs:\n', mod.WInFull)
-        
-
 
 # Get object
-EN = pyeeClass()
-FileNameE = "InputsTree4Periods.json"
+EN = pyeneClass()
+FileNameT = "ResolutionTreeMonth01.json"
 FileNameN = "case4.json"
 
 # Energy simulation
 #EN.ESim(FileNameE)
 # Network simulation
 EN.NSim(FileNameN)
+aux[1000]
 # Joint simulation
-# EN.ENSim(FileNameE, FileNameN)
+# Build coupled model
+(EM, NM)=EN.Initialise_ENSim(FileNameT,FileNameN)
+mod = EN.build_Mod(EM, NM)
+# Add water
+HydroPowerIn = 5
+mod = EN.add_Hydro(mod, HydroPowerIn)
+# Run model
+mod = EN.Run_Mod(mod, EM, NM)
+EN.Print_ENSim(mod, EM, NM)

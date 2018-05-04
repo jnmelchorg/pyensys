@@ -15,7 +15,7 @@ from pyomo.opt import SolverFactory
 import numpy as np
 import networkx as nx
 import json
-
+import os
 
 # Linked lists
 class EnergyClass:
@@ -59,8 +59,10 @@ class EnergyClass:
 
     # Read input data
     def Read(self, FileName):
-        mystring = 'json\\' + FileName
-        Input_Data = json.load(open(mystring))
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+                                  FileName)
+        Input_Data = json.load(open(MODEL_JSON))
+
         return Input_Data
 
     # Measure the size of the data arrays

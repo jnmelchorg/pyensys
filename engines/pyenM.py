@@ -10,7 +10,7 @@ from pyomo.environ import *
 import numpy as np
 import networkx as nx
 import json
-
+import os
 
 class ENetworkClass:
     # Initialize
@@ -57,8 +57,9 @@ class ENetworkClass:
     # Read input data
     def Read(self, FileName):
         # Load file
-        mystring = 'json\\' + FileName
-        mpc = json.load(open(mystring))
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+                                  FileName)
+        mpc = json.load(open(MODEL_JSON))
         ENet = nx.Graph()
 
         # Adding network attributes
