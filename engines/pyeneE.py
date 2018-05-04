@@ -316,10 +316,7 @@ class EnergyClass:
 
     # Objective function
     def OF_rule(self, m):
-        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] +
-                   1000*sum(m.vDummyGen[xL1, 0, xv] +
-                            m.vDummyGen[xL1, 1, xv] for xL1 in m.sNodz)
-                   for xv in m.sVec)
+        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in m.sVec)
 
     # SoC initialisation conditiona
     def ZSoC_rule(self, m, x1, xv):
@@ -329,8 +326,7 @@ class EnergyClass:
     def SoCBalance_rule(self, m, xL1, xv):
         return (m.vSoC[xL1, 0, xv] ==
                 m.vSoC[m.LLTS1[xL1, 0], m.LLTS1[xL1, 1], xv] +
-                m.WInFull[xL1, xv] - m.WOutFull[xL1, xv] +
-                m.vDummyGen[xL1, 0, xv] - m.vDummyGen[xL1, 1, xv])
+                m.WInFull[xL1, xv] - m.WOutFull[xL1, xv])
 
     # Aggregating (deterministic case)
     def SoCAggregate_rule(self, m, xL2, xv):
@@ -381,16 +377,12 @@ class EnergyClass:
 
     # Print results
     def print(self, mod):
-        acu = 0
         for xv in mod.sVec:
             print('Vector No:', xv)
             for x1 in mod.sNodz:
                 print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
                       % mod.vSoC[x1, 0, xv].value, ", %10.2f"
                       % mod.vSoC[x1, 1, xv].value, "]")
-                for x2 in range(2):
-                    acu += mod.vDummyGen[x1, x2, xv].value
-            print("Penalty : ", acu)
 
     #                                   Sets                                  #
     def getSets(self, m):
@@ -419,8 +411,7 @@ class EnergyClass:
     def getVars(self, m):
         m.vSoC= Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
                     initialize=0.0)
-        m.vDummyGen= Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
-                         initialize=0.0)
+
         return m
 
     #                               Constraints                               #

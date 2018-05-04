@@ -537,7 +537,7 @@ class ENetworkClass:
                                    xt] -
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
-                    for x2 in range(1+m.LLN2B2[xn, 0])) ==
+                    for x2 in range(1+m.LLN2B2[xn, 0])) ==  
                 m.busData[xn, xt]-m.vFea[self.hFea[xh]+m.LLFea[xn], xt] +
                 m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
