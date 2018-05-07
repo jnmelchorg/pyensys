@@ -16,11 +16,11 @@ class ENetworkClass:
     # Initialize
     def __init__(self):
         # Default security considerations
-        self.Sec = [2, 3]
+        self.Sec = []  # [2, 3]
         # Default consideration of losses
-        self.Add_Loss = True
+        self.Add_Loss = False  # True
         # Defaulr demand time series
-        self.DemProf = [1, 1.05, 1.1]
+        self.DemProf = [1]  # [1, 1.05, 1.1]
         # Consideration of feasibility constraints
         self.Add_Fea = True
         # Default hydropower
@@ -330,28 +330,66 @@ class ENetworkClass:
     def ProcessEDem(self, ENetDem):
         # Set demand profile
         Number_Time = len(self.DemProf)
+        # Get original demand profiles
+        Demand0 = np.zeros(self.ENet.number_of_nodes(), dtype=float)
+        for xn in range(self.ENet.number_of_nodes()):
+            Demand0[xn] = ENetDem['PD'][xn]/self.ENet.graph['baseMVA']
+        # Get adjusted demand profiles
         busData = np.zeros((self.ENet.number_of_nodes(), Number_Time),
                            dtype=float)
         for xn in range(self.ENet.number_of_nodes()):
-            busData[xn][0] = ENetDem['PD'][xn]/self.ENet.graph['baseMVA']
             for xt in range(Number_Time):
-                busData[xn][xt] = busData[xn][0]*self.DemProf[xt]
+                busData[xn][xt] = Demand0[xn]*self.DemProf[xt]
 
         return Number_Time, busData
+
+    # Produce LL while removing the 'next'
+    def _getLL(self, NoLL, NoDt, DtLL):
+        # Produce LL and 'next'
+        LL = np.zeros(NoLL, dtype=int)
+        LLnext =  np.zeros(NoLL, dtype=int)
+        for xd in range(NoDt):
+            xpos =  DtLL[xd]
+            # Is it the first one?
+            if LL[xpos-1] == 0:
+                 LL[xpos-1] = xd+1
+            else:
+                while LLnext[xpos-1] != 0:
+                    xpos = LLnext[xpos-1]
+                LLnext[xpos-1] = xd+1
+
+        # Sort data so that the 'next' can be removed
+        LL1 = np.zeros(NoDt+1, dtype=int)
+        LL2 = np.zeros((NoLL, 2), dtype=int)
+        xL = 1
+        for xn in range(NoLL):
+            xpos = LL[xn]
+            if xpos != 0:
+                LL2[xn][0] = xL
+                # Add generators
+                while xpos != 0:
+                    LL1[xL] = xpos
+                    xpos = LLnext[xpos-1]
+                    xL += 1
+                LL2[xn][1] = xL-1
+
+        return (LL1, LL2)
 
     # Process generator parameters
     def ProcessEGen(self, ENetGen, ENetCost):
         GenMax = ENetGen['PMAX']
         GenMin = ENetGen['PMIN']
+        # Number of generators
+
+        # Get LL for generators
+        (LLGen1, LLGen2) = self._getLL(self.ENet.number_of_nodes(), self.NoGen,
+                                       ENetGen['GEN_BUS'])
 
         NoGenC = int(sum(ENetCost['NCOST']))
-        LLGen1 = np.zeros(self.ENet.number_of_nodes(), dtype=int)
-        LLGen2 = np.zeros(NoGenC, dtype=int)
+        LLGenC = np.zeros(NoGenC, dtype=int)
         GenLCst = np.zeros((NoGenC, 2), dtype=float)
         acu = 0
         for xg in range(self.NoGen):
-            # Add location of the generator
-            LLGen1[ENetGen['GEN_BUS'][xg]-1] = xg+1
             # Number of cost parameters
             auxNo = int(ENetCost['NCOST'][xg])
 
@@ -384,7 +422,7 @@ class ENetworkClass:
                         yval[xv] += fc[xc]*xval[xv]**(auxNo-xc-1)
             # Convert parameters to LP constraints
             for x1 in range(acu, acu+auxNo):
-                LLGen2[x1] = xg
+                LLGenC[x1] = xg
             for xv in range(auxNo):
                 GenLCst[acu+xv][0] = (yval[xv+1] -
                                       yval[xv]) / (xval[xv+1]-xval[xv])
@@ -398,7 +436,7 @@ class ENetworkClass:
         for xc in range(NoGenC):
             GenLCst[xc][0] *= self.ENet.graph['baseMVA']
 
-        return (GenMax, GenMin, LLGen1, LLGen2, NoGenC, GenLCst)
+        return (GenMax, GenMin, LLGen1, LLGen2, LLGenC, NoGenC, GenLCst)
 
     # Print results
     def print(self, mod):
@@ -473,8 +511,8 @@ class ENetworkClass:
         (self.Number_Time,
          self.busData) = self.ProcessEDem(ENetDem)
 
-        (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.NoGenC,
-         self.GenLCst) = self.ProcessEGen(ENetGen, ENetCost)
+        (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.LLGenC,
+         self.NoGenC, self.GenLCst) = self.ProcessEGen(ENetGen, ENetCost)
 
         self.NoBuses = self.ENet.number_of_nodes()*(1+self.NoSec2)-1
         self.NoBranch = (self.ENet.number_of_edges() +
@@ -500,15 +538,15 @@ class ENetworkClass:
     # Maximum generation
     def EGMax_rule(self, m, xg, xt, xh):
         return m.vGen[self.hG[xh]+xg+1, xt] <= m.GenMax[xg]
-
+    
     # Minimum generation
     def EGMin_rule(self, m, xg, xt, xh):
         return m.vGen[self.hG[xh]+xg+1, xt] >= m.GenMin[xg]
 
     # Piece-wise generation costs approximation
     def EGenC_rule(self, m, xc, xt, xh):
-        return (m.vGCost[self.hGC[xh]+m.LLGen2[xc], xt] >=
-                m.vGen[self.hG[xh]+m.LLGen2[xc]+1, xt] *
+        return (m.vGCost[self.hGC[xh]+m.LLGenC[xc], xt] >=
+                m.vGen[self.hG[xh]+m.LLGenC[xc]+1, xt] *
                 m.GenLCst[xc, 0]+m.GenLCst[xc, 1])
 
     # Branch flows
@@ -531,14 +569,15 @@ class ENetworkClass:
 
     # Nodal balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
     def EBalance_rule(self, m, xn, xt, xs, xh):
-        return (m.vGen[self.hG[xh]+m.LLGen1[xn], xt] +
+        return (sum(m.vGen[self.hG[xh]+m.LLGen1[xg], xt] for xg in
+                    range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs],
                                    xt] -
                     m.vEPower_Loss[self.hEL[xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
-                    for x2 in range(1+m.LLN2B2[xn, 0])) ==  
-                m.busData[xn, xt]-m.vFea[self.hFea[xh]+m.LLFea[xn], xt] +
+                    for x2 in range(1+m.LLN2B2[xn, 0])) ==
+                m.busData[xn, xt]-m.vFea[self.hFea[xh]+m.LLFea[xn+1], xt] +
                 m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.hFE[xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
@@ -612,6 +651,7 @@ class ENetworkClass:
         m.GenMin = self.GenMin
         m.LLGen1 = self.LLGen1
         m.LLGen2 = self.LLGen2
+        m.LLGenC = self.LLGenC
         m.GenLCst = self.GenLCst
         m.ValDL = self.ValDL
         m.MaxDL = self.MaxDL
@@ -639,7 +679,7 @@ class ENetworkClass:
                        domain=NonNegativeReals, initialize=0.0)
 
         return m
-
+    
     #                               Constraints                               #
     def addCon(self, m):
         # Reference line flow
@@ -674,6 +714,6 @@ class ENetworkClass:
             m.DCLossB = Constraint(m.sBra, m.sLoss,
                                    m.sTim, self.h, rule=self.DCLossB_rule)
         else:
-            m.DCLossNo = Constraint(mod.sBra, mod.sTim, self.h,
+            m.DCLossNo = Constraint(m.sBra, m.sTim, self.h,
                                     rule=self.DCLossN_rule)
         return m

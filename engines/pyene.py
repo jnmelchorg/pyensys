@@ -129,11 +129,7 @@ class pyeneClass():
         return m
 
     # Initialise energy and network simulation
-    def Initialise_ENSim(self, FileNameE,FileNameN):
-        # Degine Energy model and network models
-        EM = de()
-        NM = dn()
-
+    def Initialise_ENSim(self, EM, NM, FileNameE,FileNameN):
         # Get components of energy model
         if self.fRea == True:
             # Chose to load data from file
@@ -267,7 +263,6 @@ class pyeneClass():
 
     # Run Energy and network combined model
     def Print_ENSim(self, mod, EM, NM):
-        print('\n\n\n\nSo far so good')
         # Print results
         EM.print(mod)        
         NM.print(mod)
@@ -279,23 +274,63 @@ class pyeneClass():
             print('')
         print('Water inputs:\n', mod.WInFull)
 
-# Get object
+    # Print initial assumptions
+    def _CheckInE(self, EM):
+        if EM.fRea:
+            print('Loading resolution tree from file')
+        else:
+            print('Predefined resolution tree')
+            print(EM.Input_Data)
+
+    # Print initial assumptions
+    def _CheckInN(self, NM):        
+        if NM.Add_Loss:
+            print('Losses are considered')
+        else:
+            print('Losses are neglected')        
+        if NM.Add_Fea:
+            print('Feasibility constrants are included')
+        else:
+            print('Feasibility constraints are neglected')
+        print('Demand multiplyiers ', NM.DemProf)
+        print('Secuity: ', NM.Sec)
+
+    # Run tests
+    def _runTests(self, EN):
+        # Get object        
+        FileNameE = "ResolutionTreeMonth01.json"
+        FileNameN = "case4.json"
+
+        # Energy simulation
+        print('\n\nTESTING ENERGY BALANCE AND AGGREGATION\n\n')
+        EN.ESim(FileNameE)
+        # Network simulation
+        print('\n\nTESTING NETWORK MODELS\n\n')
+        EN.NSim(FileNameN)
+        # Joint simulation
+        print('\n\nTESTING INTEGRATED MODEL\n\n')
+        # Creat objects
+        EM = de()
+        NM = dn()
+        # Change assumptions
+        NM.DemProf = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
+        # NM.DemProf = [1, 1.1]
+        NM.Add_Loss = True
+        # NM.Add_Fea = False
+        NM.Sec = [2, 3]
+        # Initialise objects
+        (EM, NM)=EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
+        # Check core assumptions
+        EN._CheckInE(EM)
+        EN._CheckInN(NM)
+        # Build model
+        mod = EN.build_Mod(EM, NM)        
+        # Add water
+        HydroPowerIn = 5
+        mod = EN.add_Hydro(mod, HydroPowerIn)
+        # Run model
+        mod = EN.Run_Mod(mod, EM, NM)
+        EN.Print_ENSim(mod, EM, NM)
+
 EN = pyeneClass()
-FileNameE = "ResolutionTreeMonth01.json"
-FileNameN = "case4.json"
-
-# Energy simulation
-EN.ESim(FileNameE)
-# Network simulation
-EN.NSim(FileNameN)
-
-# Joint simulation
-# Build coupled model
-(EM, NM)=EN.Initialise_ENSim(FileNameE,FileNameN)
-mod = EN.build_Mod(EM, NM)
-# Add water
-HydroPowerIn = 5
-mod = EN.add_Hydro(mod, HydroPowerIn)
-# Run model
-mod = EN.Run_Mod(mod, EM, NM)
-EN.Print_ENSim(mod, EM, NM)
+EN._runTests(EN)
