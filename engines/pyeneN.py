@@ -15,48 +15,44 @@ import os
 class ENetworkClass:
     # Initialize
     def __init__(self):
-        # Default security considerations
-        self.Sec = []  # [2, 3]
-        # Default consideration of losses
-        self.Add_Loss = False  # True
-        # Defaulr demand time series
-        self.DemProf = [1]  # [1, 1.05, 1.1]
-        # Consideration of feasibility constraints
-        self.Add_Fea = True
-        # Default hydropower
-        self.NoHyd = 0  # 3
-        self.PosHyd = [0]  # [1, 2, 3]
-        self.HydPMax = [0]  # [1000, 1000, 1000]
-        self.HydQMax = [0]  # [1000, 1000, 1000]
-        self.HydCst = [0]  # [0, 0, 0]
-        # Default intermittent renewables
-        self.NoGRes = 0  # 2
-        self.PosGRes = [0]  # [1, 2]
-        self.GResCst = [0]  # [0, 0]
-        # Default List of copies to be made
-        self.h = range(1)
-        # Default shift factor for vFlow_EPower
-        self.hFE = [0]
-        # Default shift factor for vVoltage_Angle
-        self.hVA = [0]
-        # Default shift factor for vEPower_Loss
-        self.hEL = [0]
-        # Default shift factor for vFeaB
-        self.hFB = [0]
-        # Shift factor for vFeaN
-        self.hFN = [0]
-        # Default shift factor for vGen
-        self.hG = [0]
-        # Default shift factor for vGenvGCost
-        self.hGC = [0]
-        # Default shift factor for feaibility constraints
-        self.hFea = [0]
-        # Add dynamic loads (e.g.,to model pumps)
-        self.hDL = [0]
-        self.NoDL = 0  # 2
-        self.PosDL = [0]  # [2, 3]
-        self.ValDL = [0]  # [0.001, 0.001]
-        self.MaxDL = [0]  # [1.5, 1.5]
+        # Basic settings
+        self.Settings = {
+                'Demand': [1],  # [1, 1.05, 1.1]
+                'Security': [],  # [2, 3]
+                'Losses': False,
+                'Feasibility': True
+                }
+        # Connections
+        self.Connections = {
+                'set': range(1),
+                'Flow': [0],
+                'Voltage': [0],
+                'Loss': [0],
+                'Feasibility': [0],
+                'Generation': [0],
+                'Cost': [0],
+                'Pump': [0]
+                }
+        # Hydropower
+        self.Hydropower = {
+                'Number': 0,  # 3
+                'Bus': [0],  # [1, 2, 3]
+                'Max': [0],  # [1000, 1000, 1000]
+                'Cost': [0]  # [0, 0, 0]
+                }
+        # Pumps
+        self.Pumps = {
+                'Number': 0,  # 3
+                'Bus': [0],  # [1, 2, 3]
+                'Max': [0],  # [1000, 1000, 1000]
+                'Value': [0]  # [0, 0, 0]
+                }
+        # RES
+        self.RES = {
+                'Number': 0,  # 2
+                'Bus': [0],  # [1, 2]
+                'Cost': [0]  # [0, 0]
+                }
 
     # Read input data
     def Read(self, FileName):
@@ -98,7 +94,7 @@ class ENetworkClass:
         GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
         NoOGen = len(GenNCost)
         NoCst = len(GenNCost[0])
-        NoGen = NoOGen+self.NoHyd+self.NoGRes
+        NoGen = NoOGen+self.Hydropower['Number']+self.RES['Number']
 
         # Defime generation data
         ENetGen = {
@@ -161,28 +157,27 @@ class ENetworkClass:
         ENetCost['COST'][0:NoOGen][:] = mpc['gencost']['COST']
 
         # Add renewable generation
-        if self.NoHyd > 0:
+        if self.Hydropower['Number'] > 0:
             # Adding hydro
             aux1 = NoOGen
-            aux2 = NoOGen+self.NoHyd
-            ENetGen['GEN_BUS'][aux1:aux2] = self.PosHyd
-            ENetGen['PMAX'][aux1:aux2] = self.HydPMax
-            ENetGen['QMAX'][aux1:aux2] = self.HydQMax
+            aux2 = NoOGen+self.Hydropower['Number']
+            ENetGen['GEN_BUS'][aux1:aux2] = self.Hydropower['Bus']
+            ENetGen['PMAX'][aux1:aux2] = self.Hydropower['Max']
             xg2 = -1
             for xg in range(aux1, aux2):
                 xg2 += 1
                 ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
                 # Add polinomial (linear) cost curve
-                if self.HydCst[xg2] != 0:
+                if self.Hydropower['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2
                     ENetCost['NCOST'][xg] = 2
-                    ENetCost['COST'][xg][0] = self.HydCst[xg2]
+                    ENetCost['COST'][xg][0] = self.Hydropower['Cost'][xg2]
 
-        if self.NoGRes > 0:
+        if self.RES['Number'] > 0:
             # Adding intermittent generation
-            aux1 = NoOGen+self.NoHyd
+            aux1 = NoOGen+self.Hydropower['Number']
             aux2 = NoGen
-            ENetGen['GEN_BUS'][aux1:aux2] = self.PosGRes
+            ENetGen['GEN_BUS'][aux1:aux2] = self.RES['Bus']
             xg2 = -1
             for xg in range(aux1, aux2):
                 xg2 += 1
@@ -190,10 +185,10 @@ class ENetworkClass:
                 ENetGen['QMAX'][xg] = 1000000
                 ENetGen['MBASE'][xg] = ENet.graph['baseMVA']
                 # Add polinomial (linear) cost curve
-                if self.GResCst[xg2] != 0:
+                if self.RES['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2
                     ENetCost['NCOST'][xg] = 2
-                    ENetCost['COST'][xg][0] = self.GResCst[xg2]
+                    ENetCost['COST'][xg][0] = self.RES['Cost'][xg2]
 
         return ENet, ENetDem, ENetGen, ENetCost, NoOGen, NoGen
 
@@ -261,7 +256,7 @@ class ENetworkClass:
             xb += 1
 
         # Add security considerations
-        NoSec2 = len(self.Sec)  # number of scenarios for security checks
+        NoSec2 = len(self.Settings['Security'])
         # Number of parameters required for simulating security
         NoSec1 = self.ENet.number_of_edges()+(self.ENet.number_of_edges() -
                                               1)*NoSec2
@@ -281,13 +276,13 @@ class ENetworkClass:
         for xs in range(NoSec2):
             xacu += self.ENet.number_of_nodes()
             for xb in range(self.ENet.number_of_edges()):
-                if xb+1 != self.Sec[xs]:
+                if xb+1 != self.Settings['Security'][xs]:
                     LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
                     x0 += 1
 
         # Add power losses estimation
-        if self.Add_Loss:
+        if self.Settings['Losses']:
             # Auxiliar for the cuadratic function to model losses
             # Choosing points for the lines
             aux = [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2, 1.6,
@@ -310,12 +305,12 @@ class ENetworkClass:
 
         # Add LL for dynamic loads
         LLDL = np.zeros(self.ENet.number_of_nodes(), dtype=int)
-        for xdl in range(self.NoDL):
-            LLDL[self.PosDL[xdl]-1] = xdl+1
+        for xdl in range(self.Pumps['Number']):
+            LLDL[self.Pumps['Bus'][xdl]-1] = xdl+1
 
         # Add LL for feasibility constraints (Nodes)
         LLFea = np.zeros(self.ENet.number_of_nodes()+1, dtype=int)
-        if self.Add_Fea:
+        if self.Settings['Feasibility']:
             NoFea = self.ENet.number_of_nodes()+1
             for xn in range(1, NoFea):
                 LLFea[xn] = xn
@@ -329,7 +324,7 @@ class ENetworkClass:
     # Process demand and generation parameters
     def ProcessEDem(self, ENetDem):
         # Set demand profile
-        Number_Time = len(self.DemProf)
+        Number_Time = len(self.Settings['Demand'])
         # Get original demand profiles
         Demand0 = np.zeros(self.ENet.number_of_nodes(), dtype=float)
         for xn in range(self.ENet.number_of_nodes()):
@@ -339,7 +334,7 @@ class ENetworkClass:
                            dtype=float)
         for xn in range(self.ENet.number_of_nodes()):
             for xt in range(Number_Time):
-                busData[xn][xt] = Demand0[xn]*self.DemProf[xt]
+                busData[xn][xt] = Demand0[xn]*self.Settings['Demand'][xt]
 
         return Number_Time, busData
 
@@ -347,12 +342,12 @@ class ENetworkClass:
     def _getLL(self, NoLL, NoDt, DtLL):
         # Produce LL and 'next'
         LL = np.zeros(NoLL, dtype=int)
-        LLnext =  np.zeros(NoLL, dtype=int)
+        LLnext = np.zeros(NoLL, dtype=int)
         for xd in range(NoDt):
-            xpos =  DtLL[xd]
+            xpos = DtLL[xd]
             # Is it the first one?
             if LL[xpos-1] == 0:
-                 LL[xpos-1] = xd+1
+                LL[xpos-1] = xd+1
             else:
                 while LLnext[xpos-1] != 0:
                     xpos = LLnext[xpos-1]
@@ -440,14 +435,14 @@ class ENetworkClass:
 
     # Print results
     def print(self, mod):
-        for xh in self.h:
+        for xh in self.Connections['set']:
             print("\nCASE:", xh)
 
             print("\nFlow_EGen=[")
             for xn in range(1, self.NoGen+1):
                 for x2 in mod.sTim:
-                    aux = (mod.vGen[self.hG[xh]+xn, x2].value *
-                           self.ENet.graph['baseMVA'])
+                    aux = (mod.vGen[self.Connections['Generation'][xh]+xn,
+                                    x2].value*self.ENet.graph['baseMVA'])
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -455,7 +450,8 @@ class ENetworkClass:
             print("\nFlow_EPower=[")
             for x1 in range(1, self.ENet.number_of_edges()+1):
                 for x2 in mod.sTim:
-                    aux = (mod.vFlow_EPower[self.hFE[xh]+x1, x2].value *
+                    aux = (mod.vFlow_EPower[self.Connections['Flow'][xh]+x1,
+                                            x2].value *
                            self.ENet.graph['baseMVA'])
                     print("%8.4f " % aux, end='')
                 print()
@@ -465,7 +461,8 @@ class ENetworkClass:
             print("\nVoltage_Angle=[")
             for xn in mod.sBuses:
                 for xt in mod.sTim:
-                    aux = mod.vVoltage_Angle[self.hVA[xh]+xn, xt].value
+                    aux = self.Connections['Voltage'][xh]
+                    aux = mod.vVoltage_Angle[aux+xn, xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -474,7 +471,7 @@ class ENetworkClass:
             print("\nEPower_Loss=[")
             for xb in range(1, self.ENet.number_of_edges()+1):
                 for xt in mod.sTim:
-                    aux = mod.vEPower_Loss[self.hEL[xh]+xb, xt].value
+                    aux = mod.vEPower_Loss[self.Connections['Loss'][xh]+xb, xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -483,7 +480,7 @@ class ENetworkClass:
             print("\nvGenDL=[")
             for xdl in mod.sDL:
                 for xt in mod.sTim:
-                    aux = mod.vGenDL[self.hDL[xh]+xdl, xt].value
+                    aux = mod.vGenDL[self.Connections['Pump'][xh]+xdl, xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -492,7 +489,7 @@ class ENetworkClass:
             print("\nFeas=[")
             for xf in mod.sFea:
                 for xt in mod.sTim:
-                    aux = mod.vFea[self.hFea[xh]+xf, xt].value
+                    aux = mod.vFea[self.Connections['Feasibility'][xh]+xf, xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -520,100 +517,100 @@ class ENetworkClass:
 
     # Objective function
     def OF_rule(self, m):
-        xh = self.h[0]
-        return (sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
-                    sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
+        xh = self.Connections['set'][0]
+        return (sum(sum(m.vGCost[self.Connections['Cost'][xh]+xg, xt] for xg in m.sGen) +
+                    sum(m.vFea[self.Connections['Feasibility'][xh]+xf, xt] for xf in m.sFea) *
                     1000000 for xt in m.sTim) -
-                sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
+                sum(m.ValDL[xdl]*sum(m.vGenDL[self.Connections['Pump'][xh]+xdl+1, xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
     def EPow0_rule(self, m, xt, xh):
-        return m.vFlow_EPower[self.hFE[xh], xt] == 0
+        return m.vFlow_EPower[self.Connections['Flow'][xh], xt] == 0
 
     # Reference generation
     def EGen0_rule(self, m, xt, xh):
-        return m.vGen[self.hG[xh], xt] == 0
+        return m.vGen[self.Connections['Generation'][xh], xt] == 0
 
     # Maximum generation
     def EGMax_rule(self, m, xg, xt, xh):
-        return m.vGen[self.hG[xh]+xg+1, xt] <= m.GenMax[xg]
+        return m.vGen[self.Connections['Generation'][xh]+xg+1, xt] <= m.GenMax[xg]
     
     # Minimum generation
     def EGMin_rule(self, m, xg, xt, xh):
-        return m.vGen[self.hG[xh]+xg+1, xt] >= m.GenMin[xg]
+        return m.vGen[self.Connections['Generation'][xh]+xg+1, xt] >= m.GenMin[xg]
 
     # Piece-wise generation costs approximation
     def EGenC_rule(self, m, xc, xt, xh):
-        return (m.vGCost[self.hGC[xh]+m.LLGenC[xc], xt] >=
-                m.vGen[self.hG[xh]+m.LLGenC[xc]+1, xt] *
+        return (m.vGCost[self.Connections['Cost'][xh]+m.LLGenC[xc], xt] >=
+                m.vGen[self.Connections['Generation'][xh]+m.LLGenC[xc]+1, xt] *
                 m.GenLCst[xc, 0]+m.GenLCst[xc, 1])
 
     # Branch flows
     def EFlow_rule(self, m, xt, xb, xh):
-        xaux1 = self.hVA[xh]+m.branchNo[m.LLESec1[xb, 0], 0]+m.LLESec1[xb, 1]
-        xaux2 = self.hVA[xh]+m.branchNo[m.LLESec1[xb, 0], 1]+m.LLESec1[xb, 1]
-        return (m.vFlow_EPower[self.hFE[xh]+xb+1, xt] ==
+        xaux1 = self.Connections['Voltage'][xh]+m.branchNo[m.LLESec1[xb, 0], 0]+m.LLESec1[xb, 1]
+        xaux2 = self.Connections['Voltage'][xh]+m.branchNo[m.LLESec1[xb, 0], 1]+m.LLESec1[xb, 1]
+        return (m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] ==
                 (m.vVoltage_Angle[xaux1, xt]-m.vVoltage_Angle[xaux2, xt]) /
                 m.branchData[m.LLESec1[xb, 0], 1])
 
     # Branch capacity constraint (positive)
     def EFMax_rule(self, m, xt, xb, xh):
-        return (m.vFlow_EPower[self.hFE[xh]+xb+1, xt] >=
+        return (m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] >=
                 -m.branchData[m.LLESec1[xb, 0], 3])
 
     # Branch capacity constraint (negative)
     def EFMin_rule(self, m, xt, xb, xh):
-        return (m.vFlow_EPower[self.hFE[xh]+xb+1, xt] <=
+        return (m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] <=
                 m.branchData[m.LLESec1[xb, 0], 3])
 
     # Nodal balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
     def EBalance_rule(self, m, xn, xt, xs, xh):
-        return (sum(m.vGen[self.hG[xh]+m.LLGen1[xg], xt] for xg in
+        return (sum(m.vGen[self.Connections['Generation'][xh]+m.LLGen1[xg], xt] for xg in
                     range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
-                sum(m.vFlow_EPower[self.hFE[xh] +
+                sum(m.vFlow_EPower[self.Connections['Flow'][xh] +
                                    m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs],
                                    xt] -
-                    m.vEPower_Loss[self.hEL[xh] +
+                    m.vEPower_Loss[self.Connections['Loss'][xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, xt]-m.vFea[self.hFea[xh]+m.LLFea[xn+1], xt] +
-                m.vGenDL[self.hDL[xh]+m.LLDL[xn], xt] +
-                sum(m.vFlow_EPower[self.hFE[xh] +
+                m.busData[xn, xt]-m.vFea[self.Connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
+                m.vGenDL[self.Connections['Pump'][xh]+m.LLDL[xn], xt] +
+                sum(m.vFlow_EPower[self.Connections['Flow'][xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
                                    xt] +
-                    m.vEPower_Loss[self.hEL[xh] +
+                    m.vEPower_Loss[self.Connections['Loss'][xh] +
                                    m.LLN2B1[x1+m.LLN2B2[xn, 3]], xt]/2
                     for x1 in range(1+m.LLN2B2[xn, 2])))
 
     # Power losses (Positive)
     def DCLossA_rule(self, m, xb, xb2, xt, xh):
-        return (m.vEPower_Loss[self.hEL[xh]+xb+1, xt] >=
-                (m.Loss_Con1[xb2]+m.vFlow_EPower[self.hFE[xh]+xb+1, xt] *
+        return (m.vEPower_Loss[self.Connections['Loss'][xh]+xb+1, xt] >=
+                (m.Loss_Con1[xb2]+m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] *
                  m.Loss_Con2[xb2])*m.branchData[xb, 0])
 
     # Power losses (Negative)
     def DCLossB_rule(self, m, xb, xb2, xt, xh):
-        return (m.vEPower_Loss[self.hEL[xh]+xb+1, xt] >=
+        return (m.vEPower_Loss[self.Connections['Loss'][xh]+xb+1, xt] >=
                 (m.Loss_Con1[xb2] -
-                 m.vFlow_EPower[self.hFE[xh]+xb+1, xt]*m.Loss_Con2[xb2]) *
+                 m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt]*m.Loss_Con2[xb2]) *
                 m.branchData[xb, 0])
 
     # No losses
     def DCLossN_rule(self, m, xb, xt, xh):
-        return m.vEPower_Loss[self.hEL[xh]+xb+1, xt] == 0
+        return m.vEPower_Loss[self.Connections['Loss'][xh]+xb+1, xt] == 0
 
     # Maximum capacity of dynamic loads
     def LDMax_rule(self, m, xdl, xt, xh):
-        return m.vGenDL[self.hDL[xh]+xdl, xt] <= m.MaxDL[xdl]
+        return m.vGenDL[self.Connections['Pump'][xh]+xdl, xt] <= m.MaxDL[xdl]
 
     # Initialising dynamic loads
     def LDIni_rule(self, m, xt, xh):
-        return m.vGenDL[self.hDL[xh], xt] == 0
+        return m.vGenDL[self.Connections['Pump'][xh], xt] == 0
 
     # Positions without feasibility constraints
     def setFea_rule(self, m, xt, xh):
-        return m.vFea[self.hFea[xh], xt] == 0
+        return m.vFea[self.Connections['Feasibility'][xh], xt] == 0
 
     #                                   Sets                                  #
     def getSets(self, m):
@@ -631,7 +628,7 @@ class ENetworkClass:
         m.sGenP = range(self.NoGen+1)
         m.sGenC = range(self.NoGenC+1)
         m.sGenCM = range(self.NoGenC)
-        m.sDL = range(self.NoDL)
+        m.sDL = range(self.Pumps['Number'])
         m.sFea = range(self.NoFea)
 
         return m
@@ -653,8 +650,8 @@ class ENetworkClass:
         m.LLGen2 = self.LLGen2
         m.LLGenC = self.LLGenC
         m.GenLCst = self.GenLCst
-        m.ValDL = self.ValDL
-        m.MaxDL = self.MaxDL
+        m.ValDL = self.Pumps['Value']
+        m.MaxDL = self.Pumps['Max']
         m.LLDL = self.LLDL
         m.LLFea = self.LLFea
 
@@ -662,7 +659,7 @@ class ENetworkClass:
 
     #                             Model Variables                             #
     def getVars(self, m):
-        Noh = len(self.h)
+        Noh = len(self.Connections['set'])
         m.vFlow_EPower = Var(range(Noh*(self.NoBranch+1)), m.sTim,
                              domain=Reals, initialize=0.0)
         m.vVoltage_Angle = Var(range(Noh*(self.NoBuses+1)), m.sTim,
@@ -675,7 +672,7 @@ class ENetworkClass:
                      initialize=0.0)
         m.vGCost = Var(range(Noh*self.NoGen), m.sTim, domain=NonNegativeReals,
                        initialize=0.0)
-        m.vGenDL = Var(range(Noh*(self.NoDL+1)), m.sTim,
+        m.vGenDL = Var(range(Noh*(self.Pumps['Number']+1)), m.sTim,
                        domain=NonNegativeReals, initialize=0.0)
 
         return m
@@ -683,37 +680,37 @@ class ENetworkClass:
     #                               Constraints                               #
     def addCon(self, m):
         # Reference line flow
-        m.EPow0 = Constraint(m.sTim, self.h, rule=self.EPow0_rule)
+        m.EPow0 = Constraint(m.sTim, self.Connections['set'], rule=self.EPow0_rule)
         # Reference generation
-        m.EGen0 = Constraint(m.sTim, self.h, rule=self.EGen0_rule)
+        m.EGen0 = Constraint(m.sTim, self.Connections['set'], rule=self.EGen0_rule)
         # Maximum generation
-        m.EGMax = Constraint(m.sGen, m.sTim, self.h, rule=self.EGMax_rule)
+        m.EGMax = Constraint(m.sGen, m.sTim, self.Connections['set'], rule=self.EGMax_rule)
         # Minimum generation
-        m.EGMin = Constraint(m.sGen, m.sTim, self.h, rule=self.EGMin_rule)
+        m.EGMin = Constraint(m.sGen, m.sTim, self.Connections['set'], rule=self.EGMin_rule)
         # Piece-wise generation costs approximation
-        m.EGenC = Constraint(m.sGenCM, m.sTim, self.h, rule=self.EGenC_rule)
+        m.EGenC = Constraint(m.sGenCM, m.sTim, self.Connections['set'], rule=self.EGenC_rule)
         # Branch flows
-        m.EFlow = Constraint(m.sTim, m.sSec1, self.h, rule=self.EFlow_rule)
+        m.EFlow = Constraint(m.sTim, m.sSec1, self.Connections['set'], rule=self.EFlow_rule)
         # Branch capacity constraint (positive)
-        m.EFMax = Constraint(m.sTim, m.sSec1, self.h, rule=self.EFMax_rule)
+        m.EFMax = Constraint(m.sTim, m.sSec1, self.Connections['set'], rule=self.EFMax_rule)
         # Branch capacity constraint (negative)
-        m.EFMin = Constraint(m.sTim, m.sSec1, self.h, rule=self.EFMin_rule)
+        m.EFMin = Constraint(m.sTim, m.sSec1, self.Connections['set'], rule=self.EFMin_rule)
         # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
-        m.EBalance = Constraint(m.sBus, m.sTim, m.sSec2, self.h,
+        m.EBalance = Constraint(m.sBus, m.sTim, m.sSec2, self.Connections['set'],
                                 rule=self.EBalance_rule)
         # Dinamic load maximum capacity
-        m.DLMax = Constraint(m.sDL, m.sTim, self.h, rule=self.LDMax_rule)
+        m.DLMax = Constraint(m.sDL, m.sTim, self.Connections['set'], rule=self.LDMax_rule)
         # Dinamic load initialisation
-        m.DLIni = Constraint(m.sTim, self.h, rule=self.LDIni_rule)
+        m.DLIni = Constraint(m.sTim, self.Connections['set'], rule=self.LDIni_rule)
         # Feasibility constraints
-        m.setFea = Constraint(m.sTim, self.h, rule=self.setFea_rule)
+        m.setFea = Constraint(m.sTim, self.Connections['set'], rule=self.setFea_rule)
         # Adding piece wise estimation of losses
-        if self.Add_Loss:
+        if self.Settings['Losses']:
             m.DCLossA = Constraint(m.sBra, m.sLoss,
-                                   m.sTim, self.h, rule=self.DCLossA_rule)
+                                   m.sTim, self.Connections['set'], rule=self.DCLossA_rule)
             m.DCLossB = Constraint(m.sBra, m.sLoss,
-                                   m.sTim, self.h, rule=self.DCLossB_rule)
+                                   m.sTim, self.Connections['set'], rule=self.DCLossB_rule)
         else:
-            m.DCLossNo = Constraint(m.sBra, m.sTim, self.h,
+            m.DCLossNo = Constraint(m.sBra, m.sTim, self.Connections['set'],
                                     rule=self.DCLossN_rule)
         return m

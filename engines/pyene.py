@@ -142,16 +142,14 @@ class pyeneClass():
 
         # Add hydropower units to network model
         # CURRENLTY ASSIMUNG CHARACTERISTICS OF HYDRO
-        NM.NoHyd = EM.NosVec
-        NM.PosHyd = np.zeros(NM.NoHyd, dtype=int)
-        NM.HydPMax = np.zeros(NM.NoHyd, dtype=int)
-        NM.HydQMax = np.zeros(NM.NoHyd, dtype=int)
-        NM.HydCst = np.zeros(NM.NoHyd, dtype=float)
+        NM.Hydropower['Number'] = EM.NosVec
+        NM.Hydropower['Bus'] = np.zeros(NM.Hydropower['Number'], dtype=int)
+        NM.Hydropower['Max'] = np.zeros(NM.Hydropower['Number'], dtype=int)
+        NM.Hydropower['Cost'] = np.zeros(NM.Hydropower['Number'], dtype=float)
         for xv in range(EM.NosVec):
-            NM.PosHyd[xv] = xv+1
-            NM.HydPMax[xv] = 1000
-            NM.HydQMax[xv] = 1000
-            NM.HydCst[xv] = 0.0001  # Assigning a small cost to hidropower
+            NM.Hydropower['Bus'][xv] = xv+1
+            NM.Hydropower['Max'][xv] = 1000
+            NM.Hydropower['Cost'][xv] = 0.0001
 
         # Get size of network model
         NM.initialise(FileNameN)
@@ -159,43 +157,36 @@ class pyeneClass():
         # Get number of required network model copies
         NoNM = 1+EM.NodeTime[EM.s_LL_time][1] - EM.NodeTime[EM.s_LL_time][0]
 
-        # Settings for copying the network model
-        NM.h = range(NoNM)
-        NM.hFE = np.zeros(NoNM, dtype=int)
-        NM.hVA = np.zeros(NoNM, dtype=int)
-        NM.hEL = np.zeros(NoNM, dtype=int)
-        NM.hFB = np.zeros(NoNM, dtype=int)
-        NM.hFN = np.zeros(NoNM, dtype=int)
-        NM.hG = np.zeros(NoNM, dtype=int)
-        NM.hGC = np.zeros(NoNM, dtype=int)
-        NM.hDL = np.zeros(NoNM, dtype=int)
-        NM.hFea = np.zeros(NoNM, dtype=int)
+        NM.Connections['set'] = range(NoNM)
+        NM.Connections['Flow'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Voltage'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Loss'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Generation'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Cost'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Pump'] = np.zeros(NoNM, dtype=int)
+        NM.Connections['Feasibility'] = np.zeros(NoNM, dtype=int)
         # Location of each copy
-        for xc in NM.h:
-            NM.hFE[xc] = xc*(NM.NoBranch+1)
-            NM.hVA[xc] = xc*(NM.NoBuses+1)
-            NM.hEL[xc] = xc*(NM.ENet.number_of_edges()+1)
-            NM.hFB[xc] = xc*NM.ENet.number_of_edges()
-            NM.hFN[xc] = xc*NM.ENet.number_of_nodes()
-            NM.hG[xc] = xc*(NM.NoGen+1)
-            NM.hGC[xc] = xc*NM.NoGen
-            NM.hDL[xc] = xc*(NM.NoDL+1)
-            NM.hFea[xc] = xc*NM.NoFea
+        for xc in NM.Connections['set']:
+            NM.Connections['Flow'][xc] = xc*(NM.NoBranch+1)
+            NM.Connections['Voltage'][xc] = xc*(NM.NoBuses+1)
+            NM.Connections['Loss'][xc] = xc*(NM.ENet.number_of_edges()+1)
+            NM.Connections['Generation'][xc] = xc*(NM.NoGen+1)
+            NM.Connections['Cost'][xc] = xc*NM.NoGen
+            NM.Connections['Pump'][xc] = xc*(NM.Pumps['Number']+1)
+            NM.Connections['Feasibility'][xc] = xc*NM.NoFea
 
         # Build LL to link the models through hydro consumption
         self.NoLL = 1+EM.NodeTime[EM.s_LL_time][1]-EM.NodeTime[EM.s_LL_time][0]
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
         for xc in range(self.NoLL):
             self.LLENM[xc][:] = [EM.NodeTime[EM.s_LL_time][0]+xc,
-                                 NM.hG[xc]+NM.NoOGen+1]
+                                 NM.Connections['Generation'][xc]+NM.NoOGen+1]
 
         # Taking sets for modelling local objective function
-        self.hGC = NM.hGC
-        self.hFB = NM.hFB
-        self.hFN = NM.hFN
-        self.hDL = NM.hDL
-        self.hFea = NM.hFea
-        self.h = NM.h
+        self.hGC = NM.Connections['Cost']
+        self.hDL = NM.Connections['Pump']
+        self.hFea = NM.Connections['Feasibility']
+        self.h = NM.Connections['set']
 
         return (EM, NM)
 
@@ -285,16 +276,16 @@ class pyeneClass():
 
     # Print initial assumptions
     def _CheckInN(self, NM):
-        if NM.Add_Loss:
+        if NM.Settings['Losses']:
             print('Losses are considered')
         else:
             print('Losses are neglected')
-        if NM.Add_Fea:
+        if NM.Settings['Feasibility']:
             print('Feasibility constrants are included')
         else:
             print('Feasibility constraints are neglected')
-        print('Demand multiplyiers ', NM.DemProf)
-        print('Secuity: ', NM.Sec)
+        print('Demand multiplyiers ', NM.Settings['Demand'])
+        print('Secuity: ', NM.Settings['Security'])
 
     # Read time series for demand and RES
     def ReadTimeS(self, FileName):
@@ -415,12 +406,10 @@ class pyeneClass():
 #        print(LLRESType)
 #        print(RESProfiles)
 #        aux[1000]
+        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
+        NM.Settings['Losses'] = True
+        NM.Settings['Security'] = [2, 3]
 
-        NM.DemProf = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
-        # NM.DemProf = [1, 1.1]
-        NM.Add_Loss = True
-        # NM.Add_Fea = False
-        NM.Sec = [2, 3]
         # Initialise objects
         (EM, NM)=EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
         # Check core assumptions
