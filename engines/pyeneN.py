@@ -12,9 +12,10 @@ import networkx as nx
 import json
 import os
 
+
 class ENetworkClass:
     # Initialize
-    def __init__(self):        
+    def __init__(self):
         # Basic settings
         self.Settings = {
                 'Demand': [1],  # [1, 1.05, 1.1]
@@ -511,7 +512,8 @@ class ENetworkClass:
             print("\nEPower_Loss=[")
             for xb in range(1, self.ENet.number_of_edges()+1):
                 for xt in mod.sTim:
-                    aux = mod.vEPower_Loss[self.Connections['Loss'][xh]+xb, xt].value
+                    aux = mod.vEPower_Loss[self.Connections['Loss'][xh]+xb,
+                                           xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -520,7 +522,8 @@ class ENetworkClass:
             print("\nvGenDL=[")
             for xdl in mod.sDL:
                 for xt in mod.sTim:
-                    aux = mod.vGenDL[self.Connections['Pump'][xh]+xdl, xt].value
+                    aux = mod.vGenDL[self.Connections['Pump'][xh]+xdl,
+                                     xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -529,7 +532,8 @@ class ENetworkClass:
             print("\nFeas=[")
             for xf in mod.sFea:
                 for xt in mod.sTim:
-                    aux = mod.vFea[self.Connections['Feasibility'][xh]+xf, xt].value
+                    aux = mod.vFea[self.Connections['Feasibility'][xh]+xf,
+                                   xt].value
                     print("%8.4f " % aux, end='')
                 print()
             print("];")
@@ -557,10 +561,13 @@ class ENetworkClass:
     # Objective function
     def OF_rule(self, m):
         xh = self.Connections['set'][0]
-        return (sum(sum(m.vGCost[self.Connections['Cost'][xh]+xg, xt] for xg in m.sGen) +
-                    sum(m.vFea[self.Connections['Feasibility'][xh]+xf, xt] for xf in m.sFea) *
+        return (sum(sum(m.vGCost[self.Connections['Cost'][xh]+xg, xt]
+                        for xg in m.sGen) +
+                    sum(m.vFea[self.Connections['Feasibility'][xh]+xf, xt]
+                        for xf in m.sFea) *
                     1000000 for xt in m.sTim) -
-                sum(m.ValDL[xdl]*sum(m.vGenDL[self.Connections['Pump'][xh]+xdl+1, xt]
+                sum(m.ValDL[xdl]*sum(m.vGenDL[self.Connections['Pump'][xh] +
+                                              xdl+1, xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
@@ -573,11 +580,13 @@ class ENetworkClass:
 
     # Maximum generation
     def EGMax_rule(self, m, xg, xt, xh):
-        return m.vGen[self.Connections['Generation'][xh]+xg+1, xt] <= m.GenMax[xg]
-    
+        return (m.vGen[self.Connections['Generation'][xh]+xg+1, xt] <=
+                m.GenMax[xg])
+
     # Minimum generation
     def EGMin_rule(self, m, xg, xt, xh):
-        return m.vGen[self.Connections['Generation'][xh]+xg+1, xt] >= m.GenMin[xg]
+        return (m.vGen[self.Connections['Generation'][xh]+xg+1, xt] >=
+                m.GenMin[xg])
 
     # Piece-wise generation costs approximation
     def EGenC_rule(self, m, xc, xt, xh):
@@ -587,8 +596,9 @@ class ENetworkClass:
 
     # Branch flows
     def EFlow_rule(self, m, xt, xb, xh):
-        xaux1 = self.Connections['Voltage'][xh]+m.branchNo[m.LLESec1[xb, 0], 0]+m.LLESec1[xb, 1]
-        xaux2 = self.Connections['Voltage'][xh]+m.branchNo[m.LLESec1[xb, 0], 1]+m.LLESec1[xb, 1]
+        aux = self.Connections['Voltage'][xh]+m.LLESec1[xb, 1]
+        xaux1 = aux+m.branchNo[m.LLESec1[xb, 0], 0]
+        xaux2 = aux+m.branchNo[m.LLESec1[xb, 0], 1]
         return (m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] ==
                 (m.vVoltage_Angle[xaux1, xt]-m.vVoltage_Angle[xaux2, xt]) /
                 m.branchData[m.LLESec1[xb, 0], 1])
@@ -605,15 +615,16 @@ class ENetworkClass:
 
     # Nodal balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
     def EBalance_rule(self, m, xn, xt, xs, xh):
-        return (sum(m.vGen[self.Connections['Generation'][xh]+m.LLGen1[xg], xt] for xg in
-                    range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
+        return (sum(m.vGen[self.Connections['Generation'][xh]+m.LLGen1[xg], xt]
+                    for xg in range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
                 sum(m.vFlow_EPower[self.Connections['Flow'][xh] +
                                    m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs],
                                    xt] -
                     m.vEPower_Loss[self.Connections['Loss'][xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, xt]-m.vFea[self.Connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
+                m.busData[xn, xt]-m.vFea[self.Connections['Feasibility'][xh] +
+                                         m.LLFea[xn+1], xt] +
                 m.vGenDL[self.Connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.Connections['Flow'][xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
@@ -625,15 +636,16 @@ class ENetworkClass:
     # Power losses (Positive)
     def DCLossA_rule(self, m, xb, xb2, xt, xh):
         return (m.vEPower_Loss[self.Connections['Loss'][xh]+xb+1, xt] >=
-                (m.Loss_Con1[xb2]+m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] *
+                (m.Loss_Con1[xb2]+m.vFlow_EPower[self.Connections['Flow'][xh] +
+                                                 xb+1, xt] *
                  m.Loss_Con2[xb2])*m.branchData[xb, 0])
 
     # Power losses (Negative)
     def DCLossB_rule(self, m, xb, xb2, xt, xh):
         return (m.vEPower_Loss[self.Connections['Loss'][xh]+xb+1, xt] >=
                 (m.Loss_Con1[xb2] -
-                 m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt]*m.Loss_Con2[xb2]) *
-                m.branchData[xb, 0])
+                 m.vFlow_EPower[self.Connections['Flow'][xh]+xb+1, xt] *
+                 m.Loss_Con2[xb2])*m.branchData[xb, 0])
 
     # No losses
     def DCLossN_rule(self, m, xb, xt, xh):
@@ -715,7 +727,7 @@ class ENetworkClass:
                        domain=NonNegativeReals, initialize=0.0)
 
         return m
-    
+
     #                               Constraints                               #
     def addCon(self, m):
         # Reference line flow

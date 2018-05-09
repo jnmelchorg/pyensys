@@ -399,11 +399,6 @@ class pyeneClass():
             aux2 = LLRESPeriod[LLRESType[xt][0]+opt][1]+1
             RESProfiles[acu:acu+aux2-aux1][:] = RESProfs[aux1:aux2][:]
             acu += aux2-aux1
-        # RESProfiles
-        # LLRESLink
-#        print(LLRESPeriod)
-#        print(LLRESType)
-#        print(RESProfiles)
         NM.Settings['Demand'] = DemandProfiles[opt][:]
         NM.Settings['NoTime'] = Nohr
 #        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
