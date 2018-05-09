@@ -386,27 +386,27 @@ class pyeneClass():
         NM = dn()
         # Change assumptions
         # Load demand and RES profile
-#        FileName = "TimeSeries.json"
-#        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP, LLRESType,
-#         LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr) =self.ReadTimeS(FileName)
-#        # Choose a given scenario
-#        opt = 0        
-#        RESProfiles = np.zeros((NoLink, Nohr), dtype=float)
-#        print(NoLink)
-#        acu = 0
-#        for xt in range(NoRESP):
-#            aux1 = LLRESPeriod[LLRESType[xt][0]+opt][0]
-#            aux2 = LLRESPeriod[LLRESType[xt][0]+opt][1]+1
-#            RESProfiles[acu:acu+aux2-aux1][:] = RESProfs[aux1:aux2][:]
-#            acu += aux2-aux1
-#        NM.DemProf = DemandProfiles[opt][:]
-#        # RESProfiles
-#        # LLRESLink
+        FileName = "TimeSeries.json"
+        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP, LLRESType,
+         LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr) =self.ReadTimeS(FileName)
+        # Choose a given scenario
+        opt = 0        
+        RESProfiles = np.zeros((NoLink, Nohr), dtype=float)
+        print(NoLink)
+        acu = 0
+        for xt in range(NoRESP):
+            aux1 = LLRESPeriod[LLRESType[xt][0]+opt][0]
+            aux2 = LLRESPeriod[LLRESType[xt][0]+opt][1]+1
+            RESProfiles[acu:acu+aux2-aux1][:] = RESProfs[aux1:aux2][:]
+            acu += aux2-aux1
+        # RESProfiles
+        # LLRESLink
 #        print(LLRESPeriod)
 #        print(LLRESType)
 #        print(RESProfiles)
-#        aux[1000]
-        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
+        NM.Settings['Demand'] = DemandProfiles[opt][:]
+        NM.Settings['NoTime'] = Nohr
+#        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
         NM.Settings['Losses'] = True
         NM.Settings['Security'] = [2, 3]
 

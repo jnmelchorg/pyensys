@@ -14,10 +14,14 @@ import os
 
 class ENetworkClass:
     # Initialize
-    def __init__(self):
+    def __init__(self):        
         # Basic settings
         self.Settings = {
                 'Demand': [1],  # [1, 1.05, 1.1]
+                'Bus': 'All',
+                'FixedBus': [],
+                'NoTime': 1,
+                'Links': 'Default',
                 'Security': [],  # [2, 3]
                 'Losses': False,
                 'Feasibility': True
@@ -155,6 +159,31 @@ class ENetworkClass:
         ENetCost['SHUTDOWN'][0:NoOGen] = mpc['gencost']['SHUTDOWN']
         ENetCost['NCOST'][0:NoOGen] = mpc['gencost']['NCOST']
         ENetCost['COST'][0:NoOGen][:] = mpc['gencost']['COST']
+
+        # Adjust demand dimensions
+        self.Settings['Demand'] = np.asarray(self.Settings['Demand'])
+        # Add demand nodes and links
+        if self.Settings['Bus'] == 'All':
+            self.Settings['Bus'] = list(range(1, ENet.number_of_nodes()+1))
+        Noaux = len(self.Settings['Bus'])
+        if self.Settings['Links'] == 'Default':
+            self.Settings['Links'] = np.ones(Noaux, dtype=int)
+        if Noaux == ENet.number_of_nodes():
+            self.Settings['FixedBus'] = []
+        else:
+            # Non sequential search for missing buses
+            aux = list(range(ENet.number_of_nodes()+1))
+            print(self.Settings['Bus'])
+            for xb in range(Noaux):
+                aux[self.Settings['Bus'][xb]-1] = aux[self.Settings['Bus'][xb]]
+            # Store list with missing buses
+            self.Settings['FixedBus'] = np.zeros(Noaux, dtype=int)
+            xpos = aux[0]
+            xb = 0
+            while xpos < ENet.number_of_nodes():
+                self.Settings['FixedBus'][xb] = xpos+1
+                xb += 1
+                xpos = aux[xpos+1]
 
         # Add renewable generation
         if self.Hydropower['Number'] > 0:
@@ -323,20 +352,31 @@ class ENetworkClass:
 
     # Process demand and generation parameters
     def ProcessEDem(self, ENetDem):
-        # Set demand profile
-        Number_Time = len(self.Settings['Demand'])
         # Get original demand profiles
         Demand0 = np.zeros(self.ENet.number_of_nodes(), dtype=float)
         for xn in range(self.ENet.number_of_nodes()):
             Demand0[xn] = ENetDem['PD'][xn]/self.ENet.graph['baseMVA']
         # Get adjusted demand profiles
-        busData = np.zeros((self.ENet.number_of_nodes(), Number_Time),
-                           dtype=float)
-        for xn in range(self.ENet.number_of_nodes()):
-            for xt in range(Number_Time):
-                busData[xn][xt] = Demand0[xn]*self.Settings['Demand'][xt]
+        busData = np.zeros((self.ENet.number_of_nodes(),
+                            self.Settings['NoTime']), dtype=float)
+        if self.Settings['Demand'].ndim == 1:
+            for xb in self.Settings['Bus']:
+                xn = xb-1
+                for xt in range(self.Settings['NoTime']):
+                    busData[xn][xt] = Demand0[xn]*self.Settings['Demand'][xt]
+        else:
+            for xb in self.Settings['Bus']:
+                xn = xb-1
+                aux = self.Settings['Links'][xn]-1
+                for xt in range(self.Settings['NoTime']):
+                    busData[xn][xt] = (Demand0[xn] *
+                                       self.Settings['Demand'][aux][xt])
+        for xb in self.Settings['FixedBus']:
+            xn = xb-1
+            for xt in range(self.Settings['NoTime']):
+                busData[xn][xt] = Demand0[xn]
 
-        return Number_Time, busData
+        return busData
 
     # Produce LL while removing the 'next'
     def _getLL(self, NoLL, NoDt, DtLL):
@@ -505,8 +545,7 @@ class ENetworkClass:
          self.NoSec1, self.NoSec2, self.Loss_Con1, self.Loss_Con2, self.LLDL,
          self.NoFea, self.LLFea) = self.ProcessENet()
 
-        (self.Number_Time,
-         self.busData) = self.ProcessEDem(ENetDem)
+        self.busData = self.ProcessEDem(ENetDem)
 
         (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.LLGenC,
          self.NoGenC, self.GenLCst) = self.ProcessEGen(ENetGen, ENetCost)
@@ -617,7 +656,7 @@ class ENetworkClass:
         m.sBra = range(self.ENet.number_of_edges())
         m.sBraP = range(self.ENet.number_of_edges()+1)
         m.sBus = range(self.ENet.number_of_nodes())
-        m.sTim = range(self.Number_Time)
+        m.sTim = range(self.Settings['NoTime'])
         m.sLoss = range(self.Number_LossCon)
         m.sBranch = range(self.NoBranch+1)
         m.sBuses = range(self.NoBuses+1)
