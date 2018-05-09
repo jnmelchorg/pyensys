@@ -17,6 +17,7 @@ import networkx as nx
 import json
 import os
 
+
 # Linked lists
 class EnergyClass:
     # Initialize
@@ -108,11 +109,10 @@ class EnergyClass:
                 if self.NosVec == 1:
                     if auxI.ndim == 1:
                         WIn[acu+x2][0] = auxI[x2]
-                        WOut[acu+x2][0] = auxO[x2]                        
+                        WOut[acu+x2][0] = auxO[x2]
                     else:
                         WIn[acu+x2][0] = auxI[0][x2]
                         WOut[acu+x2][0] = auxO[0][x2]
-                        
                 else:
                     if auxI.ndim == 1:
                         for xv in range(self.NosVec):

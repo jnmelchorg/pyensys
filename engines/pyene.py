@@ -18,6 +18,7 @@ from pyeneE import EnergyClass as de  # Energy balance/aggregation component
 import json
 import os
 
+
 class pyeneClass():
     # Initialisation
     def __init__(self):
@@ -130,9 +131,9 @@ class pyeneClass():
         return m
 
     # Initialise energy and network simulation
-    def Initialise_ENSim(self, EM, NM, FileNameE,FileNameN):
+    def Initialise_ENSim(self, EM, NM, FileNameE, FileNameN):
         # Get components of energy model
-        if self.fRea == True:
+        if self.fRea:
             # Chose to load data from file
             EM.fRea = True
         else:
@@ -195,13 +196,13 @@ class pyeneClass():
         # Declare pyomo model
         mod = ConcreteModel()
         mod = self.SingleLP(EM)
-        
+
         #                                 Sets                                #
         mod = EM.getSets(mod)
         mod = NM.getSets(mod)
         mod = self.getSets(mod)
 
-         #                           Model Variables                           #
+        #                           Model Variables                           #
         mod = EM.getVars(mod)
         mod = NM.getVars(mod)
 
@@ -212,9 +213,9 @@ class pyeneClass():
 
         return mod
 
-
+    # Adding hydropower
     def add_Hydro(self, mod, HydroIn):
-        aux=np.array(HydroIn)
+        aux = np.array(HydroIn)
         if aux.size == 1:
             mod.WInFull[1] = HydroIn
         else:
@@ -236,7 +237,7 @@ class pyeneClass():
         #                          Objective function                         #
         mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
-        # Optimise        
+        # Optimise
         opt = SolverFactory('glpk')
         # Print
         results = opt.solve(mod)
@@ -246,17 +247,16 @@ class pyeneClass():
     # Run Energy and network combined model
     def Run_ENSim(self, mod, EM, NM, HydroIn):
         # Build model
-        mod = build_Mod(EM, NM)
+        mod = self.build_Mod(EM, NM)
         # Add water
-        mod = add_Hydro(mod, HydroIn)
+        mod = self.add_Hydro(mod, HydroIn)
         # Run model
-        Run_Mod(mod, EM, NM)
-        
+        self.Run_Mod(mod, EM, NM)
 
     # Run Energy and network combined model
     def Print_ENSim(self, mod, EM, NM):
         # Print results
-        EM.print(mod)        
+        EM.print(mod)
         NM.print(mod)
         print('Water outputs:')
         for xn in mod.sNodz:
@@ -320,33 +320,34 @@ class pyeneClass():
         else:
             # Location of each type of RES generation technology
             LLRESType = np.zeros((NoRESP, 2), dtype=int)
-            acu = -1
+            NoRES = -1
             xt = -1
-            NoRes = np.zeros((NoRESP, 3), dtype=int)
+            sRes = np.zeros((NoRESP, 3), dtype=int)
             NoLink = 0
             for xr in RESTypes:
                 xt += 1
                 # Get number of periods and links
-                NoRes[xt][0] = len(Profile_Data[xr]['Period'])
-                NoRes[xt][1] = max(Profile_Data[xr]['Links'])
-                NoRes[xt][2] = len(Profile_Data[xr]['Bus'])
-                LLRESType[xt][:] = [acu+1, acu+NoRes[xt][0]]
-                acu += NoRes[xt][0]
-                NoLink += NoRes[xt][1]
+                sRes[xt][0] = len(Profile_Data[xr]['Period'])
+                sRes[xt][1] = max(Profile_Data[xr]['Links'])
+                sRes[xt][2] = len(Profile_Data[xr]['Bus'])
+                LLRESType[xt][:] = [NoRES+1, NoRES+sRes[xt][0]]
+                NoRES += sRes[xt][0]
+                NoLink += sRes[xt][1]
 
             # Location of data for each period
-            LLRESPeriod = np.zeros((acu+1, 2), dtype=int)
-            LLRESLink = np.zeros((acu, 2), dtype=int)
+            LLRESPeriod = np.zeros((NoRES+1, 2), dtype=int)
+            RESBus = np.zeros(NoRES, dtype=int)
+            RESLink = np.zeros(NoRES, dtype=int)
             xL = -1
             acu = -1
             for xt in range(NoRESP):
-                for xp in range(NoRes[xt][0]):
+                for xp in range(sRes[xt][0]):
                     xL += 1
-                    LLRESPeriod[xL][:] = [acu+1, acu+NoRes[xt][1]]
-                    acu += NoRes[xt][1]
+                    LLRESPeriod[xL][:] = [acu+1, acu+sRes[xt][1]]
+                    acu += sRes[xt][1]
 
             # RES genertaion profiles
-            if NoRes[0][0]*NoRes[0][1] == 1:
+            if sRes[0][0]*sRes[0][1] == 1:
                 Nohr = len(Profile_Data[RESTypes[0]]['Values'])
             else:
                 Nohr = len(Profile_Data[RESTypes[0]]['Values'][0])
@@ -356,29 +357,30 @@ class pyeneClass():
             for xr in RESTypes:
                 xt += 1
                 aux = Profile_Data[xr]['Values']
-                RESProfs[acu[0]:acu[0]+NoRes[xt][0]*NoRes[xt][1]][:] = aux
-                acu[0] += NoRes[xt][0]*NoRes[xt][1]
-                for xL in range(NoRes[xt][2]):                    
-                    LLRESLink[acu[1]][0] = Profile_Data[xr]['Bus'][xL]
-                    LLRESLink[acu[1]][1] = Profile_Data[xr]['Links'][xL]+acu[2]
+                RESProfs[acu[0]:acu[0]+sRes[xt][0]*sRes[xt][1]][:] = aux
+                acu[0] += sRes[xt][0]*sRes[xt][1]
+                for xL in range(sRes[xt][2]):
+                    RESBus[acu[1]] = Profile_Data[xr]['Bus'][xL]
+                    RESLink[acu[1]] = Profile_Data[xr]['Links'][xL]+acu[2]
                     acu[1] += 1
-                acu[2] += NoRes[xt][1]
+                acu[2] += sRes[xt][1]
 
-            return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP,
-                    LLRESType, LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr)
+            return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES,
+                    NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
+                    NoLink, Nohr)
 
     # Run tests
     def _runTests(self, EN):
-        # Get object        
+        # Get object
         FileNameE = "ResolutionTreeMonth01.json"
         FileNameN = "case4.json"
 
         # Energy simulation
         print('\n\nTESTING ENERGY BALANCE AND AGGREGATION\n\n')
         EN.ESim(FileNameE)
-        # Network simulation
-        print('\n\nTESTING NETWORK MODELS\n\n')
-        EN.NSim(FileNameN)
+#        # Network simulation
+#        print('\n\nTESTING NETWORK MODELS\n\n')
+#        EN.NSim(FileNameN)
         # Joint simulation
         print('\n\nTESTING INTEGRATED MODEL\n\n')
         # Creat objects
@@ -387,42 +389,47 @@ class pyeneClass():
         # Change assumptions
         # Load demand and RES profile
         FileName = "TimeSeries.json"
-        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP, LLRESType,
-         LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr) =self.ReadTimeS(FileName)
+        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+         Nohr) = self.ReadTimeS(FileName)
         # Choose a given scenario
-        opt = 0        
-        RESProfiles = np.zeros((NoLink, Nohr), dtype=float)
+        opt = 0
+        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
         acu = 0
-        for xt in range(NoRESP):
-            aux1 = LLRESPeriod[LLRESType[xt][0]+opt][0]
-            aux2 = LLRESPeriod[LLRESType[xt][0]+opt][1]+1
-            RESProfiles[acu:acu+aux2-aux1][:] = RESProfs[aux1:aux2][:]
-            acu += aux2-aux1
+        for xr in range(NoRESP):
+            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
+            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
+            for xs in range(aux1, aux2):
+                for xt in range(Nohr):
+                    RESProfiles[acu] = RESProfs[xs][xt]
+                    acu += 1
         NM.Settings['Demand'] = DemandProfiles[opt][:]
         NM.Settings['NoTime'] = Nohr
-        NM.Settings['Demand'] = [0.8, 0.9, 1]
-        NM.Settings['NoTime'] = 3
-        NM.RES['Number'] = 1
-        NM.RES['Bus'] = [2]
-        NM.RES['RES'] = [0.1, 0.2, 0.3]
-
-#        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
+        NM.RES['Number'] = NoRES
+        NM.RES['Bus'] = RESBus
+        NM.RES['Link'] = RESLink
+        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
+        NM.RES['RES'] = RESProfiles
+        print(NM.RES['Number'])
+        print(NM.RES['Bus'])
+        print(NM.RES['Link'])
         NM.Settings['Losses'] = True
         NM.Settings['Security'] = [2, 3]
 
         # Initialise objects
-        (EM, NM)=EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
+        (EM, NM) = EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
         # Check core assumptions
         EN._CheckInE(EM)
         EN._CheckInN(NM)
         # Build model
-        mod = EN.build_Mod(EM, NM)        
+        mod = EN.build_Mod(EM, NM)
         # Add water
         HydroPowerIn = 5
         mod = EN.add_Hydro(mod, HydroPowerIn)
         # Run model
         mod = EN.Run_Mod(mod, EM, NM)
         EN.Print_ENSim(mod, EM, NM)
+
 
 EN = pyeneClass()
 EN._runTests(EN)

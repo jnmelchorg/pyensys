@@ -364,18 +364,11 @@ class ENetworkClass:
         # Get adjusted demand profiles
         busData = np.zeros((self.ENet.number_of_nodes(),
                             self.Settings['NoTime']), dtype=float)
-        if self.Settings['Demand'].ndim == 1:
-            for xb in self.Settings['Bus']:
-                xn = xb-1
-                for xt in range(self.Settings['NoTime']):
-                    busData[xn][xt] = Demand0[xn]*self.Settings['Demand'][xt]
-        else:
-            for xb in self.Settings['Bus']:
-                xn = xb-1
-                aux = self.Settings['Links'][xn]-1
-                for xt in range(self.Settings['NoTime']):
-                    busData[xn][xt] = (Demand0[xn] *
-                                       self.Settings['Demand'][aux][xt])
+        for xb in self.Settings['Bus']:
+            xn = xb-1
+            xLL = (self.Settings['Links'][xn]-1)*self.Settings['NoTime']
+            for xt in range(self.Settings['NoTime']):
+                busData[xn][xt] = Demand0[xn]*self.Settings['Demand'][xLL+xt]
         for xb in self.Settings['FixedBus']:
             xn = xb-1
             for xt in range(self.Settings['NoTime']):
@@ -387,14 +380,16 @@ class ENetworkClass:
     def _getLL(self, NoLL, NoDt, DtLL):
         # Produce LL and 'next'
         LL = np.zeros(NoLL, dtype=int)
-        LLnext = np.zeros(NoLL, dtype=int)
+        LLnext = np.zeros(NoDt, dtype=int)
         for xd in range(NoDt):
             xpos = DtLL[xd]
             # Is it the first one?
             if LL[xpos-1] == 0:
                 LL[xpos-1] = xd+1
             else:
+                xpos = LL[xpos-1]
                 while LLnext[xpos-1] != 0:
+                    print('  test ', xpos)
                     xpos = LLnext[xpos-1]
                 LLnext[xpos-1] = xd+1
 
@@ -419,7 +414,6 @@ class ENetworkClass:
     def ProcessEGen(self, ENetGen, ENetCost):
         GenMax = ENetGen['PMAX']
         GenMin = ENetGen['PMIN']
-        # Number of generators
 
         # Get LL for generators
         (LLGen1, LLGen2) = self._getLL(self.ENet.number_of_nodes(), self.NoGen,
@@ -588,9 +582,10 @@ class ENetworkClass:
                 m.GenMax[xg])
 
     # Maximum RES generation
-    def RESMax_rule(self, m, xt, xg, xh):        
+    def RESMax_rule(self, m, xt, xg, xh):
         aux = self.Connections['Generation'][xh]+self.RES['Position'][xg]
-        return m.vGen[aux, xt] <= self.RES['RES'][xt]
+        xLL = self.Settings['Links'][xg]*self.Settings['NoTime']
+        return m.vGen[aux, xt] <= self.RES['RES'][xLL+xt]
 
     # Minimum generation
     def EGMin_rule(self, m, xg, xt, xh):
