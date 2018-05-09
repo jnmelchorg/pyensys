@@ -392,7 +392,6 @@ class pyeneClass():
         # Choose a given scenario
         opt = 0        
         RESProfiles = np.zeros((NoLink, Nohr), dtype=float)
-        print(NoLink)
         acu = 0
         for xt in range(NoRESP):
             aux1 = LLRESPeriod[LLRESType[xt][0]+opt][0]
@@ -401,6 +400,12 @@ class pyeneClass():
             acu += aux2-aux1
         NM.Settings['Demand'] = DemandProfiles[opt][:]
         NM.Settings['NoTime'] = Nohr
+        NM.Settings['Demand'] = [0.8, 0.9, 1]
+        NM.Settings['NoTime'] = 3
+        NM.RES['Number'] = 1
+        NM.RES['Bus'] = [2]
+        NM.RES['RES'] = [0.1, 0.2, 0.3]
+
 #        NM.Settings['Demand'] = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
         NM.Settings['Losses'] = True
         NM.Settings['Security'] = [2, 3]

@@ -56,6 +56,8 @@ class ENetworkClass:
         self.RES = {
                 'Number': 0,  # 2
                 'Bus': [0],  # [1, 2]
+                'RES': [0],
+                'Position': [0],
                 'Cost': [0]  # [0, 0]
                 }
 
@@ -205,6 +207,8 @@ class ENetworkClass:
 
         if self.RES['Number'] > 0:
             # Adding intermittent generation
+            aux = NoOGen+self.Hydropower['Number']+1
+            self.RES['Position'] = list(range(aux, aux+self.RES['Number']))
             aux1 = NoOGen+self.Hydropower['Number']
             aux2 = NoGen
             ENetGen['GEN_BUS'][aux1:aux2] = self.RES['Bus']
@@ -583,6 +587,11 @@ class ENetworkClass:
         return (m.vGen[self.Connections['Generation'][xh]+xg+1, xt] <=
                 m.GenMax[xg])
 
+    # Maximum RES generation
+    def RESMax_rule(self, m, xt, xg, xh):        
+        aux = self.Connections['Generation'][xh]+self.RES['Position'][xg]
+        return m.vGen[aux, xt] <= self.RES['RES'][xt]
+
     # Minimum generation
     def EGMin_rule(self, m, xg, xt, xh):
         return (m.vGen[self.Connections['Generation'][xh]+xg+1, xt] >=
@@ -764,4 +773,10 @@ class ENetworkClass:
         else:
             m.DCLossNo = Constraint(m.sBra, m.sTim, self.Connections['set'],
                                     rule=self.DCLossN_rule)
+        # Adding RES limits
+        if self.RES['Number'] > 0:
+            m.RESMax = Constraint(m.sTim, range(self.RES['Number']),
+                                  self.Connections['set'],
+                                  rule=self.RESMax_rule)
+
         return m
