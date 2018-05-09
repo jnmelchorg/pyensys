@@ -15,7 +15,8 @@ from pyomo.opt import SolverFactory
 import numpy as np
 from pyeneN import ENetworkClass as dn  # Network component
 from pyeneE import EnergyClass as de  # Energy balance/aggregation component
-
+import json
+import os
 
 class pyeneClass():
     # Initialisation
@@ -283,17 +284,97 @@ class pyeneClass():
             print(EM.Input_Data)
 
     # Print initial assumptions
-    def _CheckInN(self, NM):        
+    def _CheckInN(self, NM):
         if NM.Add_Loss:
             print('Losses are considered')
         else:
-            print('Losses are neglected')        
+            print('Losses are neglected')
         if NM.Add_Fea:
             print('Feasibility constrants are included')
         else:
             print('Feasibility constraints are neglected')
         print('Demand multiplyiers ', NM.DemProf)
         print('Secuity: ', NM.Sec)
+
+    # Read time series for demand and RES
+    def ReadTimeS(self, FileName):
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+                                  FileName)
+        Profile_Data = json.load(open(MODEL_JSON))
+
+        # Get number of profiles
+        RESTypes = Profile_Data['metadata']['title']
+        NoRESP = len(RESTypes)
+
+        # Search for demand profile
+        if "Demand" in RESTypes:
+            DemandProfiles = Profile_Data['Demand']['Values']
+            BusDem = Profile_Data['Demand']['Bus']
+            LinkDem = Profile_Data['Demand']['Links']
+            NoDemPeriod = len(Profile_Data['Demand']['Period'])
+            RESTypes.remove('Demand')
+            NoRESP -= 1
+        else:
+            DemandProfiles = [1]
+            NoDemPeriod = 1
+            BusDem = 'All'
+            LinkDem = 0
+
+        # Check if there is generation data
+        if NoRESP == 0:
+            # Remove demand data
+            LLRESType = 0
+            LLRESPeriod = 0
+            RESProfs = 0
+        else:
+            # Location of each type of RES generation technology
+            LLRESType = np.zeros((NoRESP, 2), dtype=int)
+            acu = -1
+            xt = -1
+            NoRes = np.zeros((NoRESP, 3), dtype=int)
+            NoLink = 0
+            for xr in RESTypes:
+                xt += 1
+                # Get number of periods and links
+                NoRes[xt][0] = len(Profile_Data[xr]['Period'])
+                NoRes[xt][1] = max(Profile_Data[xr]['Links'])
+                NoRes[xt][2] = len(Profile_Data[xr]['Bus'])
+                LLRESType[xt][:] = [acu+1, acu+NoRes[xt][0]]
+                acu += NoRes[xt][0]
+                NoLink += NoRes[xt][1]
+
+            # Location of data for each period
+            LLRESPeriod = np.zeros((acu+1, 2), dtype=int)
+            LLRESLink = np.zeros((acu, 2), dtype=int)
+            xL = -1
+            acu = -1
+            for xt in range(NoRESP):
+                for xp in range(NoRes[xt][0]):
+                    xL += 1
+                    LLRESPeriod[xL][:] = [acu+1, acu+NoRes[xt][1]]
+                    acu += NoRes[xt][1]
+
+            # RES genertaion profiles
+            if NoRes[0][0]*NoRes[0][1] == 1:
+                Nohr = len(Profile_Data[RESTypes[0]]['Values'])
+            else:
+                Nohr = len(Profile_Data[RESTypes[0]]['Values'][0])
+            RESProfs = np.zeros((acu+1, Nohr), dtype=float)
+            acu = [0, 0, 0]
+            xt = -1
+            for xr in RESTypes:
+                xt += 1
+                aux = Profile_Data[xr]['Values']
+                RESProfs[acu[0]:acu[0]+NoRes[xt][0]*NoRes[xt][1]][:] = aux
+                acu[0] += NoRes[xt][0]*NoRes[xt][1]
+                for xL in range(NoRes[xt][2]):                    
+                    LLRESLink[acu[1]][0] = Profile_Data[xr]['Bus'][xL]
+                    LLRESLink[acu[1]][1] = Profile_Data[xr]['Links'][xL]+acu[2]
+                    acu[1] += 1
+                acu[2] += NoRes[xt][1]
+
+            return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP,
+                    LLRESType, LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr)
 
     # Run tests
     def _runTests(self, EN):
@@ -313,6 +394,28 @@ class pyeneClass():
         EM = de()
         NM = dn()
         # Change assumptions
+        # Load demand and RES profile
+#        FileName = "TimeSeries.json"
+#        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRESP, LLRESType,
+#         LLRESPeriod, RESProfs, LLRESLink, NoLink, Nohr) =self.ReadTimeS(FileName)
+#        # Choose a given scenario
+#        opt = 0        
+#        RESProfiles = np.zeros((NoLink, Nohr), dtype=float)
+#        print(NoLink)
+#        acu = 0
+#        for xt in range(NoRESP):
+#            aux1 = LLRESPeriod[LLRESType[xt][0]+opt][0]
+#            aux2 = LLRESPeriod[LLRESType[xt][0]+opt][1]+1
+#            RESProfiles[acu:acu+aux2-aux1][:] = RESProfs[aux1:aux2][:]
+#            acu += aux2-aux1
+#        NM.DemProf = DemandProfiles[opt][:]
+#        # RESProfiles
+#        # LLRESLink
+#        print(LLRESPeriod)
+#        print(LLRESType)
+#        print(RESProfiles)
+#        aux[1000]
+
         NM.DemProf = [1, 1.1, 1.2]#[0.5, 0.4, 0.5, 0.4]
         # NM.DemProf = [1, 1.1]
         NM.Add_Loss = True
