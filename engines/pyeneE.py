@@ -56,7 +56,7 @@ class EnergyClass:
                 "Inputs": np.zeros((NoVec, 2), dtype=float),
                 "Outputs": np.zeros((NoVec, 2), dtype=float),
                 "Uncertainty": False
-                }
+                }        
 
     # Read input data
     def Read(self, FileName):
@@ -67,7 +67,7 @@ class EnergyClass:
         return Input_Data
 
     # Measure the size of the data arrays
-    def Measure(self):
+    def _Measure(self):
         # Get number of time periods
         s_LL_time = len(self.Input_Data)
 
@@ -86,17 +86,31 @@ class EnergyClass:
         else:
             NosVec = len(aux)
 
-        return s_LL_time, sv_LL_time, s_LL_timeVar, s_LL_timeSum, NosVec
+        s_LL_Nodes = 1
+        aux = 1
+        for x1 in range(s_LL_time):
+            aux = aux*sv_LL_time[x1]
+            s_LL_Nodes = s_LL_Nodes + aux
+
+        # Storing data
+        self.size = {
+                'Periods': s_LL_time,  # Number of periods
+                'LenPeriods': sv_LL_time,  # Length of each period
+                'SumPeriods': s_LL_timeSum,  # Sum of period lengths
+                'Scenarios': s_LL_timeVar,  # Number of scenarios
+                'Vectors': NosVec,  # Number of vectors
+                'Nodes': s_LL_Nodes  # Number of nodes
+                }
 
     # Process the data as inputs, outputs, weights and uncertainty
     def Process(self, s_LL_timeVar, s_LL_timeSum):
-        WIn = np.zeros((s_LL_timeSum, self.NosVec), dtype=int)
-        WOut = np.zeros((s_LL_timeSum, self.NosVec), dtype=float)
+        WIn = np.zeros((s_LL_timeSum, self.size['Vectors']), dtype=int)
+        WOut = np.zeros((s_LL_timeSum, self.size['Vectors']), dtype=float)
         Wght = np.ones(s_LL_timeSum, dtype=float)
-        Unc = np.zeros(self.s_LL_time, dtype=bool)
+        Unc = np.zeros(self.size['Periods'], dtype=bool)
 
         acu = 1
-        for x1 in range(self.s_LL_time):
+        for x1 in range(self.size['Periods']):
             xtxt = chr(48+x1)
             auxI = np.asarray(self.Input_Data[xtxt]["Inputs"])
             auxO = np.asarray(self.Input_Data[xtxt]["Outputs"])
@@ -106,7 +120,7 @@ class EnergyClass:
             Unc[x1] = auxU
             for x2 in range(auxs):
                 Wght[acu+x2] = auxW[x2]
-                if self.NosVec == 1:
+                if self.size['Vectors'] == 1:
                     if auxI.ndim == 1:
                         WIn[acu+x2][0] = auxI[x2]
                         WOut[acu+x2][0] = auxO[x2]
@@ -115,11 +129,11 @@ class EnergyClass:
                         WOut[acu+x2][0] = auxO[0][x2]
                 else:
                     if auxI.ndim == 1:
-                        for xv in range(self.NosVec):
+                        for xv in range(self.size['Vectors']):
                             WIn[acu+x2][xv] = auxI[xv]
                             WOut[acu+x2][xv] = auxO[xv]
                     else:
-                        for xv in range(self.NosVec):
+                        for xv in range(self.size['Vectors']):
                             WIn[acu+x2][xv] = auxI[xv][x2]
                             WOut[acu+x2][xv] = auxO[xv][x2]
             acu += auxs
@@ -155,14 +169,8 @@ class EnergyClass:
         return LL_TimeNodeBeforeSequence, xbeforeNew
 
     # Produce connectivity matrices
-    def Connect(self, sv_LL_time, s_LL_timeVar, Unc):
+    def Connect(self, sv_LL_time, s_LL_timeVar, Unc, s_LL_Nodes):
         # Build main LL defining scenario tree connections
-        s_LL_Nodes = 1
-        aux = 1
-        for x1 in range(self.s_LL_time):
-            aux = aux*sv_LL_time[x1]
-            s_LL_Nodes = s_LL_Nodes + aux
-
         LL_TimeNodeTree = np.zeros((s_LL_Nodes, 2), dtype=int)
         LL_TimeScenarioTree = np.zeros((s_LL_Nodes, 2), dtype=int)
         LL_TimeNodeTree[0][0] = 1
@@ -170,7 +178,7 @@ class EnergyClass:
         LL_TimeScenarioTree[0][1] = s_LL_timeVar-1
 
         # Beginning of each time level
-        LL_TimeLevel = np.ones(self.s_LL_time+1, dtype=int)
+        LL_TimeLevel = np.ones(self.size['Periods']+1, dtype=int)
 
         # Number of branches spaning from a node
         aux1 = 1
@@ -178,7 +186,7 @@ class EnergyClass:
         aux2 = sv_LL_time[0]
         # Position in the linked list
         x1 = 0
-        for x2 in range(self.s_LL_time-1):
+        for x2 in range(self.size['Periods']-1):
             # Get position of each level of the tree
             LL_TimeLevel[x2+1] = LL_TimeLevel[x2] + aux1
             # Calculate number of new branches
@@ -195,19 +203,19 @@ class EnergyClass:
                 aux3 += s_LL_timeVar/aux1
 
         # Beginning of the final time level
-        LL_TimeLevel[self.s_LL_time] = LL_TimeLevel[self.s_LL_time-1]+aux1
+        LL_TimeLevel[self.size['Periods']] = LL_TimeLevel[self.size['Periods']-1]+aux1
 
         # Get nodes at each time level
-        NodeTime = np.zeros((self.s_LL_time+1, 2), dtype=int)
+        NodeTime = np.zeros((self.size['Periods']+1, 2), dtype=int)
         xacu1 = 0
         xacu2 = 1
-        for xt in range(self.s_LL_time):
+        for xt in range(self.size['Periods']):
             xacu2 *= sv_LL_time[xt]
             NodeTime[xt+1][:] = [xacu1+1, xacu1+xacu2]
             xacu1 += xacu2
 
         # Adding cnnection to the last set of scenarios
-        aux1 = aux1*sv_LL_time[self.s_LL_time-2]
+        aux1 = aux1*sv_LL_time[self.size['Periods']-2]
         aux3 = 0
         for x3 in range(aux1):
             x1 = x1+1
@@ -217,7 +225,7 @@ class EnergyClass:
 
         # Identify node connections in the previous period
         LL_TimeNodeBefore = np.zeros(s_LL_Nodes, dtype=int)
-        for x1 in range(LL_TimeLevel[self.s_LL_time]-1):
+        for x1 in range(LL_TimeLevel[self.size['Periods']]-1):
             # print(x1)
             x2 = LL_TimeNodeTree[x1, 0]-1
             while x2 <= LL_TimeNodeTree[x1, 1]-1:
@@ -225,7 +233,7 @@ class EnergyClass:
                 LL_TimeNodeBefore[x2] = x1
 
         # Identify node connection based on sequence of the tree
-        saux = LL_TimeLevel[self.s_LL_time]-1
+        saux = LL_TimeLevel[self.size['Periods']]-1
         xin = 1
         xlvl = 1
         xbefore = [0, 0]
@@ -238,7 +246,7 @@ class EnergyClass:
 
         # Mark nodes that face uncertainty
         LL_Unc = np.zeros(s_LL_Nodes, dtype=int)
-        for x1 in range(self.s_LL_time):
+        for x1 in range(self.size['Periods']):
             if Unc[x1] == 1:
                 x2 = LL_TimeLevel[x1]-1
                 while x2 <= LL_TimeLevel[x1+1]-2:
@@ -250,7 +258,7 @@ class EnergyClass:
         xacu1 = 1
         xacu2 = 0
         xacu3 = 1
-        for x1 in range(self.s_LL_time):
+        for x1 in range(self.size['Periods']):
             for x2 in range(xacu1):
                 for x3 in range(sv_LL_time[x1]):
                     xacu2 += 1
@@ -260,26 +268,25 @@ class EnergyClass:
 
         # Outputs
         return (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-                LL_TimeNodeBeforeSequence, LL_TimeLevel, s_LL_Nodes, NodeTime)
+                LL_TimeNodeBeforeSequence, LL_TimeLevel, NodeTime)
 
     # Build parameters for optimisation
     # This information should ultimately be included in the input file
     def Parameters(self, s_LL_Nodes, WIn, WOut, Wght, LL_WIO):
-        WInFull = np.zeros((s_LL_Nodes, self.NosVec), dtype=float)
-        WOutFull = np.zeros((s_LL_Nodes, self.NosVec), dtype=float)
+        WInFull = np.zeros((s_LL_Nodes, self.size['Vectors']), dtype=float)
+        WOutFull = np.zeros((s_LL_Nodes, self.size['Vectors']), dtype=float)
         WghtFull = np.ones(s_LL_Nodes, dtype=float)
 
         for x1 in range(s_LL_Nodes):
             WghtFull[x1] = Wght[LL_WIO[x1]]
-            for xv in range(self.NosVec):
+            for xv in range(self.size['Vectors']):
                 WInFull[x1][xv] = WIn[LL_WIO[x1]][xv]
                 WOutFull[x1][xv] = WOut[LL_WIO[x1]][xv]
 
         return WInFull, WOutFull, WghtFull
 
     # Build linked lists
-    def Link(self, Unc, LL_Unc, s_LL_Nodes, LL_TimeNodeBeforeSequence,
-             LL_TimeNodeTree):
+    def Link(self, Unc, LL_Unc, s_LL_Nodes, LL_TimeNodeBeforeSequence):
         # Build first linked lists, forward connections for energy balance
         LL1 = np.zeros((s_LL_Nodes, 2), dtype=int)
         for x1 in range(1, s_LL_Nodes):
@@ -308,8 +315,8 @@ class EnergyClass:
                 LL2[x2][2] = LL_TimeNodeBeforeSequence[x1][3]
             else:
                 LL3[x3][0] = x1
-                LL3[x3][1] = LL_TimeNodeTree[x1][0]
-                LL3[x3][2] = LL_TimeNodeTree[x1][1]-LL_TimeNodeTree[x1][0]
+                LL3[x3][1] = self.LL_TimeNodeTree[x1][0]
+                LL3[x3][2] = self.LL_TimeNodeTree[x1][1]-self.LL_TimeNodeTree[x1][0]
                 x3 += 1
 
         return LL1, LL2, LL3, NosNod, NosLL2, NosLL3
@@ -355,25 +362,38 @@ class EnergyClass:
             self.Input_Data = self.Read(FileName)
 
         # Measure the size of the data arrays
-        (self.s_LL_time, sv_LL_time, s_LL_timeVar,
-         s_LL_timeSum, self.NosVec) = self.Measure()
+        self._Measure()
 
         # Summarize the data as inputs, outputs, weights and uncertainty
         (WIn, WOut, Wght,
-         Unc) = self.Process(s_LL_timeVar, s_LL_timeSum)
+         Unc) = self.Process(self.size['Scenarios'], self.size['SumPeriods'])
 
         # Produce connectivity matrices
-        (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-         LL_TimeNodeBeforeSequence, LL_TimeLevel, s_LL_Nodes,
-         self.NodeTime) = self.Connect(sv_LL_time, s_LL_timeVar, Unc)
+        (self.LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
+         LL_TimeNodeBeforeSequence, LL_TimeLevel,
+         self.NodeTime) = self.Connect(self.size['LenPeriods'], self.size['Scenarios'], Unc, self.size['Nodes'])
 
         # Define inputs, outpurs and weights per node
         (self.WInFull, self.WOutFull,
-         self.WghtFull) = self.Parameters(s_LL_Nodes, WIn, WOut, Wght, LL_WIO)
+         self.WghtFull) = self.Parameters(self.size['Nodes'], WIn, WOut, Wght, LL_WIO)
 
         (self.LL1, self.LL2, self.LL3, self.NosNod, self.NosLL2,
-         self.NosLL3) = self.Link(Unc, LL_Unc, s_LL_Nodes,
-                                  LL_TimeNodeBeforeSequence, LL_TimeNodeTree)
+         self.NosLL3) = self.Link(Unc, LL_Unc, self.size['Nodes'],
+                                  LL_TimeNodeBeforeSequence)
+
+        # Weignts of the last time period (to be used by pyene)
+        aux = self.LL2[LL_TimeLevel[self.size['Periods']]-1, 0]
+        aux = [aux, aux+self.size['LenPeriods'][self.size['Periods']-1]]
+        self.OFpyene = self.WghtFull[aux[0]:aux[1]]
+
+        self.tree = {
+                'Before': LL_TimeNodeBeforeSequence,  # Node before
+                'After': self.LL_TimeNodeTree,  # Node after
+                'Scenarios': LL_TimeScenarioTree,  # Scenarios
+                'Uncertainty': LL_Unc,  # Flag for uncertainty
+                'InOut': LL_WIO,  # Location of inputs/outputs
+                'Time': self.NodeTime,  # Nodes in each time level
+                }
 
     # Print results
     def print(self, mod):
@@ -392,7 +412,7 @@ class EnergyClass:
         m.sLLTS2 = range(self.NosLL2+1)
         m.sLLTS3 = range(self.NosLL3+1)
         m.FUnc = self.NosLL3
-        m.sVec = range(self.NosVec)
+        m.sVec = range(self.size['Vectors'])
 
         return m
 

@@ -93,9 +93,10 @@ class pyeneClass():
     def OF_rule(self, m):
         return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                       1000000 for xt in m.sTim) -
+                       1000000 for xt in m.sTim) * self.OFaux[xh] -
                    sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
-                                        for xt in m.sTim) for xdl in m.sDL)
+                                        for xt in m.sTim) for xdl in m.sDL) *
+                   self.OFaux[xh]
                    for xh in self.h)
 
     # Water consumption depends on water use by the electricity system
@@ -143,11 +144,11 @@ class pyeneClass():
 
         # Add hydropower units to network model
         # CURRENLTY ASSIMUNG CHARACTERISTICS OF HYDRO
-        NM.Hydropower['Number'] = EM.NosVec
+        NM.Hydropower['Number'] = EM.size['Vectors']
         NM.Hydropower['Bus'] = np.zeros(NM.Hydropower['Number'], dtype=int)
         NM.Hydropower['Max'] = np.zeros(NM.Hydropower['Number'], dtype=int)
         NM.Hydropower['Cost'] = np.zeros(NM.Hydropower['Number'], dtype=float)
-        for xv in range(EM.NosVec):
+        for xv in range(EM.size['Vectors']):
             NM.Hydropower['Bus'][xv] = xv+1
             NM.Hydropower['Max'][xv] = 1000
             NM.Hydropower['Cost'][xv] = 0.0001
@@ -156,7 +157,7 @@ class pyeneClass():
         NM.initialise(FileNameN)
 
         # Get number of required network model copies
-        NoNM = 1+EM.NodeTime[EM.s_LL_time][1] - EM.NodeTime[EM.s_LL_time][0]
+        NoNM = 1+EM.NodeTime[EM.size['Periods']][1] - EM.NodeTime[EM.size['Periods']][0]
 
         NM.Connections['set'] = range(NoNM)
         NM.Connections['Flow'] = np.zeros(NoNM, dtype=int)
@@ -177,10 +178,10 @@ class pyeneClass():
             NM.Connections['Feasibility'][xc] = xc*NM.NoFea
 
         # Build LL to link the models through hydro consumption
-        self.NoLL = 1+EM.NodeTime[EM.s_LL_time][1]-EM.NodeTime[EM.s_LL_time][0]
+        self.NoLL = 1+EM.NodeTime[EM.size['Periods']][1]-EM.NodeTime[EM.size['Periods']][0]
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
         for xc in range(self.NoLL):
-            self.LLENM[xc][:] = [EM.NodeTime[EM.s_LL_time][0]+xc,
+            self.LLENM[xc][:] = [EM.NodeTime[EM.size['Periods']][0]+xc,
                                  NM.Connections['Generation'][xc]+NM.NoOGen+1]
 
         # Taking sets for modelling local objective function
@@ -235,6 +236,20 @@ class pyeneClass():
         mod = self.addCon(mod)
 
         #                          Objective function                         #
+        WghtAgg = EM.WghtFull
+        self.OFaux = np.ones(len(NM.Connections['set']), dtype=float)
+        xp = 0
+        print(WghtAgg)
+        print(EM.LL_TimeNodeTree)
+        print(EM.NosNod)
+        for xn in range(EM.NosNod+1):
+            aux = EM.LL_TimeNodeTree[xn][0]
+            if aux != 0:
+                for xb in range(aux, EM.LL_TimeNodeTree[xn][1]+1):
+                    WghtAgg[xb] *= WghtAgg[xn]
+            else:
+                self.OFaux[xp] = WghtAgg[xn]
+                xp += 1
         mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
         # Optimise
@@ -372,7 +387,7 @@ class pyeneClass():
     # Run tests
     def _runTests(self, EN):
         # Get object
-        FileNameE = "ResolutionTreeMonth01.json"
+        FileNameE = "ResolutionTreeYear03.json"#"ResolutionTreeMonth01.json"#"ResolutionTreeYear03.json"#"ResolutionTreeYear01.json"#"ResolutionTreeMonth01.json"
         FileNameN = "case4.json"
 
         # Energy simulation
@@ -388,31 +403,31 @@ class pyeneClass():
         NM = dn()
         # Change assumptions
         # Load demand and RES profile
-        FileName = "TimeSeries.json"
-        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
-         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
-         Nohr) = self.ReadTimeS(FileName)
-        # Choose a given scenario
-        opt = 0
-        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
-        acu = 0
-        for xr in range(NoRESP):
-            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
-            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
-            for xs in range(aux1, aux2):
-                for xt in range(Nohr):
-                    RESProfiles[acu] = RESProfs[xs][xt]
-                    acu += 1
-        NM.Settings['Demand'] = DemandProfiles[opt][:]
-        NM.Settings['NoTime'] = Nohr
-        NM.RES['Number'] = NoRES
-        NM.RES['Bus'] = RESBus
-        NM.RES['Link'] = RESLink
-        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
-        NM.RES['RES'] = RESProfiles
-        print(NM.RES['Number'])
-        print(NM.RES['Bus'])
-        print(NM.RES['Link'])
+#        FileName = "TimeSeries.json"
+#        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+#         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+#         Nohr) = self.ReadTimeS(FileName)
+#        # Choose a given scenario
+#        opt = 0
+#        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
+#        acu = 0
+#        for xr in range(NoRESP):
+#            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
+#            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
+#            for xs in range(aux1, aux2):
+#                for xt in range(Nohr):
+#                    RESProfiles[acu] = RESProfs[xs][xt]
+#                    acu += 1
+#        NM.Settings['Demand'] = DemandProfiles[opt][:]
+#        NM.Settings['NoTime'] = Nohr
+#        NM.RES['Number'] = NoRES
+#        NM.RES['Bus'] = RESBus
+#        NM.RES['Link'] = RESLink
+#        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
+#        NM.RES['RES'] = RESProfiles
+        
+        NM.Settings['Demand'] = [1, 1.1]
+        NM.Settings['NoTime'] = 2
         NM.Settings['Losses'] = True
         NM.Settings['Security'] = [2, 3]
 
@@ -424,12 +439,13 @@ class pyeneClass():
         # Build model
         mod = EN.build_Mod(EM, NM)
         # Add water
-        HydroPowerIn = 5
+        HydroPowerIn = 300
         mod = EN.add_Hydro(mod, HydroPowerIn)
         # Run model
         mod = EN.Run_Mod(mod, EM, NM)
         EN.Print_ENSim(mod, EM, NM)
 
 
-EN = pyeneClass()
-EN._runTests(EN)
+if __name__ == '__main__':
+    EN = pyeneClass()
+    EN._runTests(EN)
