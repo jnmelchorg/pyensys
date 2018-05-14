@@ -157,7 +157,7 @@ class pyeneClass():
         NM.initialise(FileNameN)
 
         # Get number of required network model copies
-        NoNM = 1+EM.NodeTime[EM.size['Periods']][1] - EM.NodeTime[EM.size['Periods']][0]
+        NoNM = 1+EM.tree['Time'][EM.size['Periods']][1] - EM.tree['Time'][EM.size['Periods']][0]
 
         NM.Connections['set'] = range(NoNM)
         NM.Connections['Flow'] = np.zeros(NoNM, dtype=int)
@@ -178,10 +178,10 @@ class pyeneClass():
             NM.Connections['Feasibility'][xc] = xc*NM.NoFea
 
         # Build LL to link the models through hydro consumption
-        self.NoLL = 1+EM.NodeTime[EM.size['Periods']][1]-EM.NodeTime[EM.size['Periods']][0]
+        self.NoLL = 1+EM.tree['Time'][EM.size['Periods']][1]-EM.tree['Time'][EM.size['Periods']][0]
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
         for xc in range(self.NoLL):
-            self.LLENM[xc][:] = [EM.NodeTime[EM.size['Periods']][0]+xc,
+            self.LLENM[xc][:] = [EM.tree['Time'][EM.size['Periods']][0]+xc,
                                  NM.Connections['Generation'][xc]+NM.NoOGen+1]
 
         # Taking sets for modelling local objective function
@@ -236,16 +236,16 @@ class pyeneClass():
         mod = self.addCon(mod)
 
         #                          Objective function                         #
-        WghtAgg = EM.WghtFull
+        WghtAgg = EM.Weight['Node']
         self.OFaux = np.ones(len(NM.Connections['set']), dtype=float)
         xp = 0
         print(WghtAgg)
-        print(EM.LL_TimeNodeTree)
-        print(EM.NosNod)
-        for xn in range(EM.NosNod+1):
-            aux = EM.LL_TimeNodeTree[xn][0]
+        print(EM.tree['After'])
+        print(EM.LL['NosBal'])
+        for xn in range(EM.LL['NosBal']+1):
+            aux = EM.tree['After'][xn][0]
             if aux != 0:
-                for xb in range(aux, EM.LL_TimeNodeTree[xn][1]+1):
+                for xb in range(aux, EM.tree['After'][xn][1]+1):
                     WghtAgg[xb] *= WghtAgg[xn]
             else:
                 self.OFaux[xp] = WghtAgg[xn]

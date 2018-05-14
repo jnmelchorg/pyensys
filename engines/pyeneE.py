@@ -25,13 +25,13 @@ class EnergyClass:
         # Read from file
         self.fRea = False
         # Default time-step and map
-        self.Input_Data = {}
+        self.data = {}
         # Monthly resolution
         NoVec = 3
         aux = np.zeros(NoVec, dtype=float)
         for x in range(NoVec):
             aux[x] = 5+x
-        self.Input_Data["0"] = {
+        self.data["0"] = {
                 "Title": "Month",
                 "Names": ["typical"],
                 "Weights": [1],
@@ -40,7 +40,7 @@ class EnergyClass:
                 "Uncertainty": False
                 }
         # Typical number of weeks in a month
-        self.Input_Data["1"] = {
+        self.data["1"] = {
                 "Title": "Weeks",
                 "Names": ["typical"],
                 "Weights": [4.3333],
@@ -49,7 +49,7 @@ class EnergyClass:
                 "Uncertainty": False
                 }
         # Representation of a week
-        self.Input_Data["2"] = {
+        self.data["2"] = {
                 "Title": "Days",
                 "Names": ["Weekday", "Weekend"],
                 "Weights": [5, 2],
@@ -62,27 +62,27 @@ class EnergyClass:
     def Read(self, FileName):
         MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
                                   FileName)
-        Input_Data = json.load(open(MODEL_JSON))
+        data = json.load(open(MODEL_JSON))
 
-        return Input_Data
+        return data
 
     # Measure the size of the data arrays
     def _Measure(self):
         # Get number of time periods
-        s_LL_time = len(self.Input_Data)
+        s_LL_time = len(self.data)
 
         sv_LL_time = np.zeros(s_LL_time, dtype=int)
         s_LL_timeVar = 1
         s_LL_timeSum = 1
         for x1 in range(s_LL_time):
-            sv_LL_time[x1] = len(self.Input_Data[chr(48+x1)]["Names"])
+            sv_LL_time[x1] = len(self.data[chr(48+x1)]["Names"])
             s_LL_timeVar *= sv_LL_time[x1]
             s_LL_timeSum += sv_LL_time[x1]
 
         # Measuring the data
-        aux = np.asarray(self.Input_Data[chr(48)]["Inputs"])
+        aux = np.asarray(self.data[chr(48)]["Inputs"])
         if aux.ndim == 1:
-            NosVec = len(self.Input_Data[chr(48)]["Inputs"])
+            NosVec = len(self.data[chr(48)]["Inputs"])
         else:
             NosVec = len(aux)
 
@@ -114,11 +114,11 @@ class EnergyClass:
         acu = 1
         for x1 in range(self.size['Periods']):
             xtxt = chr(48+x1)
-            auxI = np.asarray(self.Input_Data[xtxt]["Inputs"])
-            auxO = np.asarray(self.Input_Data[xtxt]["Outputs"])
-            auxW = self.Input_Data[xtxt]["Weights"]
+            auxI = np.asarray(self.data[xtxt]["Inputs"])
+            auxO = np.asarray(self.data[xtxt]["Outputs"])
+            auxW = self.data[xtxt]["Weights"]
             auxs = len(auxW)
-            auxU = self.Input_Data[xtxt]["Uncertainty"]
+            auxU = self.data[xtxt]["Uncertainty"]
             Unc[x1] = auxU
             for x2 in range(auxs):
                 Wght[acu+x2] = auxW[x2]
@@ -268,13 +268,19 @@ class EnergyClass:
             xacu1 *= self.size['LenPeriods'][x1]
             xacu3 += self.size['LenPeriods'][x1]
 
-        # Outputs
-        return (LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-                LL_TimeNodeBeforeSequence, LL_TimeLevel, NodeTime)
+        # Store outputs
+        self.tree = {
+                'Before': LL_TimeNodeBeforeSequence,  # Node before
+                'After': LL_TimeNodeTree,  # Node after
+                'Scenarios': LL_TimeScenarioTree,  # Scenarios
+                'Uncertainty': LL_Unc,  # Flag for uncertainty
+                'InOut': LL_WIO,  # Location of inputs/outputs
+                'Time': NodeTime,  # Nodes in each time level
+                }
 
     # Build parameters for optimisation
     # This information should ultimately be included in the input file
-    def _Parameters(self, WIn, WOut, Wght, LL_WIO):
+    def _Parameters(self, WIn, WOut, Wght):
         WInFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
                            dtype=float)
         WOutFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
@@ -282,20 +288,23 @@ class EnergyClass:
         WghtFull = np.ones(self.size['Nodes'], dtype=float)
 
         for x1 in range(self.size['Nodes']):
-            WghtFull[x1] = Wght[LL_WIO[x1]]
+            WghtFull[x1] = Wght[self.tree['InOut'][x1]]
             for xv in range(self.size['Vectors']):
-                WInFull[x1][xv] = WIn[LL_WIO[x1]][xv]
-                WOutFull[x1][xv] = WOut[LL_WIO[x1]][xv]
-
-        return WInFull, WOutFull, WghtFull
+                WInFull[x1][xv] = WIn[self.tree['InOut'][x1]][xv]
+                WOutFull[x1][xv] = WOut[self.tree['InOut'][x1]][xv]
+        self.Weight = {
+                'In': WInFull,  # Weight of an input
+                'Out': WOutFull,  # Weight of an output
+                'Node': WghtFull,  # Weight of each node
+                }
 
     # Build linked lists
-    def Link(self, Unc, LL_Unc, LL_TimeNodeBeforeSequence):
+    def _Link(self, Unc):
         # Build first linked lists, forward connections for energy balance
         LL1 = np.zeros((self.size['Nodes'], 2), dtype=int)
         for x1 in range(1, self.size['Nodes']):
             for x2 in range(2):
-                LL1[x1][x2] = LL_TimeNodeBeforeSequence[x1][x2]
+                LL1[x1][x2] = self.tree['Before'][x1][x2]
 
         # Build linked lists for aggregation and uncertainty
         NosNod = self.size['Nodes']-1
@@ -304,7 +313,7 @@ class EnergyClass:
             NosLL3 = 0
             LL3 = np.zeros((NosLL3, 3), dtype=int)
         else:
-            NosLL3 = sum(LL_Unc)-1
+            NosLL3 = sum(self.tree['Uncertainty'])-1
             NosLL2 = self.size['Nodes']-NosLL3-2
             LL3 = np.zeros((NosLL3+1, 3), dtype=int)
         LL2 = np.zeros((NosLL2+1, 3), dtype=int)
@@ -312,18 +321,27 @@ class EnergyClass:
         x2 = 0
         x3 = 0
         for x1 in range(1, self.size['Nodes']):
-            if LL_Unc[x1] == 0:
+            if self.tree['Uncertainty'][x1] == 0:
                 x2 += 1
                 LL2[x2][0] = x1
-                LL2[x2][1] = LL_TimeNodeBeforeSequence[x1][2]
-                LL2[x2][2] = LL_TimeNodeBeforeSequence[x1][3]
+                LL2[x2][1] = self.tree['Before'][x1][2]
+                LL2[x2][2] = self.tree['Before'][x1][3]
             else:
                 LL3[x3][0] = x1
-                LL3[x3][1] = self.LL_TimeNodeTree[x1][0]
-                LL3[x3][2] = self.LL_TimeNodeTree[x1][1]-self.LL_TimeNodeTree[x1][0]
+                LL3[x3][1] = self.tree['After'][x1][0]
+                LL3[x3][2] = (self.tree['After'][x1][1] -
+                              self.tree['After'][x1][0])
                 x3 += 1
 
-        return LL1, LL2, LL3, NosNod, NosLL2, NosLL3
+        # Linked lists
+        self.LL = {
+                'Balance': LL1,  # Linke list for energy balance
+                'Aggregation': LL2,  # Aggregation
+                'Uncertainty': LL3,  # Weighted sum
+                'NosBal': NosNod,  # Number of nodes for energy balance
+                'NosAgg': NosLL2,  # Number of rows for aggregation LL
+                'NosUnc': NosLL3  # Number of rows for Uncertainty LL
+                }
 
     # Objective function
     def OF_rule(self, m):
@@ -363,7 +381,7 @@ class EnergyClass:
     def initialise(self, FileName):
         # Read input data
         if self.fRea:
-            self.Input_Data = self.Read(FileName)
+            self.data = self.Read(FileName)
 
         # Measure the size of the data arrays
         self._Measure()
@@ -371,31 +389,17 @@ class EnergyClass:
         # Summarize the data as inputs, outputs, weights and uncertainty
         (WIn, WOut, Wght, Unc) = self._Process()
 
-        # Produce connectivity matrices
-        (self.LL_TimeNodeTree, LL_TimeScenarioTree, LL_Unc, LL_WIO,
-         LL_TimeNodeBeforeSequence, LL_TimeLevel,
-         self.NodeTime) = self._Connect(Unc)
+        # Produce connectivity matrices and weights
+        self._Connect(Unc)
 
         # Define inputs, outpurs and weights per node
-        (self.WInFull, self.WOutFull,
-         self.WghtFull) = self._Parameters(WIn, WOut, Wght, LL_WIO)
-
-        (self.LL1, self.LL2, self.LL3, self.NosNod, self.NosLL2,
-         self.NosLL3) = self.Link(Unc, LL_Unc, LL_TimeNodeBeforeSequence)
+        self._Parameters(WIn, WOut, Wght)
+        self._Link(Unc)
 
         # Weignts of the last time period (to be used by pyene)
-        aux = self.LL2[LL_TimeLevel[self.size['Periods']]-1, 0]
+        aux = self.LL['Aggregation'][self.tree['Time'][self.size['Periods']][0]-1, 0]
         aux = [aux, aux+self.size['LenPeriods'][self.size['Periods']-1]]
-        self.OFpyene = self.WghtFull[aux[0]:aux[1]]
-
-        self.tree = {
-                'Before': LL_TimeNodeBeforeSequence,  # Node before
-                'After': self.LL_TimeNodeTree,  # Node after
-                'Scenarios': LL_TimeScenarioTree,  # Scenarios
-                'Uncertainty': LL_Unc,  # Flag for uncertainty
-                'InOut': LL_WIO,  # Location of inputs/outputs
-                'Time': self.NodeTime,  # Nodes in each time level
-                }
+        self.OFpyene = self.Weight['Node'][aux[0]:aux[1]]
 
     # Print results
     def print(self, mod):
@@ -409,23 +413,23 @@ class EnergyClass:
     #                                   Sets                                  #
     def getSets(self, m):
         m = ConcreteModel()
-        m.sNod = range(1, self.NosNod+1)
-        m.sNodz = range(self.NosNod+1)
-        m.sLLTS2 = range(self.NosLL2+1)
-        m.sLLTS3 = range(self.NosLL3+1)
-        m.FUnc = self.NosLL3
+        m.sNod = range(1, self.LL['NosBal']+1)
+        m.sNodz = range(self.LL['NosBal']+1)
+        m.sLLTS2 = range(self.LL['NosAgg']+1)
+        m.sLLTS3 = range(self.LL['NosUnc']+1)
+        m.FUnc = self.LL['NosUnc']
         m.sVec = range(self.size['Vectors'])
 
         return m
 
     #                                Parameters                               #
     def getPar(self, m):
-        m.LLTS1 = self.LL1
-        m.LLTS2 = self.LL2
-        m.LLTS3 = self.LL3
-        m.WInFull = self.WInFull
-        m.WOutFull = self.WOutFull
-        m.WghtFull = self.WghtFull
+        m.LLTS1 = self.LL['Balance']
+        m.LLTS2 = self.LL['Aggregation']
+        m.LLTS3 = self.LL['Uncertainty']
+        m.WInFull = self.Weight['In']
+        m.WOutFull = self.Weight['Out']
+        m.WghtFull = self.Weight['Node']
 
         return m
 
