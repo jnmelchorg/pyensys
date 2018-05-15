@@ -56,7 +56,21 @@ class EnergyClass:
                 "Inputs": np.zeros((NoVec, 2), dtype=float),
                 "Outputs": np.zeros((NoVec, 2), dtype=float),
                 "Uncertainty": False
-                }        
+                }
+        # CONTROL SETTINGS AND OTHER INTERNAL DATA
+        self.settings = {
+                'Fix': False,  # Force a specific number of vectors
+                'Vectors': NoVec  # Number of vectors
+                }
+        # Size of data
+        self.size = {
+                'Periods': [],  # Number of periods
+                'LenPeriods': [],  # Length of each period
+                'SumPeriods': [],  # Sum of period lengths
+                'Scenarios': [],  # Number of scenarios
+                'Vectors': [],  # Number of vectors
+                'Nodes': []  # Number of nodes
+                }
 
     # Read input data
     def Read(self, FileName):
@@ -100,6 +114,30 @@ class EnergyClass:
                 'Scenarios': s_LL_timeVar,  # Number of scenarios
                 'Vectors': NosVec,  # Number of vectors
                 'Nodes': s_LL_Nodes  # Number of nodes
+                }
+        # Data tree
+        self.tree = {
+                'Before': [],  # Node before
+                'After': [],  # Node after
+                'Scenarios': [],  # Scenarios
+                'Uncertainty': [],  # Flag for uncertainty
+                'InOut': [],  # Location of inputs/outputs
+                'Time': [],  # Nodes in each time level
+                }
+        # Weights
+        self.Weight = {
+                'In': [],  # Weight of an input
+                'Out': [],  # Weight of an output
+                'Node': [],  # Weight of each node
+                }
+        # Linked lists
+        self.LL = {
+                'Balance': [],  # Linke list for energy balance
+                'Aggregation': [],  # Aggregation
+                'Uncertainty': [],  # Weighted sum
+                'NosBal': [],  # Number of nodes for energy balance
+                'NosAgg': [],  # Number of rows for aggregation LL
+                'NosUnc': []  # Number of rows for Uncertainty LL
                 }
 
     # Process the data as inputs, outputs, weights and uncertainty
@@ -201,11 +239,13 @@ class EnergyClass:
                 LL_TimeNodeTree[x1][1] = aux2 + self.size['LenPeriods'][x2+1]
                 aux2 += self.size['LenPeriods'][x2+1]
                 LL_TimeScenarioTree[x1][0] = aux3
-                LL_TimeScenarioTree[x1][1] = aux3 + self.size['Scenarios']/aux1-1
+                LL_TimeScenarioTree[x1][1] = (aux3 + self.size['Scenarios'] /
+                                              aux1-1)
                 aux3 += self.size['Scenarios']/aux1
 
         # Beginning of the final time level
-        LL_TimeLevel[self.size['Periods']] = LL_TimeLevel[self.size['Periods']-1]+aux1
+        LL_TimeLevel[self.size['Periods']] = LL_TimeLevel[self.size['Periods'] -
+                                                          1]+aux1
 
         # Get nodes at each time level
         NodeTime = np.zeros((self.size['Periods']+1, 2), dtype=int)
@@ -386,6 +426,21 @@ class EnergyClass:
         # Measure the size of the data arrays
         self._Measure()
 
+        # Should the number of vectors be adjusted
+        aux = self.settings['Vectors'] != self.size['Vectors']
+        if aux and self.settings['Fix']:
+            for xp in range(self.size['Periods']):
+                if self.size['LenPeriods'][xp] == 1:
+                    aux = np.zeros(self.settings['Vectors'], dtype=float)
+                elif self.settings['Vectors'] == 1:
+                    aux = np.zeros(self.size['LenPeriods'][xp], dtype=float)
+                else:  # to a matrix
+                    aux = np.zeros((self.settings['Vectors'],
+                                    self.size['LenPeriods'][xp]), dtype=float)
+                self.data[chr(48+xp)]['Inputs'] = aux
+                self.data[chr(48+xp)]['Outputs'] = aux
+            self.size['Vectors'] = self.settings['Vectors']
+
         # Summarize the data as inputs, outputs, weights and uncertainty
         (WIn, WOut, Wght, Unc) = self._Process()
 
@@ -395,11 +450,6 @@ class EnergyClass:
         # Define inputs, outpurs and weights per node
         self._Parameters(WIn, WOut, Wght)
         self._Link(Unc)
-
-        # Weignts of the last time period (to be used by pyene)
-        aux = self.LL['Aggregation'][self.tree['Time'][self.size['Periods']][0]-1, 0]
-        aux = [aux, aux+self.size['LenPeriods'][self.size['Periods']-1]]
-        self.OFpyene = self.Weight['Node'][aux[0]:aux[1]]
 
     # Print results
     def print(self, mod):

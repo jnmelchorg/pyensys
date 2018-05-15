@@ -157,7 +157,8 @@ class pyeneClass():
         NM.initialise(FileNameN)
 
         # Get number of required network model copies
-        NoNM = 1+EM.tree['Time'][EM.size['Periods']][1] - EM.tree['Time'][EM.size['Periods']][0]
+        NoNM = (1+EM.tree['Time'][EM.size['Periods']][1] -
+                EM.tree['Time'][EM.size['Periods']][0])
 
         NM.Connections['set'] = range(NoNM)
         NM.Connections['Flow'] = np.zeros(NoNM, dtype=int)
@@ -178,7 +179,8 @@ class pyeneClass():
             NM.Connections['Feasibility'][xc] = xc*NM.NoFea
 
         # Build LL to link the models through hydro consumption
-        self.NoLL = 1+EM.tree['Time'][EM.size['Periods']][1]-EM.tree['Time'][EM.size['Periods']][0]
+        self.NoLL = (1+EM.tree['Time'][EM.size['Periods']][1] -
+                     EM.tree['Time'][EM.size['Periods']][0])
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
         for xc in range(self.NoLL):
             self.LLENM[xc][:] = [EM.tree['Time'][EM.size['Periods']][0]+xc,
@@ -239,9 +241,6 @@ class pyeneClass():
         WghtAgg = EM.Weight['Node']
         self.OFaux = np.ones(len(NM.Connections['set']), dtype=float)
         xp = 0
-        print(WghtAgg)
-        print(EM.tree['After'])
-        print(EM.LL['NosBal'])
         for xn in range(EM.LL['NosBal']+1):
             aux = EM.tree['After'][xn][0]
             if aux != 0:
@@ -387,15 +386,15 @@ class pyeneClass():
     # Run tests
     def _runTests(self, EN):
         # Get object
-        FileNameE = "ResolutionTreeYear03.json"#"ResolutionTreeMonth01.json"#"ResolutionTreeYear03.json"#"ResolutionTreeYear01.json"#"ResolutionTreeMonth01.json"
+        FileNameE = "ResolutionTreeMonth01.json"
         FileNameN = "case4.json"
 
         # Energy simulation
         print('\n\nTESTING ENERGY BALANCE AND AGGREGATION\n\n')
         EN.ESim(FileNameE)
-#        # Network simulation
-#        print('\n\nTESTING NETWORK MODELS\n\n')
-#        EN.NSim(FileNameN)
+        # Network simulation
+        print('\n\nTESTING NETWORK MODELS\n\n')
+        EN.NSim(FileNameN)
         # Joint simulation
         print('\n\nTESTING INTEGRATED MODEL\n\n')
         # Creat objects
