@@ -144,14 +144,14 @@ class pyeneClass():
 
         # Add hydropower units to network model
         # CURRENLTY ASSIMUNG CHARACTERISTICS OF HYDRO
-        NM.Hydropower['Number'] = EM.size['Vectors']
-        NM.Hydropower['Bus'] = np.zeros(NM.Hydropower['Number'], dtype=int)
-        NM.Hydropower['Max'] = np.zeros(NM.Hydropower['Number'], dtype=int)
-        NM.Hydropower['Cost'] = np.zeros(NM.Hydropower['Number'], dtype=float)
+        NM.hydropower['Number'] = EM.size['Vectors']
+        NM.hydropower['Bus'] = np.zeros(NM.hydropower['Number'], dtype=int)
+        NM.hydropower['Max'] = np.zeros(NM.hydropower['Number'], dtype=int)
+        NM.hydropower['Cost'] = np.zeros(NM.hydropower['Number'], dtype=float)
         for xv in range(EM.size['Vectors']):
-            NM.Hydropower['Bus'][xv] = xv+1
-            NM.Hydropower['Max'][xv] = 1000
-            NM.Hydropower['Cost'][xv] = 0.0001
+            NM.hydropower['Bus'][xv] = xv+1
+            NM.hydropower['Max'][xv] = 1000
+            NM.hydropower['Cost'][xv] = 0.0001
 
         # Get size of network model
         NM.initialise(FileNameN)
@@ -160,37 +160,39 @@ class pyeneClass():
         NoNM = (1+EM.tree['Time'][EM.size['Periods']][1] -
                 EM.tree['Time'][EM.size['Periods']][0])
 
-        NM.Connections['set'] = range(NoNM)
-        NM.Connections['Flow'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Voltage'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Loss'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Generation'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Cost'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Pump'] = np.zeros(NoNM, dtype=int)
-        NM.Connections['Feasibility'] = np.zeros(NoNM, dtype=int)
+        NM.connections['set'] = range(NoNM)
+        NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
+        NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
         # Location of each copy
-        for xc in NM.Connections['set']:
-            NM.Connections['Flow'][xc] = xc*(NM.NoBranch+1)
-            NM.Connections['Voltage'][xc] = xc*(NM.NoBuses+1)
-            NM.Connections['Loss'][xc] = xc*(NM.ENet.number_of_edges()+1)
-            NM.Connections['Generation'][xc] = xc*(NM.NoGen+1)
-            NM.Connections['Cost'][xc] = xc*NM.NoGen
-            NM.Connections['Pump'][xc] = xc*(NM.Pumps['Number']+1)
-            NM.Connections['Feasibility'][xc] = xc*NM.NoFea
+        for xc in NM.connections['set']:
+            NM.connections['Flow'][xc] = xc*(NM.NoBranch+1)
+            NM.connections['Voltage'][xc] = xc*(NM.NoBuses+1)
+            NM.connections['Loss'][xc] = xc*(NM.networkE.number_of_edges()+1)
+            NM.connections['Generation'][xc] = xc*(NM.generationE['Number']+1)
+            NM.connections['Cost'][xc] = xc*NM.generationE['Number']
+            NM.connections['Pump'][xc] = xc*(NM.pumps['Number']+1)
+            NM.connections['Feasibility'][xc] = xc*NM.NoFea
 
         # Build LL to link the models through hydro consumption
         self.NoLL = (1+EM.tree['Time'][EM.size['Periods']][1] -
                      EM.tree['Time'][EM.size['Periods']][0])
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
+        NoGen0 = (NM.hydropower['Number']-NM.hydropower['Number'] -
+                  NM.RES['Number']+1)
         for xc in range(self.NoLL):
             self.LLENM[xc][:] = [EM.tree['Time'][EM.size['Periods']][0]+xc,
-                                 NM.Connections['Generation'][xc]+NM.NoOGen+1]
+                                 NM.connections['Generation'][xc]+NoGen0]
 
         # Taking sets for modelling local objective function
-        self.hGC = NM.Connections['Cost']
-        self.hDL = NM.Connections['Pump']
-        self.hFea = NM.Connections['Feasibility']
-        self.h = NM.Connections['set']
+        self.hGC = NM.connections['Cost']
+        self.hDL = NM.connections['Pump']
+        self.hFea = NM.connections['Feasibility']
+        self.h = NM.connections['set']
 
         return (EM, NM)
 
@@ -239,7 +241,7 @@ class pyeneClass():
 
         #                          Objective function                         #
         WghtAgg = EM.Weight['Node']
-        self.OFaux = np.ones(len(NM.Connections['set']), dtype=float)
+        self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
         xp = 0
         for xn in range(EM.LL['NosBal']+1):
             aux = EM.tree['After'][xn][0]
@@ -290,16 +292,16 @@ class pyeneClass():
 
     # Print initial assumptions
     def _CheckInN(self, NM):
-        if NM.Settings['Losses']:
+        if NM.settings['Losses']:
             print('Losses are considered')
         else:
             print('Losses are neglected')
-        if NM.Settings['Feasibility']:
+        if NM.settings['Feasibility']:
             print('Feasibility constrants are included')
         else:
             print('Feasibility constraints are neglected')
-        print('Demand multiplyiers ', NM.Settings['Demand'])
-        print('Secuity: ', NM.Settings['Security'])
+        print('Demand multiplyiers ', NM.settings['Demand'])
+        print('Secuity: ', NM.settings['Security'])
 
     # Read time series for demand and RES
     def ReadTimeS(self, FileName):
@@ -425,10 +427,10 @@ class pyeneClass():
 #        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
 #        NM.RES['RES'] = RESProfiles
         
-        NM.Settings['Demand'] = [1, 1.1]
-        NM.Settings['NoTime'] = 2
-        NM.Settings['Losses'] = True
-        NM.Settings['Security'] = [2, 3]
+        NM.settings['Demand'] = [1, 1.1]
+        NM.settings['NoTime'] = 2
+        NM.settings['Losses'] = True
+        NM.settings['Security'] = [2, 3]
 
         # Initialise objects
         (EM, NM) = EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
