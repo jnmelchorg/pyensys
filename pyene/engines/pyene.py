@@ -63,7 +63,8 @@ class pyeneClass():
 
         # Print results
         results = opt.solve(NModel)
-        NM.print(NModel)
+
+        return (NM, NModel, results)
 
     # Energy only optimisation
     def ESim(self, FileName):
@@ -87,7 +88,52 @@ class pyeneClass():
 
         # Print
         results = opt.solve(EModel)
-        EM.print(EModel)
+
+        return (EM, EModel, results)
+
+    # Energy and networks simulation
+    def ENSim(self, FileNameE, FileNameN):
+        EM = de()
+        NM = dn()
+        # Change assumptions
+        # Load demand and RES profile
+        FileName = "TimeSeries.json"
+        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+         Nohr) = self.ReadTimeS(FileName)
+        # Choose a given scenario
+        opt = 0
+        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
+        acu = 0
+        for xr in range(NoRESP):
+            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
+            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
+            for xs in range(aux1, aux2):
+                for xt in range(Nohr):
+                    RESProfiles[acu] = RESProfs[xs][xt]
+                    acu += 1
+        NM.settings['Demand'] = DemandProfiles[opt][:]
+        NM.settings['NoTime'] = Nohr
+        NM.RES['Number'] = NoRES
+        NM.RES['Bus'] = RESBus
+        NM.RES['Link'] = RESLink
+        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
+        NM.RES['RES'] = RESProfiles
+
+        # Initialise objects
+        (EM, NM) = self.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
+        # Check core assumptions
+        self._CheckInE(EM)
+        self._CheckInN(NM)
+        # Build model
+        mod = self.build_Mod(EM, NM)
+        # Add water
+        HydroPowerIn = 300
+        mod = self.add_Hydro(mod, HydroPowerIn)
+        # Run model
+        (mod, results) = self.Run_Mod(mod, EM, NM)
+
+        return (mod, EM, NM)
 
     #                           Objective function                            #
     def OF_rule(self, m):
@@ -182,7 +228,7 @@ class pyeneClass():
         self.NoLL = (1+EM.tree['Time'][EM.size['Periods']][1] -
                      EM.tree['Time'][EM.size['Periods']][0])
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
-        NoGen0 = (NM.hydropower['Number']-NM.hydropower['Number'] -
+        NoGen0 = (NM.generationE['Number']-NM.hydropower['Number'] -
                   NM.RES['Number']+1)
         for xc in range(self.NoLL):
             self.LLENM[xc][:] = [EM.tree['Time'][EM.size['Periods']][0]+xc,
@@ -258,16 +304,7 @@ class pyeneClass():
         # Print
         results = opt.solve(mod)
 
-        return mod
-
-    # Run Energy and network combined model
-    def Run_ENSim(self, mod, EM, NM, HydroIn):
-        # Build model
-        mod = self.build_Mod(EM, NM)
-        # Add water
-        mod = self.add_Hydro(mod, HydroIn)
-        # Run model
-        self.Run_Mod(mod, EM, NM)
+        return (mod, results)
 
     # Run Energy and network combined model
     def Print_ENSim(self, mod, EM, NM):
@@ -391,12 +428,6 @@ class pyeneClass():
         FileNameE = "ResolutionTreeMonth01.json"
         FileNameN = "case4.json"
 
-        # Energy simulation
-        print('\n\nTESTING ENERGY BALANCE AND AGGREGATION\n\n')
-        EN.ESim(FileNameE)
-        # Network simulation
-        print('\n\nTESTING NETWORK MODELS\n\n')
-        EN.NSim(FileNameN)
         # Joint simulation
         print('\n\nTESTING INTEGRATED MODEL\n\n')
         # Creat objects
