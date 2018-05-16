@@ -13,8 +13,8 @@ from pyomo.core import *
 from pyomo.opt import SolverFactory
 
 import numpy as np
-from pyeneN import ENetworkClass as dn  # Network component
-from pyeneE import EnergyClass as de  # Energy balance/aggregation component
+from .pyeneN import ENetworkClass as dn  # Network component
+from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
 import json
 import os
 
