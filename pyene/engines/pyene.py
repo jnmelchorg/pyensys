@@ -91,50 +91,6 @@ class pyeneClass():
 
         return (EM, EModel, results)
 
-    # Energy and networks simulation
-    def ENSim(self, FileNameE, FileNameN):
-        EM = de()
-        NM = dn()
-        # Change assumptions
-        # Load demand and RES profile
-        FileName = "TimeSeries.json"
-        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
-         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
-         Nohr) = self.ReadTimeS(FileName)
-        # Choose a given scenario
-        opt = 0
-        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
-        acu = 0
-        for xr in range(NoRESP):
-            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
-            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
-            for xs in range(aux1, aux2):
-                for xt in range(Nohr):
-                    RESProfiles[acu] = RESProfs[xs][xt]
-                    acu += 1
-        NM.settings['Demand'] = DemandProfiles[opt][:]
-        NM.settings['NoTime'] = Nohr
-        NM.RES['Number'] = NoRES
-        NM.RES['Bus'] = RESBus
-        NM.RES['Link'] = RESLink
-        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
-        NM.RES['RES'] = RESProfiles
-
-        # Initialise objects
-        (EM, NM) = self.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
-        # Check core assumptions
-        self._CheckInE(EM)
-        self._CheckInN(NM)
-        # Build model
-        mod = self.build_Mod(EM, NM)
-        # Add water
-        HydroPowerIn = 300
-        mod = self.add_Hydro(mod, HydroPowerIn)
-        # Run model
-        (mod, results) = self.Run_Mod(mod, EM, NM)
-
-        return (mod, EM, NM)
-
     #                           Objective function                            #
     def OF_rule(self, m):
         return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
@@ -177,70 +133,131 @@ class pyeneClass():
                          initialize=0.0)
         return m
 
-    # Initialise energy and network simulation
-    def Initialise_ENSim(self, EM, NM, FileNameE, FileNameN):
-        # Get components of energy model
-        if self.fRea:
-            # Chose to load data from file
-            EM.fRea = True
+    # Initialise energy and networks simulator
+    def initialise(self, conf):
+        # Creat objects
+        self.EM = de()
+        self.NM = dn()
+
+        # Avoid loading file
+        if conf.init:
+            conf.TreeFile = "NoName"
         else:
-            FileNameE = "NoName"
+            self.EM.fRea = True
 
-        EM.initialise(FileNameE)
+        # Adding hydro to the energy balance tree
+        self.EM.settings = {
+                'Fix': True,  # Force a specific number of vectors
+                'Vectors': conf.NoHydro  # Number of vectors
+                }
 
-        # Add hydropower units to network model
-        # CURRENLTY ASSIMUNG CHARACTERISTICS OF HYDRO
-        NM.hydropower['Number'] = EM.size['Vectors']
-        NM.hydropower['Bus'] = np.zeros(NM.hydropower['Number'], dtype=int)
-        NM.hydropower['Max'] = np.zeros(NM.hydropower['Number'], dtype=int)
-        NM.hydropower['Cost'] = np.zeros(NM.hydropower['Number'], dtype=float)
-        for xv in range(EM.size['Vectors']):
-            NM.hydropower['Bus'][xv] = xv+1
-            NM.hydropower['Max'][xv] = 1000
-            NM.hydropower['Cost'][xv] = 0.0001
-
-        # Get size of network model
-        NM.initialise(FileNameN)
+        # Initialise energy balance model
+        self.EM.initialise(conf.TreeFile)
 
         # Get number of required network model copies
-        NoNM = (1+EM.tree['Time'][EM.size['Periods']][1] -
-                EM.tree['Time'][EM.size['Periods']][0])
+        NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
+                self.EM.tree['Time'][self.EM.size['Periods']][0])
 
-        NM.connections['set'] = range(NoNM)
-        NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
-        NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
+        # Add time steps
+        self.NM.settings['Demand'] = np.ones(conf.Time, dtype=float)
+        self.NM.settings['NoTime'] = conf.Time
+
+        # Initialise Hydropower
+        if conf.NoHydro > 0:
+            self.NM.hydropower['Number'] = conf.NoHydro
+            self.NM.hydropower['Bus'] = conf.Hydro
+            self.NM.hydropower['Max'] = conf.HydroMax
+            self.NM.hydropower['Cost'] = conf.HydroCost
+
+        # Initialise Pumps
+        if conf.NoPump > 0:
+            self.NM.pumps['Number'] = conf.NoPump
+            self.NM.pumps['Bus'] = conf.Pump
+            self.NM.pumps['Max'] = conf.PumpMax
+            self.NM.pumps['Value'] = conf.PumpVal
+
+        # Initialise RES
+        if conf.NoRES > 0:
+            self.NM.RES['Number'] = conf.NoRES
+            self.NM.RES['Bus'] = conf.RES
+            self.NM.RES['Position'] = conf.Position
+            self.NM.RES['Cost'] = conf.Cost
+            self.NM.RES['RES'] = np.zeros(conf.NoRES*conf.Time, dtype=float)
+
+        # Initialise network model
+        self.NM.initialise(conf.NetworkFile)
+
+        # Add connections between energy balance and networ models
+        self.NM.connections['set'] = range(NoNM)
+        self.NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
         # Location of each copy
-        for xc in NM.connections['set']:
-            NM.connections['Flow'][xc] = xc*(NM.NoBranch+1)
-            NM.connections['Voltage'][xc] = xc*(NM.NoBuses+1)
-            NM.connections['Loss'][xc] = xc*(NM.networkE.number_of_edges()+1)
-            NM.connections['Generation'][xc] = xc*(NM.generationE['Number']+1)
-            NM.connections['Cost'][xc] = xc*NM.generationE['Number']
-            NM.connections['Pump'][xc] = xc*(NM.pumps['Number']+1)
-            NM.connections['Feasibility'][xc] = xc*NM.NoFea
+        for xc in self.NM.connections['set']:
+            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
+            self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
+            self.NM.connections['Loss'][xc] = xc*(self.NM.networkE.number_of_edges()+1)
+            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE['Number']+1)
+            self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']
+            self.NM.connections['Pump'][xc] = xc*(self.NM.pumps['Number']+1)
+            self.NM.connections['Feasibility'][xc] = xc*self.NM.NoFea
 
         # Build LL to link the models through hydro consumption
-        self.NoLL = (1+EM.tree['Time'][EM.size['Periods']][1] -
-                     EM.tree['Time'][EM.size['Periods']][0])
+        self.NoLL = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
+                     self.EM.tree['Time'][self.EM.size['Periods']][0])
         self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
-        NoGen0 = (NM.generationE['Number']-NM.hydropower['Number'] -
-                  NM.RES['Number']+1)
+        NoGen0 = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
+                  self.NM.RES['Number']+1)
         for xc in range(self.NoLL):
-            self.LLENM[xc][:] = [EM.tree['Time'][EM.size['Periods']][0]+xc,
-                                 NM.connections['Generation'][xc]+NoGen0]
+            self.LLENM[xc][:] = [self.EM.tree['Time'][self.EM.size['Periods']][0]+xc,
+                                 self.NM.connections['Generation'][xc]+NoGen0]
 
         # Taking sets for modelling local objective function
-        self.hGC = NM.connections['Cost']
-        self.hDL = NM.connections['Pump']
-        self.hFea = NM.connections['Feasibility']
-        self.h = NM.connections['set']
+        self.hGC = self.NM.connections['Cost']
+        self.hDL = self.NM.connections['Pump']
+        self.hFea = self.NM.connections['Feasibility']
+        self.h = self.NM.connections['set']
 
-        return (EM, NM)
+    # load data for a hidropower node
+    def loadHydro(self, HydropowerNode, NoHydro):
+        aux1 = HydropowerNode['link']-1
+        aux2 = HydropowerNode['value']
+        if NoHydro == 1:
+            self.EM.Weight['In'][aux1] = aux2
+        else:
+            self.EM.Weight['In'][1][aux1] = aux2
+
+    # Load data for a RES generator
+    def loadRES(self, resNode, NoRES, Time):
+        acu = (resNode['link']-1)*Time
+        for xt in range(Time):
+            self.NM.RES['RES'][acu+xt] = resNode['value'][xt]
+
+    # Load data for demand
+    def loadDemand(self, demandNode):
+        self.NM.settings['Demand'] = demandNode['value']
+        self.NM.settings['Bus'] = demandNode['link']
+
+    # Run integrated pyene model
+    def run(self):
+        # Build pyomo model
+        mod = self.build_Mod(self.EM, self.NM)
+
+        # Run pyomo model
+        (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
+
+        return mod
+
+    # Collect outputs of pumps
+    def getPump(self, mod, indexPump):
+        acu = np.zeros(self.NM.pumps['Number'], dtype=float)
+        for xh in mod.sDL:
+            for xt in mod.sTim:
+                acu[xh] += mod.vGenDL[self.hDL[xh]+indexPump, xt].value
 
     # Build pyomo model
     def build_Mod(self, EM, NM):
@@ -261,16 +278,6 @@ class pyeneClass():
         mod = EM.getPar(mod)
         mod = NM.getPar(mod)
         mod = self.getPar(mod)
-
-        return mod
-
-    # Adding hydropower
-    def add_Hydro(self, mod, HydroIn):
-        aux = np.array(HydroIn)
-        if aux.size == 1:
-            mod.WInFull[1] = HydroIn
-        else:
-            mod.WInFull[1][:] = HydroIn
 
         return mod
 
@@ -303,6 +310,7 @@ class pyeneClass():
         opt = SolverFactory('glpk')
         # Print
         results = opt.solve(mod)
+        print('\n\nPrint svec', mod.sVec)
 
         return (mod, results)
 
@@ -421,63 +429,3 @@ class pyeneClass():
             return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES,
                     NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
                     NoLink, Nohr)
-
-    # Run tests
-    def _runTests(self, EN):
-        # Get object
-        FileNameE = "ResolutionTreeMonth01.json"
-        FileNameN = "case4.json"
-
-        # Joint simulation
-        print('\n\nTESTING INTEGRATED MODEL\n\n')
-        # Creat objects
-        EM = de()
-        NM = dn()
-        # Change assumptions
-        # Load demand and RES profile
-#        FileName = "TimeSeries.json"
-#        (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
-#         LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
-#         Nohr) = self.ReadTimeS(FileName)
-#        # Choose a given scenario
-#        opt = 0
-#        RESProfiles = np.zeros(NoLink*Nohr, dtype=float)
-#        acu = 0
-#        for xr in range(NoRESP):
-#            aux1 = LLRESPeriod[LLRESType[xr][0]+opt][0]
-#            aux2 = LLRESPeriod[LLRESType[xr][0]+opt][1]+1
-#            for xs in range(aux1, aux2):
-#                for xt in range(Nohr):
-#                    RESProfiles[acu] = RESProfs[xs][xt]
-#                    acu += 1
-#        NM.Settings['Demand'] = DemandProfiles[opt][:]
-#        NM.Settings['NoTime'] = Nohr
-#        NM.RES['Number'] = NoRES
-#        NM.RES['Bus'] = RESBus
-#        NM.RES['Link'] = RESLink
-#        NM.RES['Cost'] = np.zeros(NM.RES['Number'], dtype=float)
-#        NM.RES['RES'] = RESProfiles
-        
-        NM.settings['Demand'] = [1, 1.1]
-        NM.settings['NoTime'] = 2
-        NM.settings['Losses'] = True
-        NM.settings['Security'] = [2, 3]
-
-        # Initialise objects
-        (EM, NM) = EN.Initialise_ENSim(EM, NM, FileNameE, FileNameN)
-        # Check core assumptions
-        EN._CheckInE(EM)
-        EN._CheckInN(NM)
-        # Build model
-        mod = EN.build_Mod(EM, NM)
-        # Add water
-        HydroPowerIn = 300
-        mod = EN.add_Hydro(mod, HydroPowerIn)
-        # Run model
-        mod = EN.Run_Mod(mod, EM, NM)
-        EN.Print_ENSim(mod, EM, NM)
-
-
-if __name__ == '__main__':
-    EN = pyeneClass()
-    EN._runTests(EN)

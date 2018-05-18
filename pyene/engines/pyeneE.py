@@ -333,8 +333,8 @@ class EnergyClass:
                 WInFull[x1][xv] = WIn[self.tree['InOut'][x1]][xv]
                 WOutFull[x1][xv] = WOut[self.tree['InOut'][x1]][xv]
         self.Weight = {
-                'In': WInFull,  # Weight of an input
-                'Out': WOutFull,  # Weight of an output
+                'In': WInFull,  # All inputs
+                'Out': WOutFull,  # All outputs
                 'Node': WghtFull,  # Weight of each node
                 }
 
