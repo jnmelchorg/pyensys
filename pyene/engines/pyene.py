@@ -154,7 +154,7 @@ class pyeneClass():
         # Initialise energy balance model
         self.EM.initialise(conf.TreeFile)
 
-        # Get number of required network model copies
+        # Get number of required network model instances
         NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
                 self.EM.tree['Time'][self.EM.size['Periods']][0])
 
@@ -196,7 +196,7 @@ class pyeneClass():
         self.NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
         self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
         self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
-        # Location of each copy
+        # Location of each instance
         for xc in self.NM.connections['set']:
             self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
             self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
@@ -222,7 +222,7 @@ class pyeneClass():
         self.hFea = self.NM.connections['Feasibility']
         self.h = self.NM.connections['set']
 
-    # load data for a hidropower node
+    # load data for a hydropower node
     def loadHydro(self, HydropowerNode, NoHydro):
         aux1 = HydropowerNode['link']-1
         aux2 = HydropowerNode['value']
