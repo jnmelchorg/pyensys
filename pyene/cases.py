@@ -76,11 +76,13 @@ def test_pyene(conf):
     # Run integrated pyene
     mod = EN.run()
 
+    # Print results
+    EN.Print_ENSim(mod, EN.EM, EN.NM)
+
     # Collect output of pumps
     indexPump=1
     pumpNode = _node()
     pumpNode.value = EN.getPump(mod, indexPump)
     pumpNode.index =indexPump
 
-    # Print results
-    EN.Print_ENSim(mod, EN.EM, EN.NM)
+    

@@ -279,17 +279,21 @@ class pyeneClass():
 
     # COllect demand curtailed in a node
     def getCurt(self, mod, nod):
-        '''Get the kWh that had to be shed from a single RES generator'''
-        NoVals = len(nod.bus)
-        curTotal = np.zeros(NoVals, dtype=float)
+        '''Get the kWh that had to be curtailed from a given bus'''
         if self.NM.settings['Feasibility']:
-            aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
-            for xc in range(NoVals):
-                for xh in mod.sDL:
-                    acu = 0
-                    for xt in mod.sTim:
-                        acu += mod.vFea[self.hFea[xh]+nod.bus[xc], xt].value
-                    curTotal[xc] += acu*self.EM.Weight['Node'][aux+xh]
+            NoVals = len(nod.bus)
+            curTotal = np.zeros(NoVals, dtype=float)
+            if self.NM.settings['Feasibility']:
+                aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
+                for xc in range(NoVals):
+                    for xh in mod.sDL:
+                        aux2 = self.hFea[xh]+nod.bus[xc]
+                        acu = 0
+                        for xt in mod.sTim:                            
+                            acu += mod.vFea[aux2, xt].value
+                        curTotal[xc] += acu*self.EM.Weight['Node'][aux1+xh]
+        else:
+            curTotal = None
 
         return curTotal
 
