@@ -18,14 +18,12 @@ class ENetworkClass:
     def __init__(self):
         # Basic settings
         self.settings = {
-                'Demand': [1],  # [1, 1.05, 1.1]
                 'Bus': 'All',
                 'FixedBus': [],
-                'NoTime': 1,
-                'Links': 'Default',
+                'NoTime': 1,                
                 'Security': [],  # [2, 3]
                 'Losses': False,
-                'Feasibility': True
+                'Feasibility': True,
                 }
         # Connections
         self.connections = {
@@ -40,9 +38,12 @@ class ENetworkClass:
                 }
         # Scenarios
         self.scenarios = {
-                'Demand': [0],  # Senarios for demand profiles
-                'RES1': [0],  # RES generators with scenario based profiles
-                'RES2': [0]  # Location of the RES profiles
+                'Number': 1,  # Number of scenarios
+                'NoDem': 1,  # Number of demand profiles
+                'Links': 'Default',  # Links between the buses and profiles
+                'Demand': [0],  # Demand profiles
+                'NoRes': 1,  # Number of RES profiles
+                'RES': [0]  # Location of the RES profiles
                 }
         # Hydropower
         self.hydropower = {
@@ -170,19 +171,28 @@ class ENetworkClass:
         ENetCost['COST'][0:NoOGen][:] = mpc['gencost']['COST']
 
         # Adjust demand dimensions
-        self.settings['Demand'] = np.asarray(self.settings['Demand'])
+        self.scenarios['Demand'] = np.asarray(self.scenarios['Demand'])
         # Add demand nodes and links
         if self.settings['Bus'] == 'All':
             self.settings['Bus'] = list(range(1, self.networkE.number_of_nodes()+1))
         Noaux = len(self.settings['Bus'])
-        if self.settings['Links'] == 'Default':
-            self.settings['Links'] = np.ones(Noaux, dtype=int)
+
+        # Default settings, one profile per scenario
+        if self.scenarios['Links'] == 'Default':
+            self.scenarios['Links'] = np.ones(Noaux*self.scenarios['Number'],
+                         dtype=int)
+            acu = Noaux
+            for xs in range(self.scenarios['Number']-1):
+                for xt in range(Noaux):
+                    self.scenarios['Links'][acu] = xs+2
+                    acu += 1
+
+        # Buses with fixed demand
         if Noaux == self.networkE.number_of_nodes():
             self.settings['FixedBus'] = []
         else:
             # Non sequential search for missing buses
             aux = list(range(self.networkE.number_of_nodes()+1))
-            print(self.settings['Bus'])
             for xb in range(Noaux):
                 aux[self.settings['Bus'][xb]-1] = aux[self.settings['Bus'][xb]]
             # Store list with missing buses
@@ -374,19 +384,36 @@ class ENetworkClass:
         for xn in range(self.networkE.number_of_nodes()):
             Demand0[xn] = self.demandE['PD'][xn]/self.networkE.graph['baseMVA']
         # Get adjusted demand profiles
-        busData = np.zeros((self.networkE.number_of_nodes(),
-                            self.settings['NoTime']), dtype=float)
-        for xb in self.settings['Bus']:
-            xn = xb-1
-            xLL = (self.settings['Links'][xn]-1)*self.settings['NoTime']
-            for xt in range(self.settings['NoTime']):
-                busData[xn][xt] = Demand0[xn]*self.settings['Demand'][xLL+xt]
+        NoBus = len(self.settings['Bus'])
+        aux = self.networkE.number_of_nodes()
+        busScenario = np.zeros((aux, self.scenarios['Number']), dtype=int)
+        aux = aux + NoBus*(self.scenarios['Number']-1)
+        busData = np.zeros((aux, self.settings['NoTime']), dtype=float)
+
+        # Add information for fixed buses
+        acu1 = 0  # Number of elements stored in busData
         for xb in self.settings['FixedBus']:
             xn = xb-1
+            busScenario[xn][0] = acu1
             for xt in range(self.settings['NoTime']):
-                busData[xn][xt] = Demand0[xn]
+                busData[acu1][xt] = Demand0[xn]
+                acu1 += 1
 
-        return busData
+        # Add information for variable buses
+        acu2 = 0  # Number of elements checked from self.settings['Links']
+        for xs in range(self.scenarios['Number']):
+            for xb in range(NoBus):
+                xn = self.settings['Bus'][xb]-1
+                busScenario[xn][xs] = acu1
+                xLL = ((self.scenarios['Links'][acu2]-1) *
+                       self.settings['NoTime'])
+                for xt in range(self.settings['NoTime']):
+                    busData[acu1][xt] = (Demand0[xn] *
+                                         self.scenarios['Demand'][xLL+xt])
+                acu1 += 1
+                acu2 += 1
+
+        return (busData, busScenario)
 
     # Produce LL while removing the 'next'
     def _getLL(self, NoLL, NoDt, DtLL):
@@ -559,7 +586,7 @@ class ENetworkClass:
          self.NoSec1, self.NoSec2, self.Loss_Con1, self.Loss_Con2, self.LLDL,
          self.NoFea, self.LLFea) = self.ProcessENet()
 
-        self.busData = self.ProcessEDem(self.demandE)
+        (self.busData, self.busScenario)= self.ProcessEDem(self.demandE)
 
         (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.LLGenC,
          self.NoGenC, self.GenLCst) = self.ProcessEGen()
@@ -596,8 +623,7 @@ class ENetworkClass:
     # Maximum RES generation
     def RESMax_rule(self, m, xt, xg, xh):
         aux = self.connections['Generation'][xh]+self.RES['Position'][xg]
-        xLL = self.settings['Links'][xg]*self.settings['NoTime']
-        print(self.RES['RES'][xLL+xt])
+        xLL = self.scenarios['Links'][xg]*self.settings['NoTime']
         return m.vGen[aux, xt] <= self.RES['RES'][xLL+xt]
 
     # Minimum generation
@@ -640,7 +666,7 @@ class ENetworkClass:
                     m.vEPower_Loss[self.connections['Loss'][xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, self.scenarios['Demand'][xh]+xt] -
+                m.busData[m.busScenario[xn, xh], xt] -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
                 m.vGenDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.connections['Flow'][xh] +
@@ -706,6 +732,7 @@ class ENetworkClass:
         m.branchNo = self.branchNo
         m.branchData = self.branchData
         m.busData = self.busData
+        m.busScenario = self.busScenario
         m.Loss_Con1 = self.Loss_Con1
         m.Loss_Con2 = self.Loss_Con2
         m.LLN2B1 = self.LLN2B1

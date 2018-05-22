@@ -35,7 +35,8 @@ class _node(object):
     _properties = {
             'value': None,
             'index': None,
-            'bus': None
+            'bus': None,
+            'scenario': None
              }
 
 # pyene simulation test
@@ -53,10 +54,16 @@ def test_pyene(conf):
      LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
      Nohr) = EN.ReadTimeS(FileName)
 
-    # Single demand node
+    # Single demand node (first scenario)
     demandNode = _node()
     demandNode.value = DemandProfiles[0][:]
-    demandNode.bus = BusDem
+    demandNode.index = 1
+    EN.loadDemand(demandNode)
+
+    # Second scenario
+    demandNode = _node()
+    demandNode.value = DemandProfiles[1][:]
+    demandNode.index = 2
     EN.loadDemand(demandNode)
 
     # Several RES nodes

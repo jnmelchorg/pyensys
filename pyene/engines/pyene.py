@@ -159,7 +159,9 @@ class pyeneClass():
                 self.EM.tree['Time'][self.EM.size['Periods']][0])
 
         # Add time steps
-        self.NM.settings['Demand'] = np.ones(conf.Time, dtype=float)
+        aux = self.EM.size['Scenarios']
+        self.NM.scenarios['Number'] = aux
+        self.NM.scenarios['Demand'] = np.ones(conf.Time*aux, dtype=float)
         self.NM.settings['NoTime'] = conf.Time
 
         # Initialise Hydropower
@@ -245,12 +247,12 @@ class pyeneClass():
 
     # Load data for demand
     def loadDemand(self, demandNode):
-        '''
-        Load into the model a demand profile for all nodes
-        (there is alto an option to do it per node)
-        '''
-        self.NM.settings['Demand'] = demandNode.value
-        self.NM.settings['Bus'] = demandNode.bus
+        '''Load into the model a demand profile'''
+        demandNode.value
+        aux1 = (demandNode.index-1)*self.NM.settings['NoTime']
+        aux2 = demandNode.index*self.NM.settings['NoTime']
+
+        self.NM.scenarios['Demand'][aux1:aux2] = demandNode.value
 
     # load data for a hydropower node
     def getHydro(self, HydropowerNode):
@@ -313,7 +315,7 @@ class pyeneClass():
 
     # Run integrated pyene model
     def run(self):
-        # Build pyomo model
+        # Build pyomo model        
         mod = self.build_Mod(self.EM, self.NM)
 
         # Run pyomo model
@@ -352,12 +354,12 @@ class pyeneClass():
         #                             Constraints                             #
         mod = EM.addCon(mod)
         mod = NM.addCon(mod)
-        mod = self.addCon(mod)
+        mod = self.addCon(mod)        
 
         #                          Objective function                         #
         WghtAgg = EM.Weight['Node']
         self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
-        xp = 0
+        xp = 0        
         for xn in range(EM.LL['NosBal']+1):
             aux = EM.tree['After'][xn][0]
             if aux != 0:
@@ -366,6 +368,7 @@ class pyeneClass():
             else:
                 self.OFaux[xp] = WghtAgg[xn]
                 xp += 1
+
         mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
         # Optimise
