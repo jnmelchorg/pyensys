@@ -38,6 +38,12 @@ class ENetworkClass:
                 'Cost': [0],
                 'Pump': [0]
                 }
+        # Scenarios
+        self.scenarios = {
+                'Demand': [0],  # Senarios for demand profiles
+                'RES1': [0],  # RES generators with scenario based profiles
+                'RES2': [0]  # Location of the RES profiles
+                }
         # Hydropower
         self.hydropower = {
                 'Number': 0,  # 3
@@ -395,7 +401,6 @@ class ENetworkClass:
             else:
                 xpos = LL[xpos-1]
                 while LLnext[xpos-1] != 0:
-                    print('  test ', xpos)
                     xpos = LLnext[xpos-1]
                 LLnext[xpos-1] = xd+1
 
@@ -635,8 +640,8 @@ class ENetworkClass:
                     m.vEPower_Loss[self.connections['Loss'][xh] +
                                    m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
-                m.busData[xn, xt]-m.vFea[self.connections['Feasibility'][xh] +
-                                         m.LLFea[xn+1], xt] +
+                m.busData[xn, self.scenarios['Demand'][xh]+xt] -
+                m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
                 m.vGenDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.connections['Flow'][xh] +
                                    m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs],
