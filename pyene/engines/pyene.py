@@ -179,10 +179,11 @@ class pyeneClass():
         # Initialise RES
         if conf.NoRES > 0:
             self.NM.RES['Number'] = conf.NoRES
+            self.NM.RES['NoPos'] = conf.NoPos
             self.NM.RES['Bus'] = conf.RES
             self.NM.RES['Position'] = conf.Position
             self.NM.RES['Cost'] = conf.Cost
-            self.NM.RES['RES'] = np.zeros(conf.NoRES*conf.Time, dtype=float)
+            self.NM.RES['RES'] = np.zeros(conf.NoPos*conf.Time, dtype=float)
 
         # Initialise network model
         self.NM.initialise(conf.NetworkFile)
@@ -223,24 +224,88 @@ class pyeneClass():
         self.h = self.NM.connections['set']
 
     # load data for a hydropower node
-    def loadHydro(self, HydropowerNode, NoHydro):
-        aux1 = HydropowerNode['link']-1
-        aux2 = HydropowerNode['value']
-        if NoHydro == 1:
+    def loadHydro(self, HydropowerNode):
+        '''
+        Load into the model the kWh of hydro that are available for a single
+        generator (for the month)
+        '''
+        aux1 = HydropowerNode.index-1
+        aux2 = HydropowerNode.value
+        if self.NM.hydropower['Number'] == 1:
             self.EM.Weight['In'][aux1] = aux2
         else:
             self.EM.Weight['In'][1][aux1] = aux2
 
     # Load data for a RES generator
-    def loadRES(self, resNode, NoRES, Time):
-        acu = (resNode['link']-1)*Time
-        for xt in range(Time):
-            self.NM.RES['RES'][acu+xt] = resNode['value'][xt]
+    def loadRES(self, resNode):
+        '''Load into the model a profile for PW/Wind for a single generator'''
+        acu = (resNode.index-1)*self.NM.settings['NoTime']
+        for xt in range(self.NM.settings['NoTime']):
+            self.NM.RES['RES'][acu+xt] = resNode.value[xt]
 
     # Load data for demand
     def loadDemand(self, demandNode):
-        self.NM.settings['Demand'] = demandNode['value']
-        self.NM.settings['Bus'] = demandNode['link']
+        '''
+        Load into the model a demand profile for all nodes
+        (there is alto an option to do it per node)
+        '''
+        self.NM.settings['Demand'] = demandNode.value
+        self.NM.settings['Bus'] = demandNode.bus
+
+    # load data for a hydropower node
+    def getHydro(self, HydropowerNode):
+        '''
+        Get from the model the kWh of hydro that were not used
+        by a specified generator
+        '''
+        aux1 = HydropowerNode.index-1
+        if self.NM.hydropower['Number'] == 1:
+            return self.EM.Weight['Out'][aux1]
+        else:
+            return self.EM.Weight['Out'][1][aux1]
+
+    # Collect outputs of pumps
+    def getPump(self, mod, indexPump):
+        '''Get kWh consumed by a specific pump'''
+        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
+        pumpTotal = 0
+        for xh in mod.sDL:
+            acu = 0
+            for xt in mod.sTim:
+                acu += mod.vGenDL[self.hDL[xh]+indexPump, xt].value
+            pumpTotal += acu*self.EM.Weight['Node'][aux+xh]
+
+        return pumpTotal
+
+    # COllect demand curtailed in a node
+    def getCurt(self, mod, nod):
+        '''Get the kWh that had to be shed from a single RES generator'''
+        NoVals = len(nod.bus)
+        curTotal = np.zeros(NoVals, dtype=float)
+        if self.NM.settings['Feasibility']:
+            aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
+            for xc in range(NoVals):
+                for xh in mod.sDL:
+                    acu = 0
+                    for xt in mod.sTim:
+                        acu += mod.vFea[self.hFea[xh]+nod.bus[xc], xt].value
+                    curTotal[xc] += acu*self.EM.Weight['Node'][aux+xh]
+
+        return curTotal
+
+    # Collect curtailment of RES
+    def getRES(self, mod, nod):
+        xLL = self.NM.settings['Links'][nod]*self.NM.settings['NoTime']
+        spllTotal = 0
+        for xh in mod.sDL:
+            acu = 0
+            for xt in mod.sTim:
+                aux = (self.NM.connections['Generation'][xh] +
+                       self.NM.RES['Position'][nod])
+                acu += self.NM.RES['RES'][xLL+xt] - mod.vGen[aux, xt]
+            spllTotal += acu*self.EM.Weight['Node'][aux+xh]
+
+        return spllTotal
 
     # Run integrated pyene model
     def run(self):
@@ -251,13 +316,6 @@ class pyeneClass():
         (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
 
         return mod
-
-    # Collect outputs of pumps
-    def getPump(self, mod, indexPump):
-        acu = np.zeros(self.NM.pumps['Number'], dtype=float)
-        for xh in mod.sDL:
-            for xt in mod.sTim:
-                acu[xh] += mod.vGenDL[self.hDL[xh]+indexPump, xt].value
 
     # Build pyomo model
     def build_Mod(self, EM, NM):
@@ -310,7 +368,6 @@ class pyeneClass():
         opt = SolverFactory('glpk')
         # Print
         results = opt.solve(mod)
-        print('\n\nPrint svec', mod.sVec)
 
         return (mod, results)
 
@@ -350,7 +407,7 @@ class pyeneClass():
 
     # Read time series for demand and RES
     def ReadTimeS(self, FileName):
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
                                   FileName)
         Profile_Data = json.load(open(MODEL_JSON))
 

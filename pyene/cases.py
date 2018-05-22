@@ -30,11 +30,17 @@ def test_pyeneN(config):
     (NM, NModel, results) = EN.NSim(config.NetworkFile)
     NM.print(NModel)
 
+# Interaction node
+class _node(object):
+    _properties = {
+            'value': None,
+            'index': None,
+            'bus': None
+             }
 
 # pyene simulation test
 def test_pyene(conf):
     """ Execute pyene to access pyeneN - Full json based simulation."""
-
     # Create object
     EN = pe()
 
@@ -48,42 +54,33 @@ def test_pyene(conf):
      Nohr) = EN.ReadTimeS(FileName)
 
     # Single demand node
-    demandNode = {
-            'type': 'Demand',
-            'value': DemandProfiles[0][:],
-            'link': BusDem
-            }
+    demandNode = _node()
+    demandNode.value = DemandProfiles[0][:]
+    demandNode.bus = BusDem
     EN.loadDemand(demandNode)
 
     # Several RES nodes
+    resNode = _node()
     for xr in range(conf.NoRES):
-        resNode = {
-                'type': 'RES',
-                'value': RESProfs[xr][:],
-                'link': xr+1
-                }
-        EN.loadRES(resNode, conf.NoRES, conf.Time)
+        resNode.value = RESProfs[xr][:]
+        resNode.index = xr+1
+        EN.loadRES(resNode)
 
     # Several hydro nodes
+    hydroNode = _node()
     for xh in range(conf.NoHydro):
-        hydNode = {
-                'type': 'Hydro',
-                'value': 1,
-                'link': xh+1
-                }
-        EN.loadHydro(hydNode, conf.NoHydro)
+        hydroNode.value = 1
+        hydroNode.index = xh+1
+        EN.loadHydro(hydroNode)
 
     # Run integrated pyene
     mod = EN.run()
 
     # Collect output of pumps
     indexPump=1
-    pumNode ={
-            'type': 'Pump',
-            'value': EN.getPump(mod, indexPump),
-            'link': indexPump
-            }
-    
+    pumpNode = _node()
+    pumpNode.value = EN.getPump(mod, indexPump)
+    pumpNode.index =indexPump
 
     # Print results
     EN.Print_ENSim(mod, EN.EM, EN.NM)

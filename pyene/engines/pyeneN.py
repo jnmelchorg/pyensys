@@ -64,7 +64,7 @@ class ENetworkClass:
     # Read input data
     def Read(self, FileName):
         # Load file
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
                                   FileName)
         mpc = json.load(open(MODEL_JSON))
         self.networkE = nx.Graph()
@@ -592,6 +592,7 @@ class ENetworkClass:
     def RESMax_rule(self, m, xt, xg, xh):
         aux = self.connections['Generation'][xh]+self.RES['Position'][xg]
         xLL = self.settings['Links'][xg]*self.settings['NoTime']
+        print(self.RES['RES'][xLL+xt])
         return m.vGen[aux, xt] <= self.RES['RES'][xLL+xt]
 
     # Minimum generation

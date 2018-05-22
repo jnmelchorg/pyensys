@@ -74,7 +74,7 @@ class EnergyClass:
 
     # Read input data
     def Read(self, FileName):
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..\json',
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
                                   FileName)
         data = json.load(open(MODEL_JSON))
 

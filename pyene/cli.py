@@ -55,7 +55,8 @@ def _update_config_pyeneN(conf, kwargs):
         conf.PumpVal[x] = 0.0001
 
     # Number and location of pumps
-    conf.NoRES = kwargs.pop('res')
+    conf.NoRES = kwargs.pop('res')  # Number of RES generators
+    conf.NoPos = conf.NoRES  # Number of RES profiles
     conf.RES = np.zeros(conf.NoRES, dtype=int)
     conf.Position = np.zeros(conf.NoRES, dtype=int)
     conf.Cost = np.zeros(conf.NoRES, dtype=float)
