@@ -7,7 +7,7 @@ engine.
 
 """
 from .engines.pyene import pyeneClass as pe
-
+import numpy as np
 
 # Energy balance test
 def test_pyeneE(config):
@@ -66,23 +66,30 @@ def test_pyene(conf):
     demandNode.index = 2
     EN.loadDemand(demandNode)
 
-    # Several RES nodes
-    resNode = _node()
-    for xr in range(conf.NoRES):
-        resNode.value = RESProfs[xr][:]
-        resNode.index = xr+1
-        EN.loadRES(resNode)
+#    # Several RES nodes
+#    resNode = _node()
+#    for xr in range(conf.NoRES):
+#        resNode.value = RESProfs[xr][:]
+#        resNode.index = xr+1
+#        EN.loadRES(resNode)
 
 #    # Several hydro nodes
 #    hydroNode = _node()
 #    for xh in range(conf.NoHydro):
-#        hydroNode.value = 0.01
+#        hydroNode.value = 100
 #        hydroNode.index = xh+1
 #        EN.loadHydro(hydroNode)
 
     # Run integrated pyene
     mod = EN.run()
-
+#    print('0  -  Gen: ', mod.vGen[0, 0].value)
+#    for x in range(10):
+#        print(x+1,x,'Gen:', mod.vGen[x+1, 0].value, ' Cst:', mod.vGCost[x, 0].value)
+#    print('11  -  Gen: ', mod.vGen[11, 0].value)
+#    for x in range(12, 20):
+#        print(x,x-2,'Gen:', mod.vGen[x,0].value, ' Cst:', mod.vGCost[x-2, 0].value)
+#
+#    aux[1000]
     # Print results
     EN.Print_ENSim(mod, EN.EM, EN.NM)
 

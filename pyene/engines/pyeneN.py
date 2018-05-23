@@ -701,9 +701,7 @@ class ENetworkClass:
         m.sSec1 = range(self.NoSec1)
         m.sSec2 = range(self.NoSec2+1)
         m.sGen = range(self.generationE['Number'])
-        m.sGenP = range(self.generationE['Number']+1)
-        m.sGenC = range(self.generationE['Number']+1)
-        m.sGenCM = range(self.generationE['Number'])
+        m.sGenCM = range(self.NoGenC)
         m.sDL = range(self.pumps['Number'])
         m.sFea = range(self.NoFea)
 
