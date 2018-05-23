@@ -62,6 +62,12 @@ class ENetworkClass:
                 'Max': [0],  # Capacity (kW)
                 'Cost': [0]  # Cost (OF)
                 }
+        self.Storage = {
+                'Number': 0,  # Number of RES generators
+                'Bus': [0],  # Location (Bus) in the network
+                'Max': [0],  # Capacity (kW)
+                'Efficiency': [0]  # Round trip efficiency
+                }
         self.Print = {
                 'Generation': True,
                 'Flows': True,
@@ -598,6 +604,19 @@ class ENetworkClass:
         self.NoBranch = (self.networkE.number_of_edges() +
                          (self.networkE.number_of_edges()-1)*self.NoSec2)
 
+        self.LLStor = np.zeros((self.networkE.number_of_nodes(),
+                                self.scenarios['Number']), dtype=int)
+        acu = 0
+        for xh in range(self.scenarios['Number']):
+            for x in range(self.Storage['Number']):
+                acu += 1
+                self.LLStor[self.Storage['Bus'][x]-1][xh] = acu
+
+        self.LLTime = np.zeros(self.settings['NoTime'], dtype=int)
+        self.LLTime[0] = self.settings['NoTime']-1
+        for xt in range(1, self.settings['NoTime']):
+            self.LLTime[xt] = xt-1
+
     # Objective function
     def OF_rule(self, m):
         xh = self.connections['set'][0]
@@ -661,6 +680,11 @@ class ENetworkClass:
 
     # Nodal balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
     def EBalance_rule(self, m, xn, xt, xs, xh):
+        if self.LLStor[xn, xh] == 0:
+            aux = 0
+        else:
+            aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
+
         return (sum(m.vGen[self.connections['Generation'][xh]+m.LLGen1[xg], xt]
                     for xg in range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
                 sum(m.vFlow_EPower[self.connections['Flow'][xh] +
@@ -671,6 +695,8 @@ class ENetworkClass:
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
+                (m.vStore[self.LLStor[xn, xh], 0] -
+                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
                 m.vGenDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow_EPower[self.connections['Flow'][xh] +
@@ -710,6 +736,20 @@ class ENetworkClass:
     def setFea_rule(self, m, xt, xh):
         return m.vFea[self.connections['Feasibility'][xh], xt] == 0
 
+    # Reference storage
+    def Store0_rule(self, m, xt):
+        return m.vStore[0, xt] == 0
+
+    # Maximum storage
+    def StoreMax_rule(self, m, xst, xt, xh):
+        aux = xh*self.Storage['Number']+xst+1
+        return m.vStore[aux, xt] <= self.Storage['Max'][xst]
+
+    # Minimum storage
+    def StoreMin_rule(self, m, xst, xt, xh):
+        aux = xh*self.Storage['Number']+xst+1
+        return m.vStore[aux, xt] >= 0.2*self.Storage['Max'][xst]
+
     #                                   Sets                                  #
     def getSets(self, m):
         m.sBra = range(self.networkE.number_of_edges())
@@ -726,6 +766,7 @@ class ENetworkClass:
         m.sGenCM = range(self.NoGenC)
         m.sDL = range(self.pumps['Number'])
         m.sFea = range(self.NoFea)
+        m.sSto = range(self.Storage['Number'])
 
         return m
 
@@ -768,6 +809,8 @@ class ENetworkClass:
         m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim, domain=NonNegativeReals,
                        initialize=0.0)
         m.vGenDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
+                       domain=NonNegativeReals, initialize=0.0)
+        m.vStore = Var(range(Noh*(self.Storage['Number'])+1), m.sTim,
                        domain=NonNegativeReals, initialize=0.0)
 
         return m
@@ -813,5 +856,13 @@ class ENetworkClass:
             m.RESMax = Constraint(m.sTim, range(self.RES['Number']),
                                   self.connections['set'],
                                   rule=self.RESMax_rule)
+
+        # Storage
+        if self.Storage['Number'] > 0:
+            m.StoreMax = Constraint(m.sSto, m.sTim, self.connections['set'],
+                                    rule=self.StoreMax_rule)
+            m.StoreMin = Constraint(m.sSto, m.sTim, self.connections['set'],
+                                    rule=self.StoreMin_rule)
+        m.Store0 = Constraint(m.sTim, rule=self.Store0_rule)
 
         return m
