@@ -32,7 +32,7 @@ def cli(conf, **kwargs):
     for x in range(conf.NoHydro):
         conf.Hydro[x] = x+1
         conf.HydroMax[x] = 1000
-        conf.HydroCost[x] = 0.001
+        conf.HydroCost[x] = 0.01
 
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
@@ -52,7 +52,7 @@ def _update_config_pyeneN(conf, kwargs):
     for x in range(conf.NoPump):
         conf.Pump[x] = x+1
         conf.PumpMax[x] = 1
-        conf.PumpVal[x] = 0.0001
+        conf.PumpVal[x] = 0.001
 
     # Number and location of pumps
     conf.NoRES = kwargs.pop('res')  # Number of RES generators
@@ -64,7 +64,7 @@ def _update_config_pyeneN(conf, kwargs):
     for x in range(conf.NoRES):
         conf.RES[x] = x+1
         conf.Cost[x] = 0
-        conf.RESMax[x] = 1
+        conf.RESMax[x] = 10
 
     conf.Security = kwargs.pop('sec')
     conf.Losses = kwargs.pop('loss')

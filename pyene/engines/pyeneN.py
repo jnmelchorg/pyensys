@@ -62,6 +62,14 @@ class ENetworkClass:
                 'Max': [0],  # Capacity (kW)
                 'Cost': [0]  # Cost (OF)
                 }
+        self.Print = {
+                'Generation': True,
+                'Flows': True,
+                'Voltages': True,
+                'Losses': True,
+                'Curtailment': True,
+                'Feasibility': True,
+                }
 
     # Read input data
     def Read(self, FileName):
@@ -492,69 +500,83 @@ class ENetworkClass:
 
         return (GenMax, GenMin, LLGen1, LLGen2, LLGenC, NoGenC, GenLCst)
 
-    # Print results
+    # Switch off print flags
+    def offPrint(self):
+        self.Print['Generation'] = False
+        self.Print['Flows'] = False
+        self.Print['Voltages'] = False
+        self.Print['Losses'] = False
+        self.Print['Curtailment'] = False
+        self.Print['Feasibility'] = False
+
+        # Print results
     def print(self, mod):
         for xh in self.connections['set']:
             print("\nCASE:", xh)
+            
 
-            print("\nFlow_EGen=[")
-            for xn in range(1, self.generationE['Number']+1):
-                for x2 in mod.sTim:
-                    aux = (mod.vGen[self.connections['Generation'][xh]+xn,
-                                    x2].value*self.networkE.graph['baseMVA'])
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Generation']:
+                print("\nFlow_EGen=[")
+                for xn in range(1, self.generationE['Number']+1):
+                    for x2 in mod.sTim:
+                        aux = (mod.vGen[self.connections['Generation'][xh]+xn,
+                                        x2].value *
+                               self.networkE.graph['baseMVA'])
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-            print("\nFlow_EPower=[")
-            for x1 in range(1, self.networkE.number_of_edges()+1):
-                for x2 in mod.sTim:
-                    aux = (mod.vFlow_EPower[self.connections['Flow'][xh]+x1,
-                                            x2].value *
-                           self.networkE.graph['baseMVA'])
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Flows']:
+                print("\nFlow_EPower=[")
+                for x1 in range(1, self.networkE.number_of_edges()+1):
+                    for x2 in mod.sTim:
+                        aux = (mod.vFlow_EPower[self.connections['Flow'][xh] +
+                                                x1,
+                                                x2].value *
+                               self.networkE.graph['baseMVA'])
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-            # Voltage angles
-            print("\nVoltage_Angle=[")
-            for xn in mod.sBuses:
-                for xt in mod.sTim:
-                    aux = self.connections['Voltage'][xh]
-                    aux = mod.vVoltage_Angle[aux+xn, xt].value
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Voltages']:
+                print("\nVoltage_Angle=[")
+                for xn in mod.sBuses:
+                    for xt in mod.sTim:
+                        aux = self.connections['Voltage'][xh]
+                        aux = mod.vVoltage_Angle[aux+xn, xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-            # Power losses
-            print("\nEPower_Loss=[")
-            for xb in range(1, self.networkE.number_of_edges()+1):
-                for xt in mod.sTim:
-                    aux = mod.vEPower_Loss[self.connections['Loss'][xh]+xb,
-                                           xt].value
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Losses']:
+                print("\nEPower_Loss=[")
+                for xb in range(1, self.networkE.number_of_edges()+1):
+                    for xt in mod.sTim:
+                        aux = mod.vEPower_Loss[self.connections['Loss'][xh]+xb,
+                                               xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-            # Dinamic loads
-            print("\nvGenDL=[")
-            for xdl in mod.sDL:
-                for xt in mod.sTim:
-                    aux = mod.vGenDL[self.connections['Pump'][xh]+xdl,
-                                     xt].value
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Curtailment']:
+                print("\nvGenDL=[")
+                for xdl in mod.sDL:
+                    for xt in mod.sTim:
+                        aux = mod.vGenDL[self.connections['Pump'][xh]+xdl,
+                                         xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-            # Feasibility constraints
-            print("\nFeas=[")
-            for xf in mod.sFea:
-                for xt in mod.sTim:
-                    aux = mod.vFea[self.connections['Feasibility'][xh]+xf,
-                                   xt].value
-                    print("%8.4f " % aux, end='')
-                print()
-            print("];")
+            if self.Print['Feasibility']:
+                print("\nFeas=[")
+                for xf in mod.sFea:
+                    for xt in mod.sTim:
+                        aux = mod.vFea[self.connections['Feasibility'][xh]+xf,
+                                       xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
     # Initialize externally
     def initialise(self, FileName):
@@ -604,7 +626,7 @@ class ENetworkClass:
     # Maximum RES generation
     def RESMax_rule(self, m, xt, xg, xh):
         return (m.vGen[self.resScenario[xg][xh][0], xt] <=
-                self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] /
+                self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg])
 
     # Minimum generation

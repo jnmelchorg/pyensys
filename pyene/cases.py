@@ -30,14 +30,14 @@ def test_pyeneN(config):
     (NM, NModel, results) = EN.NSim(config.NetworkFile)
     NM.print(NModel)
 
+
 # Interaction node
-class _node(object):
-    _properties = {
-            'value': None,
-            'index': None,
-            'bus': None,
-            'scenario': None
-             }
+class _node():
+    def __init__(self):
+        self.value = None
+        self.index = None
+        self.bus = None
+
 
 # pyene simulation test
 def test_pyene(conf):
@@ -66,37 +66,56 @@ def test_pyene(conf):
     demandNode.index = 2
     EN.loadDemand(demandNode)
 
-#    # Several RES nodes
-#    resNode = _node()
-#    for xr in range(conf.NoRES):
-#        resNode.value = RESProfs[xr][:]
-#        resNode.index = xr+1
-#        EN.loadRES(resNode)
+    # Several RES nodes
+    resInNode = _node()
+    for xr in range(conf.NoRES):
+        resInNode.value = RESProfs[xr][:]
+        resInNode.index = xr+1
+        EN.loadRES(resInNode)
 
-#    # Several hydro nodes
-#    hydroNode = _node()
-#    for xh in range(conf.NoHydro):
-#        hydroNode.value = 100
-#        hydroNode.index = xh+1
-#        EN.loadHydro(hydroNode)
+    # Several hydro nodes
+    hydroInNode = _node()
+    for xh in range(conf.NoHydro):
+        hydroInNode.value = 1000
+        hydroInNode.index = xh+1
+        EN.loadHydro(hydroInNode)
 
     # Run integrated pyene
     mod = EN.run()
-#    print('0  -  Gen: ', mod.vGen[0, 0].value)
-#    for x in range(10):
-#        print(x+1,x,'Gen:', mod.vGen[x+1, 0].value, ' Cst:', mod.vGCost[x, 0].value)
-#    print('11  -  Gen: ', mod.vGen[11, 0].value)
-#    for x in range(12, 20):
-#        print(x,x-2,'Gen:', mod.vGen[x,0].value, ' Cst:', mod.vGCost[x-2, 0].value)
-#
-#    aux[1000]
+
     # Print results
+#    EN.NM.offPrint()
+#    EN.NM.Print['Generation'] = True
     EN.Print_ENSim(mod, EN.EM, EN.NM)
 
-    # Collect output of pumps
-    indexPump=1
-    pumpNode = _node()
-    pumpNode.value = EN.getPump(mod, indexPump)
-    pumpNode.index =indexPump
+    # Collect unused hydro:
+    print()
+    hydroOutNode = _node()
+    for xh in range(EN.EM.size['Vectors']):
+        hydroOutNode.index = xh+1
+        hydroOutNode.value = EN.getHydro(mod, hydroOutNode)
+        print('Hydro %d left: %f' % (hydroOutNode.index, hydroOutNode.value))
 
-    
+    # Collect output of pumps
+    print()
+    pumpNode = _node()
+    for xp in range(EN.NM.pumps['Number']):
+        pumpNode.index = xp+1
+        pumpNode.value = EN.getPump(mod, xp+1)
+        print('Pump %d: %f' % (pumpNode.index, pumpNode.value))
+
+    # Collect RES spill
+    print()
+    resOutNode = _node()
+    for xp in range(EN.NM.RES['Number']):
+        resOutNode.index = xp+1
+        resOutNode.value = EN.getRES(mod, resOutNode)
+        print('RES %d: %f' % (resOutNode.index, resOutNode.value))
+
+    # Collect curtailment
+    print()
+    curNode = _node()
+    for xn in range(EN.NM.networkE.number_of_nodes()):
+        curNode.bus = xn+1
+        curNode.value = EN.getCurt(mod, curNode)
+        print('RES %d: %f' % (curNode.bus, curNode.value))

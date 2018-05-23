@@ -256,16 +256,16 @@ class pyeneClass():
         self.NM.scenarios['Demand'][aux1:aux2] = demandNode.value
 
     # load data for a hydropower node
-    def getHydro(self, HydropowerNode):
+    def getHydro(self, mod, HydropowerNode):
         '''
         Get from the model the kWh of hydro that were not used
         by a specified generator
         '''
-        aux1 = HydropowerNode.index-1
+        aux = HydropowerNode.index-1
         if self.NM.hydropower['Number'] == 1:
-            return self.EM.Weight['Out'][aux1]
+            return mod.WOutFull[aux].value
         else:
-            return self.EM.Weight['Out'][1][aux1]
+            return mod.WOutFull[1, aux].value
 
     # Collect outputs of pumps
     def getPump(self, mod, indexPump):
@@ -283,33 +283,30 @@ class pyeneClass():
     # COllect demand curtailed in a node
     def getCurt(self, mod, nod):
         '''Get the kWh that had to be curtailed from a given bus'''
+        curTotal = 0
         if self.NM.settings['Feasibility']:
-            NoVals = len(nod.bus)
-            curTotal = np.zeros(NoVals, dtype=float)
-            if self.NM.settings['Feasibility']:
-                aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
-                for xc in range(NoVals):
-                    for xh in mod.sDL:
-                        aux2 = self.hFea[xh]+nod.bus[xc]
-                        acu = 0
-                        for xt in mod.sTim:                            
-                            acu += mod.vFea[aux2, xt].value
-                        curTotal[xc] += acu*self.EM.Weight['Node'][aux1+xh]
-        else:
-            curTotal = None
+            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
+            for xh in mod.sDL:
+                aux2 = self.hFea[xh]+nod.bus
+                acu = 0
+                for xt in mod.sTim:
+                    acu += mod.vFea[aux2, xt].value
+                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
 
         return curTotal
 
     # Collect curtailment of RES
     def getRES(self, mod, nod):
-        xLL = self.NM.settings['Links'][nod]*self.NM.settings['NoTime']
+        xg = nod.index-1
         spllTotal = 0
+        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                aux = (self.NM.connections['Generation'][xh] +
-                       self.NM.RES['Position'][nod])
-                acu += self.NM.scenarios['RES'][xLL+xt] - mod.vGen[aux, xt]
+                acu += (self.NM.RES['Max'][xg] *
+                        self.NM.scenarios['RES']
+                        [self.NM.resScenario[xg][xh][1]+xt] -
+                        mod.vGen[self.NM.resScenario[xg][xh][0], xt].value)
             spllTotal += acu*self.EM.Weight['Node'][aux+xh]
 
         return spllTotal
