@@ -73,12 +73,12 @@ def test_pyene(conf):
         resNode.index = xr+1
         EN.loadRES(resNode)
 
-    # Several hydro nodes
-    hydroNode = _node()
-    for xh in range(conf.NoHydro):
-        hydroNode.value = 1
-        hydroNode.index = xh+1
-        EN.loadHydro(hydroNode)
+#    # Several hydro nodes
+#    hydroNode = _node()
+#    for xh in range(conf.NoHydro):
+#        hydroNode.value = 0.01
+#        hydroNode.index = xh+1
+#        EN.loadHydro(hydroNode)
 
     # Run integrated pyene
     mod = EN.run()

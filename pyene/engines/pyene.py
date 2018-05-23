@@ -136,6 +136,7 @@ class pyeneClass():
     # Initialise energy and networks simulator
     def initialise(self, conf):
         # Creat objects
+        self.conf = conf
         self.EM = de()
         self.NM = dn()
 
@@ -183,9 +184,9 @@ class pyeneClass():
             self.NM.RES['Number'] = conf.NoRES
             self.NM.RES['NoPos'] = conf.NoPos
             self.NM.RES['Bus'] = conf.RES
-            self.NM.RES['Position'] = conf.Position
+            self.NM.RES['Max'] = conf.RESMax
             self.NM.RES['Cost'] = conf.Cost
-            self.NM.RES['RES'] = np.zeros(conf.NoPos*conf.Time, dtype=float)
+            self.NM.scenarios['RES'] = np.zeros(conf.NoPos*conf.Time, dtype=float)
 
         # Initialise network model
         self.NM.initialise(conf.NetworkFile)
@@ -241,14 +242,14 @@ class pyeneClass():
     # Load data for a RES generator
     def loadRES(self, resNode):
         '''Load into the model a profile for PW/Wind for a single generator'''
-        acu = (resNode.index-1)*self.NM.settings['NoTime']
-        for xt in range(self.NM.settings['NoTime']):
-            self.NM.RES['RES'][acu+xt] = resNode.value[xt]
+        aux1 = (resNode.index-1)*self.NM.settings['NoTime']
+        aux2 = resNode.index*self.NM.settings['NoTime']
+
+        self.NM.scenarios['RES'][aux1:aux2] = resNode.value
 
     # Load data for demand
     def loadDemand(self, demandNode):
         '''Load into the model a demand profile'''
-        demandNode.value
         aux1 = (demandNode.index-1)*self.NM.settings['NoTime']
         aux2 = demandNode.index*self.NM.settings['NoTime']
 
@@ -308,14 +309,14 @@ class pyeneClass():
             for xt in mod.sTim:
                 aux = (self.NM.connections['Generation'][xh] +
                        self.NM.RES['Position'][nod])
-                acu += self.NM.RES['RES'][xLL+xt] - mod.vGen[aux, xt]
+                acu += self.NM.scenarios['RES'][xLL+xt] - mod.vGen[aux, xt]
             spllTotal += acu*self.EM.Weight['Node'][aux+xh]
 
         return spllTotal
 
     # Run integrated pyene model
     def run(self):
-        # Build pyomo model        
+        # Build pyomo model
         mod = self.build_Mod(self.EM, self.NM)
 
         # Run pyomo model

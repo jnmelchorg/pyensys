@@ -58,13 +58,13 @@ def _update_config_pyeneN(conf, kwargs):
     conf.NoRES = kwargs.pop('res')  # Number of RES generators
     conf.NoPos = conf.NoRES  # Number of RES profiles
     conf.RES = np.zeros(conf.NoRES, dtype=int)
-    conf.Position = np.zeros(conf.NoRES, dtype=int)
+    conf.RESMax = np.zeros(conf.NoRES, dtype=int)
     conf.Cost = np.zeros(conf.NoRES, dtype=float)
     # assume the location of the hydropower plants
     for x in range(conf.NoRES):
         conf.RES[x] = x+1
-        conf.Position[x] = x+1
         conf.Cost[x] = 0
+        conf.RESMax[x] = 1
 
     conf.Security = kwargs.pop('sec')
     conf.Losses = kwargs.pop('loss')
