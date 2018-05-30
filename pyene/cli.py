@@ -1,5 +1,6 @@
 import click
 import numpy as np
+import cProfile
 from .cases import *
 
 
@@ -15,6 +16,7 @@ pass_conf = click.make_pass_decorator(ConfigClass, ensure=True)
 @click.option('--init', is_flag=False, type=bool,
               help='Take the settings from __init__')
 @click.option('--hydro', default=3, help='Number of hydropower plants')
+@click.option('--profile/--no-porfile', default=False)
 @pass_conf
 def cli(conf, **kwargs):
     """Prepare pyene simulation"""
@@ -34,6 +36,14 @@ def cli(conf, **kwargs):
         conf.HydroMax[x] = 1000
         conf.HydroCost[x] = 0.01
 
+    # Add profiler
+    if 'profile' in kwargs:
+        profiler = cProfile.Profile()
+        profiler.enable()
+    else:
+        profiler = None
+
+
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
     conf.TreeFile = kwargs.pop('tree')
@@ -43,7 +53,7 @@ def _update_config_pyeneE(conf, kwargs):
 
 # Update config based on network data
 def _update_config_pyeneN(conf, kwargs):
-    #Number and location of pumps
+    # Number and location of pumps
     conf.NoPump = kwargs.pop('pump')
     conf.Pump = np.zeros(conf.NoPump, dtype=int)
     conf.PumpMax = np.zeros(conf.NoPump, dtype=float)
@@ -56,7 +66,8 @@ def _update_config_pyeneN(conf, kwargs):
 
     # Number and location of pumps
     conf.NoRES = kwargs.pop('res')  # Number of RES generators
-    conf.NoPos = conf.NoRES  # Number of RES profiles
+    conf.NoDemProfiles = 2  # Number of demand profiles
+    conf.NoRESProfiles = 2  # Number of RES profiles
     conf.RES = np.zeros(conf.NoRES, dtype=int)
     conf.RESMax = np.zeros(conf.NoRES, dtype=int)
     conf.Cost = np.zeros(conf.NoRES, dtype=float)
@@ -81,7 +92,7 @@ def _update_config_pyeneN(conf, kwargs):
 @pass_conf
 def energy_balance_pyeneE(conf, **kwargs):
     """Prepare energy balance simulation"""
-    conf=_update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneE(conf, kwargs)
 
     test_pyeneE(conf)
 

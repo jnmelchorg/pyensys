@@ -96,7 +96,7 @@ class pyeneClass():
         return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
                        1000000 for xt in m.sTim) * self.OFaux[xh] -
-                   sum(m.ValDL[xdl]*sum(m.vGenDL[self.hDL[xh]+xdl+1, xt]
+                   sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt]
                                         for xt in m.sTim) for xdl in m.sDL) *
                    self.OFaux[xh]
                    for xh in self.h)
@@ -162,7 +162,10 @@ class pyeneClass():
         # Add time steps
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
-        self.NM.scenarios['Demand'] = np.ones(conf.Time*aux, dtype=float)
+        self.NM.scenarios['NoDem'] = conf.NoDemProfiles
+        self.NM.scenarios['NoRES'] = conf.NoRESProfiles
+        self.NM.scenarios['Demand'] = np.ones(conf.Time*conf.NoDemProfiles,
+                                              dtype=float)
         self.NM.settings['NoTime'] = conf.Time
 
         # Initialise Hydropower
@@ -182,11 +185,11 @@ class pyeneClass():
         # Initialise RES
         if conf.NoRES > 0:
             self.NM.RES['Number'] = conf.NoRES
-            self.NM.RES['NoPos'] = conf.NoPos
             self.NM.RES['Bus'] = conf.RES
             self.NM.RES['Max'] = conf.RESMax
             self.NM.RES['Cost'] = conf.Cost
-            self.NM.scenarios['RES'] = np.zeros(conf.NoPos*conf.Time, dtype=float)
+            self.NM.scenarios['RES'] = np.zeros(conf.NoRESProfiles*conf.Time,
+                                                dtype=float)
 
         # Initialise network model
         self.NM.initialise(conf.NetworkFile)
@@ -261,11 +264,7 @@ class pyeneClass():
         Get from the model the kWh of hydro that were not used
         by a specified generator
         '''
-        aux = HydropowerNode.index-1
-        if self.NM.hydropower['Number'] == 1:
-            return mod.WOutFull[aux].value
-        else:
-            return mod.WOutFull[1, aux].value
+        return mod.WOutFull[1, HydropowerNode.index-1].value
 
     # Collect outputs of pumps
     def getPump(self, mod, indexPump):
@@ -275,7 +274,7 @@ class pyeneClass():
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                acu += mod.vGenDL[self.hDL[xh]+indexPump, xt].value
+                acu += mod.vDL[self.hDL[xh]+indexPump, xt].value
             pumpTotal += acu*self.EM.Weight['Node'][aux+xh]
 
         return pumpTotal

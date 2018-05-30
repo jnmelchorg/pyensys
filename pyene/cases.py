@@ -28,6 +28,7 @@ def test_pyeneN(config):
     if config.init:
         EN.fRea = False
     (NM, NModel, results) = EN.NSim(config.NetworkFile)
+    print('\n\nOF: ', NModel.OF.expr())
     NM.print(NModel)
 
 
