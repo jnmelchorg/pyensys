@@ -279,7 +279,7 @@ class pyeneClass():
 
         return pumpTotal
 
-    # COllect demand curtailed in a node
+    # COllect demand curtailed in a bus
     def getCurt(self, mod, nod):
         '''Get the kWh that had to be curtailed from a given bus'''
         curTotal = 0
@@ -290,6 +290,22 @@ class pyeneClass():
                 acu = 0
                 for xt in mod.sTim:
                     acu += mod.vFea[aux2, xt].value
+                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
+
+        return curTotal
+
+    # COllect demand curtailed in all buses
+    def getCurtAll(self, mod):
+        '''Get the kWh that had to be curtailed from all buses'''
+
+        curTotal = 0
+        if self.NM.settings['Feasibility']:
+            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
+            for xh in mod.sDL:
+                acu = 0
+                for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
+                    for xt in mod.sTim:
+                        acu += mod.vFea[xn, xt].value
                 curTotal += acu*self.EM.Weight['Node'][aux1+xh]
 
         return curTotal

@@ -113,10 +113,16 @@ def test_pyene(conf):
         resOutNode.value = EN.getRES(mod, resOutNode)
         print('RES %d: %f' % (resOutNode.index, resOutNode.value))
 
-    # Collect curtailment
+    # Collect curtailment per node
     print()
     curNode = _node()
     for xn in range(EN.NM.networkE.number_of_nodes()):
         curNode.bus = xn+1
         curNode.value = EN.getCurt(mod, curNode)
-        print('RES %d: %f' % (curNode.bus, curNode.value))
+        print('Dem %d: %f' % (curNode.bus, curNode.value))
+
+    # Collect all curtailment
+    print()
+    curAll = _node()
+    curAll.value = EN.getCurtAll(mod)
+    print('DemTot:', curAll.value)
