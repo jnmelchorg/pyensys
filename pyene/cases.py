@@ -38,6 +38,8 @@ class _node():
         self.value = None
         self.index = None
         self.bus = None
+        self.marginal = None
+        self.flag = False
 
 
 # pyene simulation test
@@ -85,8 +87,10 @@ def test_pyene(conf):
     mod = EN.run()
 
     # Print results
-#    EN.NM.offPrint()
+    print('\n\nOF: ', mod.OF.expr())
+    EN.NM.offPrint()
 #    EN.NM.Print['Generation'] = True
+#    EN.NM.Print['Losses'] = True
     EN.Print_ENSim(mod, EN.EM, EN.NM)
 
     # Collect unused hydro:
@@ -94,8 +98,9 @@ def test_pyene(conf):
     hydroOutNode = _node()
     for xh in range(EN.EM.size['Vectors']):
         hydroOutNode.index = xh+1
-        hydroOutNode.value = EN.getHydro(mod, hydroOutNode)
-        print('Hydro %d left: %f' % (hydroOutNode.index, hydroOutNode.value))
+        hydroOutNode = EN.getHydro(mod, hydroOutNode)
+        print('Hydro %d left: %f (%f)' % (hydroOutNode.index,
+              hydroOutNode.value, hydroOutNode.marginal), hydroOutNode.flag)
 
     # Collect output of pumps
     print()
@@ -125,4 +130,4 @@ def test_pyene(conf):
     print()
     curAll = _node()
     curAll.value = EN.getCurtAll(mod)
-    print('DemTot:', curAll.value)
+    print('Total curtailment:', curAll.value)

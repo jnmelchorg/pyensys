@@ -356,7 +356,7 @@ class ENetworkClass:
             Loss_Con2 = np.zeros(Number_LossCon, dtype=float)
             for x1 in range(Number_LossCon):
                 Loss_Con2[x1] = ((aux[x1+1]**2-aux[x1]**2) /
-                                    (aux[x1+1]-aux[x1]))
+                                 (aux[x1+1]-aux[x1]))
                 Loss_Con1[x1] = aux[x1]**2-aux[x1]*Loss_Con2[x1]
         else:
             Number_LossCon = 1
@@ -583,7 +583,7 @@ class ENetworkClass:
                 for xb in range(1, self.networkE.number_of_edges()+1):
                     for xt in mod.sTim:
                         aux = (mod.vLoss[self.connections['Loss'][xh]+xb,
-                                        xt].value *
+                                         xt].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()

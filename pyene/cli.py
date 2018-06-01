@@ -102,11 +102,11 @@ def energy_balance_pyeneE(conf, **kwargs):
               help='Network model file')
 @click.option('--pump', default=0, help='Number of pumps')
 @click.option('--res', default=0, help='Number of RES generators')
-@click.option('--sec', is_flag=False, type=bool,
+@click.option('--sec', default=[], type=list,
               help='Include N-1 security constraints')
-@click.option('--loss', is_flag=False, type=bool,
+@click.option('--loss', default=False, type=bool,
               help='Estimate losses')
-@click.option('--feas', is_flag=False, type=bool,
+@click.option('--feas', default=False, type=bool,
               help='Consider feasibility constratints')
 @click.option('--time', default=0, help='Number of time steps')
 @pass_conf
@@ -124,11 +124,11 @@ def network_simulation_pyeneE(conf, **kwargs):
               help='Network model file')
 @click.option('--Pump', default=2, help='Number of pumps')
 @click.option('--res', default=2, help='Number of RES generators')
-@click.option('--sec', is_flag=False, type=bool,
+@click.option('--sec', default=[], type=list,
               help='Include N-1 security constraints')
-@click.option('--loss', is_flag=False, type=bool,
+@click.option('--loss', default=True, type=bool,
               help='Estimate losses')
-@click.option('--feas', is_flag=False, type=bool,
+@click.option('--feas', default=True, type=bool,
               help='Consider feasibility constratints')
 @click.option('--time', default=24, help='Number of time steps')
 @pass_conf

@@ -24,6 +24,7 @@ class pyeneClass():
     def __init__(self):
         # Chose to load data from file
         self.fRea = True
+        self.Penalty = 1000000
 
     # Get mathematical model
     def SingleLP(self, ENM):
@@ -95,7 +96,7 @@ class pyeneClass():
     def OF_rule(self, m):
         return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                       1000000 for xt in m.sTim) * self.OFaux[xh] -
+                       self.Penalty for xt in m.sTim) * self.OFaux[xh] -
                    sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt]
                                         for xt in m.sTim) for xdl in m.sDL) *
                    self.OFaux[xh]
@@ -104,12 +105,15 @@ class pyeneClass():
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
+                self.NM.networkE.graph['baseMVA'] *
                 sum(m.vGen[m.LLENM[xL][1]+xv, xt] for xt in m.sTim))
 
     #                               Constraints                               #
     def addCon(self, m):
         # Link water consumption from both models
         m.EMNM = Constraint(m.sLLEN, m.sVec, rule=self.EMNM_rule)
+        # Allow collection of ual values
+        m.dual = Suffix(direction=Suffix.IMPORT)
 
         return m
 
@@ -192,6 +196,11 @@ class pyeneClass():
                                                 dtype=float)
 
         # Initialise network model
+        if conf.Security is not None:
+            self.NM.settings['Security'] = conf.Security
+        self.NM.settings['Losses'] = conf.Losses
+        self.NM.settings['Feasibility'] = conf.Feasibility
+
         self.NM.initialise(conf.NetworkFile)
 
         # Add connections between energy balance and networ models
@@ -264,7 +273,14 @@ class pyeneClass():
         Get from the model the kWh of hydro that were not used
         by a specified generator
         '''
-        return mod.WOutFull[1, HydropowerNode.index-1].value
+        aux1 = HydropowerNode.index-1
+        HydropowerNode.value = mod.WOutFull[1, aux1].value
+        HydropowerNode.marginal = -1*mod.dual[mod.SoCBalance[1, aux1]]
+        aux2 = self.Penalty/self.NM.networkE.graph['baseMVA']
+        if HydropowerNode.marginal > aux2:
+            HydropowerNode.flag = True
+
+        return HydropowerNode
 
     # Collect outputs of pumps
     def getPump(self, mod, indexPump):
@@ -276,6 +292,7 @@ class pyeneClass():
             for xt in mod.sTim:
                 acu += mod.vDL[self.hDL[xh]+indexPump, xt].value
             pumpTotal += acu*self.EM.Weight['Node'][aux+xh]
+        pumpTotal *= self.NM.networkE.graph['baseMVA']
 
         return pumpTotal
 
@@ -291,6 +308,7 @@ class pyeneClass():
                 for xt in mod.sTim:
                     acu += mod.vFea[aux2, xt].value
                 curTotal += acu*self.EM.Weight['Node'][aux1+xh]
+        curTotal *= self.NM.networkE.graph['baseMVA']
 
         return curTotal
 
@@ -307,6 +325,7 @@ class pyeneClass():
                     for xt in mod.sTim:
                         acu += mod.vFea[xn, xt].value
                 curTotal += acu*self.EM.Weight['Node'][aux1+xh]
+        curTotal *= self.NM.networkE.graph['baseMVA']
 
         return curTotal
 
