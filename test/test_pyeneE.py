@@ -5,13 +5,12 @@ from pyene.engines.pyene import pyeneClass as pe
 
 
 # Single vector energy balance test
-def test_pyeneE_TreeMonth01():
-    config = get_config()
+def test_pyeneE_TreeMonth01(conf):
     print('test_pyeneE_TreeMonth01: TreeMonth01.json')
-    config.TreeFile = 'TreeMonth01.json'  # Selected tree file
+    conf.TreeFile = 'TreeMonth01.json'  # Selected tree file
     EN = pe()
 
-    (EM, EModel, results) = EN.ESim(config)
+    (EM, EModel, results) = EN.ESim(conf)
     EM.print(EModel)
 
     # 1000 - 4.25*(5*1 + 2*2) = 961.75
@@ -19,13 +18,12 @@ def test_pyeneE_TreeMonth01():
 
 
 # Multiple vector test
-def test_pyeneE_TreeYear02():
-    config = get_config()
+def test_pyeneE_TreeYear02(conf):
     print('test_pyeneE_TreeYear02: TreeYear02.json')
-    config.TreeFile = 'TreeYear02.json'  # Selected tree file
+    conf.TreeFile = 'TreeYear02.json'  # Selected tree file
     EN = pe()
 
-    (EM, EModel, results) = EN.ESim(config)
+    (EM, EModel, results) = EN.ESim(conf)
     EM.print(EModel)
 
     # 1900-30*(5*3+2*6)+22*(3-(5*3+2*6)) = 562
@@ -39,13 +37,12 @@ def test_pyeneE_TreeYear02():
 
 
 # Consideration of uncertainty
-def test_pyeneE_Uncertainty():
-    config = get_config()
+def test_pyeneE_Uncertainty(conf):
     print('test_pyeneE_Uncertainty: TreeMonth01Unc.json')
-    config.TreeFile = 'TreeMonth01Unc.json'  # Selected tree file
+    conf.TreeFile = 'TreeMonth01Unc.json'  # Selected tree file
     EN = pe()
 
-    (EM, EModel, results) = EN.ESim(config)
+    (EM, EModel, results) = EN.ESim(conf)
     EM.print(EModel)
 
     # 10-5*.71 = 6.45
