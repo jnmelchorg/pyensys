@@ -145,13 +145,13 @@ class pyeneClass():
         self.NM = dn()
 
         # Adding hydro to the energy balance tree
-        self.settings = {
+        self.EM.settings = {
                 'Fix': True,  # Force a specific number of vectors
                 'Vectors': conf.NoHydro  # Number of vectors
                 }
 
         # Initialise energy balance model
-        self.EM.initialise(conf.TreeFile, conf)
+        self.EM.initialise(conf)
 
         # Get number of required network model instances
         NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
@@ -195,7 +195,7 @@ class pyeneClass():
         self.NM.settings['Losses'] = conf.Losses
         self.NM.settings['Feasibility'] = conf.Feasibility
 
-        self.NM.initialise(conf.NetworkFile)
+        self.NM.initialise(conf.NetworkFile, conf.json)
 
         # Add connections between energy balance and networ models
         self.NM.connections['set'] = range(NoNM)

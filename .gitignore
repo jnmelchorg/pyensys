@@ -1,2 +1,5 @@
+# To ignore files that are already tracked, use:
+# git rm --cached FILENAME
+
 # pycache folders
 __pycache__/
