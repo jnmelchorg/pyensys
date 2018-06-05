@@ -7,6 +7,7 @@ from pyene.engines.pyene import pyeneClass as pe
 # Single vector energy balance test
 def test_pyeneE_TreeMonth01():
     config = get_config()
+    print('test_pyeneE_TreeMonth01: TreeMonth01.json')
     config.TreeFile = 'TreeMonth01.json'  # Selected tree file
     EN = pe()
 
@@ -20,6 +21,7 @@ def test_pyeneE_TreeMonth01():
 # Multiple vector test
 def test_pyeneE_TreeYear02():
     config = get_config()
+    print('test_pyeneE_TreeYear02: TreeYear02.json')
     config.TreeFile = 'TreeYear02.json'  # Selected tree file
     EN = pe()
 
@@ -39,6 +41,7 @@ def test_pyeneE_TreeYear02():
 # Consideration of uncertainty
 def test_pyeneE_Uncertainty():
     config = get_config()
+    print('test_pyeneE_Uncertainty: TreeMonth01Unc.json')
     config.TreeFile = 'TreeMonth01Unc.json'  # Selected tree file
     EN = pe()
 

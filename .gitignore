@@ -3,3 +3,6 @@
 
 # pycache folders
 __pycache__/
+
+# cache folder
+.pytest_cache/

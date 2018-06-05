@@ -46,12 +46,12 @@ class pyeneClass():
         return mod
 
     # Network only optimisation
-    def NSim(self, FileName):
+    def NSim(self, conf):
         # Get network object
         NM = dn()
 
         # Initialise
-        NM.initialise(FileName)
+        NM.initialise(conf)
 
         # Build LP model
         NModel = self.SingleLP(NM)
@@ -190,12 +190,7 @@ class pyeneClass():
                                                 dtype=float)
 
         # Initialise network model
-        if conf.Security is not None:
-            self.NM.settings['Security'] = conf.Security
-        self.NM.settings['Losses'] = conf.Losses
-        self.NM.settings['Feasibility'] = conf.Feasibility
-
-        self.NM.initialise(conf.NetworkFile, conf.json)
+        self.NM.initialise(conf)
 
         # Add connections between energy balance and networ models
         self.NM.connections['set'] = range(NoNM)

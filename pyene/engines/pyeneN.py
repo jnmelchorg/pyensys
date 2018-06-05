@@ -609,9 +609,15 @@ class ENetworkClass:
                 print("];")
 
     # Initialize externally
-    def initialise(self, FileName, jsonPath):
+    def initialise(self, conf):
+        # Setting additional constraints (Security, losses and feasibilty)
+        if conf.Security is not None:
+            self.settings['Security'] = conf.Security
+        self.settings['Losses'] = conf.Losses
+        self.settings['Feasibility'] = conf.Feasibility
+
         # Read network data
-        self.Read(FileName, jsonPath)
+        self.Read(conf.NetworkFile, conf.json)
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
