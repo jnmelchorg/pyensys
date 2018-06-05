@@ -6,3 +6,6 @@ __pycache__/
 
 # cache folder
 .pytest_cache/
+
+# To-be-deleted folder
+TBD/

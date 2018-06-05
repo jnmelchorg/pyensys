@@ -7,7 +7,7 @@ setup(
     description='Python Energy and Networks Engine.',
     packages=find_packages(),
     install_requires=[
-        'click', 'pandas'
+        'click', 'pandas', 'pyomo'
     ],
     entry_points='''
     [console_scripts]

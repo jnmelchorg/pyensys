@@ -1,0 +1,4 @@
+
+    [console_scripts]
+    pyene=pyene.cli:cli
+    
