@@ -1,0 +1,44 @@
+{
+    "0": {
+        "Title": "Years",
+        "Names": ["2018", "2019'"],
+        "Weights": [1, 1],
+        "Inputs": [
+            [1900, 1000],
+            [800, 1700]
+        ],
+        "Outputs": [
+            [0, 0],
+            [0, 0]
+        ],
+        "Uncertainty": false
+    },
+    "1": {
+        "Title": "Seasons",
+        "Names": ["Winter", "Summer"],
+        "Weights": [30, 22],
+        "Inputs": [
+            [0, 3],
+            [0, 1]
+        ],
+        "Outputs": [
+            [0, 0],
+            [0, 0]
+        ],
+        "Uncertainty": false
+    },
+    "2": {
+        "Title": "Days",
+        "Names": ["Weekday", "Weekend"],
+        "Weights": [5, 2],
+        "Inputs": [
+            [0, 0],
+            [0, 0]
+        ],
+        "Outputs": [
+            [3, 6],
+            [1, 4]
+        ],
+        "Uncertainty": false
+    }
+}

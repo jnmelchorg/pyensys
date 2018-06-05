@@ -73,9 +73,8 @@ class EnergyClass:
                 }
 
     # Read input data
-    def Read(self, FileName):
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
-                                  FileName)
+    def Read(self, FileName, jsonPath):
+        MODEL_JSON = os.path.join(jsonPath, FileName)
         data = json.load(open(MODEL_JSON))
 
         return data
@@ -257,8 +256,8 @@ class EnergyClass:
             xacu1 += xacu2
 
         # Adding cnnection to the last set of scenarios
-        aux1 = aux1*self.size['LenPeriods'][self.size['Periods']-2]
-        aux3 = 0
+        aux1 = aux1*self.size['LenPeriods'][self.size['Periods']-1]
+        aux3 = 0        
         for x3 in range(aux1):
             x1 = x1+1
             LL_TimeScenarioTree[x1][0] = aux3
@@ -418,10 +417,17 @@ class EnergyClass:
                      for x1 in range(m.LLTS3[xL3, 2]+1))))
 
     # Initialise externally
-    def initialise(self, FileName):
+    def initialise(self, conf):
+        # Avoid loading file
+        if conf.init:
+            FileName = "NoName"
+        else:
+            FileName = conf.TreeFile
+            self.fRea = True
+
         # Read input data
         if self.fRea:
-            self.data = self.Read(FileName)
+            self.data = self.Read(FileName, conf.json)
 
         # Measure the size of the data arrays
         self._Measure()

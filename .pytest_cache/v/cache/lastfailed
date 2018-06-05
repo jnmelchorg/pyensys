@@ -1,0 +1,5 @@
+{
+  "test/test_cli.py::test_run": true,
+  "test/test_pyeneE.py::test_pyeneE_TreeYear03": true,
+  "test/test_pyeneE.py::test_run": true
+}

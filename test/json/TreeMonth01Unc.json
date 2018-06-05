@@ -1,0 +1,26 @@
+{
+    "0": {
+        "Title": "Month",
+        "Names": ["Typical"],
+        "Weights": [1],
+        "Inputs": [10],
+        "Outputs": [0],
+        "Uncertainty": false
+    },
+    "1": {
+        "Title": "Weeks",
+        "Names": ["Opt01", "Opt02", "Opt03", "Opt04"],
+        "Weights": [0.2, 0.3, 0.3, 0.2],
+        "Inputs": [0, 0, 0, 0],
+        "Outputs": [0, 0, 0, 0],
+        "Uncertainty": true
+    },
+    "2": {
+        "Title": "Days",
+        "Names": ["Weekday", "Weekend"],
+        "Weights": [0.71, 0.29],
+        "Inputs": [0, 0],
+        "Outputs": [5, 8],
+        "Uncertainty": true
+    }
+}

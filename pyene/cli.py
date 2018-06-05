@@ -1,6 +1,7 @@
 import click
 import numpy as np
 import cProfile
+import os
 from .cases import *
 
 
@@ -42,6 +43,9 @@ def cli(conf, **kwargs):
         profiler.enable()
     else:
         profiler = None
+
+    # Get json directory
+    conf.json = os.path.join(os.path.dirname(__file__), 'json')
 
 
 # Update conf based on tree data
@@ -112,7 +116,7 @@ def energy_balance_pyeneE(conf, **kwargs):
 @pass_conf
 def network_simulation_pyeneE(conf, **kwargs):
     """Prepare electricity network simulation"""
-    conf=_update_config_pyeneN(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyeneN(conf)
 
@@ -120,10 +124,10 @@ def network_simulation_pyeneE(conf, **kwargs):
 @cli.command('run-en')
 @click.option('--tree', default='ResolutionTreeMonth01.json',
               help='Time resolution tree file')
-@click.option('--network', default='case14.json',
+@click.option('--network', default='case14_con.json',
               help='Network model file')
-@click.option('--Pump', default=2, help='Number of pumps')
-@click.option('--res', default=2, help='Number of RES generators')
+@click.option('--Pump', default=0, help='Number of pumps')
+@click.option('--res', default=0, help='Number of RES generators')
 @click.option('--sec', default=[], type=list,
               help='Include N-1 security constraints')
 @click.option('--loss', default=True, type=bool,

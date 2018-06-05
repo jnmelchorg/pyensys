@@ -68,7 +68,7 @@ class pyeneClass():
         return (NM, NModel, results)
 
     # Energy only optimisation
-    def ESim(self, FileName):
+    def ESim(self, conf):
         # Get energy object
         EM = de()
 
@@ -76,7 +76,7 @@ class pyeneClass():
         EM.fRea = True
 
         # Initialise
-        EM.initialise(FileName)
+        EM.initialise(conf)
 
         # Build LP model
         EModel = self.SingleLP(EM)
@@ -144,20 +144,14 @@ class pyeneClass():
         self.EM = de()
         self.NM = dn()
 
-        # Avoid loading file
-        if conf.init:
-            conf.TreeFile = "NoName"
-        else:
-            self.EM.fRea = True
-
         # Adding hydro to the energy balance tree
-        self.EM.settings = {
+        self.settings = {
                 'Fix': True,  # Force a specific number of vectors
                 'Vectors': conf.NoHydro  # Number of vectors
                 }
 
         # Initialise energy balance model
-        self.EM.initialise(conf.TreeFile)
+        self.EM.initialise(conf.TreeFile, conf)
 
         # Get number of required network model instances
         NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
@@ -275,7 +269,12 @@ class pyeneClass():
         '''
         aux1 = HydropowerNode.index-1
         HydropowerNode.value = mod.WOutFull[1, aux1].value
-        HydropowerNode.marginal = -1*mod.dual[mod.SoCBalance[1, aux1]]
+        cobject = getattr(mod, 'SoCBalance')
+        aux = mod.dual.get(cobject[1, aux1])
+        if aux is None:
+            HydropowerNode.marginal = 0
+        else:
+            HydropowerNode.marginal = -1*int(mod.dual.get(cobject[1, aux1]))
         aux2 = self.Penalty/self.NM.networkE.graph['baseMVA']
         if HydropowerNode.marginal > aux2:
             HydropowerNode.flag = True

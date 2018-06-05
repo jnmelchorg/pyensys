@@ -23,7 +23,7 @@ class ENetworkClass:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 0  # Size of pieces used for piece-wise estimations
+                'Pieces': 1  # Size of pieces used for piece-wise estimations
                 }
         # Connections
         self.connections = {
@@ -83,10 +83,9 @@ class ENetworkClass:
                 }
 
     # Read input data
-    def Read(self, FileName):
+    def Read(self, FileName, jsonPath):
         # Load file
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
-                                  FileName)
+        MODEL_JSON = os.path.join(jsonPath, FileName)
         mpc = json.load(open(MODEL_JSON))
         self.networkE = nx.Graph()
 

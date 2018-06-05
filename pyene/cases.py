@@ -13,20 +13,17 @@ import numpy as np
 def test_pyeneE(config):
     """ Execute pyene to access pyeneE - Full json based simulation."""
     EN = pe()
-    # Avoid loading file
-    if config.init:
-        EN.fRea = False
-    (EM, EModel, results) = EN.ESim(config.TreeFile)
+    (EM, EModel, results) = EN.ESim(config)
     EM.print(EModel)
 
 
 # Network simulation test
 def test_pyeneN(config):
     """ Execute pyene to access pyeneN - Full json based simulation."""
+    # Create object
     EN = pe()
-    # Avoid loading file
-    if config.init:
-        EN.fRea = False
+    # Initialise model
+    EN.initialise(config)
     (NM, NModel, results) = EN.NSim(config.NetworkFile)
     print('\n\nOF: ', NModel.OF.expr())
     NM.print(NModel)
@@ -79,7 +76,7 @@ def test_pyene(conf):
     # Several hydro nodes
     hydroInNode = _node()
     for xh in range(conf.NoHydro):
-        hydroInNode.value = 1000
+        hydroInNode.value = 0
         hydroInNode.index = xh+1
         EN.loadHydro(hydroInNode)
 
@@ -89,8 +86,8 @@ def test_pyene(conf):
     # Print results
     print('\n\nOF: ', mod.OF.expr())
     EN.NM.offPrint()
-#    EN.NM.Print['Generation'] = True
-#    EN.NM.Print['Losses'] = True
+    EN.NM.Print['Generation'] = True
+    EN.NM.Print['Losses'] = True
     EN.Print_ENSim(mod, EN.EM, EN.NM)
 
     # Collect unused hydro:
