@@ -23,7 +23,7 @@ class ENetworkClass:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 1  # Size of pieces used for piece-wise estimations
+                'Pieces': 0  # Size of pieces used for piece-wise estimations
                 }
         # Connections
         self.connections = {
@@ -609,9 +609,15 @@ class ENetworkClass:
                 print("];")
 
     # Initialize externally
-    def initialise(self, FileName):
+    def initialise(self, conf):
+        # Setting additional constraints (Security, losses and feasibilty)
+        if conf.Security is not None:
+            self.settings['Security'] = conf.Security
+        self.settings['Losses'] = conf.Losses
+        self.settings['Feasibility'] = conf.Feasibility
+
         # Read network data
-        self.Read(FileName)
+        self.Read(conf.NetworkFile, conf.json)
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,

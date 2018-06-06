@@ -22,9 +22,8 @@ def test_pyeneN(config):
     """ Execute pyene to access pyeneN - Full json based simulation."""
     # Create object
     EN = pe()
-    # Initialise model
-    EN.initialise(config)
-    (NM, NModel, results) = EN.NSim(config.NetworkFile)
+    # Run model
+    (NM, NModel, results) = EN.NSim(config)
     print('\n\nOF: ', NModel.OF.expr())
     NM.print(NModel)
 

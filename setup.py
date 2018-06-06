@@ -6,8 +6,9 @@ setup(
     version='0.1',
     description='Python Energy and Networks Engine.',
     packages=find_packages(),
+    package_data={'pyene': ['json/*.json']},
     install_requires=[
-        'click', 'pandas'
+        'click', 'pandas', 'pyomo'
     ],
     entry_points='''
     [console_scripts]

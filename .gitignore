@@ -1,0 +1,14 @@
+# To ignore files that are already tracked, use:
+# git rm --cached FILENAME
+
+# pycache folders
+__pycache__/
+
+# cache folder
+.pytest_cache/
+
+# To-be-deleted folder
+TBD/
+
+# egg folder
+pyene.egg-info/
