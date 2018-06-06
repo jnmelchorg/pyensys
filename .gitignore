@@ -9,3 +9,6 @@ __pycache__/
 
 # To-be-deleted folder
 TBD/
+
+# egg folder
+pyene.egg-info/
