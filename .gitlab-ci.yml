@@ -23,20 +23,20 @@ before_script:
 
   # Install the required utilties and pipenv
   - apt-get update -qq && apt-get install -y glpk-utils
-  - pip install pipenv
+  - pip install pyomo click numpy pandas pytest
 
 test:test:
   stage: test
   script:
-    - pipenv install --dev --system --deploy
-    - pipenv run py.test tests --cov=pyene
+    - pip install .
+    - pytest tests --cov=pyene
 
 
 test:run:
   stage: test
   script:
-    - pipenv install --system --deploy
-    - pipenv run pyene run-e
-    - pipenv run pyene run-n
-    - pipenv run pyene run-en
+    - pip install .
+    - pyene run-e
+    - pyene run-n
+    - pyene run-en
 
