@@ -4,7 +4,10 @@ from setuptools import setup, find_packages
 setup(
     name='pyene',
     version='0.1',
-    description='Python Energy and Networks Engine.',
+    description='Python Energy and Networks Engine - pyene.',
+    url='git@gitlab.hydra.org.uk:futuredams/test-case/DAMSEnergy.git',
+    author='Dr. Eduardo Alejandro Martínez Ceseña',
+    author_email='Eduardo.MartinezCesena@manchester.ac.uk',
     packages=find_packages(),
     package_data={'pyene': ['json/*.json']},
     install_requires=[
