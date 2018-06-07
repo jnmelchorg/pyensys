@@ -151,7 +151,7 @@ class ENetworkClass:
                 'MODEL': np.zeros(NoGen, dtype=int),
                 'STARTUP': np.zeros(NoGen, dtype=float),
                 'SHUTDOWN': np.zeros(NoGen, dtype=float),
-                'NCOST': np.zeros(NoGen, dtype=float),
+                'NCOST': np.zeros(NoGen, dtype=int),
                 'COST': np.zeros((NoGen, NoCst), dtype=float)
                 }
 

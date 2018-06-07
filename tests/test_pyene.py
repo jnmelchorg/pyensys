@@ -65,3 +65,37 @@ def test_pyene_SmallHydro(conf):
     print('\n%f ' % mod.OF.expr())
 
     assert 0.0001 >= abs(mod.OF.expr()-527048.8750)
+
+# Converting to pypsa
+def test_pyene2pypsa(conf):
+    # Selected network file
+    conf.NetworkFile = 'case14.json'
+    # Location of the json directory
+    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    # Define number of time spets
+    conf.Time = 5  # Number of time steps
+    # Hydropower
+    conf.NoHydro = 2  # Number of hydropower plants
+    conf.Hydro = [1, 2]  # Location (bus) of hydro
+    conf.HydroMax = [100, 100]  # Generation capacity
+    conf.HydroCost = [0.01, 0.01]  # Costs
+
+    # Pumps
+    conf.NoPump = 1  # Number of pumps
+    conf.Pump = [3]  # Location (bus) of pumps
+    conf.PumpMax = [1000]  # Generation capacity
+    conf.PumpVal = [0.001]  # Value/Profit
+
+    # RES generators
+    conf.NoRES = 3  # Number of RES generators
+    conf.RES = [3, 4, 5]  # Location (bus) of pumps
+    conf.RESMax = [500, 500, 500]  # Generation capacity
+    conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
+
+    # Get Pyene model
+    EN = pe()
+    # Initialize network model using the selected configuration
+    EN.initialise(conf)
+    # Convert to pypsa
+    xscen = 0  # Selected scenario
+    EN.pyene2pypsa(xscen)
