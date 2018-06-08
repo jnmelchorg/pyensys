@@ -140,7 +140,7 @@ def test_pyenetest():
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Define number of time spets
-    conf.Time = 5  # Number of time steps
+    conf.Time = 1  # Number of time steps
     # Hydropower
     conf.NoHydro = 2  # Number of hydropower plants
     conf.Hydro = [1, 2]  # Location (bus) of hydro
@@ -165,7 +165,12 @@ def test_pyenetest():
     EN.initialise(conf)
     # Convert to pypsa
     xscen = 0  # Selected scenario
-    EN.pyene2pypsa(xscen)
+    nu = EN.pyene2pypsa(xscen)
+    # Run pypsa
+    nu.pf()
+
+    nu.lines_t.p0['Line1'][0] == 158.093958284
+#    print(nu.lines_t.p0[0])
     
 # pyene simulation test
 def get_pyene():

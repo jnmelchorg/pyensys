@@ -528,8 +528,14 @@ class pyeneClass():
         '''Convert pyene files to pypsa format'''
         # Create pypsa network
         nu = pypsa.Network()
+
         nu.set_snapshots(range(self.NM.settings['NoTime']))
         baseMVA = self.NM.networkE.graph['baseMVA']
+
+        # Names
+        auxtxtN = 'Bus'
+        auxtxtG = 'Gen'
+        auxtxtLd = 'Load'
 
         '''                             NETWORK
         name - network name
@@ -554,7 +560,12 @@ class pyeneClass():
             v_mag_pu_max - per unit maximum voltage
             auxtxtN = 'Bus'  # Generic name for the nodes
         '''
-        auxtxtN = 'Bus'
+        PVBus = np.zeros(self.NM.networkE.number_of_nodes(), dtype=float)
+        aux = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
+               self.NM.RES['Number'])
+        for xn in self.NM.generationE['Data']['GEN_BUS'][0:aux]:
+            if self.NM.networkE.node[xn]['BUS_TYPE'] == 2:
+                PVBus[xn-1] = self.NM.generationE['Data']['VG'][xn]
         for xn in self.NM.networkE.node:
             if self.NM.networkE.node[xn]['BASE_KV'] == 0:
                 aux1 = 1
@@ -564,26 +575,12 @@ class pyeneClass():
                 self.NM.networkE.node[xn]['BUS_TYPE'] == 3):
                 aux2 = self.NM.networkE.node[xn]['VM']
             else:
-                aux2 = 1
+                aux2 = PVBus[xn-1]
             nu.add('Bus', auxtxtN+str(xn),
                    v_nom=aux1,
                    v_mag_pu_set=aux2,
                    v_mag_pu_min=self.NM.networkE.node[xn]['VMIN'],
                    v_mag_pu_max=self.NM.networkE.node[xn]['VMAX'])
-
-        '''                             CARRIER
-        name - Energy carrier
-        co2_emissions - tonnes/MWh
-        carrier_attribute - 
-        '''
-
-        '''                         GLOBAL CONSTRAINT
-        name - constraint
-        type - only 'primary_energy' is supported
-        carrier_attribute - attributes such as co2_emissions
-        sense - either '<=', '==' or '>='
-        constant - constant for right hand-side of constraint
-        '''
 
         '''                            GENERATOR
         Missing attributes:
@@ -614,7 +611,6 @@ class pyeneClass():
             p_max_pu - multpier for intermittent maximum generation
             marginal_cost - linear model
         '''
-        auxtxtG = 'Gen'
         # Fuel based generation
         aux = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
                self.NM.RES['Number'])
@@ -647,7 +643,7 @@ class pyeneClass():
             nu.add('Generator', auxtxtG+str(xg+1),
                    bus=auxtxtN+str(xn),
                    control=aux1,
-                   p_nom=self.NM.generationE['Data']['PMAX'][xg]*baseMVA,
+                   p_nom_max=self.NM.generationE['Data']['PMAX'][xg]*baseMVA,
                    p_set=self.NM.generationE['Data']['PG'][xg],
                    q_set=self.NM.generationE['Data']['QG'][xg],
                    marginal_cost=aux3
@@ -669,12 +665,26 @@ class pyeneClass():
             nu.add('Generator', auxtxtG+str(xg+1),
                    bus=auxtxtN+str(xn),
                    control=aux1,
-                   p_max_pu=yres,
+                   p_nom_max=yres,
                    p_nom=self.NM.RES['Max'][xr],
                    p_set=self.NM.generationE['Data']['PG'][xg],
                    q_set=self.NM.generationE['Data']['QG'][xg],
                    marginal_cost=self.NM.generationE['Costs']['COST'][xg][0]
                    )
+
+        '''                             CARRIER
+        name - Energy carrier
+        co2_emissions - tonnes/MWh
+        carrier_attribute
+        '''
+
+        '''                         GLOBAL CONSTRAINT
+        name - constraint
+        type - only 'primary_energy' is supported
+        carrier_attribute - attributes such as co2_emissions
+        sense - either '<=', '==' or '>='
+        constant - constant for right hand-side of constraint
+        '''
 
         #                           STORAGE UNIT
         #                              STORE
@@ -687,18 +697,17 @@ class pyeneClass():
             name - auxtxtLd+str(xL)
             bus - Name of bus
         '''
-        auxtxtLd = 'Load'  # Generic name for the nodes
         xL = 0
         ydemP = np.zeros(self.NM.settings['NoTime'], dtype=float)
         ydemQ = np.zeros(self.NM.settings['NoTime'], dtype=float)
         for xn in self.NM.networkE.node:
-            if self.NM.networkE.node[xn]['VM'] == 0:
+            if self.NM.demandE['PD'][xn-1] != 0:
                 xL += 1
                 for xt in range(self.NM.settings['NoTime']):
                     aux = (self.NM.scenarios['Demand']
-                           [self.NM.busScenario[xn][xscen]+xt])
-                    ydemP[xt] = self.NM.demandE['PD'][xn]*aux
-                    ydemQ[xt] = self.NM.demandE['QD'][xn]*aux
+                           [self.NM.busScenario[xn-1][xscen]+xt])
+                    ydemP[xt] = self.NM.demandE['PD'][xn-1]*aux
+                    ydemQ[xt] = self.NM.demandE['QD'][xn-1]*aux
                 nu.add('Load', auxtxtLd+str(xL),
                        bus=auxtxtN+str(xn),
                        p_set=ydemP,
@@ -721,6 +730,7 @@ class pyeneClass():
             num_parallel - number of lines in parallel
             v_ang_min - placeholder for minimum voltage angle drop/increase
             v_and_max - placeholder for maximum voltage angle drop/increase
+            b - shunt susceptance
 
         Implemented attributes:
             Name - auxtxtL+str(xb)
@@ -728,7 +738,6 @@ class pyeneClass():
             bus1 - The other bus connected to the line
             x - series reactance
             r - series resistance
-            b - shunt susceptance
             snom - MVA limit
         '''
         auxtxtL = 'Line'
@@ -736,12 +745,13 @@ class pyeneClass():
         for (xf, xt) in self.NM.networkE.edges:
             if self.NM.networkE[xf][xt]['TAP'] == 0:
                 xb += 1
+                auxpu = (nu.buses['v_nom']['Bus{}'.format(xf)]**2 /
+                         self.NM.networkE.graph['baseMVA'])
                 nu.add('Line', auxtxtL+str(xb),
                        bus0=auxtxtN+str(xf),
                        bus1=auxtxtN+str(xt),
-                       x=self.NM.networkE[xf][xt]['BR_X'],
-                       r=self.NM.networkE[xf][xt]['BR_R'],
-                       b=self.NM.networkE[xf][xt]['BR_B'],
+                       x=self.NM.networkE[xf][xt]['BR_X']*auxpu,
+                       r=self.NM.networkE[xf][xt]['BR_R']*auxpu,
                        s_nom=self.NM.networkE[xf][xt]['RATE_A']
                        )
 
@@ -788,6 +798,8 @@ class pyeneClass():
 
         #                        TRANSFORMER TYPES
         #                              LINK
+
+        return nu
 
     def pypsa2pyene(self):
         '''Convert pyene files to pypsa format'''

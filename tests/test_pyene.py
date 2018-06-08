@@ -3,6 +3,7 @@ from click.testing import CliRunner
 from fixtures import *
 from pyene.engines.pyene import pyeneClass as pe
 import numpy as np
+import os
 
 # Interaction node
 class _node():
@@ -40,7 +41,7 @@ def test_pyene_SmallHydro(conf):
     conf.Time = 1  # Single period
 
     # Adding hydropower plants
-    conf.NoHydro = 2  
+    conf.NoHydro = 2
     conf.Hydro = np.zeros(conf.NoHydro, dtype=int)
     conf.HydroMax = np.zeros(conf.NoHydro, dtype=float)
     conf.HydroCost = np.zeros(conf.NoHydro, dtype=float)
@@ -66,6 +67,7 @@ def test_pyene_SmallHydro(conf):
 
     assert 0.0001 >= abs(mod.OF.expr()-527048.8750)
 
+
 # Converting to pypsa
 def test_pyene2pypsa(conf):
     # Selected network file
@@ -73,7 +75,7 @@ def test_pyene2pypsa(conf):
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Define number of time spets
-    conf.Time = 5  # Number of time steps
+    conf.Time = 1  # Number of time steps
     # Hydropower
     conf.NoHydro = 2  # Number of hydropower plants
     conf.Hydro = [1, 2]  # Location (bus) of hydro
@@ -98,4 +100,8 @@ def test_pyene2pypsa(conf):
     EN.initialise(conf)
     # Convert to pypsa
     xscen = 0  # Selected scenario
-    EN.pyene2pypsa(xscen)
+    nu = EN.pyene2pypsa(xscen)
+    # Run pypsa
+    nu.pf()
+
+    assert 0.0001 >= abs(nu.lines_t.p0['Line1'][0] - 158.093958)
