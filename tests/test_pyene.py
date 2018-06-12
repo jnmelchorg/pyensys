@@ -101,6 +101,8 @@ def test_pyene2pypsa(conf):
     # Convert to pypsa
     xscen = 0  # Selected scenario
     (nu, pypsaFlag) = EN.pyene2pypsa(xscen)
+    print(nu)
+    print(pypsaFlag)
     # Run pypsa
     if pypsaFlag:
         nu.pf()
