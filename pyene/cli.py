@@ -138,8 +138,13 @@ def network_simulation_pyeneE(conf, **kwargs):
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
     """Prepare combined simulation"""
-    conf=_update_config_pyeneE(conf, kwargs)
-    conf=_update_config_pyeneN(conf, kwargs)
-    print(conf)
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyene(conf)
+
+
+@cli.command('run-test')
+def network_simulation_pyenetst():
+    """Test specific functionalities"""
+    test_pyenetest()

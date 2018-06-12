@@ -88,7 +88,7 @@ class EnergyClass:
         s_LL_timeVar = 1
         s_LL_timeSum = 1
         for x1 in range(s_LL_time):
-            sv_LL_time[x1] = len(self.data[chr(48+x1)]["Names"])
+            sv_LL_time[x1] = len(self.data[str(x1)]["Names"])
             s_LL_timeVar *= sv_LL_time[x1]
             s_LL_timeSum += sv_LL_time[x1]
 
@@ -150,7 +150,7 @@ class EnergyClass:
 
         acu = 1
         for x1 in range(self.size['Periods']):
-            xtxt = chr(48+x1)
+            xtxt = str(x1)
             auxI = np.asarray(self.data[xtxt]["Inputs"])
             auxO = np.asarray(self.data[xtxt]["Outputs"])
             auxW = self.data[xtxt]["Weights"]
@@ -443,8 +443,8 @@ class EnergyClass:
                 else:  # to a matrix
                     aux = np.zeros((self.settings['Vectors'],
                                     self.size['LenPeriods'][xp]), dtype=float)
-                self.data[chr(48+xp)]['Inputs'] = aux
-                self.data[chr(48+xp)]['Outputs'] = aux
+                self.data[str(xp)]['Inputs'] = aux
+                self.data[str(xp)]['Outputs'] = aux
             self.size['Vectors'] = self.settings['Vectors']
 
         # Summarize the data as inputs, outputs, weights and uncertainty

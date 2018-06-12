@@ -17,6 +17,10 @@ from .pyeneN import ENetworkClass as dn  # Network component
 from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
 import json
 import os
+try:
+    import pypsa
+except ImportError:
+    print('pypsa has not been installed - functionalities unavailable')
 
 
 class pyeneClass():
@@ -218,8 +222,9 @@ class pyeneClass():
         NoGen0 = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
                   self.NM.RES['Number']+1)
         for xc in range(self.NoLL):
-            self.LLENM[xc][:] = [self.EM.tree['Time'][self.EM.size['Periods']][0]+xc,
-                                 self.NM.connections['Generation'][xc]+NoGen0]
+            self.LLENM[xc][:] = ([self.EM.tree['Time'][self.EM.size['Periods']]
+                                  [0]+xc, self.NM.connections['Generation']
+                                  [xc]+NoGen0])
 
         # Taking sets for modelling local objective function
         self.hGC = self.NM.connections['Cost']
@@ -227,12 +232,8 @@ class pyeneClass():
         self.hFea = self.NM.connections['Feasibility']
         self.h = self.NM.connections['set']
 
-    # load data for a hydropower node
-    def loadHydro(self, HydropowerNode):
-        '''
-        Load into the model the kWh of hydro that are available for a single
-        generator (for the month)
-        '''
+    def set_Hydro(self, HydropowerNode):
+        ''' Set kWh of hydro that are available for a single site '''
         aux1 = HydropowerNode.index-1
         aux2 = HydropowerNode.value
         if self.NM.hydropower['Number'] == 1:
@@ -240,77 +241,99 @@ class pyeneClass():
         else:
             self.EM.Weight['In'][1][aux1] = aux2
 
-    # Load data for a RES generator
-    def loadRES(self, resNode):
-        '''Load into the model a profile for PW/Wind for a single generator'''
+    def set_HydroPrice(self, HydroPriceNode):
+        ''' Set kWh of hydro that are available for a single site '''
+        raise NotImplementedError('Water prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_PumpPrice(self, HydroPriceNode):
+        ''' Set value for water pumped '''
+        raise NotImplementedError('Pump prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_RES(self, resNode):
+        ''' Set PW/Wind profile '''
         aux1 = (resNode.index-1)*self.NM.settings['NoTime']
         aux2 = resNode.index*self.NM.settings['NoTime']
 
         self.NM.scenarios['RES'][aux1:aux2] = resNode.value
 
-    # Load data for demand
-    def loadDemand(self, demandNode):
-        '''Load into the model a demand profile'''
+    def set_Demand(self, demandNode):
+        ''' Set a demand profile '''
         aux1 = (demandNode.index-1)*self.NM.settings['NoTime']
         aux2 = demandNode.index*self.NM.settings['NoTime']
 
         self.NM.scenarios['Demand'][aux1:aux2] = demandNode.value
 
-    # load data for a hydropower node
-    def getHydro(self, mod, HydropowerNode):
-        '''
-        Get from the model the kWh of hydro that were not used
-        by a specified generator
-        '''
+    def get_Hydro(self, mod, HydropowerNode):
+        ''' Get surplus kWh from specific site '''
         aux1 = HydropowerNode.index-1
-        HydropowerNode.value = mod.WOutFull[1, aux1].value
+        HydroValue = mod.WOutFull[1, aux1].value
+
+        return HydroValue
+
+    def get_HydroMarginal(self, mod, HydropowerMarginalNode):
+        ''' Get marginal costs for specific hydropower plant '''
+        aux1 = HydropowerMarginalNode.index-1
         cobject = getattr(mod, 'SoCBalance')
         aux = mod.dual.get(cobject[1, aux1])
         if aux is None:
-            HydropowerNode.marginal = 0
+            HydroValue = 0
         else:
-            HydropowerNode.marginal = -1*int(mod.dual.get(cobject[1, aux1]))
-        aux2 = self.Penalty/self.NM.networkE.graph['baseMVA']
-        if HydropowerNode.marginal > aux2:
-            HydropowerNode.flag = True
+            HydroValue = -1*int(mod.dual.get(cobject[1, aux1]))
 
-        return HydropowerNode
+        return HydroValue
 
-    # Collect outputs of pumps
-    def getPump(self, mod, indexPump):
-        '''Get kWh consumed by a specific pump'''
+    def get_HydroFlag(self, mod, HydropowerFlagNode):
+        ''' Get surplus kWh from specific site '''
+        aux1 = HydropowerFlagNode.index-1
+        cobject = getattr(mod, 'SoCBalance')
+        aux = mod.dual.get(cobject[1, aux1])
+        if aux is None:
+            HydroValue = False
+        else:
+            aux2 = -1*int(mod.dual.get(cobject[1, aux1]))
+            aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
+            if aux2 > aux3:
+                HydroValue = True
+            else:
+                HydroValue = False
+
+        return HydroValue
+
+    def get_Pump(self, mod, PumpNode):
+        ''' Get kWh consumed by a specific pump '''
         aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
-        pumpTotal = 0
+        PumpValue = 0
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                acu += mod.vDL[self.hDL[xh]+indexPump, xt].value
-            pumpTotal += acu*self.EM.Weight['Node'][aux+xh]
-        pumpTotal *= self.NM.networkE.graph['baseMVA']
+                acu += mod.vDL[self.hDL[xh]+PumpNode.index, xt].value
+            PumpValue += acu*self.EM.Weight['Node'][aux+xh]
+        PumpValue *= self.NM.networkE.graph['baseMVA']
 
-        return pumpTotal
+        return PumpValue
 
-    # COllect demand curtailed in a bus
-    def getCurt(self, mod, nod):
+    def get_DemandCurtailment(self, mod, DemandNode):
         '''Get the kWh that had to be curtailed from a given bus'''
-        curTotal = 0
+        DemandValue = 0
         if self.NM.settings['Feasibility']:
             aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sDL:
-                aux2 = self.hFea[xh]+nod.bus
+                aux2 = self.hFea[xh]+DemandNode.bus
                 acu = 0
                 for xt in mod.sTim:
                     acu += mod.vFea[aux2, xt].value
-                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
-        curTotal *= self.NM.networkE.graph['baseMVA']
+                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+        DemandValue *= self.NM.networkE.graph['baseMVA']
 
-        return curTotal
+        return DemandValue
 
     # COllect demand curtailed in all buses
-    def getCurtAll(self, mod):
+    def get_AllDemandCurtailment(self, mod):
         '''Get the kWh that had to be curtailed from all buses'''
 
-        curTotal = 0
+        DemandValue = 0
         if self.NM.settings['Feasibility']:
             aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sDL:
@@ -318,15 +341,15 @@ class pyeneClass():
                 for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
                     for xt in mod.sTim:
                         acu += mod.vFea[xn, xt].value
-                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
-        curTotal *= self.NM.networkE.graph['baseMVA']
+                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+        DemandValue *= self.NM.networkE.graph['baseMVA']
 
-        return curTotal
+        return DemandValue
 
     # Collect curtailment of RES
-    def getRES(self, mod, nod):
-        xg = nod.index-1
-        spllTotal = 0
+    def get_RES(self, mod, RESNode):
+        xg = RESNode.index-1
+        RESValue = 0
         aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
         for xh in mod.sDL:
             acu = 0
@@ -335,9 +358,9 @@ class pyeneClass():
                         self.NM.scenarios['RES']
                         [self.NM.resScenario[xg][xh][1]+xt] -
                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value)
-            spllTotal += acu*self.EM.Weight['Node'][aux+xh]
+            RESValue += acu*self.EM.Weight['Node'][aux+xh]
 
-        return spllTotal
+        return RESValue
 
     # Run integrated pyene model
     def run(self):
@@ -519,3 +542,295 @@ class pyeneClass():
             return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES,
                     NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
                     NoLink, Nohr)
+
+    def pyene2pypsa(self, xscen):
+        '''Convert pyene files to pypsa format'''
+        # Create pypsa network
+        try:
+            nu = pypsa.Network()
+        except ImportError:
+            return (0, False)
+
+        nu.set_snapshots(range(self.NM.settings['NoTime']))
+        baseMVA = self.NM.networkE.graph['baseMVA']
+
+        # Names
+        auxtxtN = 'Bus'
+        auxtxtG = 'Gen'
+        auxtxtLd = 'Load'
+
+        '''                             NETWORK
+        name - network name
+        snapshots - list of snapshots or time steps
+        snapshot_weightings - weights to control snapshots length
+        now - current snapshot
+        srid - spatial reference
+        '''
+
+        '''                               BUS
+        Missing attributes:
+            type - placeholder (not yet implemented in pypsa)
+            x - coordinates
+            y - coordinates
+            carrier - 'AC' or 'DC'
+
+        Implemented attributes:
+            Name auxtxtN+str(xn)
+            v_nom - Nominal voltage
+            v_mag_pu_set - per unit voltage set point
+            v_mag_pu_min - per unit minimum voltage
+            v_mag_pu_max - per unit maximum voltage
+            auxtxtN = 'Bus'  # Generic name for the nodes
+        '''
+        PVBus = np.zeros(self.NM.networkE.number_of_nodes(), dtype=float)
+        aux = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
+               self.NM.RES['Number'])
+        for xn in self.NM.generationE['Data']['GEN_BUS'][0:aux]:
+            if self.NM.networkE.node[xn]['BUS_TYPE'] == 2:
+                PVBus[xn-1] = self.NM.generationE['Data']['VG'][xn]
+        for xn in self.NM.networkE.node:
+            if self.NM.networkE.node[xn]['BASE_KV'] == 0:
+                aux1 = 1
+            else:
+                aux1 = self.NM.networkE.node[xn]['BASE_KV']
+            if (self.NM.networkE.node[xn]['BUS_TYPE'] == 2 or
+                self.NM.networkE.node[xn]['BUS_TYPE'] == 3):
+                aux2 = self.NM.networkE.node[xn]['VM']
+            else:
+                aux2 = PVBus[xn-1]
+            nu.add('Bus', auxtxtN+str(xn),
+                   v_nom=aux1,
+                   v_mag_pu_set=aux2,
+                   v_mag_pu_min=self.NM.networkE.node[xn]['VMIN'],
+                   v_mag_pu_max=self.NM.networkE.node[xn]['VMAX'])
+
+        '''                            GENERATOR
+        Missing attributes:
+            type - placeholder for generator type
+            p_nom_extendable - boolean switch to increase capacity
+            p_nom_min - minimum value for extendable capacity
+            p_nom_max - maximum value for extendable capacity
+            sign - power sign
+            carrier - required for global constraints
+            capital_cost - cost of extending p_nom by 1 MW
+            efficiency - required for global constraints
+            committable - boolean (only if p_nom is not extendable)
+            start_up_cost - only if commitable is true
+            shut_down_cost - only if commitable is true
+            min_up_time - only if commitable is true
+            min_down_time - only if commitable is true
+            initial_status  - only if commitable is true
+            ramp_limit_up - only if commitable is true
+            ramp_limit_down - only if commitable is true
+            ramp_limit_start_up - only if commitable is true
+            ramp_limit_shut_down - only if commitable is true
+
+        Implemented attributes:
+            name - generator name
+            bus - bus name
+            control - 'PQ', 'PV' or 'Slack'
+            p_min_pu - use default 0 for modelling renewables
+            p_max_pu - multpier for intermittent maximum generation
+            marginal_cost - linear model
+        '''
+        # Fuel based generation
+        aux = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
+               self.NM.RES['Number'])
+        xg = -1
+        for xn in self.NM.generationE['Data']['GEN_BUS'][0:aux]:
+            xg += 1
+            if self.NM.networkE.node[xn]['BUS_TYPE'] == 1:
+                aux1 = 'PQ'
+            elif self.NM.networkE.node[xn]['BUS_TYPE'] == 2:
+                aux1 = 'PV'
+            else:
+                aux1 = 'Slack'
+            aux2 = (self.NM.generationE['Data']['PMAX'][xg] +
+                    self.NM.generationE['Data']['PMIN'][xg])/2*baseMVA
+            if self.NM.generationE['Costs']['MODEL'][xg] == 1:
+                xi = 2
+                while self.NM.generationE['Costs']['COST'][xg][xi] <= aux2:
+                    xi += 2
+                aux3 = ((self.NM.generationE['Costs']['COST'][xg][xi+1] -
+                         self.NM.generationE['Costs']['COST'][xg][xi-1]) /
+                        (self.NM.generationE['Costs']['COST'][xg][xi] -
+                         self.NM.generationE['Costs']['COST'][xg][xi-2]))
+            else:
+                aux3 = 0
+                for xi in range(self.NM.generationE['Costs']['NCOST'][xg]-1):
+                    aux3 += ((self.NM.generationE['Costs']['NCOST'][xg]-xi-1) *
+                             self.NM.generationE['Costs']['COST'][xg][xi] *
+                             aux2**(self.NM.generationE['Costs']['NCOST']
+                                    [xg]-xi-2))
+            nu.add('Generator', auxtxtG+str(xg+1),
+                   bus=auxtxtN+str(xn),
+                   control=aux1,
+                   p_nom_max=self.NM.generationE['Data']['PMAX'][xg]*baseMVA,
+                   p_set=self.NM.generationE['Data']['PG'][xg],
+                   q_set=self.NM.generationE['Data']['QG'][xg],
+                   marginal_cost=aux3
+                   )
+
+        # Renewable generation
+        aux = self.NM.generationE['Number']-self.NM.RES['Number']
+        aux1 = 'PQ'
+        xg = aux-1
+        xr = -1
+        yres = np.zeros(self.NM.settings['NoTime'], dtype=float)
+        for xn in (self.NM.generationE['Data']['GEN_BUS']
+                   [aux:self.NM.generationE['Number']]):
+            xg += 1
+            xr += 1
+            for xt in range(self.NM.settings['NoTime']):
+                yres[xt] = (self.NM.scenarios['RES']
+                            [self.NM.resScenario[xr][xscen][1]+xt])
+            nu.add('Generator', auxtxtG+str(xg+1),
+                   bus=auxtxtN+str(xn),
+                   control=aux1,
+                   p_nom_max=yres,
+                   p_nom=self.NM.RES['Max'][xr],
+                   p_set=self.NM.generationE['Data']['PG'][xg],
+                   q_set=self.NM.generationE['Data']['QG'][xg],
+                   marginal_cost=self.NM.generationE['Costs']['COST'][xg][0]
+                   )
+
+        '''                             CARRIER
+        name - Energy carrier
+        co2_emissions - tonnes/MWh
+        carrier_attribute
+        '''
+
+        '''                         GLOBAL CONSTRAINT
+        name - constraint
+        type - only 'primary_energy' is supported
+        carrier_attribute - attributes such as co2_emissions
+        sense - either '<=', '==' or '>='
+        constant - constant for right hand-side of constraint
+        '''
+
+        #                           STORAGE UNIT
+        #                              STORE
+        '''                              LOAD
+        Missing attributes:
+            type - placeholder for type
+            sign - change to -1 for generator
+
+        Implemented attributes:
+            name - auxtxtLd+str(xL)
+            bus - Name of bus
+        '''
+        xL = 0
+        ydemP = np.zeros(self.NM.settings['NoTime'], dtype=float)
+        ydemQ = np.zeros(self.NM.settings['NoTime'], dtype=float)
+        for xn in self.NM.networkE.node:
+            if self.NM.demandE['PD'][xn-1] != 0:
+                xL += 1
+                for xt in range(self.NM.settings['NoTime']):
+                    aux = (self.NM.scenarios['Demand']
+                           [self.NM.busScenario[xn-1][xscen]+xt])
+                    ydemP[xt] = self.NM.demandE['PD'][xn-1]*aux
+                    ydemQ[xt] = self.NM.demandE['QD'][xn-1]*aux
+                nu.add('Load', auxtxtLd+str(xL),
+                       bus=auxtxtN+str(xn),
+                       p_set=ydemP,
+                       q_set=ydemQ
+                       )
+
+        #                         SHUNT IMPEDANCE
+
+        '''                              LINE
+        Missing attributes:
+            type - assign string to re-calculate line parameters
+            g - shunt conductivity
+            s_nom_extendable - boolean switch to allow s_nom to be extended
+            s_nom_min - minimum capacity for extendable s_nom
+            s_nom_max - maximum capacity for extendable s_nom
+            s_max_pu - multiplier (time series) for considering DLR
+            capital_cost - cost for extending s_nom by 1
+            length - line length
+            terrain_factor - terrain factor for increasing capital costs
+            num_parallel - number of lines in parallel
+            v_ang_min - placeholder for minimum voltage angle drop/increase
+            v_and_max - placeholder for maximum voltage angle drop/increase
+            b - shunt susceptance
+
+        Implemented attributes:
+            Name - auxtxtL+str(xb)
+            bus0 - One of the buses connected to the line
+            bus1 - The other bus connected to the line
+            x - series reactance
+            r - series resistance
+            snom - MVA limit
+        '''
+        auxtxtL = 'Line'
+        xb = 0
+        for (xf, xt) in self.NM.networkE.edges:
+            if self.NM.networkE[xf][xt]['TAP'] == 0:
+                xb += 1
+                auxpu = (nu.buses['v_nom']['Bus{}'.format(xf)]**2 /
+                         self.NM.networkE.graph['baseMVA'])
+                nu.add('Line', auxtxtL+str(xb),
+                       bus0=auxtxtN+str(xf),
+                       bus1=auxtxtN+str(xt),
+                       x=self.NM.networkE[xf][xt]['BR_X']*auxpu,
+                       r=self.NM.networkE[xf][xt]['BR_R']*auxpu,
+                       s_nom=self.NM.networkE[xf][xt]['RATE_A']
+                       )
+
+        #                           LINE TYPES
+        '''                           TRANSFORMER
+        Missing attributes:
+            type - assign string to re-calculate line parameters
+            g - shunt conductivity
+            s_nom_extendable - boolean switch to allow s_nom to be extended
+            s_nom_min - minimum capacity for extendable s_nom
+            s_nom_max - maximum capacity for extendable s_nom
+            s_max_pu - multiplier (time series) for considering DLR
+            capital_cost - cost for extending s_nom by 1
+            num_parallel - number of lines in parallel
+            tap_position - if a type is defined, determine tap position
+            phase_shift - voltage phase angle
+            v_ang_min - placeholder for minimum voltage angle drop/increase
+            v_and_max - placeholder for maximum voltage angle drop/increase
+
+        Implemented attributes:
+            Name - auxtxtT+str(xb)
+            bus0 - One of the buses connected to the line
+            bus1 - The other bus connected to the line
+            model - Matpower and pypower use pi admittance models
+            tap_ratio - transformer ratio
+            tap_side - taps at from bus in Matlab
+        '''
+        auxtxtT = 'Trs'
+        xb = 0
+        for (xf, xt) in self.NM.networkE.edges:
+            if self.NM.networkE[xf][xt]['TAP'] != 0:
+                xb += 1
+                nu.add('Transformer', auxtxtT+str(xb),
+                       bus0=auxtxtN+str(xf),
+                       bus1=auxtxtN+str(xt),
+                       model='pi',
+                       x=self.NM.networkE[xf][xt]['BR_X'],
+                       r=self.NM.networkE[xf][xt]['BR_R'],
+                       b=self.NM.networkE[xf][xt]['BR_B'],
+                       s_nom=self.NM.networkE[xf][xt]['RATE_A'],
+                       tap_ratio=self.NM.networkE[xf][xt]['TAP'],
+                       tap_side=0
+                       )
+
+        #                        TRANSFORMER TYPES
+        #                              LINK
+
+        return (nu, True)
+
+    def pypsa2pyene(self):
+        '''Convert pyene files to pypsa format'''
+        print('To be finalised pypsa2pyene')
+
+    def pyene2pypower(self):
+        '''Convert pyene files to pypsa format'''
+        print('To be finalised pyene2pypower')
+
+    def pypower2pyene(self):
+        '''Convert pyene files to pypsa format'''
+        print('To be finalised pypower2pyene')
