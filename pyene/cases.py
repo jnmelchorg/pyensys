@@ -169,7 +169,6 @@ def test_pyenetest():
     # Run pypsa
     nu.pf()
 
-    nu.lines_t.p0['Line1'][0] == 158.093958284
 #    print(nu.lines_t.p0[0])
     
 # pyene simulation test

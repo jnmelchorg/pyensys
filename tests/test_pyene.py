@@ -59,7 +59,7 @@ def test_pyene_SmallHydro(conf):
     for xh in range(conf.NoHydro):
         hydroInNode.value = 1000
         hydroInNode.index = xh+1
-        EN.loadHydro(hydroInNode)
+        EN.set_Hydro(hydroInNode)
     # Run integrated pyene
     mod = EN.run()
     EN.Print_ENSim(mod, EN.EM, EN.NM)

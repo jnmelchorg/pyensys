@@ -222,8 +222,9 @@ class pyeneClass():
         NoGen0 = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
                   self.NM.RES['Number']+1)
         for xc in range(self.NoLL):
-            self.LLENM[xc][:] = [self.EM.tree['Time'][self.EM.size['Periods']][0]+xc,
-                                 self.NM.connections['Generation'][xc]+NoGen0]
+            self.LLENM[xc][:] = ([self.EM.tree['Time'][self.EM.size['Periods']]
+                                  [0]+xc, self.NM.connections['Generation']
+                                  [xc]+NoGen0])
 
         # Taking sets for modelling local objective function
         self.hGC = self.NM.connections['Cost']
@@ -231,12 +232,8 @@ class pyeneClass():
         self.hFea = self.NM.connections['Feasibility']
         self.h = self.NM.connections['set']
 
-    # load data for a hydropower node
-    def loadHydro(self, HydropowerNode):
-        '''
-        Load into the model the kWh of hydro that are available for a single
-        generator (for the month)
-        '''
+    def set_Hydro(self, HydropowerNode):
+        ''' Set kWh of hydro that are available for a single site '''
         aux1 = HydropowerNode.index-1
         aux2 = HydropowerNode.value
         if self.NM.hydropower['Number'] == 1:
@@ -244,77 +241,99 @@ class pyeneClass():
         else:
             self.EM.Weight['In'][1][aux1] = aux2
 
-    # Load data for a RES generator
-    def loadRES(self, resNode):
-        '''Load into the model a profile for PW/Wind for a single generator'''
+    def set_HydroPrice(self, HydroPriceNode):
+        ''' Set kWh of hydro that are available for a single site '''
+        raise NotImplementedError('Water prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_PumpPrice(self, HydroPriceNode):
+        ''' Set value for water pumped '''
+        raise NotImplementedError('Pump prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_RES(self, resNode):
+        ''' Set PW/Wind profile '''
         aux1 = (resNode.index-1)*self.NM.settings['NoTime']
         aux2 = resNode.index*self.NM.settings['NoTime']
 
         self.NM.scenarios['RES'][aux1:aux2] = resNode.value
 
-    # Load data for demand
-    def loadDemand(self, demandNode):
-        '''Load into the model a demand profile'''
+    def set_Demand(self, demandNode):
+        ''' Set a demand profile '''
         aux1 = (demandNode.index-1)*self.NM.settings['NoTime']
         aux2 = demandNode.index*self.NM.settings['NoTime']
 
         self.NM.scenarios['Demand'][aux1:aux2] = demandNode.value
 
-    # load data for a hydropower node
-    def getHydro(self, mod, HydropowerNode):
-        '''
-        Get from the model the kWh of hydro that were not used
-        by a specified generator
-        '''
+    def get_Hydro(self, mod, HydropowerNode):
+        ''' Get surplus kWh from specific site '''
         aux1 = HydropowerNode.index-1
-        HydropowerNode.value = mod.WOutFull[1, aux1].value
+        HydroValue = mod.WOutFull[1, aux1].value
+
+        return HydroValue
+
+    def get_HydroMarginal(self, mod, HydropowerMarginalNode):
+        ''' Get marginal costs for specific hydropower plant '''
+        aux1 = HydropowerMarginalNode.index-1
         cobject = getattr(mod, 'SoCBalance')
         aux = mod.dual.get(cobject[1, aux1])
         if aux is None:
-            HydropowerNode.marginal = 0
+            HydroValue = 0
         else:
-            HydropowerNode.marginal = -1*int(mod.dual.get(cobject[1, aux1]))
-        aux2 = self.Penalty/self.NM.networkE.graph['baseMVA']
-        if HydropowerNode.marginal > aux2:
-            HydropowerNode.flag = True
+            HydroValue = -1*int(mod.dual.get(cobject[1, aux1]))
 
-        return HydropowerNode
+        return HydroValue
 
-    # Collect outputs of pumps
-    def getPump(self, mod, indexPump):
-        '''Get kWh consumed by a specific pump'''
+    def get_HydroFlag(self, mod, HydropowerFlagNode):
+        ''' Get surplus kWh from specific site '''
+        aux1 = HydropowerFlagNode.index-1
+        cobject = getattr(mod, 'SoCBalance')
+        aux = mod.dual.get(cobject[1, aux1])
+        if aux is None:
+            HydroValue = False
+        else:
+            aux2 = -1*int(mod.dual.get(cobject[1, aux1]))
+            aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
+            if aux2 > aux3:
+                HydroValue = True
+            else:
+                HydroValue = False
+
+        return HydroValue
+
+    def get_Pump(self, mod, PumpNode):
+        ''' Get kWh consumed by a specific pump '''
         aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
-        pumpTotal = 0
+        PumpValue = 0
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                acu += mod.vDL[self.hDL[xh]+indexPump, xt].value
-            pumpTotal += acu*self.EM.Weight['Node'][aux+xh]
-        pumpTotal *= self.NM.networkE.graph['baseMVA']
+                acu += mod.vDL[self.hDL[xh]+PumpNode.index, xt].value
+            PumpValue += acu*self.EM.Weight['Node'][aux+xh]
+        PumpValue *= self.NM.networkE.graph['baseMVA']
 
-        return pumpTotal
+        return PumpValue
 
-    # COllect demand curtailed in a bus
-    def getCurt(self, mod, nod):
+    def get_DemandCurtailment(self, mod, DemandNode):
         '''Get the kWh that had to be curtailed from a given bus'''
-        curTotal = 0
+        DemandValue = 0
         if self.NM.settings['Feasibility']:
             aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sDL:
-                aux2 = self.hFea[xh]+nod.bus
+                aux2 = self.hFea[xh]+DemandNode.bus
                 acu = 0
                 for xt in mod.sTim:
                     acu += mod.vFea[aux2, xt].value
-                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
-        curTotal *= self.NM.networkE.graph['baseMVA']
+                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+        DemandValue *= self.NM.networkE.graph['baseMVA']
 
-        return curTotal
+        return DemandValue
 
     # COllect demand curtailed in all buses
-    def getCurtAll(self, mod):
+    def get_AllDemandCurtailment(self, mod):
         '''Get the kWh that had to be curtailed from all buses'''
 
-        curTotal = 0
+        DemandValue = 0
         if self.NM.settings['Feasibility']:
             aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sDL:
@@ -322,15 +341,15 @@ class pyeneClass():
                 for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
                     for xt in mod.sTim:
                         acu += mod.vFea[xn, xt].value
-                curTotal += acu*self.EM.Weight['Node'][aux1+xh]
-        curTotal *= self.NM.networkE.graph['baseMVA']
+                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+        DemandValue *= self.NM.networkE.graph['baseMVA']
 
-        return curTotal
+        return DemandValue
 
     # Collect curtailment of RES
-    def getRES(self, mod, nod):
-        xg = nod.index-1
-        spllTotal = 0
+    def get_RES(self, mod, RESNode):
+        xg = RESNode.index-1
+        RESValue = 0
         aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
         for xh in mod.sDL:
             acu = 0
@@ -339,9 +358,9 @@ class pyeneClass():
                         self.NM.scenarios['RES']
                         [self.NM.resScenario[xg][xh][1]+xt] -
                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value)
-            spllTotal += acu*self.EM.Weight['Node'][aux+xh]
+            RESValue += acu*self.EM.Weight['Node'][aux+xh]
 
-        return spllTotal
+        return RESValue
 
     # Run integrated pyene model
     def run(self):
