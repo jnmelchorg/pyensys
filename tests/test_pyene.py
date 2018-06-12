@@ -3,6 +3,7 @@ from click.testing import CliRunner
 from fixtures import *
 from pyene.engines.pyene import pyeneClass as pe
 import numpy as np
+import pypsa
 import os
 
 # Interaction node
