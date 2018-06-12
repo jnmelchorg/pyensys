@@ -58,27 +58,27 @@ def test_pyene(conf):
     demandNode = _node()
     demandNode.value = DemandProfiles[0][:]
     demandNode.index = 1
-    EN.loadDemand(demandNode)
+    EN.set_Demand(demandNode)
 
     # Second scenario
     demandNode = _node()
     demandNode.value = DemandProfiles[1][:]
     demandNode.index = 2
-    EN.loadDemand(demandNode)
+    EN.set_Demand(demandNode)
 
     # Several RES nodes
     resInNode = _node()
     for xr in range(conf.NoRES):
         resInNode.value = RESProfs[xr][:]
         resInNode.index = xr+1
-        EN.loadRES(resInNode)
+        EN.set_RES(resInNode)
 
     # Several hydro nodes
     hydroInNode = _node()
     for xh in range(conf.NoHydro):
         hydroInNode.value = 0
         hydroInNode.index = xh+1
-        EN.loadHydro(hydroInNode)
+        EN.set_Hydro(hydroInNode)
 
     # Run integrated pyene
     mod = EN.run()
@@ -95,16 +95,17 @@ def test_pyene(conf):
     hydroOutNode = _node()
     for xh in range(EN.EM.size['Vectors']):
         hydroOutNode.index = xh+1
-        hydroOutNode = EN.getHydro(mod, hydroOutNode)
-        print('Hydro %d left: %f (%f)' % (hydroOutNode.index,
-              hydroOutNode.value, hydroOutNode.marginal), hydroOutNode.flag)
+        print('Hydro %d', hydroOutNode.index, ' left: ',
+              EN.get_Hydro(mod, hydroOutNode), ' (',
+              EN.get_HydroMarginal(mod, hydroOutNode), ')',
+              EN.get_HydroFlag(mod, hydroOutNode))
 
     # Collect output of pumps
     print()
     pumpNode = _node()
     for xp in range(EN.NM.pumps['Number']):
         pumpNode.index = xp+1
-        pumpNode.value = EN.getPump(mod, xp+1)
+        pumpNode.value = EN.get_Pump(mod, xp+1)
         print('Pump %d: %f' % (pumpNode.index, pumpNode.value))
 
     # Collect RES spill
@@ -112,7 +113,7 @@ def test_pyene(conf):
     resOutNode = _node()
     for xp in range(EN.NM.RES['Number']):
         resOutNode.index = xp+1
-        resOutNode.value = EN.getRES(mod, resOutNode)
+        resOutNode.value = EN.get_RES(mod, resOutNode)
         print('RES %d: %f' % (resOutNode.index, resOutNode.value))
 
     # Collect curtailment per node
@@ -120,13 +121,13 @@ def test_pyene(conf):
     curNode = _node()
     for xn in range(EN.NM.networkE.number_of_nodes()):
         curNode.bus = xn+1
-        curNode.value = EN.getCurt(mod, curNode)
+        curNode.value = EN.get_DemandCurtailment(mod, curNode)
         print('Dem %d: %f' % (curNode.bus, curNode.value))
 
     # Collect all curtailment
     print()
     curAll = _node()
-    curAll.value = EN.getCurtAll(mod)
+    curAll.value = EN.get_AllDemandCurtailment(mod)
     print('Total curtailment:', curAll.value)
 
 
