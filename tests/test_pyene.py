@@ -100,8 +100,7 @@ def test_pyene2pypsa(conf):
     EN.initialise(conf)
     # Convert to pypsa
     xscen = 0  # Selected scenario
-    print('\n\nCalling pyene\n\n')
-    (nu, pypsaFlag) = EN.pyene2pypsa(xscen)    
+    (nu, pypsaFlag) = EN.pyene2pypsa(xscen)
     # Run pypsa
     if pypsaFlag:
         nu.pf()
@@ -110,5 +109,5 @@ def test_pyene2pypsa(conf):
     else:
         aux1 = 0
         aux2 = 0
-    print(pypsaFlag)
+
     assert 0.0001 >= abs(aux1 - aux2)

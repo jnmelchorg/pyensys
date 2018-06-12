@@ -546,14 +546,10 @@ class pyeneClass():
     def pyene2pypsa(self, xscen):
         '''Convert pyene files to pypsa format'''
         # Create pypsa network
-        print()
-        print('Trying to call pypsa')
-        print()
         try:
             nu = pypsa.Network()
         except ImportError:
             return (0, False)
-        print('\nAttempt succesful?')
 
         nu.set_snapshots(range(self.NM.settings['NoTime']))
         baseMVA = self.NM.networkE.graph['baseMVA']

@@ -11,7 +11,7 @@ setup(
     packages=find_packages(),
     package_data={'pyene': ['json/*.json']},
     install_requires=[
-        'click', 'pandas', 'pyomo'
+        'click', 'pandas', 'pyomo', 'pypsa'
     ],
     entry_points='''
     [console_scripts]
