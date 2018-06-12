@@ -546,7 +546,10 @@ class pyeneClass():
     def pyene2pypsa(self, xscen):
         '''Convert pyene files to pypsa format'''
         # Create pypsa network
-        nu = pypsa.Network()
+        try:
+            nu = pypsa.Network()
+        except ImportError:
+            return (0, False)
 
         nu.set_snapshots(range(self.NM.settings['NoTime']))
         baseMVA = self.NM.networkE.graph['baseMVA']
@@ -818,7 +821,7 @@ class pyeneClass():
         #                        TRANSFORMER TYPES
         #                              LINK
 
-        return nu
+        return (nu, True)
 
     def pypsa2pyene(self):
         '''Convert pyene files to pypsa format'''
