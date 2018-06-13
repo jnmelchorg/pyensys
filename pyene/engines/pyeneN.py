@@ -44,7 +44,8 @@ class ENetworkClass:
                 'Demand': [1],  # Demand profiles
                 'NoRES': 0,  # Number of RES profiles
                 'LinksRes': 'Default',  # Links RES generators and profiles
-                'RES': [0]  # Location of the RES profiles
+                'RES': [0],  # Location of the RES profiles
+                'Weights': None  # Weight of the time period
                 }
         # Hydropower
         self.hydropower = {
@@ -647,6 +648,13 @@ class ENetworkClass:
         for xt in range(1, self.settings['NoTime']):
             self.LLTime[xt] = xt-1
 
+        # Initialise weights per scenario
+        if conf.Weights is None:
+            self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
+                                                dtype=float)
+        else:
+            self.NM.scenarios['Weights'] = conf.Weights
+
     # Objective function
     def OF_rule(self, m):
         xh = self.connections['set'][0]
@@ -656,7 +664,7 @@ class ENetworkClass:
                         for xf in m.sFea) *
                     1000000 for xt in m.sTim) -
                 sum(m.ValDL[xdl]*sum(m.vDL[self.connections['Pump'][xh] +
-                                     xdl+1, xt]
+                                     xdl+1, xt]*self.scenarios['Weights'][xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
@@ -685,7 +693,8 @@ class ENetworkClass:
 
     # Piece-wise generation costs approximation
     def EGenC_rule(self, m, xc, xt, xh):
-        return (m.vGCost[self.connections['Cost'][xh]+m.LLGenC[xc], xt] >=
+        return (m.vGCost[self.connections['Cost'][xh]+m.LLGenC[xc], xt] /
+                self.scenarios['Weights'][xt] >=
                 m.vGen[self.connections['Generation'][xh]+m.LLGenC[xc]+1, xt] *
                 m.GenLCst[xc, 0]+m.GenLCst[xc, 1])
 
@@ -725,7 +734,8 @@ class ENetworkClass:
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
                 (m.vStore[self.LLStor[xn, xh], 0] -
-                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux -
+                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
+                self.scenarios['Weights'][xt] -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
                 m.vDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow[self.connections['Flow'][xh] +
