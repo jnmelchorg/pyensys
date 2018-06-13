@@ -86,6 +86,7 @@ def _update_config_pyeneN(conf, kwargs):
     conf.Feasibility = kwargs.pop('feas')
     conf.NetworkFile = kwargs.pop('network')
     conf.Time = kwargs.pop('time')
+    conf.Weights = None
 
     return conf
 
