@@ -12,3 +12,12 @@ TBD/
 
 # egg folder
 pyene.egg-info/
+
+# distribution folder
+dist/
+
+# data folder
+data/
+
+# outputs folder
+outputs/
