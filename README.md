@@ -31,8 +31,8 @@ pip install -e . --user
 ### Running
 
 The `pyene` model provides a basic command line interface (`pyene`) for running
-the model. For instructions on the interface, access the help option using the
-console:
+the model. For instructions on the interface, use the consol to access the help
+option:
 
 ```bash
 pyene --help
@@ -47,5 +47,5 @@ pyene run-n
 pyene run-en
 ```
 
-The simulations will run tests defined in `DAMSEnergy\pyene\json`. Additional
+The simulations will run the tests defined in `DAMSEnergy\pyene\json`. Additional
 tests can be found in `DAMSEnergy\tests`.
