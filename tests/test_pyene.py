@@ -102,12 +102,6 @@ def test_pyene2pypsa(conf):
     xscen = 0  # Selected scenario
     (nu, pypsaFlag) = EN.pyene2pypsa(xscen)
     # Run pypsa
-    if pypsaFlag:
-        nu.pf()
-        aux1 = nu.lines_t.p0['Line1'][0]
-        aux2 = 158.093958
-    else:
-        aux1 = 0
-        aux2 = 0
+    nu.pf()
 
-    assert 0.0001 >= abs(aux1 - aux2)
+    assert 0.0001 >= abs(nu.lines_t.p0['Line1'][0] - 158.093958)
