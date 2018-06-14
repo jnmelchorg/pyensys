@@ -35,7 +35,7 @@ def test_pyene_Small(conf):
 
 # Adding hydropower
 def test_pyene_SmallHydro(conf):
-    print('test_pyene_Small')
+    print('test_pyene_SmallHydro')
     conf.NetworkFile = 'case4.json'
     conf.TreeFile = 'ResolutionTreeMonth01.json'
     conf.Time = 1  # Single period
@@ -57,9 +57,7 @@ def test_pyene_SmallHydro(conf):
     # Add hydro nodes
     hydroInNode = _node()
     for xh in range(conf.NoHydro):
-        hydroInNode.value = 1000
-        hydroInNode.index = xh+1
-        EN.set_Hydro(hydroInNode)
+        EN.set_Hydro(xh+1, 1000)
     # Run integrated pyene
     mod = EN.run()
     EN.Print_ENSim(mod, EN.EM, EN.NM)
