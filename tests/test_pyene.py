@@ -68,6 +68,7 @@ def test_pyene_SmallHydro(conf):
 
 # Converting to pypsa
 def test_pyene2pypsa(conf):
+    print('test_pyene2pypsa')
     # Selected network file
     conf.NetworkFile = 'case14.json'
     # Location of the json directory
@@ -103,3 +104,48 @@ def test_pyene2pypsa(conf):
     nu.pf()
 
     assert 0.0001 >= abs(nu.lines_t.p0['Line1'][0] - 158.093958)
+
+
+# Test iteration with hydro
+def test_pyene_Curtailment2Hydro(conf):
+    '''
+    Identify demand curtailment in a first iteration
+    and supply customers with hydropower in another.
+    '''
+    print('test_pyene_Curtailment2Hydro')
+    # Selected network file
+    conf.NetworkFile = 'case4.json'
+    # Location of the json directory
+    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    # Consider single time step
+    conf.Time = 1  # Number of time steps
+    # Add hydropower plant
+    conf.NoHydro = 2  # Number of hydropower plants
+    conf.Hydro = [4, 1]  # Location (bus) of hydro
+    conf.HydroMax = [100, 100]  # Generation capacity
+    conf.HydroCost = [0.01, 0.01]  # Costs
+    # Enable curtailment
+    conf.Feasibility = True
+    # Get Pyene model
+    EN = pe()
+    # Initialize network model using the selected configuration
+    EN.initialise(conf)
+    # one generator off
+    EN.set_GenCoFlag(1, False)
+    # reduce capcity of the other generator
+    EN.set_GenCoFlag(2, 499)
+    # Run integrated pyene
+    mod = EN.run()
+    # Get demand curtailment as required hydropower inputs
+    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+    print('Required hydro:', Needed_hydro)
+    # Add hydropower
+    EN.set_Hydro(1, Needed_hydro+0.00001)
+    # Run integrated pyene
+    mod = EN.run()
+    # Get updated demand curtailment
+    Demand_curtailed = EN.get_AllDemandCurtailment(mod)
+    print('Total curtailment:', Demand_curtailed)
+
+    assert (0.0001 >= abs(Needed_hydro-29.75) and
+            0.0001 >= abs(Demand_curtailed))

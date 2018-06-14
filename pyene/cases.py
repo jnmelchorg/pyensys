@@ -140,22 +140,22 @@ def test_pyenetest():
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-    # Define number of time spets
+    # Consider single time step
     conf.Time = 1  # Number of time steps
-    # Hydropower
-    conf.NoHydro = 2  # Number of hydropower plants
-    conf.Hydro = [1, 2]  # Location (bus) of hydro
-    conf.HydroMax = [100, 100]  # Generation capacity
-    conf.HydroCost = [0.01, 0.01]  # Costs
+    # Add hydropower plant
+    conf.NoHydro = 2#2  # Number of hydropower plants
+    conf.Hydro = [4, 1]#[1, 2]  # Location (bus) of hydro
+    conf.HydroMax = [100, 100]#[100, 100]  # Generation capacity
+    conf.HydroCost = [0.01, 0.01]#[0.01, 0.01]  # Costs
 
     # Pumps
-    conf.NoPump = 1  # Number of pumps
-    conf.Pump = [3]  # Location (bus) of pumps
-    conf.PumpMax = [1000]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+#    conf.NoPump = 1  # Number of pumps
+#    conf.Pump = [3]  # Location (bus) of pumps
+#    conf.PumpMax = [1000]  # Generation capacity
+#    conf.PumpVal = [0.001]  # Value/Profit
 
     # RES generators
-    conf.NoRES = 0  # Number of RES generators
+#    conf.NoRES = 0  # Number of RES generators
 #    conf.RES = [1, 2, 3]  # Location (bus) of pumps
 #    conf.RESMax = [500, 500, 500]  # Generation capacity
 #    conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
@@ -165,47 +165,56 @@ def test_pyenetest():
     EN = pe()
     # Initialize network model using the selected configuration
     EN.initialise(conf)
-    # Fake weather engine
-    FileName = 'TimeSeries.json'
-    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
-     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
-     Nohr) = EN.ReadTimeS(FileName)
+#    # Fake weather engine
+#    FileName = 'TimeSeries.json'
+#    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+#     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+#     Nohr) = EN.ReadTimeS(FileName)
 
-    # Single demand node (first scenario)
-    demandNode = _node()
-    demandNode.value = 1#DemandProfiles[0][0:conf.Time]
-    demandNode.index = 1
-    EN.set_Demand(demandNode.index, demandNode.value)
+#    # Single demand node (first scenario)
+#    demandNode = _node()
+#    demandNode.value = 1#DemandProfiles[0][0:conf.Time]
+#    demandNode.index = 1
+#    EN.set_Demand(demandNode.index, demandNode.value)
+#
+#    # Second scenario
+#    demandNode = _node()
+#    demandNode.value = 1#DemandProfiles[1][0:conf.Time]
+#    demandNode.index = 2
+#    EN.set_Demand(demandNode.index, demandNode.value)
+#
+#    # Several RES nodes
+#    resInNode = _node()
+#    for xr in range(conf.NoRES):
+#        resInNode.value = 1#RESProfs[xr][0:conf.Time]
+#        resInNode.index = xr+1
+#        EN.set_RES(resInNode.index, resInNode.value)
+#
+#    # Several hydro nodes
+#    hydroInNode = _node()
+#    for xh in range(conf.NoHydro):
+#        hydroInNode.value = 100
+#        hydroInNode.index = xh+1
+#        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
 
-    # Second scenario
-    demandNode = _node()
-    demandNode.value = 1#DemandProfiles[1][0:conf.Time]
-    demandNode.index = 2
-    EN.set_Demand(demandNode.index, demandNode.value)
-
-    # Several RES nodes
-    resInNode = _node()
-    for xr in range(conf.NoRES):
-        resInNode.value = 1#RESProfs[xr][0:conf.Time]
-        resInNode.index = xr+1
-        EN.set_RES(resInNode.index, resInNode.value)
-
-    # Several hydro nodes
-    hydroInNode = _node()
-    for xh in range(conf.NoHydro):
-        hydroInNode.value = 0
-        hydroInNode.index = xh+1
-        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
-
-    # Swotch off generators
-#    EN.set_GenCoFlag(1, 100)
+    # one generator off
     EN.set_GenCoFlag(1, False)
-    EN.set_GenCoFlag(2, False)
+    # reduce capcity of the other
+    EN.set_GenCoFlag(2, 499)
+    # Run integrated pyene
+#    EN.set_Hydro(1, 30.34)
+    mod = EN.run()
+#    print('\n\nOF: ', mod.OF.expr())
+    # Get demand curtailment as required hydropower inputs
+    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+    print('Total curtailment:', Needed_hydro)
+    # Add hydropower
+    EN.set_Hydro(1, Needed_hydro)
     # Run integrated pyene
     mod = EN.run()
 
     # Print results
-    print('\n\nOF: ', mod.OF.expr())
+#    print('\n\nOF: ', mod.OF.expr())
 #    EN.NM.offPrint()
 #    EN.NM.Print['Generation'] = True
 #    EN.NM.Print['Losses'] = True
@@ -250,7 +259,8 @@ def test_pyenetest():
     curAll = _node()
     curAll.value = EN.get_AllDemandCurtailment(mod)
     print('Total curtailment:', curAll.value)
-    
+
+
 # pyene simulation test
 def get_pyene():
     """ Get pyene object."""

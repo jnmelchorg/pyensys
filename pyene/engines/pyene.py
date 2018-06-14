@@ -411,13 +411,12 @@ class pyeneClass():
         #                             Constraints                             #
         mod = EM.addCon(mod)
         mod = NM.addCon(mod)
-        mod = self.addCon(mod)        
+        mod = self.addCon(mod)
 
         #                          Objective function                         #
         WghtAgg = 0+EM.Weight['Node']
-        print(WghtAgg)
         self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
-        xp = 0        
+        xp = 0
         for xn in range(EM.LL['NosBal']+1):
             aux = EM.tree['After'][xn][0]
             if aux != 0:
