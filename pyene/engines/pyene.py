@@ -315,13 +315,12 @@ class pyeneClass():
 
     def get_Pump(self, mod, index):
         ''' Get kWh consumed by a specific pump '''
-        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
         PumpValue = 0
         for xh in mod.sCon:
             acu = 0
             for xt in mod.sTim:
                 acu += mod.vDL[self.hDL[xh]+index, xt].value
-            PumpValue += acu*self.EM.Weight['Node'][aux+xh]
+            PumpValue += acu*self.OFaux[xh]
         PumpValue *= self.NM.networkE.graph['baseMVA']
 
         return PumpValue
@@ -330,13 +329,12 @@ class pyeneClass():
         '''Get the kWh that had to be curtailed from a given bus'''
         DemandValue = 0
         if self.NM.settings['Feasibility']:
-            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sCon:
                 aux2 = self.hFea[xh]+bus
                 acu = 0
                 for xt in mod.sTim:
                     acu += mod.vFea[aux2, xt].value
-                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+                DemandValue += acu*self.OFaux[xh]
         DemandValue *= self.NM.networkE.graph['baseMVA']
 
         return DemandValue
@@ -346,13 +344,12 @@ class pyeneClass():
         '''Get the kWh that had to be curtailed from all buses'''
         DemandValue = 0
         if self.NM.settings['Feasibility']:
-            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
             for xh in mod.sCon:
                 acu = 0
                 for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
                     for xt in mod.sTim:
                         acu += mod.vFea[xn, xt].value
-                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
+                DemandValue += acu*self.OFaux[xh]
         DemandValue *= self.NM.networkE.graph['baseMVA']
 
         return DemandValue
@@ -417,7 +414,8 @@ class pyeneClass():
         mod = self.addCon(mod)        
 
         #                          Objective function                         #
-        WghtAgg = EM.Weight['Node']
+        WghtAgg = 0+EM.Weight['Node']
+        print(WghtAgg)
         self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
         xp = 0        
         for xn in range(EM.LL['NosBal']+1):
