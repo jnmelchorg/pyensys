@@ -23,7 +23,8 @@ class ENetworkClass:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 0  # Size of pieces used for piece-wise estimations
+                'Pieces': 0,  # Size of pieces used for piece-wise estimations
+                'Generators': None  # Number of conventional generators
                 }
         # Connections
         self.connections = {
@@ -52,7 +53,8 @@ class ENetworkClass:
                 'Number': 0,  # Number of hydropower plants
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
-                'Cost': [0]  # Costs
+                'Cost': [0],  # Costs
+                'Link': None  # Position of hydropower plants
                 }
         # Pumps
         self.pumps = {
@@ -66,7 +68,8 @@ class ENetworkClass:
                 'Number': 0,  # Number of RES generators
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
-                'Cost': [0]  # Cost (OF)
+                'Cost': [0],  # Cost (OF)
+                'Link': None  # Position of RES generators
                 }
         self.Storage = {
                 'Number': 0,  # Number of RES generators
@@ -210,14 +213,16 @@ class ENetworkClass:
                     acu += 1
 
         # Add renewable generation
+        self.settings['Generators'] = NoOGen
         if self.hydropower['Number'] > 0:
             # Adding hydro
-            aux1 = NoOGen
-            aux2 = NoOGen+self.hydropower['Number']
-            ENetGen['GEN_BUS'][aux1:aux2] = self.hydropower['Bus']
-            ENetGen['PMAX'][aux1:aux2] = self.hydropower['Max']
+            self.hydropower['Link'] = range(NoOGen,
+                                            NoOGen+self.hydropower['Number'])
+            ENetGen['GEN_BUS'][self.hydropower['Link']] = (self.hydropower
+                                                           ['Bus'])
+            ENetGen['PMAX'][self.hydropower['Link']] = self.hydropower['Max']
             xg2 = -1
-            for xg in range(aux1, aux2):
+            for xg in self.hydropower['Link']:
                 xg2 += 1
                 ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
                 # Add polinomial (linear) cost curve
@@ -228,12 +233,10 @@ class ENetworkClass:
 
         if self.RES['Number'] > 0:
             # Adding intermittent generation
-            aux = NoOGen+self.hydropower['Number']+1
-            aux1 = NoOGen+self.hydropower['Number']
-            aux2 = NoGen
-            ENetGen['GEN_BUS'][aux1:aux2] = self.RES['Bus']
+            self.RES['Link'] = range(NoOGen+self.hydropower['Number'], NoGen)
+            ENetGen['GEN_BUS'][self.RES['Link']] = self.RES['Bus']
             xg2 = -1
-            for xg in range(aux1, aux2):
+            for xg in self.RES['Link']:
                 xg2 += 1
                 ENetGen['PMAX'][xg] = 1000000
                 ENetGen['QMAX'][xg] = 1000000
@@ -653,7 +656,7 @@ class ENetworkClass:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
         else:
-            self.NM.scenarios['Weights'] = conf.Weights
+            self.scenarios['Weights'] = conf.Weights
 
     # Objective function
     def OF_rule(self, m):

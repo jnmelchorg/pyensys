@@ -55,7 +55,6 @@ def test_pyene_SmallHydro(conf):
     # Initialise with selected configuration
     EN.initialise(conf)
     # Add hydro nodes
-    hydroInNode = _node()
     for xh in range(conf.NoHydro):
         EN.set_Hydro(xh+1, 1000)
     # Run integrated pyene
@@ -106,7 +105,7 @@ def test_pyene2pypsa(conf):
     assert 0.0001 >= abs(nu.lines_t.p0['Line1'][0] - 158.093958)
 
 
-# Test iteration with hydro
+# Test iteration where hydro covers load curtailment
 def test_pyene_Curtailment2Hydro(conf):
     '''
     Identify demand curtailment in a first iteration
@@ -147,5 +146,74 @@ def test_pyene_Curtailment2Hydro(conf):
     Demand_curtailed = EN.get_AllDemandCurtailment(mod)
     print('Total curtailment:', Demand_curtailed)
 
+    # 4.25*(7*1 + 2*1) = 29.75
     assert (0.0001 >= abs(Needed_hydro-29.75) and
             0.0001 >= abs(Demand_curtailed))
+
+
+# Test iteration where hydro covers full demand
+def test_pyene_AllHydro(conf):
+    '''
+    Get all power generation, replace it with hydro, add surplus
+    and make sure that it is not used by the pumps
+    '''
+    print('test_pyene_AllHydro')
+    # Selected network file
+    conf.NetworkFile = 'case4.json'
+    # Location of the json directory
+    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    # Consider two time steps
+    conf.Time = 2  # Number of time steps
+    conf.Weights = [0.5, 1]  # Add different weights to the time steps
+    # Add hydropower plant
+    conf.NoHydro = 1  # Number of hydropower plants
+    conf.Hydro = [1]  # Location (bus) of hydro
+    conf.HydroMax = [150]  # Generation capacity
+    conf.HydroCost = [0.01]  # Costs
+
+    # Pumps
+    conf.NoPump = 1  # Number of pumps
+    conf.Pump = [2]  # Location (bus) of pumps
+    conf.PumpMax = [1000]  # Generation capacity
+    conf.PumpVal = [0.001]  # Value/Profit
+    # Enable curtailment
+    conf.Feasibility = True
+    # Get Pyene model
+    EN = pe()
+    # Initialize network model using the selected configuration
+    EN.initialise(conf)
+    # Single demand node (first scenario)
+    demandNode = _node()
+    demandNode.value = [0.2, 0.1]  # DemandProfiles[0][0:conf.Time]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+    # Second scenario
+    demandNode = _node()
+    demandNode.value = [0.1, 0.3]  # DemandProfiles[1][0:conf.Time]
+    demandNode.index = 2
+    EN.set_Demand(demandNode.index, demandNode.value)
+    # Run model
+    mod = EN.run()
+    # Get total energy generation
+    Total_Generation = EN.get_AllGeneration(mod)
+    print('Total generation: ', Total_Generation)
+    # Replace all conventional generation with hydropower
+    EN.set_Hydro(1, Total_Generation)
+    # Run system again
+    mod = EN.run()
+    # Check conventional power generation
+    Total_Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+    print('Total conventional generation: ', Total_Conv_Generation)
+    # Add even more hydropower
+    Additional_hydro = 100
+    EN.set_Hydro(1, Total_Generation+Additional_hydro)
+    # Run the system again
+    mod = EN.run()
+    # Check that the water is spilled instead of used by the pumps
+    Hydropower_Left = EN.get_AllHydro(mod)
+    print('Hydropower left', Hydropower_Left)
+
+    # 4 .25*(5*(100*0.5+50*1.0)+2*(50+0.5+150+1.0)) = 3612.5
+    assert (0.0001 > abs(Total_Generation-3612.5) and
+            0.0001 > abs(Total_Conv_Generation) and
+            0.0001 > abs(Hydropower_Left-Additional_hydro))

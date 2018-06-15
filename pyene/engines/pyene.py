@@ -101,7 +101,8 @@ class pyeneClass():
         return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
                        self.Penalty for xt in m.sTim) * self.OFaux[xh] -
-                   sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt]
+                   sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
+                                        self.NM.scenarios['Weights'][xt]
                                         for xt in m.sTim) for xdl in m.sDL) *
                    self.OFaux[xh]
                    for xh in self.h)
@@ -110,7 +111,8 @@ class pyeneClass():
     def EMNM_rule(self, m, xL, xv):
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
-                sum(m.vGen[m.LLENM[xL][1]+xv, xt] for xt in m.sTim))
+                sum(m.vGen[m.LLENM[xL][1]+xv, xt] *
+                    self.NM.scenarios['Weights'][xt] for xt in m.sTim))
 
     #                               Constraints                               #
     def addCon(self, m):
@@ -286,6 +288,14 @@ class pyeneClass():
 
         return HydroValue
 
+    def get_AllHydro(self, mod):
+        ''' Get surplus kWh from all hydropower plants '''
+        value = 0
+        for xi in range(self.EM.settings['Vectors']):
+            value += mod.WOutFull[1, xi].value
+
+        return value
+
     def get_HydroMarginal(self, mod, index):
         ''' Get marginal costs for specific hydropower plant '''
         cobject = getattr(mod, 'SoCBalance')
@@ -327,48 +337,76 @@ class pyeneClass():
 
     def get_DemandCurtailment(self, mod, bus):
         '''Get the kWh that had to be curtailed from a given bus'''
-        DemandValue = 0
+        value = 0
         if self.NM.settings['Feasibility']:
-            for xh in mod.sCon:
-                aux2 = self.hFea[xh]+bus
+            for xh in self.h:
                 acu = 0
                 for xt in mod.sTim:
-                    acu += mod.vFea[aux2, xt].value
-                DemandValue += acu*self.OFaux[xh]
-        DemandValue *= self.NM.networkE.graph['baseMVA']
+                    acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
+                            self.NM.scenarios['Weights'][xt])
+                value += acu*self.OFaux[xh]
+            value *= self.NM.networkE.graph['baseMVA']
 
-        return DemandValue
+        return value
 
-    # COllect demand curtailed in all buses
     def get_AllDemandCurtailment(self, mod):
         '''Get the kWh that had to be curtailed from all buses'''
-        DemandValue = 0
+        value = 0
         if self.NM.settings['Feasibility']:
-            for xh in mod.sCon:
-                acu = 0
-                for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
-                    for xt in mod.sTim:
-                        acu += mod.vFea[xn, xt].value
-                DemandValue += acu*self.OFaux[xh]
-        DemandValue *= self.NM.networkE.graph['baseMVA']
+            for xn in range(self.NM.networkE.number_of_nodes()):
+                value += self.get_DemandCurtailment(mod, xn+1)
 
-        return DemandValue
+        return value
 
-    # Collect curtailment of RES
-    def get_RES(self, mod, RESNode):
-        xg = RESNode.index-1
-        RESValue = 0
-        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
+    def get_Generation(self, mod, index):
+        ''' Get kWh for a single generator for the whole period '''
+        value = 0
+        for xh in self.h:
+            acu = 0
+            for xt in mod.sTim:
+                acu += (mod.vGen[self.NM.connections['Generation']
+                                 [xh]+index, xt].value *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_AllGeneration(self, mod, *argv):
+        ''' Get kWh for all generators for the whole period '''
+        aux = range(1, self.NM.generationE['Number']+1)
+        if 'All' in argv:
+            aux = range(1, self.NM.generationE['Number']+1)
+        elif 'Conv' in argv:
+            aux = range(1, self.NM.settings['Generators']+1)
+        elif 'RES' in argv:
+            aux = range(self.RES['Link'][0]+1,
+                        self.RES['Link'][self.RES['Number']-1]+1)
+        elif 'Hydro' in argv:
+            aux = range(self.hydropower['Link'][0]+1,
+                        self.hydropower['Link'][self.RES['Number']-1]+1)
+
+        value = 0
+        for xn in aux:
+            value += self.get_Generation(mod, xn)
+
+        return value
+
+    def get_RES(self, mod, index):
+        ''' Spilled kWh of RES for the whole period'''
+        xg = index-1
+        value = 0
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                acu += (self.NM.RES['Max'][xg] *
-                        self.NM.scenarios['RES']
-                        [self.NM.resScenario[xg][xh][1]+xt] -
-                        mod.vGen[self.NM.resScenario[xg][xh][0], xt].value)
-            RESValue += acu*self.EM.Weight['Node'][aux+xh]
+                acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
+                         [self.NM.resScenario[xg][xh][1]+xt] -
+                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.networkE.graph['baseMVA']
 
-        return RESValue
+        return value
 
     # Run integrated pyene model
     def run(self):
