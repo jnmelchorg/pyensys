@@ -137,16 +137,17 @@ def test_pyenetest():
     # Initialize configuration
     conf = default_conf()
     # Selected network file
+#    conf.TreeFile = 'TestCase.json'
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
     conf.Time = 1  # Number of time steps
     # Add hydropower plant
-    conf.NoHydro = 2#2  # Number of hydropower plants
-    conf.Hydro = [4, 1]#[1, 2]  # Location (bus) of hydro
-    conf.HydroMax = [100, 100]#[100, 100]  # Generation capacity
-    conf.HydroCost = [0.01, 0.01]#[0.01, 0.01]  # Costs
+    conf.NoHydro = 1#2  # Number of hydropower plants
+    conf.Hydro = [1]#[1, 2]  # Location (bus) of hydro
+    conf.HydroMax = [100]#[100, 100]  # Generation capacity
+    conf.HydroCost = [0.01]#[0.01, 0.01]  # Costs
 
     # Pumps
 #    conf.NoPump = 1  # Number of pumps
@@ -204,12 +205,12 @@ def test_pyenetest():
     # Run integrated pyene
 #    EN.set_Hydro(1, 30.34)
     mod = EN.run()
+    print('Demand Curtailed', EN.get_AllDemandCurtailment(mod))
 #    print('\n\nOF: ', mod.OF.expr())
     # Get demand curtailment as required hydropower inputs
-    Needed_hydro = EN.get_AllDemandCurtailment(mod)
-    print('Total curtailment:', Needed_hydro)
     # Add hydropower
-    EN.set_Hydro(1, Needed_hydro)
+    EN.set_Hydro(1, 30.3331)
+#    print('Values withiun EM', EN.EM.Weight)
     # Run integrated pyene
     mod = EN.run()
 

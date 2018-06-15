@@ -120,10 +120,10 @@ def test_pyene_Curtailment2Hydro(conf):
     # Consider single time step
     conf.Time = 1  # Number of time steps
     # Add hydropower plant
-    conf.NoHydro = 2  # Number of hydropower plants
-    conf.Hydro = [4, 1]  # Location (bus) of hydro
-    conf.HydroMax = [100, 100]  # Generation capacity
-    conf.HydroCost = [0.01, 0.01]  # Costs
+    conf.NoHydro = 1  # Number of hydropower plants
+    conf.Hydro = [1]  # Location (bus) of hydro
+    conf.HydroMax = [100]  # Generation capacity
+    conf.HydroCost = [0.01]  # Costs
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model

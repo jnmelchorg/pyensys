@@ -142,7 +142,7 @@ class EnergyClass:
     # Process the data as inputs, outputs, weights and uncertainty
     def _Process(self):
         WIn = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
-                       dtype=int)
+                       dtype=float)
         WOut = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
                         dtype=float)
         Wght = np.ones(self.size['SumPeriods'], dtype=float)
@@ -243,8 +243,8 @@ class EnergyClass:
                 aux3 += self.size['Scenarios']/aux1
 
         # Beginning of the final time level
-        LL_TimeLevel[self.size['Periods']] = LL_TimeLevel[self.size['Periods'] -
-                                                          1]+aux1
+        LL_TimeLevel[self.size['Periods']] = (LL_TimeLevel
+                                              [self.size['Periods']-1]+aux1)
 
         # Get nodes at each time level
         NodeTime = np.zeros((self.size['Periods']+1, 2), dtype=int)
@@ -257,7 +257,7 @@ class EnergyClass:
 
         # Adding cnnection to the last set of scenarios
         aux1 = aux1*self.size['LenPeriods'][self.size['Periods']-1]
-        aux3 = 0        
+        aux3 = 0
         for x3 in range(aux1):
             x1 = x1+1
             LL_TimeScenarioTree[x1][0] = aux3
@@ -280,7 +280,8 @@ class EnergyClass:
         xbefore = [0, 0]
         # [1:2] Node before when moving forward
         # [3;4] Node before when moving backwards
-        LL_TimeNodeBeforeSequence = np.zeros((self.size['Nodes'], 4), dtype=int)
+        LL_TimeNodeBeforeSequence = np.zeros((self.size['Nodes'], 4),
+                                             dtype=int)
         LL_TimeNodeBeforeSequence, x = self.Mapping(xin, xlvl, xbefore,
                                                     LL_TimeNodeBeforeSequence,
                                                     LL_TimeNodeTree, Unc, saux)
@@ -432,9 +433,8 @@ class EnergyClass:
         # Measure the size of the data arrays
         self._Measure()
 
-        # Should the number of vectors be adjusted
-        aux = self.settings['Vectors'] != self.size['Vectors']
-        if aux and self.settings['Fix']:
+        # Adjust number of vectors and clear inputs and outputs
+        if self.settings['Fix']:
             for xp in range(self.size['Periods']):
                 if self.size['LenPeriods'][xp] == 1:
                     aux = np.zeros(self.settings['Vectors'], dtype=float)
@@ -496,7 +496,6 @@ class EnergyClass:
 
         return m
 
-    #                               Constraints                               #
     def addCon(self, m):
         # Initialisation conditions
         m.ZSoC = Constraint(range(2), m.sVec, rule=self.ZSoC_rule)
@@ -509,4 +508,5 @@ class EnergyClass:
         if m.FUnc != 0:
             m.SoCStochastic = Constraint(m.sLLTS3, m.sVec,
                                          rule=self.SoCStochastic_rule)
+
         return m

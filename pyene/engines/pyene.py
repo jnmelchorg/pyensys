@@ -237,7 +237,7 @@ class pyeneClass():
     def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''
         if self.NM.hydropower['Number'] == 1:
-            self.EM.Weight['In'][index-1] = value
+            self.EM.Weight['In'][1] = value
         else:
             self.EM.Weight['In'][1][index-1] = value
 
@@ -384,7 +384,6 @@ class pyeneClass():
     def build_Mod(self, EM, NM):
         # Declare pyomo model
         mod = ConcreteModel()
-        mod = self.SingleLP(EM)
 
         #                                 Sets                                #
         mod = EM.getSets(mod)
