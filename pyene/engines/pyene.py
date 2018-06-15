@@ -288,6 +288,20 @@ class pyeneClass():
 
         self.NM.scenarios['Demand'][aux1:aux2] = value
 
+    def set_LineCapacity(self, mod, index, value, *argv):
+        ''' Adjust maximum capacity of a line '''
+        aux1 = value
+        if 'BR_R' in argv:
+            aux2 = 0
+        elif 'BR_X' in argv:
+            aux2 = 1
+        elif 'BR_B' in argv:
+            aux2 = 2
+        else:
+            aux1 = value/self.NM.networkE.graph['baseMVA']
+            aux2 = 3
+        mod.branchData[mod.LLESec1[index-1, 0], aux1] = aux2
+
     def get_Hydro(self, mod, index):
         ''' Get surplus kWh from specific site '''
         HydroValue = mod.WOutFull[1, index-1].value
@@ -389,7 +403,6 @@ class pyeneClass():
 
     def get_AllGeneration(self, mod, *argv):
         ''' Get kWh for all generators for the whole period '''
-        aux = range(1, self.NM.generationE['Number']+1)
         if 'All' in argv:
             aux = range(1, self.NM.generationE['Number']+1)
         elif 'Conv' in argv:
@@ -400,6 +413,8 @@ class pyeneClass():
         elif 'Hydro' in argv:
             aux = range(self.hydropower['Link'][0]+1,
                         self.hydropower['Link'][self.RES['Number']-1]+1)
+        else:
+            aux = range(1, self.NM.generationE['Number']+1)
 
         value = 0
         for xn in aux:
