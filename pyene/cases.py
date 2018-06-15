@@ -58,27 +58,27 @@ def test_pyene(conf):
     demandNode = _node()
     demandNode.value = DemandProfiles[0][:]
     demandNode.index = 1
-    EN.set_Demand(demandNode)
+    EN.set_Demand(demandNode.index, demandNode.value)
 
     # Second scenario
     demandNode = _node()
     demandNode.value = DemandProfiles[1][:]
     demandNode.index = 2
-    EN.set_Demand(demandNode)
+    EN.set_Demand(demandNode.index, demandNode.value)
 
     # Several RES nodes
     resInNode = _node()
     for xr in range(conf.NoRES):
         resInNode.value = RESProfs[xr][:]
         resInNode.index = xr+1
-        EN.set_RES(resInNode)
+        EN.set_RES(resInNode.index, resInNode.value)
 
     # Several hydro nodes
     hydroInNode = _node()
     for xh in range(conf.NoHydro):
         hydroInNode.value = 0
         hydroInNode.index = xh+1
-        EN.set_Hydro(hydroInNode)
+        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
 
     # Run integrated pyene
     mod = EN.run()
@@ -96,9 +96,9 @@ def test_pyene(conf):
     for xh in range(EN.EM.size['Vectors']):
         hydroOutNode.index = xh+1
         print('Hydro %d', hydroOutNode.index, ' left: ',
-              EN.get_Hydro(mod, hydroOutNode), ' (',
-              EN.get_HydroMarginal(mod, hydroOutNode), ')',
-              EN.get_HydroFlag(mod, hydroOutNode))
+              EN.get_Hydro(mod, hydroOutNode.index), ' (',
+              EN.get_HydroMarginal(mod, hydroOutNode.index), ')',
+              EN.get_HydroFlag(mod, hydroOutNode.index))
 
     # Collect output of pumps
     print()
@@ -121,7 +121,7 @@ def test_pyene(conf):
     curNode = _node()
     for xn in range(EN.NM.networkE.number_of_nodes()):
         curNode.bus = xn+1
-        curNode.value = EN.get_DemandCurtailment(mod, curNode)
+        curNode.value = EN.get_DemandCurtailment(mod, curNode.bus)
         print('Dem %d: %f' % (curNode.bus, curNode.value))
 
     # Collect all curtailment
@@ -137,41 +137,199 @@ def test_pyenetest():
     # Initialize configuration
     conf = default_conf()
     # Selected network file
-    conf.NetworkFile = 'case14.json'
+#    conf.TreeFile = 'TestCase.json'
+    conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-    # Define number of time spets
-    conf.Time = 1  # Number of time steps
-    # Hydropower
-    conf.NoHydro = 2  # Number of hydropower plants
-    conf.Hydro = [1, 2]  # Location (bus) of hydro
-    conf.HydroMax = [100, 100]  # Generation capacity
-    conf.HydroCost = [0.01, 0.01]  # Costs
+    # Consider single time step
+    conf.Time = 2  # Number of time steps
+    conf.Weights = [0.5, 1]
+    # Add hydropower plant
+    conf.NoHydro = 1#2  # Number of hydropower plants
+    conf.Hydro = [1]#[1, 2]  # Location (bus) of hydro
+    conf.HydroMax = [150]#[100, 100]  # Generation capacity
+    conf.HydroCost = [0.01]#[0.01, 0.01]  # Costs
 
     # Pumps
     conf.NoPump = 1  # Number of pumps
-    conf.Pump = [3]  # Location (bus) of pumps
-    conf.PumpMax = [1000]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+    conf.Pump = [2]  # Location (bus) of pumps
+    conf.PumpMax = [100]  # Generation capacity
+    conf.PumpVal = [0.001]#[0.001]  # Value/Profit
 
     # RES generators
-    conf.NoRES = 3  # Number of RES generators
-    conf.RES = [3, 4, 5]  # Location (bus) of pumps
-    conf.RESMax = [500, 500, 500]  # Generation capacity
-    conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
-
+    conf.NoRES = 1 #3  # Number of RES generators
+    conf.RES = [3] #[1, 2, 3]  # Location (bus) of pumps
+    conf.RESMax = [100] #[500, 500, 500]  # Generation capacity
+    conf.Cost = [0.0001] #[0.0001, 0.0001, 0.0001]  # Costs
+    # Enable curtailment
+    conf.Feasibility = True
     # Get Pyene model
     EN = pe()
     # Initialize network model using the selected configuration
     EN.initialise(conf)
-    # Convert to pypsa
-    xscen = 0  # Selected scenario
-    nu = EN.pyene2pypsa(xscen)
-    # Run pypsa
-    nu.pf()
+#    # Fake weather engine
+#    FileName = 'TimeSeries.json'
+#    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+#     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+#     Nohr) = EN.ReadTimeS(FileName)
 
-#    print(nu.lines_t.p0[0])
+    # Single demand node (first scenario)
+    demandNode = _node()
+    demandNode.value = [0.2, 0.1]  # DemandProfiles[0][0:conf.Time]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # Second scenario
+    demandNode = _node()
+    demandNode.value = [0.1, 1]  # DemandProfiles[1][0:conf.Time]
+    demandNode.index = 2
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # RES profile (first scenario)
+    resInNode = _node()
+    resInNode.value = [0.5, 1.0]
+    resInNode.index = 1
+    EN.set_RES(resInNode.index, resInNode.value)
+
+    # RES profile (first scenario)
+    resInNode = _node()
+    resInNode.value = [0.5, 0.0]
+    resInNode.index = 2
+    EN.set_RES(resInNode.index, resInNode.value)
+    # COnstrain generation
+    EN.set_GenCoFlag(1, 200)
+    EN.set_GenCoFlag(2, 200)
+#
+#    # Several RES nodes
+#    resInNode = _node()
+#    for xr in range(conf.NoRES):
+#        resInNode.value = 1#RESProfs[xr][0:conf.Time]
+#        resInNode.index = xr+1
+#        EN.set_RES(resInNode.index, resInNode.value)
+#
+#    # Several hydro nodes
+#    hydroInNode = _node()
+#    for xh in range(conf.NoHydro):
+#        hydroInNode.value = 100
+#        hydroInNode.index = xh+1
+#        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
+
+    # one generator off
+#    EN.set_GenCoFlag(1, False)
+    # reduce capcity of the other
+#    EN.set_GenCoFlag(2, 499)
+    # Run integrated pyene
+#    EN.set_Hydro(1, 30.34)
+    mod = EN.run()
+    # Get RES spilled
+    RES_Spilled = EN.get_AllRES(mod)
+    print('RES spilled ', RES_Spilled)
+    # Get use of pumps
+    Pumps_Use = EN.get_AllPumps(mod)
+    print('Energy used by pumps', Pumps_Use)
+    # Get demand curtailed
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('Demand curtailed', Demand_Curtailed)
+    # Add hydro to replace conventional generation
+    Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+    EN.set_Hydro(1, Conv_Generation)
+    # Run again
+    mod = EN.run()
+    # Get new curtailment
+    New_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', New_Curtailed)
+    # Get use of conventional generation
+    Use_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    print('Conventional generation ', Use_ConvGeneration)
+    # Fully cover conventional generation and demand with hydro
+    EN.set_Hydro(1, Conv_Generation+Demand_Curtailed)
+    # Run again
+    mod = EN.run()
+    # Get use of pumps
+    Final_Pump = EN.get_AllPumps(mod)
+    print('Energy used by pumps', Final_Pump)
+    # Get new curtailment
+    Final_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Final_Curtailed)
+    # Get use of conventional generation
+    Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    print('Conventional generation ', Final_ConvGeneration)
     
+#    # Get total energy generation
+#    Total_Generation = EN.get_AllGeneration(mod)
+#    print('Total generation: ', Total_Generation)
+#    # Replace all conventional generation with hydropower
+#    EN.set_Hydro(1, Total_Generation)
+#    # Run system again
+#    mod = EN.run()
+#    # Check conventional power generation
+#    Total_Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+#    print('Total conventional generation: ', Total_Conv_Generation)
+#    # Add even more hydropower
+#    Additional_hydro = 100
+#    EN.set_Hydro(1, Total_Generation+Additional_hydro)
+#    # Run the system again
+#    mod = EN.run()
+#    # Check that the water is spilled instead of used by the pumps
+#    Hydropower_Left = EN.get_AllHydro(mod)
+#    print('Hydropower left', Hydropower_Left)
+#    print('Demand Curtailed', EN.get_AllDemandCurtailment(mod))
+#    print('\n\nOF: ', mod.OF.expr())
+    # Get demand curtailment as required hydropower inputs
+    # Add hydropower
+#    EN.set_Hydro(1, 30.3331)
+#    print('Values withiun EM', EN.EM.Weight)
+    # Run integrated pyene
+#    mod = EN.run()
+
+    # Print results
+#    print('\n\nOF: ', mod.OF.expr())
+#    EN.NM.offPrint()
+#    EN.NM.Print['Generation'] = True
+#    EN.NM.Print['Losses'] = True
+    EN.Print_ENSim(mod, EN.EM, EN.NM)
+
+    # Collect unused hydro:
+    print()
+    hydroOutNode = _node()
+    for xh in range(EN.EM.size['Vectors']):
+        hydroOutNode.index = xh+1
+        print('Hydro %d', hydroOutNode.index, ' left: ',
+              EN.get_Hydro(mod, hydroOutNode.index), ' (',
+              EN.get_HydroMarginal(mod, hydroOutNode.index), ')',
+              EN.get_HydroFlag(mod, hydroOutNode.index))
+
+    # Collect output of pumps
+    print()
+    pumpNode = _node()
+    for xp in range(EN.NM.pumps['Number']):
+        pumpNode.index = xp+1
+        pumpNode.value = EN.get_Pump(mod, xp+1)
+        print('Pump %d: %f' % (pumpNode.index, pumpNode.value))
+
+    # Collect RES spill
+    print()
+    resOutNode = _node()
+    for xp in range(EN.NM.RES['Number']):
+        resOutNode.index = xp+1
+        resOutNode.value = EN.get_RES(mod, resOutNode.index)
+        print('RES %d: %f' % (resOutNode.index, resOutNode.value))
+
+    # Collect curtailment per node
+    print()
+    curNode = _node()
+    for xn in range(EN.NM.networkE.number_of_nodes()):
+        curNode.bus = xn+1
+        curNode.value = EN.get_DemandCurtailment(mod, curNode.bus)
+        print('Dem %d: %f' % (curNode.bus, curNode.value))
+
+    # Collect all curtailment
+    print()
+    curAll = _node()
+    curAll.value = EN.get_AllDemandCurtailment(mod)
+    print('Total curtailment:', curAll.value)
+
+
 # pyene simulation test
 def get_pyene():
     """ Get pyene object."""
@@ -213,3 +371,4 @@ class default_conf():
         # Scenarios
         self.NoDemProfiles = 2  # Number of demand profiles
         self.NoRESProfiles = 2  # Number of RES profiles
+        self.Weights = None

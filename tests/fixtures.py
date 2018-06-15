@@ -41,5 +41,6 @@ def conf():
     # Scenarios
     conf.NoDemProfiles = 2  # Number of demand profiles
     conf.NoRESProfiles = 2  # Number of RES profiles
+    conf.Weights = None  # Weights for each time step
 
     return conf

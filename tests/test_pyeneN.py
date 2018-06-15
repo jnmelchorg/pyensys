@@ -15,6 +15,7 @@ def test_pyeneN_4Bus(conf):
 
     assert NModel.OF.expr() == 21952.5
 
+
 # Medium network
 def test_pyeneN_14Bus(conf):
     print('test_pyeneN_14Bus: case14.json')

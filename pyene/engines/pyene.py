@@ -98,19 +98,22 @@ class pyeneClass():
 
     #                           Objective function                            #
     def OF_rule(self, m):
-        return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
-                       sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                       self.Penalty for xt in m.sTim) * self.OFaux[xh] -
-                   sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt]
-                                        for xt in m.sTim) for xdl in m.sDL) *
-                   self.OFaux[xh]
-                   for xh in self.h)
+        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
+                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
+                        self.Penalty for xt in m.sTim) -
+                    sum(self.NM.pumps['Value'][xdl] *
+                        self.NM.networkE.graph['baseMVA'] *
+                        sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
+                            self.NM.scenarios['Weights'][xt]
+                            for xt in m.sTim) for xdl in m.sDL)) *
+                   self.OFaux[xh] for xh in self.h)
 
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
-                sum(m.vGen[m.LLENM[xL][1]+xv, xt] for xt in m.sTim))
+                sum(m.vGen[m.LLENM[xL][1]+xv, xt] *
+                    self.NM.scenarios['Weights'][xt] for xt in m.sTim))
 
     #                               Constraints                               #
     def addCon(self, m):
@@ -206,11 +209,13 @@ class pyeneClass():
         self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
         self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
         # Location of each instance
+        aux = self.NM.networkE.number_of_edges()
         for xc in self.NM.connections['set']:
             self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
             self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
-            self.NM.connections['Loss'][xc] = xc*(self.NM.networkE.number_of_edges()+1)
-            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE['Number']+1)
+            self.NM.connections['Loss'][xc] = xc*(aux+1)
+            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE
+                                                        ['Number']+1)
             self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']
             self.NM.connections['Pump'][xc] = xc*(self.NM.pumps['Number']+1)
             self.NM.connections['Feasibility'][xc] = xc*self.NM.NoFea
@@ -232,67 +237,104 @@ class pyeneClass():
         self.hFea = self.NM.connections['Feasibility']
         self.h = self.NM.connections['set']
 
-    def set_Hydro(self, HydropowerNode):
+    def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''
-        aux1 = HydropowerNode.index-1
-        aux2 = HydropowerNode.value
         if self.NM.hydropower['Number'] == 1:
-            self.EM.Weight['In'][aux1] = aux2
+            self.EM.Weight['In'][1] = value
         else:
-            self.EM.Weight['In'][1][aux1] = aux2
+            self.EM.Weight['In'][1][index-1] = value
 
-    def set_HydroPrice(self, HydroPriceNode):
+    def set_HydroPrice(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''
         raise NotImplementedError('Water prices not yet enabled')
         # Adjust self.NM.GenLCst
 
-    def set_PumpPrice(self, HydroPriceNode):
+    def set_GenCoFlag(self, index, value):
+        ''' Adjust maximum output of generators '''
+        if isinstance(value, bool):
+            if value:
+                # Maximum capacity
+                self.NM.GenMax[index-1] = (self.generationE['Data']['PMAX']
+                                           [index-1]/self.NM.networkE.graph
+                                           ['baseMVA'])
+            else:
+                # Switch off
+                self.NM.GenMax[index-1] = 0
+        else:
+            # Adjust capacity
+            self.NM.GenMax[index-1] = value/self.NM.networkE.graph['baseMVA']
+
+    def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''
         raise NotImplementedError('Pump prices not yet enabled')
         # Adjust self.NM.GenLCst
 
-    def set_RES(self, resNode):
+    def set_RES(self, index, value):
         ''' Set PW/Wind profile '''
-        aux1 = (resNode.index-1)*self.NM.settings['NoTime']
-        aux2 = resNode.index*self.NM.settings['NoTime']
+        aux1 = (index-1)*self.NM.settings['NoTime']
+        aux2 = index*self.NM.settings['NoTime']
 
-        self.NM.scenarios['RES'][aux1:aux2] = resNode.value
+        self.NM.scenarios['RES'][aux1:aux2] = value
+        xi = 0
+        for xs in range(aux1, aux2):
+            self.NM.scenarios['RES'][xs] = (value[xi] /
+                                            self.NM.networkE.graph['baseMVA'])
+            xi += 1
 
-    def set_Demand(self, demandNode):
+    def set_Demand(self, index, value):
         ''' Set a demand profile '''
-        aux1 = (demandNode.index-1)*self.NM.settings['NoTime']
-        aux2 = demandNode.index*self.NM.settings['NoTime']
+        aux1 = (index-1)*self.NM.settings['NoTime']
+        aux2 = index*self.NM.settings['NoTime']
 
-        self.NM.scenarios['Demand'][aux1:aux2] = demandNode.value
+        self.NM.scenarios['Demand'][aux1:aux2] = value
 
-    def get_Hydro(self, mod, HydropowerNode):
+    def set_LineCapacity(self, mod, index, value, *argv):
+        ''' Adjust maximum capacity of a line '''
+        aux1 = value
+        if 'BR_R' in argv:
+            aux2 = 0
+        elif 'BR_X' in argv:
+            aux2 = 1
+        elif 'BR_B' in argv:
+            aux2 = 2
+        else:
+            aux1 = value/self.NM.networkE.graph['baseMVA']
+            aux2 = 3
+        mod.branchData[mod.LLESec1[index-1, 0], aux1] = aux2
+
+    def get_Hydro(self, mod, index):
         ''' Get surplus kWh from specific site '''
-        aux1 = HydropowerNode.index-1
-        HydroValue = mod.WOutFull[1, aux1].value
+        HydroValue = mod.WOutFull[1, index-1].value
 
         return HydroValue
 
-    def get_HydroMarginal(self, mod, HydropowerMarginalNode):
+    def get_AllHydro(self, mod):
+        ''' Get surplus kWh from all hydropower plants '''
+        value = 0
+        for xi in range(self.EM.settings['Vectors']):
+            value += mod.WOutFull[1, xi].value
+
+        return value
+
+    def get_HydroMarginal(self, mod, index):
         ''' Get marginal costs for specific hydropower plant '''
-        aux1 = HydropowerMarginalNode.index-1
         cobject = getattr(mod, 'SoCBalance')
-        aux = mod.dual.get(cobject[1, aux1])
+        aux = mod.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = 0
         else:
-            HydroValue = -1*int(mod.dual.get(cobject[1, aux1]))
+            HydroValue = -1*int(mod.dual.get(cobject[1, index-1]))
 
         return HydroValue
 
-    def get_HydroFlag(self, mod, HydropowerFlagNode):
+    def get_HydroFlag(self, mod, index):
         ''' Get surplus kWh from specific site '''
-        aux1 = HydropowerFlagNode.index-1
         cobject = getattr(mod, 'SoCBalance')
-        aux = mod.dual.get(cobject[1, aux1])
+        aux = mod.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = False
         else:
-            aux2 = -1*int(mod.dual.get(cobject[1, aux1]))
+            aux2 = -1*int(mod.dual.get(cobject[1, index-1]))
             aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
             if aux2 > aux3:
                 HydroValue = True
@@ -301,66 +343,108 @@ class pyeneClass():
 
         return HydroValue
 
-    def get_Pump(self, mod, PumpNode):
+    def get_Pump(self, mod, index):
         ''' Get kWh consumed by a specific pump '''
-        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
-        PumpValue = 0
-        for xh in mod.sDL:
+        value = 0
+        for xh in mod.sCon:
             acu = 0
             for xt in mod.sTim:
-                acu += mod.vDL[self.hDL[xh]+PumpNode.index, xt].value
-            PumpValue += acu*self.EM.Weight['Node'][aux+xh]
-        PumpValue *= self.NM.networkE.graph['baseMVA']
+                acu += (mod.vDL[self.hDL[xh]+index, xt].value *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.NM.networkE.graph['baseMVA']
 
-        return PumpValue
+        return value
 
-    def get_DemandCurtailment(self, mod, DemandNode):
+    def get_AllPumps(self, mod):
+        ''' Get kWh consumed by all pumps '''
+        value = 0
+        for xp in range(self.NM.pumps['Number']):
+            value += self.get_Pump(mod, xp+1)
+
+        return value
+
+    def get_DemandCurtailment(self, mod, bus):
         '''Get the kWh that had to be curtailed from a given bus'''
-        DemandValue = 0
+        value = 0
         if self.NM.settings['Feasibility']:
-            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
-            for xh in mod.sDL:
-                aux2 = self.hFea[xh]+DemandNode.bus
+            for xh in self.h:
                 acu = 0
                 for xt in mod.sTim:
-                    acu += mod.vFea[aux2, xt].value
-                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
-        DemandValue *= self.NM.networkE.graph['baseMVA']
+                    acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
+                            self.NM.scenarios['Weights'][xt])
+                value += acu*self.OFaux[xh]
+            value *= self.NM.networkE.graph['baseMVA']
 
-        return DemandValue
+        return value
 
-    # COllect demand curtailed in all buses
     def get_AllDemandCurtailment(self, mod):
         '''Get the kWh that had to be curtailed from all buses'''
-
-        DemandValue = 0
+        value = 0
         if self.NM.settings['Feasibility']:
-            aux1 = self.EM.tree['Time'][self.EM.size['Periods']][0]
-            for xh in mod.sDL:
-                acu = 0
-                for xn in range(self.hFea[xh], self.hFea[xh]+self.NM.NoFea):
-                    for xt in mod.sTim:
-                        acu += mod.vFea[xn, xt].value
-                DemandValue += acu*self.EM.Weight['Node'][aux1+xh]
-        DemandValue *= self.NM.networkE.graph['baseMVA']
+            for xn in range(self.NM.networkE.number_of_nodes()):
+                value += self.get_DemandCurtailment(mod, xn+1)
 
-        return DemandValue
+        return value
 
-    # Collect curtailment of RES
-    def get_RES(self, mod, RESNode):
-        xg = RESNode.index-1
-        RESValue = 0
-        aux = self.EM.tree['Time'][self.EM.size['Periods']][0]
+    def get_Generation(self, mod, index):
+        ''' Get kWh for a single generator for the whole period '''
+        value = 0
+        for xh in self.h:
+            acu = 0
+            for xt in mod.sTim:
+                acu += (mod.vGen[self.NM.connections['Generation']
+                                 [xh]+index, xt].value *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_AllGeneration(self, mod, *argv):
+        ''' Get kWh for all generators for the whole period '''
+        if 'All' in argv:
+            aux = range(1, self.NM.generationE['Number']+1)
+        elif 'Conv' in argv:
+            aux = range(1, self.NM.settings['Generators']+1)
+        elif 'RES' in argv:
+            aux = range(self.RES['Link'][0]+1,
+                        self.RES['Link'][self.RES['Number']-1]+1)
+        elif 'Hydro' in argv:
+            aux = range(self.hydropower['Link'][0]+1,
+                        self.hydropower['Link'][self.RES['Number']-1]+1)
+        else:
+            aux = range(1, self.NM.generationE['Number']+1)
+
+        value = 0
+        for xn in aux:
+            value += self.get_Generation(mod, xn)
+
+        return value
+
+    def get_RES(self, mod, index):
+        ''' Spilled kWh of RES for the whole period'''
+        xg = index-1
+        value = 0
         for xh in mod.sDL:
             acu = 0
             for xt in mod.sTim:
-                acu += (self.NM.RES['Max'][xg] *
-                        self.NM.scenarios['RES']
-                        [self.NM.resScenario[xg][xh][1]+xt] -
-                        mod.vGen[self.NM.resScenario[xg][xh][0], xt].value)
-            RESValue += acu*self.EM.Weight['Node'][aux+xh]
+                acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
+                         [self.NM.resScenario[xg][xh][1]+xt] -
+                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.NM.networkE.graph['baseMVA']
 
-        return RESValue
+        return value
+
+    def get_AllRES(self, mod):
+        ''' Total RES spilled for the whole period '''
+        value = 0
+        for xr in range(self.NM.RES['Number']):
+            value += self.get_RES(mod, xr+1)
+
+        return value
 
     # Run integrated pyene model
     def run(self):
@@ -376,7 +460,6 @@ class pyeneClass():
     def build_Mod(self, EM, NM):
         # Declare pyomo model
         mod = ConcreteModel()
-        mod = self.SingleLP(EM)
 
         #                                 Sets                                #
         mod = EM.getSets(mod)
@@ -403,12 +486,12 @@ class pyeneClass():
         #                             Constraints                             #
         mod = EM.addCon(mod)
         mod = NM.addCon(mod)
-        mod = self.addCon(mod)        
+        mod = self.addCon(mod)
 
         #                          Objective function                         #
-        WghtAgg = EM.Weight['Node']
+        WghtAgg = 0+EM.Weight['Node']
         self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
-        xp = 0        
+        xp = 0
         for xn in range(EM.LL['NosBal']+1):
             aux = EM.tree['After'][xn][0]
             if aux != 0:

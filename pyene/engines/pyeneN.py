@@ -23,7 +23,8 @@ class ENetworkClass:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 0  # Size of pieces used for piece-wise estimations
+                'Pieces': 0,  # Size of pieces used for piece-wise estimations
+                'Generators': None  # Number of conventional generators
                 }
         # Connections
         self.connections = {
@@ -44,14 +45,16 @@ class ENetworkClass:
                 'Demand': [1],  # Demand profiles
                 'NoRES': 0,  # Number of RES profiles
                 'LinksRes': 'Default',  # Links RES generators and profiles
-                'RES': [0]  # Location of the RES profiles
+                'RES': [0],  # Location of the RES profiles
+                'Weights': None  # Weight of the time period
                 }
         # Hydropower
         self.hydropower = {
                 'Number': 0,  # Number of hydropower plants
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
-                'Cost': [0]  # Costs
+                'Cost': [0],  # Costs
+                'Link': None  # Position of hydropower plants
                 }
         # Pumps
         self.pumps = {
@@ -65,7 +68,8 @@ class ENetworkClass:
                 'Number': 0,  # Number of RES generators
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
-                'Cost': [0]  # Cost (OF)
+                'Cost': [0],  # Cost (OF)
+                'Link': None  # Position of RES generators
                 }
         self.Storage = {
                 'Number': 0,  # Number of RES generators
@@ -209,14 +213,16 @@ class ENetworkClass:
                     acu += 1
 
         # Add renewable generation
+        self.settings['Generators'] = NoOGen
         if self.hydropower['Number'] > 0:
             # Adding hydro
-            aux1 = NoOGen
-            aux2 = NoOGen+self.hydropower['Number']
-            ENetGen['GEN_BUS'][aux1:aux2] = self.hydropower['Bus']
-            ENetGen['PMAX'][aux1:aux2] = self.hydropower['Max']
+            self.hydropower['Link'] = range(NoOGen,
+                                            NoOGen+self.hydropower['Number'])
+            ENetGen['GEN_BUS'][self.hydropower['Link']] = (self.hydropower
+                                                           ['Bus'])
+            ENetGen['PMAX'][self.hydropower['Link']] = self.hydropower['Max']
             xg2 = -1
-            for xg in range(aux1, aux2):
+            for xg in self.hydropower['Link']:
                 xg2 += 1
                 ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
                 # Add polinomial (linear) cost curve
@@ -227,12 +233,10 @@ class ENetworkClass:
 
         if self.RES['Number'] > 0:
             # Adding intermittent generation
-            aux = NoOGen+self.hydropower['Number']+1
-            aux1 = NoOGen+self.hydropower['Number']
-            aux2 = NoGen
-            ENetGen['GEN_BUS'][aux1:aux2] = self.RES['Bus']
+            self.RES['Link'] = range(NoOGen+self.hydropower['Number'], NoGen)
+            ENetGen['GEN_BUS'][self.RES['Link']] = self.RES['Bus']
             xg2 = -1
-            for xg in range(aux1, aux2):
+            for xg in self.RES['Link']:
                 xg2 += 1
                 ENetGen['PMAX'][xg] = 1000000
                 ENetGen['QMAX'][xg] = 1000000
@@ -592,8 +596,8 @@ class ENetworkClass:
                 print("\nvDL=[")
                 for xdl in mod.sDL:
                     for xt in mod.sTim:
-                        aux = mod.vDL[self.connections['Pump'][xh]+xdl,
-                                      xt].value
+                        aux = mod.vDL[self.connections['Pump'][xh]+xdl+1,
+                                      xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -647,6 +651,13 @@ class ENetworkClass:
         for xt in range(1, self.settings['NoTime']):
             self.LLTime[xt] = xt-1
 
+        # Initialise weights per scenario
+        if conf.Weights is None:
+            self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
+                                                dtype=float)
+        else:
+            self.scenarios['Weights'] = conf.Weights
+
     # Objective function
     def OF_rule(self, m):
         xh = self.connections['set'][0]
@@ -655,8 +666,9 @@ class ENetworkClass:
                     sum(m.vFea[self.connections['Feasibility'][xh]+xf, xt]
                         for xf in m.sFea) *
                     1000000 for xt in m.sTim) -
-                sum(m.ValDL[xdl]*sum(m.vDL[self.connections['Pump'][xh] +
-                                     xdl+1, xt]
+                sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
+                    sum(m.vDL[self.connections['Pump'][xh] +
+                                     xdl+1, xt]*self.scenarios['Weights'][xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
@@ -685,7 +697,8 @@ class ENetworkClass:
 
     # Piece-wise generation costs approximation
     def EGenC_rule(self, m, xc, xt, xh):
-        return (m.vGCost[self.connections['Cost'][xh]+m.LLGenC[xc], xt] >=
+        return (m.vGCost[self.connections['Cost'][xh]+m.LLGenC[xc], xt] /
+                self.scenarios['Weights'][xt] >=
                 m.vGen[self.connections['Generation'][xh]+m.LLGenC[xc]+1, xt] *
                 m.GenLCst[xc, 0]+m.GenLCst[xc, 1])
 
@@ -725,7 +738,8 @@ class ENetworkClass:
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
                 (m.vStore[self.LLStor[xn, xh], 0] -
-                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux -
+                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
+                self.scenarios['Weights'][xt] -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
                 m.vDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
                 sum(m.vFlow[self.connections['Flow'][xh] +
@@ -814,7 +828,6 @@ class ENetworkClass:
         m.LLGen2 = self.LLGen2
         m.LLGenC = self.LLGenC
         m.GenLCst = self.GenLCst
-        m.ValDL = self.pumps['Value']
         m.MaxDL = self.pumps['Max']
         m.LLDL = self.LLDL
         m.LLFea = self.LLFea
