@@ -98,14 +98,15 @@ class pyeneClass():
 
     #                           Objective function                            #
     def OF_rule(self, m):
-        return sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
-                       sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                       self.Penalty for xt in m.sTim) * self.OFaux[xh] -
-                   sum(m.ValDL[xdl]*sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
-                                        self.NM.scenarios['Weights'][xt]
-                                        for xt in m.sTim) for xdl in m.sDL) *
-                   self.OFaux[xh]
-                   for xh in self.h)
+        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
+                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
+                        self.Penalty for xt in m.sTim) -
+                    sum(self.NM.pumps['Value'][xdl] *
+                        self.NM.networkE.graph['baseMVA'] *
+                        sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
+                            self.NM.scenarios['Weights'][xt]
+                            for xt in m.sTim) for xdl in m.sDL)) *
+                   self.OFaux[xh] for xh in self.h)
 
     # Water consumption depends on water use by the electricity system
     def EMNM_rule(self, m, xL, xv):
@@ -274,6 +275,11 @@ class pyeneClass():
         aux2 = index*self.NM.settings['NoTime']
 
         self.NM.scenarios['RES'][aux1:aux2] = value
+        xi = 0
+        for xs in range(aux1, aux2):
+            self.NM.scenarios['RES'][xs] = (value[xi] /
+                                            self.NM.networkE.graph['baseMVA'])
+            xi += 1
 
     def set_Demand(self, index, value):
         ''' Set a demand profile '''
@@ -325,15 +331,24 @@ class pyeneClass():
 
     def get_Pump(self, mod, index):
         ''' Get kWh consumed by a specific pump '''
-        PumpValue = 0
+        value = 0
         for xh in mod.sCon:
             acu = 0
             for xt in mod.sTim:
-                acu += mod.vDL[self.hDL[xh]+index, xt].value
-            PumpValue += acu*self.OFaux[xh]
-        PumpValue *= self.NM.networkE.graph['baseMVA']
+                acu += (mod.vDL[self.hDL[xh]+index, xt].value *
+                        self.NM.scenarios['Weights'][xt])
+            value += acu*self.OFaux[xh]
+        value *= self.NM.networkE.graph['baseMVA']
 
-        return PumpValue
+        return value
+
+    def get_AllPumps(self, mod):
+        ''' Get kWh consumed by all pumps '''
+        value = 0
+        for xp in range(self.NM.pumps['Number']):
+            value += self.get_Pump(mod, xp+1)
+
+        return value
 
     def get_DemandCurtailment(self, mod, bus):
         '''Get the kWh that had to be curtailed from a given bus'''
@@ -404,7 +419,15 @@ class pyeneClass():
                          mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
                         self.NM.scenarios['Weights'][xt])
             value += acu*self.OFaux[xh]
-        value *= self.networkE.graph['baseMVA']
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_AllRES(self, mod):
+        ''' Total RES spilled for the whole period '''
+        value = 0
+        for xr in range(self.NM.RES['Number']):
+            value += self.get_RES(mod, xr+1)
 
         return value
 

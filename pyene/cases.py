@@ -153,14 +153,14 @@ def test_pyenetest():
     # Pumps
     conf.NoPump = 1  # Number of pumps
     conf.Pump = [2]  # Location (bus) of pumps
-    conf.PumpMax = [1000]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+    conf.PumpMax = [100]  # Generation capacity
+    conf.PumpVal = [0.001]#[0.001]  # Value/Profit
 
-#    # RES generators
-#    conf.NoRES = 3  # Number of RES generators
-#    conf.RES = [1, 2, 3]  # Location (bus) of pumps
-#    conf.RESMax = [500, 500, 500]  # Generation capacity
-#    conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
+    # RES generators
+    conf.NoRES = 1 #3  # Number of RES generators
+    conf.RES = [3] #[1, 2, 3]  # Location (bus) of pumps
+    conf.RESMax = [100] #[500, 500, 500]  # Generation capacity
+    conf.Cost = [0.0001] #[0.0001, 0.0001, 0.0001]  # Costs
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model
@@ -181,9 +181,24 @@ def test_pyenetest():
 
     # Second scenario
     demandNode = _node()
-    demandNode.value = [0.1, 0.3]  # DemandProfiles[1][0:conf.Time]
+    demandNode.value = [0.1, 1]  # DemandProfiles[1][0:conf.Time]
     demandNode.index = 2
     EN.set_Demand(demandNode.index, demandNode.value)
+
+    # RES profile (first scenario)
+    resInNode = _node()
+    resInNode.value = [0.5, 1.0]
+    resInNode.index = 1
+    EN.set_RES(resInNode.index, resInNode.value)
+
+    # RES profile (first scenario)
+    resInNode = _node()
+    resInNode.value = [0.5, 0.0]
+    resInNode.index = 2
+    EN.set_RES(resInNode.index, resInNode.value)
+    # COnstrain generation
+    EN.set_GenCoFlag(1, 200)
+    EN.set_GenCoFlag(2, 200)
 #
 #    # Several RES nodes
 #    resInNode = _node()
@@ -206,24 +221,58 @@ def test_pyenetest():
     # Run integrated pyene
 #    EN.set_Hydro(1, 30.34)
     mod = EN.run()
-    # Get total energy generation
-    Total_Generation = EN.get_AllGeneration(mod)
-    print('Total generation: ', Total_Generation)
-    # Replace all conventional generation with hydropower
-    EN.set_Hydro(1, Total_Generation)
-    # Run system again
+    # Get RES spilled
+    RES_Spilled = EN.get_AllRES(mod)
+    print('RES spilled ', RES_Spilled)
+    # Get use of pumps
+    Pumps_Use = EN.get_AllPumps(mod)
+    print('Energy used by pumps', Pumps_Use)
+    # Get demand curtailed
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('Demand curtailed', Demand_Curtailed)
+    # Add hydro to replace conventional generation
+    Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+    EN.set_Hydro(1, Conv_Generation)
+    # Run again
     mod = EN.run()
-    # Check conventional power generation
-    Total_Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
-    print('Total conventional generation: ', Total_Conv_Generation)
-    # Add even more hydropower
-    Additional_hydro = 100
-    EN.set_Hydro(1, Total_Generation+Additional_hydro)
-    # Run the system again
+    # Get new curtailment
+    New_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', New_Curtailed)
+    # Get use of conventional generation
+    Use_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    print('Conventional generation ', Use_ConvGeneration)
+    # Fully cover conventional generation and demand with hydro
+    EN.set_Hydro(1, Conv_Generation+Demand_Curtailed)
+    # Run again
     mod = EN.run()
-    # Check that the water is spilled instead of used by the pumps
-    Hydropower_Left = EN.get_AllHydro(mod)
-    print('Hydropower left', Hydropower_Left)
+    # Get use of pumps
+    Final_Pump = EN.get_AllPumps(mod)
+    print('Energy used by pumps', Final_Pump)
+    # Get new curtailment
+    Final_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Final_Curtailed)
+    # Get use of conventional generation
+    Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    print('Conventional generation ', Final_ConvGeneration)
+    
+#    # Get total energy generation
+#    Total_Generation = EN.get_AllGeneration(mod)
+#    print('Total generation: ', Total_Generation)
+#    # Replace all conventional generation with hydropower
+#    EN.set_Hydro(1, Total_Generation)
+#    # Run system again
+#    mod = EN.run()
+#    # Check conventional power generation
+#    Total_Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+#    print('Total conventional generation: ', Total_Conv_Generation)
+#    # Add even more hydropower
+#    Additional_hydro = 100
+#    EN.set_Hydro(1, Total_Generation+Additional_hydro)
+#    # Run the system again
+#    mod = EN.run()
+#    # Check that the water is spilled instead of used by the pumps
+#    Hydropower_Left = EN.get_AllHydro(mod)
+#    print('Hydropower left', Hydropower_Left)
 #    print('Demand Curtailed', EN.get_AllDemandCurtailment(mod))
 #    print('\n\nOF: ', mod.OF.expr())
     # Get demand curtailment as required hydropower inputs
@@ -238,7 +287,7 @@ def test_pyenetest():
 #    EN.NM.offPrint()
 #    EN.NM.Print['Generation'] = True
 #    EN.NM.Print['Losses'] = True
-#    EN.Print_ENSim(mod, EN.EM, EN.NM)
+    EN.Print_ENSim(mod, EN.EM, EN.NM)
 
     # Collect unused hydro:
     print()
@@ -263,7 +312,7 @@ def test_pyenetest():
     resOutNode = _node()
     for xp in range(EN.NM.RES['Number']):
         resOutNode.index = xp+1
-        resOutNode.value = EN.get_RES(mod, resOutNode)
+        resOutNode.value = EN.get_RES(mod, resOutNode.index)
         print('RES %d: %f' % (resOutNode.index, resOutNode.value))
 
     # Collect curtailment per node

@@ -596,8 +596,8 @@ class ENetworkClass:
                 print("\nvDL=[")
                 for xdl in mod.sDL:
                     for xt in mod.sTim:
-                        aux = mod.vDL[self.connections['Pump'][xh]+xdl,
-                                      xt].value
+                        aux = mod.vDL[self.connections['Pump'][xh]+xdl+1,
+                                      xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -666,7 +666,8 @@ class ENetworkClass:
                     sum(m.vFea[self.connections['Feasibility'][xh]+xf, xt]
                         for xf in m.sFea) *
                     1000000 for xt in m.sTim) -
-                sum(m.ValDL[xdl]*sum(m.vDL[self.connections['Pump'][xh] +
+                sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
+                    sum(m.vDL[self.connections['Pump'][xh] +
                                      xdl+1, xt]*self.scenarios['Weights'][xt]
                                      for xt in m.sTim) for xdl in m.sDL))
 
@@ -827,7 +828,6 @@ class ENetworkClass:
         m.LLGen2 = self.LLGen2
         m.LLGenC = self.LLGenC
         m.GenLCst = self.GenLCst
-        m.ValDL = self.pumps['Value']
         m.MaxDL = self.pumps['Max']
         m.LLDL = self.LLDL
         m.LLFea = self.LLFea
