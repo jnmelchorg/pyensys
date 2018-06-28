@@ -133,36 +133,43 @@ def test_pyene(conf):
 
 # pyene test
 def test_pyenetest():
+    print('Running test')
+    
+    
+    
     '''Test specific functionalities'''
     # Initialize configuration
     conf = default_conf()
     # Selected network file
 #    conf.TreeFile = 'TestCase.json'
-    conf.NetworkFile = 'case4.json'
+    conf.NetworkFile = 'case14.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
-    conf.Time = 2  # Number of time steps
-    conf.Weights = [0.5, 1]
+    conf.Time = 24  # Number of time steps
+#    conf.Weights = [0.5, 1]
+
     # Add hydropower plant
-    conf.NoHydro = 1#2  # Number of hydropower plants
-    conf.Hydro = [1]#[1, 2]  # Location (bus) of hydro
-    conf.HydroMax = [150]#[100, 100]  # Generation capacity
-    conf.HydroCost = [0.01]#[0.01, 0.01]  # Costs
+    conf.NoHydro = 3  # Number of hydropower plants
+    conf.Hydro = [1, 2, 3]  # Location of hydropower plants
+    conf.HydroMax = [100, 100, 100]  # Capacity of hydropower plants
+    conf.HydroCost = [0.01, 0.01,  0.01]  # Cost of water
 
     # Pumps
-    conf.NoPump = 1  # Number of pumps
-    conf.Pump = [2]  # Location (bus) of pumps
-    conf.PumpMax = [100]  # Generation capacity
-    conf.PumpVal = [0.001]#[0.001]  # Value/Profit
+    conf.NoPump = 2  # Number of pumps
+    conf.Pump = [1, 2]  # Location of pumps
+    conf.PumpMax = [1, 1]  # Capacity of the pumps
+    conf.PumpVal = [0.001, 0.001]  # Value of pumped water
 
-    # RES generators
-    conf.NoRES = 1 #3  # Number of RES generators
-    conf.RES = [3] #[1, 2, 3]  # Location (bus) of pumps
-    conf.RESMax = [100] #[500, 500, 500]  # Generation capacity
-    conf.Cost = [0.0001] #[0.0001, 0.0001, 0.0001]  # Costs
+    # RES Generators
+    conf.NoRES = 2  # Number of RES generators
+    conf.RESMax = [100, 100]  # Capacity of hydro
+    conf.RES = [1, 2]  # Bus of RES generators
+    conf.Cost = [0, 0]  # Cost of RES
+
     # Enable curtailment
     conf.Feasibility = True
+
     # Get Pyene model
     EN = pe()
     # Initialize network model using the selected configuration
@@ -173,32 +180,34 @@ def test_pyenetest():
 #     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
 #     Nohr) = EN.ReadTimeS(FileName)
 
-    # Single demand node (first scenario)
-    demandNode = _node()
-    demandNode.value = [0.2, 0.1]  # DemandProfiles[0][0:conf.Time]
-    demandNode.index = 1
-    EN.set_Demand(demandNode.index, demandNode.value)
-
-    # Second scenario
-    demandNode = _node()
-    demandNode.value = [0.1, 1]  # DemandProfiles[1][0:conf.Time]
-    demandNode.index = 2
-    EN.set_Demand(demandNode.index, demandNode.value)
-
+#    # Single demand node (first scenario)
+#    demandNode = _node()
+#    demandNode.value = [0.2, 0.1]  # DemandProfiles[0][0:conf.Time]
+#    demandNode.index = 1
+#    EN.set_Demand(demandNode.index, demandNode.value)
+#
+#    # Second scenario
+#    demandNode = _node()
+#    demandNode.value = [0.1, 1]  # DemandProfiles[1][0:conf.Time]
+#    demandNode.index = 2
+#    EN.set_Demand(demandNode.index, demandNode.value)
+#
     # RES profile (first scenario)
     resInNode = _node()
-    resInNode.value = [0.5, 1.0]
+    resInNode.value = np.zeros(conf.Time, dtype=float)
     resInNode.index = 1
     EN.set_RES(resInNode.index, resInNode.value)
-
-    # RES profile (first scenario)
-    resInNode = _node()
-    resInNode.value = [0.5, 0.0]
     resInNode.index = 2
     EN.set_RES(resInNode.index, resInNode.value)
+#
+#    # RES profile (first scenario)
+#    resInNode = _node()
+#    resInNode.value = [0.5, 0.0]
+#    resInNode.index = 2
+#    EN.set_RES(resInNode.index, resInNode.value)
     # COnstrain generation
-    EN.set_GenCoFlag(1, 200)
-    EN.set_GenCoFlag(2, 200)
+    EN.set_GenCoFlag(1, 249)
+    EN.set_GenCoFlag(2, 249)
 #
 #    # Several RES nodes
 #    resInNode = _node()
@@ -219,41 +228,64 @@ def test_pyenetest():
     # reduce capcity of the other
 #    EN.set_GenCoFlag(2, 499)
     # Run integrated pyene
-#    EN.set_Hydro(1, 30.34)
+    EN.set_Hydro(1, 100)
+
     mod = EN.run()
-    # Get RES spilled
-    RES_Spilled = EN.get_AllRES(mod)
-    print('RES spilled ', RES_Spilled)
-    # Get use of pumps
-    Pumps_Use = EN.get_AllPumps(mod)
-    print('Energy used by pumps', Pumps_Use)
-    # Get demand curtailed
     Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('Demand curtailed', Demand_Curtailed)
-    # Add hydro to replace conventional generation
-    Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
-    EN.set_Hydro(1, Conv_Generation)
-    # Run again
+    print('New demand curtailment ', Demand_Curtailed)
+
+#    # Supply curtailed demand with hydro
+#    EN.set_Hydro(1, Demand_Curtailed)
+
     mod = EN.run()
-    # Get new curtailment
-    New_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', New_Curtailed)
-    # Get use of conventional generation
-    Use_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
-    print('Conventional generation ', Use_ConvGeneration)
-    # Fully cover conventional generation and demand with hydro
-    EN.set_Hydro(1, Conv_Generation+Demand_Curtailed)
-    # Run again
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Demand_Curtailed)
     mod = EN.run()
-    # Get use of pumps
-    Final_Pump = EN.get_AllPumps(mod)
-    print('Energy used by pumps', Final_Pump)
-    # Get new curtailment
-    Final_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Final_Curtailed)
-    # Get use of conventional generation
-    Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
-    print('Conventional generation ', Final_ConvGeneration)
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Demand_Curtailed)
+    mod = EN.run()
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Demand_Curtailed)
+    mod = EN.run()
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Demand_Curtailed)
+    mod = EN.run()
+    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    print('New demand curtailment ', Demand_Curtailed)
+
+#    # Get RES spilled
+#    RES_Spilled = EN.get_AllRES(mod)
+#    print('RES spilled ', RES_Spilled)
+#    # Get use of pumps
+#    Pumps_Use = EN.get_AllPumps(mod)
+#    print('Energy used by pumps', Pumps_Use)
+#    # Get demand curtailed
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('Demand curtailed', Demand_Curtailed)
+#    # Add hydro to replace conventional generation
+#    Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+#    EN.set_Hydro(1, Conv_Generation)
+#    # Run again
+#    mod = EN.run()
+#    # Get new curtailment
+#    New_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', New_Curtailed)
+#    # Get use of conventional generation
+#    Use_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+#    print('Conventional generation ', Use_ConvGeneration)
+#    # Fully cover conventional generation and demand with hydro
+#    EN.set_Hydro(1, Conv_Generation+Demand_Curtailed)
+#    # Run again
+#    mod = EN.run()
+#    # Get use of pumps
+#    Final_Pump = EN.get_AllPumps(mod)
+#    print('Energy used by pumps', Final_Pump)
+#    # Get new curtailment
+#    Final_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Final_Curtailed)
+#    # Get use of conventional generation
+#    Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+#    print('Conventional generation ', Final_ConvGeneration)
     
 #    # Get total energy generation
 #    Total_Generation = EN.get_AllGeneration(mod)
@@ -283,7 +315,7 @@ def test_pyenetest():
 #    mod = EN.run()
 
     # Print results
-#    print('\n\nOF: ', mod.OF.expr())
+    print('\n\nOF: ', mod.OF.expr())
 #    EN.NM.offPrint()
 #    EN.NM.Print['Generation'] = True
 #    EN.NM.Print['Losses'] = True
