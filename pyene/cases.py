@@ -9,6 +9,9 @@ engine.
 from .engines.pyene import pyeneClass as pe
 import numpy as np
 import os
+from pyomo.environ import *
+from pyomo.core import *
+from pyomo.opt import SolverFactory
 
 # Energy balance test
 def test_pyeneE(config):
@@ -133,16 +136,76 @@ def test_pyene(conf):
 
 # pyene test
 def test_pyenetest():
-    print('Running test')
-    
-    
-    
     '''Test specific functionalities'''
-    # Initialize configuration
+    def MaxHydroAllowance_rule(m, xv):
+        '''Constraint for maximum hydropower allowance'''
+        return m.vHydropowerAllowance[xv] <= m.MaxHydro[xv]
+
+    def HydroAllowance_rule(m, xv):
+        '''Constraint to link hydropower allowance'''
+        return m.vHydropowerAllowance[xv] >= m.WInFull[1, xv]-m.WOutFull[1, xv]
+
+    def ZeroHydroIn_rule(m, xn, xv):
+        '''Constraint to link hydropower allowance'''
+        return m.WInFull[xn, xv] == 0
+
+    def HyroActualUse_rule(m, xv):
+        '''Constraint for actual hydropower used'''
+        return mod.vHydroUse[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
+
+    def AdjustPyeneMod(m, EN):
+        '''Final modifications for pyene to work with the integrated model'''
+        # Set unused water inputs to zero
+        m.sN0 = [x for x in range(EN.EM.LL['NosBal']+1)]
+        m.sN0.pop(1)
+        m.ZeroHydroIn = Constraint(m.sN0, m.sVec, rule=ZeroHydroIn_rule)
+
+        # Variables used by pyene for claculating the objective function
+        m = EN._AddPyeneCons(EN.EM, EN.NM, m)
+        EN.OFaux = EN._Calculate_OFaux(EN.EM, EN.NM)
+        m.OFh = EN.h
+        m.OFhGC = EN.hGC
+        m.OFFea = EN.hFea
+        m.OFpenalty = EN.Penalty
+        m.OFpumps = EN.NM.pumps['Value']
+        m.base = EN.NM.networkE.graph['baseMVA']
+        m.OFhDL = EN.hDL
+        m.OFweights = EN.NM.scenarios['Weights']
+        m.OFaux = EN.OFaux
+
+        return m
+
+    def OF_rule(m):
+        ''' Combined objective function '''
+        return (m.WaterValue*sum(m.WInFull[1, xv] for xv in m.sVec) +
+                sum((sum(sum(m.vGCost[m.OFhGC[xh]+xg, xt] for xg in m.sGen) +
+                         sum(m.vFea[m.OFFea[xh]+xf, xt] for xf in m.sFea) *
+                         m.OFpenalty for xt in m.sTim) -
+                     sum(m.OFpumps[xdl]*m.base *
+                         sum(m.vDL[m.OFhDL[xh]+xdl+1, xt] *
+                             m.OFweights[xt]
+                             for xt in m.sTim) for xdl in m.sDL)) *
+                    m.OFaux[xh] for xh in m.OFh))
+
+    print('Running test')
+
+    '''                         First step
+    create pyomo model
+    '''
+    mod = ConcreteModel()
+
+    '''                         Second step
+    create pyene object
+    '''
+    EN = pe()
+
+    '''                          Third step
+    initialise pyene with predefined configuration
+    '''
     conf = default_conf()
     # Selected network file
-#    conf.TreeFile = 'TestCase.json'
-    conf.NetworkFile = 'case14.json'
+    conf.TreeFile = 'TestCase.json'
+    conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
@@ -152,7 +215,7 @@ def test_pyenetest():
     # Add hydropower plant
     conf.NoHydro = 3  # Number of hydropower plants
     conf.Hydro = [1, 2, 3]  # Location of hydropower plants
-    conf.HydroMax = [100, 100, 100]  # Capacity of hydropower plants
+    conf.HydroMax = [1000, 1000, 1000]  # Capacity of hydropower plants
     conf.HydroCost = [0.01, 0.01,  0.01]  # Cost of water
 
     # Pumps
@@ -170,10 +233,78 @@ def test_pyenetest():
     # Enable curtailment
     conf.Feasibility = True
 
-    # Get Pyene model
-    EN = pe()
     # Initialize network model using the selected configuration
     EN.initialise(conf)
+    # Create conditions for having demand curtailment
+    EN.set_GenCoFlag(1, False)  # Switching one generator off
+    EN.set_GenCoFlag(2, 499)  # Reducing capacity of the other generator
+
+#    EN.set_Hydro(1, 400000)
+#    mod = EN.run(mod)
+#    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+#    print('Required hydro ',Needed_hydro)
+
+    '''                        Fourth step
+    Initialise pyomo sets, parameters, and variables
+    '''
+    mod = EN.build_Mod(EN.EM, EN.NM, mod)
+
+    '''                         Fifth step
+    Redefine hydropower inputs as variables
+    '''
+    del mod.WInFull
+    if conf.NoHydro > 1:
+        mod.WInFull = Var(mod.sNodz, mod.sVec, domain=NonNegativeReals,
+                          initialize=0.0)
+    else:
+        mod.WInFull = Var(mod.sNodz, domain=NonNegativeReals, initialize=0.0)
+
+    '''                         Sixth step                                  
+    Define hydropower allowance
+    Assuming pywr were to have these values in a variable called
+    vHydropowerAllowance
+    '''
+    mod.vHydropowerAllowance = Var(mod.sVec, domain=NonNegativeReals,
+                                   initialize=0.0)
+    mod.MaxHydro = np.zeros(conf.NoHydro, dtype=float)
+    for xh in range(conf.NoHydro):
+        mod.MaxHydro[xh] = 134000
+    # Add constraint to limit hydropower allowance
+    mod.MaxHydroAllowance = Constraint(mod.sVec, rule=MaxHydroAllowance_rule)
+
+    # Link hydropower constraint to pyene
+    mod.HydroAllowance = Constraint(mod.sVec, rule=HydroAllowance_rule)
+
+    '''                        Seventh step
+    Make final modifications to pyene, so that the new constraints and
+    objective function work correctly
+    '''
+    mod = AdjustPyeneMod(mod, EN)
+
+    '''                        Eigth step
+    Define a new objective function.
+    Note that the if the value of hydropower:
+    (i) hydro >= 10000 then the hydropower will never be used
+    (ii) 1000 < hydro <= 270 then hydro will only avoid demand curtailment
+    (iii) 270 < hydro <= 104 then Hydro will displace some generators
+    (iv) 104 < hydro then Hydro will replace all other generation
+    only be used for avoiding demand curtailment
+    '''
+    # Collect water use
+    # Assuming that total hydropower use is assigned to a different variable
+    mod.WaterValue = 104#9999
+    mod.OF = Objective(rule=OF_rule, sense=minimize)
+
+    '''                        Ninth step
+    Running the model
+    '''
+    # Optimise
+    opt = SolverFactory('glpk')
+    # Print
+    results = opt.solve(mod)
+
+
+
 #    # Fake weather engine
 #    FileName = 'TimeSeries.json'
 #    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
@@ -192,22 +323,22 @@ def test_pyenetest():
 #    demandNode.index = 2
 #    EN.set_Demand(demandNode.index, demandNode.value)
 #
-    # RES profile (first scenario)
-    resInNode = _node()
-    resInNode.value = np.zeros(conf.Time, dtype=float)
-    resInNode.index = 1
-    EN.set_RES(resInNode.index, resInNode.value)
-    resInNode.index = 2
-    EN.set_RES(resInNode.index, resInNode.value)
+#    # RES profile (first scenario)
+#    resInNode = _node()
+#    resInNode.value = np.zeros(conf.Time, dtype=float)
+#    resInNode.index = 1
+#    EN.set_RES(resInNode.index, resInNode.value)
+#    resInNode.index = 2
+#    EN.set_RES(resInNode.index, resInNode.value)
 #
 #    # RES profile (first scenario)
 #    resInNode = _node()
 #    resInNode.value = [0.5, 0.0]
 #    resInNode.index = 2
 #    EN.set_RES(resInNode.index, resInNode.value)
-    # COnstrain generation
-    EN.set_GenCoFlag(1, 249)
-    EN.set_GenCoFlag(2, 249)
+#    # COnstrain generation
+#    EN.set_GenCoFlag(1, 249)
+#    EN.set_GenCoFlag(2, 249)
 #
 #    # Several RES nodes
 #    resInNode = _node()
@@ -228,30 +359,30 @@ def test_pyenetest():
     # reduce capcity of the other
 #    EN.set_GenCoFlag(2, 499)
     # Run integrated pyene
-    EN.set_Hydro(1, 100)
-
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
+#    EN.set_Hydro(1, 100)
+#
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
 
 #    # Supply curtailed demand with hydro
 #    EN.set_Hydro(1, Demand_Curtailed)
 
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
-    mod = EN.run()
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
-    print('New demand curtailment ', Demand_Curtailed)
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
+#    mod = EN.run()
+#    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+#    print('New demand curtailment ', Demand_Curtailed)
 
 #    # Get RES spilled
 #    RES_Spilled = EN.get_AllRES(mod)
@@ -320,7 +451,15 @@ def test_pyenetest():
 #    EN.NM.Print['Generation'] = True
 #    EN.NM.Print['Losses'] = True
     EN.Print_ENSim(mod, EN.EM, EN.NM)
-
+#    print(type(mod.WInFull))
+#    if type(mod.WInFull) is np.ndarray:
+#        print('Numpy array')
+#        print(mod.WInFull)
+#    else:
+#        print('Pyomo class')
+#        print(mod.WInFull)
+            
+    
     # Collect unused hydro:
     print()
     hydroOutNode = _node()
