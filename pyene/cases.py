@@ -84,7 +84,8 @@ def test_pyene(conf):
         EN.set_Hydro(hydroInNode.index, hydroInNode.value)
 
     # Run integrated pyene
-    mod = EN.run()
+    mod = ConcreteModel()
+    mod = EN.run(mod)
 
     # Print results
     print('\n\nOF: ', mod.OF.expr())
