@@ -468,7 +468,7 @@ class EnergyClass:
 
     #                                   Sets                                  #
     def getSets(self, m):
-        m = ConcreteModel()
+#        m = ConcreteModel()
         m.sNod = range(1, self.LL['NosBal']+1)
         m.sNodz = range(self.LL['NosBal']+1)
         m.sLLTS2 = range(self.LL['NosAgg']+1)

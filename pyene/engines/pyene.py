@@ -447,9 +447,9 @@ class pyeneClass():
         return value
 
     # Run integrated pyene model
-    def run(self):
+    def run(self, mod):
         # Build pyomo model
-        mod = self.build_Mod(self.EM, self.NM)
+        mod = self.build_Mod(self.EM, self.NM, mod)
 
         # Run pyomo model
         (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
@@ -457,9 +457,8 @@ class pyeneClass():
         return mod
 
     # Build pyomo model
-    def build_Mod(self, EM, NM):
+    def build_Mod(self, EM, NM, mod):
         # Declare pyomo model
-        mod = ConcreteModel()
 
         #                                 Sets                                #
         mod = EM.getSets(mod)
@@ -480,26 +479,10 @@ class pyeneClass():
     # Run pyomo model
     def Run_Mod(self, mod, EM, NM):
         # Finalise model
-        #                      Model additional variables                     #
-        mod = self.getVars(mod)
-
-        #                             Constraints                             #
-        mod = EM.addCon(mod)
-        mod = NM.addCon(mod)
-        mod = self.addCon(mod)
+        mod = self._AddPyeneCons(EM, NM, mod)
 
         #                          Objective function                         #
-        WghtAgg = 0+EM.Weight['Node']
-        self.OFaux = np.ones(len(NM.connections['set']), dtype=float)
-        xp = 0
-        for xn in range(EM.LL['NosBal']+1):
-            aux = EM.tree['After'][xn][0]
-            if aux != 0:
-                for xb in range(aux, EM.tree['After'][xn][1]+1):
-                    WghtAgg[xb] *= WghtAgg[xn]
-            else:
-                self.OFaux[xp] = WghtAgg[xn]
-                xp += 1
+        self.OFaux = self._Calculate_OFaux(EM, NM)
 
         mod.OF = Objective(rule=self.OF_rule, sense=minimize)
 
@@ -510,6 +493,32 @@ class pyeneClass():
 
         return (mod, results)
 
+    def _AddPyeneCons(self, EM, NM, mod):
+        #                      Model additional variables                     #
+        mod = self.getVars(mod)
+
+        #                             Constraints                             #
+        mod = EM.addCon(mod)
+        mod = NM.addCon(mod)
+        mod = self.addCon(mod)
+
+        return mod
+
+    def _Calculate_OFaux(self, EM, NM):
+        WghtAgg = 0+EM.Weight['Node']
+        OFaux = np.ones(len(NM.connections['set']), dtype=float)
+        xp = 0
+        for xn in range(EM.LL['NosBal']+1):
+            aux = EM.tree['After'][xn][0]
+            if aux != 0:
+                for xb in range(aux, EM.tree['After'][xn][1]+1):
+                    WghtAgg[xb] *= WghtAgg[xn]
+            else:
+                OFaux[xp] = WghtAgg[xn]
+                xp += 1
+
+        return OFaux
+        
     # Run Energy and network combined model
     def Print_ENSim(self, mod, EM, NM):
         # Print results
@@ -521,7 +530,16 @@ class pyeneClass():
                 aux = mod.WOutFull[xn, xv].value
                 print("%8.4f " % aux, end='')
             print('')
-        print('Water inputs:\n', mod.WInFull)
+        print('Water inputs:')
+        if type(mod.WInFull) is np.ndarray:
+            print(mod.WInFull)
+        else:
+            for xn in mod.sNodz:
+                for xv in mod.sVec:
+                    aux = mod.WInFull[xn, xv].value
+                    print("%8.4f " % aux, end='')
+                print('')
+            
 
     # Print initial assumptions
     def _CheckInE(self, EM):
