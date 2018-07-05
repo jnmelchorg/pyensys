@@ -1,12 +1,12 @@
 """ Test the pyeneE engine. """
-from click.testing import CliRunner
 from fixtures import *
 from pyene.engines.pyene import pyeneClass as pe
 import numpy as np
 import os
-from pyomo.environ import *
-from pyomo.core import *
+from pyomo.core import ConcreteModel, Constraint, Var, NonNegativeReals, \
+                       Objective, minimize
 from pyomo.opt import SolverFactory
+
 
 # Interaction node
 class _node():
@@ -332,8 +332,8 @@ def test_pyene_RESPump(conf):
     Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
     print('Conventional generation ', Final_ConvGeneration)
 
-    #4.25*5*50*1 = 1062.5
-    #4.25*2*100*1 = 850
+    # 4.25*5*50*1 = 1062.5
+    # 4.25*2*100*1 = 850
     assert(0.0001 > abs(RES_Spilled) and
            0.0001 > abs(Pumps_Use-1062.5) and
            0.0001 > abs(Demand_Curtailed-850) and
@@ -342,6 +342,7 @@ def test_pyene_RESPump(conf):
            0.0001 > abs(Final_Pump-Pumps_Use) and
            0.0001 > abs(Final_Curtailed) and
            0.0001 > abs(Final_ConvGeneration))
+
 
 # Test dummy integrated LP
 def test_pyene_SingleLP(conf):
@@ -379,7 +380,7 @@ def test_pyene_SingleLP(conf):
 
     def HydroAllowance_rule(m, xv):
         '''Constraint to link hydropower allowance'''
-        return m.vHydropowerAllowance[xv] >= m.WInFull[1, xv]-m.WOutFull[1, xv]
+        return m.vHydropowerAllowance[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
 
     def ZeroHydroIn_rule(m, xn, xv):
         '''Constraint to link hydropower allowance'''
@@ -422,18 +423,18 @@ def test_pyene_SingleLP(conf):
                              m.OFweights[xt]
                              for xt in m.sTim) for xdl in m.sDL)) *
                     m.OFaux[xh] for xh in m.OFh))
-        '''                         First step
+    '''                         First step
     Assume an external engine creates the pyomo model
     '''
     mod = ConcreteModel()
 
     '''                         Second step
-    The engine create a pyene object
+    The engine creates a pyene object
     '''
     EN = pe()
 
     '''                          Third step
-    pyene is initialises with a predefined configuration (e.g., from MOEA)
+    pyene is initialised with a predefined configuration (e.g., from MOEA)
     '''
     conf = UpdateConfig(conf)
     EN.initialise(conf)
@@ -499,39 +500,37 @@ def test_pyene_SingleLP(conf):
     # Optimise
     opt = SolverFactory('glpk')
     # Print
-    results = opt.solve(mod)
+    opt.solve(mod)
 
     '''                            Testing                                  '''
-    tstResults=np.zeros(4, dtype=float)
+    tstResults = np.zeros(4, dtype=float)
     tstResults[0] = mod.OF.expr()
 
     mod.WaterValue = 9999
     del mod.OF
     mod.OF = Objective(rule=OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
-    results = opt.solve(mod)   
+    opt.solve(mod)
     tstResults[1] = mod.OF.expr()
-    
-        
+
     mod.WaterValue = 269
     del mod.OF
     mod.OF = Objective(rule=OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
     # Print
-    results = opt.solve(mod)
-    
+    opt.solve(mod)
+
     tstResults[2] = mod.OF.expr()
-    
-    
+
     mod.WaterValue = 103
     del mod.OF
     mod.OF = Objective(rule=OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
     # Print
-    results = opt.solve(mod)
+    opt.solve(mod)
     tstResults[3] = mod.OF.expr()
 
-    assert (0.001>=abs(tstResults[0]-64918496.1787) and 
-            0.001>=abs(tstResults[1]-64917775.4642) and
-            0.001>=abs(tstResults[2]-57714991.5907) and
-            0.001>=abs(tstResults[3]-37495351.572))
+    assert (0.001 >= abs(tstResults[0]-64918496.1787) and
+            0.001 >= abs(tstResults[1]-64917775.4642) and
+            0.001 >= abs(tstResults[2]-57714991.5907) and
+            0.001 >= abs(tstResults[3]-37495351.572))

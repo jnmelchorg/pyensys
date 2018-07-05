@@ -1,5 +1,4 @@
 """ Test the pyeneE engine. """
-from click.testing import CliRunner
 from fixtures import *
 from pyene.engines.pyene import pyeneClass as pe
 

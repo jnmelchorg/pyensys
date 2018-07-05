@@ -8,12 +8,8 @@ Created on Thu Mar 29 14:04:58 2018
 from __future__ import division
 
 # Make pyomo symbols known to python
-from pyomo.environ import *
-from pyomo.core import *
-from pyomo.opt import SolverFactory
-
+from pyomo.core import Constraint, Var, NonNegativeReals
 import numpy as np
-import networkx as nx
 import json
 import os
 
@@ -491,8 +487,8 @@ class EnergyClass:
 
     #                             Model Variables                             #
     def getVars(self, m):
-        m.vSoC= Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
-                    initialize=0.0)
+        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
+                     initialize=0.0)
 
         return m
 
