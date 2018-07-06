@@ -23,7 +23,7 @@ before_script:
 
   # Install the required utilties and pipenv
   - apt-get update -qq && apt-get install -y glpk-utils
-  - pip install pyomo click numpy pandas networkx pytest pytest-cov pypsa
+  - pip install pyomo click numpy pandas networkx pytest pytest-cov pypsa tables
 
 test:test:
   stage: test
