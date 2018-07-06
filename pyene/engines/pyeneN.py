@@ -738,7 +738,7 @@ class ENetworkClass:
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
-                (m.vStore[self.LLStor[xn, xh], 0] -
+                (m.vStore[self.LLStor[xn, xh], xt] -
                  m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
