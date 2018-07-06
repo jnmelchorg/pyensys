@@ -6,12 +6,64 @@ engine.
 # TODO complete this description once the cases are written.
 
 """
-from .engines.pyene import pyeneClass as pe
+from .engines.pyene import pyeneClass as pe, pyeneHDF5Settings as peHDF5
 import numpy as np
 import os
 from pyomo.environ import *
 from pyomo.core import *
 from pyomo.opt import SolverFactory
+from tables import *
+
+
+# pyene simulation test
+def pyene():
+    """ Get pyene object."""
+
+    return pe()
+
+
+def pyeneH5():
+    '''Get class to build H5 files'''
+
+    return peHDF5()
+
+
+class default_conf():
+    def __init__(self):
+        self.init = False  # skip file reading?
+        self.TreeFile = 'ResolutionTreeMonth01.json'  # Selected tree file
+        self.NetworkFile = 'case4.json'  # Selected network file
+        self.json = None  # Location of the json directory
+
+        # Hydropower
+        self.NoHydro = 0  # Number of hydropower plants
+        self.Hydro = []  # Location (bus) of hydro
+        self.HydroMax = []  # Generation capacity
+        self.HydroCost = []  # Costs
+
+        # Pumps
+        self.NoPump = 0  # Number of pumps
+        self.Pump = []  # Location (bus) of pumps
+        self.PumpMax = []  # Generation capacity
+        self.PumpVal = []  # Value/Profit
+
+        # RES generators
+        self.NoRES = 0  # Number of RES generators
+        self.RES = []  # Location (bus) of pumps
+        self.RESMax = []  # Generation capacity
+        self.Cost = []  # Costs
+
+        # Network considerations
+        self.Security = []  # List of contingescies to test
+        self.Losses = False  # Model losses
+        self.Feasibility = False  # Add dummy generators
+        self.Time = 0  # Number of time steps
+
+        # Scenarios
+        self.NoDemProfiles = 2  # Number of demand profiles
+        self.NoRESProfiles = 2  # Number of RES profiles
+        self.Weights = None
+
 
 # Energy balance test
 def test_pyeneE(config):
@@ -135,60 +187,13 @@ def test_pyene(conf):
     print('Total curtailment:', curAll.value)
 
 
-# pyene test
+
+
 def test_pyenetest():
     '''Test specific functionalities'''
-    def MaxHydroAllowance_rule(m, xv):
-        '''Constraint for maximum hydropower allowance'''
-        return m.vHydropowerAllowance[xv] <= m.MaxHydro[xv]
-
-    def HydroAllowance_rule(m, xv):
-        '''Constraint to link hydropower allowance'''
-        return m.vHydropowerAllowance[xv] >= m.WInFull[1, xv]-m.WOutFull[1, xv]
-
-    def ZeroHydroIn_rule(m, xn, xv):
-        '''Constraint to link hydropower allowance'''
-        return m.WInFull[xn, xv] == 0
-
-    def HyroActualUse_rule(m, xv):
-        '''Constraint for actual hydropower used'''
-        return mod.vHydroUse[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
-
-    def AdjustPyeneMod(m, EN):
-        '''Final modifications for pyene to work with the integrated model'''
-        # Set unused water inputs to zero
-        m.sN0 = [x for x in range(EN.EM.LL['NosBal']+1)]
-        m.sN0.pop(1)
-        m.ZeroHydroIn = Constraint(m.sN0, m.sVec, rule=ZeroHydroIn_rule)
-
-        # Variables used by pyene for claculating the objective function
-        m = EN._AddPyeneCons(EN.EM, EN.NM, m)
-        EN.OFaux = EN._Calculate_OFaux(EN.EM, EN.NM)
-        m.OFh = EN.h
-        m.OFhGC = EN.hGC
-        m.OFFea = EN.hFea
-        m.OFpenalty = EN.Penalty
-        m.OFpumps = EN.NM.pumps['Value']
-        m.base = EN.NM.networkE.graph['baseMVA']
-        m.OFhDL = EN.hDL
-        m.OFweights = EN.NM.scenarios['Weights']
-        m.OFaux = EN.OFaux
-
-        return m
-
-    def OF_rule(m):
-        ''' Combined objective function '''
-        return (m.WaterValue*sum(m.WInFull[1, xv] for xv in m.sVec) +
-                sum((sum(sum(m.vGCost[m.OFhGC[xh]+xg, xt] for xg in m.sGen) +
-                         sum(m.vFea[m.OFFea[xh]+xf, xt] for xf in m.sFea) *
-                         m.OFpenalty for xt in m.sTim) -
-                     sum(m.OFpumps[xdl]*m.base *
-                         sum(m.vDL[m.OFhDL[xh]+xdl+1, xt] *
-                             m.OFweights[xt]
-                             for xt in m.sTim) for xdl in m.sDL)) *
-                    m.OFaux[xh] for xh in m.OFh))
-
+    
     print('Running test')
+    
 
     '''                         First step
     create pyomo model
@@ -208,7 +213,7 @@ def test_pyenetest():
     conf.TreeFile = 'TestCase.json'
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
     conf.Time = 24  # Number of time steps
 #    conf.Weights = [0.5, 1]
@@ -238,73 +243,35 @@ def test_pyenetest():
     EN.initialise(conf)
     # Create conditions for having demand curtailment
     EN.set_GenCoFlag(1, False)  # Switching one generator off
-    EN.set_GenCoFlag(2, 499)  # Reducing capacity of the other generator
+    EN.set_GenCoFlag(2, 400)  # Reducing capacity of the other generator
 
-#    EN.set_Hydro(1, 400000)
-#    mod = EN.run(mod)
-#    Needed_hydro = EN.get_AllDemandCurtailment(mod)
-#    print('Required hydro ',Needed_hydro)
+    EN.set_Hydro(1, 72800)
+    
 
-    '''                        Fourth step
-    Initialise pyomo sets, parameters, and variables
-    '''
-    mod = EN.build_Mod(EN.EM, EN.NM, mod)
+#    pyenefileName = os.path.join(os.path.dirname(__file__), '..', '..', 'outputs',
+#                            'pyeneOutputs.h5')
+    pyenefileName = os.path.join(os.path.dirname(__file__), '..', 'outputs',
+                                 'pyeneOutputs.h5')
+#    fileh.close()
+    fileh = open_file(pyenefileName, mode='w')
+#    fileh = open_file('pyeneOutputs.h5', mode='w')
+    # Get the HDF5 root group
+    root = fileh.root
+    
+    pyeneHDF5 = peHDF5()
+    pyeneHDF5.SaveSettings(fileh, EN, conf, root)
 
-    '''                         Fifth step
-    Redefine hydropower inputs as variables
-    '''
-    del mod.WInFull
-    if conf.NoHydro > 1:
-        mod.WInFull = Var(mod.sNodz, mod.sVec, domain=NonNegativeReals,
-                          initialize=0.0)
-    else:
-        mod.WInFull = Var(mod.sNodz, domain=NonNegativeReals, initialize=0.0)
+    mod = EN.run(mod)
+    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+    print('Required hydro ',Needed_hydro)
+    pyeneHDF5.saveResults(fileh, EN, mod, root, 1)
+    
 
-    '''                         Sixth step                                  
-    Define hydropower allowance
-    Assuming pywr were to have these values in a variable called
-    vHydropowerAllowance
-    '''
-    mod.vHydropowerAllowance = Var(mod.sVec, domain=NonNegativeReals,
-                                   initialize=0.0)
-    mod.MaxHydro = np.zeros(conf.NoHydro, dtype=float)
-    for xh in range(conf.NoHydro):
-        mod.MaxHydro[xh] = 134000
-    # Add constraint to limit hydropower allowance
-    mod.MaxHydroAllowance = Constraint(mod.sVec, rule=MaxHydroAllowance_rule)
+    fileh.close()
+#class PyeneHDF5Results(IsDescription):
+#        loss = Float32Col(dflt=1, pos = 2)  # short integer
 
-    # Link hydropower constraint to pyene
-    mod.HydroAllowance = Constraint(mod.sVec, rule=HydroAllowance_rule)
-
-    '''                        Seventh step
-    Make final modifications to pyene, so that the new constraints and
-    objective function work correctly
-    '''
-    mod = AdjustPyeneMod(mod, EN)
-
-    '''                        Eigth step
-    Define a new objective function.
-    Note that the if the value of hydropower:
-    (i) hydro >= 10000 then the hydropower will never be used
-    (ii) 1000 < hydro <= 270 then hydro will only avoid demand curtailment
-    (iii) 270 < hydro <= 104 then Hydro will displace some generators
-    (iv) 104 < hydro then Hydro will replace all other generation
-    only be used for avoiding demand curtailment
-    '''
-    # Collect water use
-    # Assuming that total hydropower use is assigned to a different variable
-    mod.WaterValue = 104#9999
-    mod.OF = Objective(rule=OF_rule, sense=minimize)
-
-    '''                        Ninth step
-    Running the model
-    '''
-    # Optimise
-    opt = SolverFactory('glpk')
-    # Print
-    results = opt.solve(mod)
-
-
+    
 
 #    # Fake weather engine
 #    FileName = 'TimeSeries.json'
@@ -446,11 +413,11 @@ def test_pyenetest():
     # Run integrated pyene
 #    mod = EN.run()
 
-    # Print results
-    print('\n\nOF: ', mod.OF.expr())
+    # Print results    
 #    EN.NM.offPrint()
 #    EN.NM.Print['Generation'] = True
 #    EN.NM.Print['Losses'] = True
+    print('\n\nOF: ', mod.OF.expr())
     EN.Print_ENSim(mod, EN.EM, EN.NM)
 #    print(type(mod.WInFull))
 #    if type(mod.WInFull) is np.ndarray:
@@ -502,45 +469,4 @@ def test_pyenetest():
     print('Total curtailment:', curAll.value)
 
 
-# pyene simulation test
-def get_pyene():
-    """ Get pyene object."""
 
-    return pe()
-
-
-class default_conf():
-    def __init__(self):
-        self.init = False  # skip file reading?
-        self.TreeFile = 'ResolutionTreeMonth01.json'  # Selected tree file
-        self.NetworkFile = 'case4.json'  # Selected network file
-        self.json = None  # Location of the json directory
-
-        # Hydropower
-        self.NoHydro = 0  # Number of hydropower plants
-        self.Hydro = []  # Location (bus) of hydro
-        self.HydroMax = []  # Generation capacity
-        self.HydroCost = []  # Costs
-
-        # Pumps
-        self.NoPump = 0  # Number of pumps
-        self.Pump = []  # Location (bus) of pumps
-        self.PumpMax = []  # Generation capacity
-        self.PumpVal = []  # Value/Profit
-
-        # RES generators
-        self.NoRES = 0  # Number of RES generators
-        self.RES = []  # Location (bus) of pumps
-        self.RESMax = []  # Generation capacity
-        self.Cost = []  # Costs
-
-        # Network considerations
-        self.Security = []  # List of contingescies to test
-        self.Losses = False  # Model losses
-        self.Feasibility = False  # Add dummy generators
-        self.Time = 0  # Number of time steps
-
-        # Scenarios
-        self.NoDemProfiles = 2  # Number of demand profiles
-        self.NoRESProfiles = 2  # Number of RES profiles
-        self.Weights = None

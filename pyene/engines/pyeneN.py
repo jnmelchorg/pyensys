@@ -6,7 +6,8 @@ Created on Thu Mar 29 14:04:58 2018
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 from __future__ import division
-from pyomo.environ import *
+#from pyomo.environ import *
+from pyomo.core import Constraint, Var, NonNegativeReals, Reals
 import math
 import numpy as np
 import networkx as nx
@@ -72,7 +73,7 @@ class ENetworkClass:
                 'Link': None  # Position of RES generators
                 }
         self.Storage = {
-                'Number': 0,  # Number of RES generators
+                'Number': 0,  # Number of storage units
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
                 'Efficiency': [0]  # Round trip efficiency
@@ -668,8 +669,8 @@ class ENetworkClass:
                     1000000 for xt in m.sTim) -
                 sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
                     sum(m.vDL[self.connections['Pump'][xh] +
-                                     xdl+1, xt]*self.scenarios['Weights'][xt]
-                                     for xt in m.sTim) for xdl in m.sDL))
+                              xdl+1, xt]*self.scenarios['Weights'][xt]
+                        for xt in m.sTim) for xdl in m.sDL))
 
     # Reference line flow
     def EPow0_rule(self, m, xt, xh):
@@ -737,7 +738,7 @@ class ENetworkClass:
                     for x2 in range(1+m.LLN2B2[xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
-                (m.vStore[self.LLStor[xn, xh], 0] -
+                (m.vStore[self.LLStor[xn, xh], xt] -
                  m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
                 m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
@@ -838,19 +839,19 @@ class ENetworkClass:
     def getVars(self, m):
         Noh = len(m.sCon)
         m.vFlow = Var(range(Noh*(self.NoBranch+1)), m.sTim,
-                             domain=Reals, initialize=0.0)
+                      domain=Reals, initialize=0.0)
         m.vVolt = Var(range(Noh*(self.NoBuses+1)), m.sTim,
-                               domain=Reals, initialize=0.0)
+                      domain=Reals, initialize=0.0)
         m.vLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                             m.sTim, domain=NonNegativeReals, initialize=0.0)
+                      m.sTim, domain=NonNegativeReals, initialize=0.0)
         m.vFea = Var(range(Noh*self.NoFea), m.sTim, domain=NonNegativeReals,
                      initialize=0.0)
-        m.vGen = Var(range(Noh*(self.generationE['Number']+1)), m.sTim, domain=NonNegativeReals,
-                     initialize=0.0)
-        m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim, domain=NonNegativeReals,
-                       initialize=0.0)
-        m.vDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
+        m.vGen = Var(range(Noh*(self.generationE['Number']+1)), m.sTim,
+                     domain=NonNegativeReals, initialize=0.0)
+        m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim,
                        domain=NonNegativeReals, initialize=0.0)
+        m.vDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
+                    domain=NonNegativeReals, initialize=0.0)
         m.vStore = Var(range(Noh*(self.Storage['Number'])+1), m.sTim,
                        domain=NonNegativeReals, initialize=0.0)
 

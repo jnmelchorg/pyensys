@@ -6,15 +6,14 @@ Created on Thu Mar 29 14:04:58 2018
 """
 # convert in or long into float before performing divissions
 from __future__ import division
-
-# Make pyomo symbols known to python
-from pyomo.environ import *
-from pyomo.core import *
+from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
+                       NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
-
 import numpy as np
 from .pyeneN import ENetworkClass as dn  # Network component
 from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
+from tables import Int16Col, Float32Col, StringCol
+from tables import *
 import json
 import os
 try:
@@ -302,6 +301,29 @@ class pyeneClass():
             aux2 = 3
         mod.branchData[mod.LLESec1[index-1, 0], aux1] = aux2
 
+    def get_timeAndScenario(self, mod, *varg, **kwarg):
+        # Specify times
+        if 'times' in kwarg:
+            auxtime = kwarg.pop('times')
+        else:
+            auxtime = mod.sTim
+
+        # Remove weights
+        if 'snapshot' in varg:
+            auxweight = np.ones(len(mod.sTim), dtype=int)
+            auxOF = np.ones(len(self.h), dtype=int)
+        else:
+            auxweight = self.NM.scenarios['Weights']
+            auxOF = self.OFaux
+
+        # Specify scenario
+        if 'scens' in kwarg:
+            auxscens = kwarg.pop('scens')
+        else:
+            auxscens = self.h
+
+        return (auxtime, auxweight, auxscens, auxOF)
+
     def get_Hydro(self, mod, index):
         ''' Get surplus kWh from specific site '''
         HydroValue = mod.WOutFull[1, index-1].value
@@ -343,106 +365,178 @@ class pyeneClass():
 
         return HydroValue
 
-    def get_Pump(self, mod, index):
+    def get_Pump(self, mod, index, *varg, **kwarg):
         ''' Get kWh consumed by a specific pump '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
         value = 0
-        for xh in mod.sCon:
+        for xh in auxscens:
             acu = 0
-            for xt in mod.sTim:
-                acu += (mod.vDL[self.hDL[xh]+index, xt].value *
-                        self.NM.scenarios['Weights'][xt])
-            value += acu*self.OFaux[xh]
+            for xt in auxtime:
+                acu += (mod.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
+            value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_AllPumps(self, mod):
+    def get_AllPumps(self, mod, *varg, **kwarg):
         ''' Get kWh consumed by all pumps '''
         value = 0
         for xp in range(self.NM.pumps['Number']):
-            value += self.get_Pump(mod, xp+1)
+            value += self.get_Pump(mod, xp+1, *varg, **kwarg)
 
         return value
 
-    def get_DemandCurtailment(self, mod, bus):
+    def get_DemandCurtailment(self, mod, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
         value = 0
         if self.NM.settings['Feasibility']:
-            for xh in self.h:
+            for xh in auxscens:
                 acu = 0
-                for xt in mod.sTim:
+                for xt in auxtime:
                     acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
-                            self.NM.scenarios['Weights'][xt])
-                value += acu*self.OFaux[xh]
+                            auxweight[xt])
+                value += acu*auxOF[xh]
             value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_AllDemandCurtailment(self, mod):
+    def get_AllDemandCurtailment(self, mod, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
+        # Specify buses
+        if 'buses' in kwarg:
+            auxbuses = kwarg.pop('buses')
+        else:
+            auxbuses = range(self.NM.networkE.number_of_nodes())
+
         value = 0
         if self.NM.settings['Feasibility']:
-            for xn in range(self.NM.networkE.number_of_nodes()):
-                value += self.get_DemandCurtailment(mod, xn+1)
+            for xn in auxbuses:
+                value += self.get_DemandCurtailment(mod, xn+1, *varg, **kwarg)
 
         return value
 
-    def get_Generation(self, mod, index):
-        ''' Get kWh for a single generator for the whole period '''
+    def get_Demand(self, mod, bus, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
         value = 0
-        for xh in self.h:
+        xb = bus-1
+        for xh in auxscens:
             acu = 0
-            for xt in mod.sTim:
-                acu += (mod.vGen[self.NM.connections['Generation']
-                                 [xh]+index, xt].value *
-                        self.NM.scenarios['Weights'][xt])
-            value += acu*self.OFaux[xh]
+            for xt in auxtime:
+                acu += (self.NM.busData[xb]*self.NM.scenarios['Demand']
+                        [xt+self.NM.busScenario[xb][xh]])*auxweight[xt]
+            value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_AllGeneration(self, mod, *argv):
+    def get_AllDemand(self, mod, *varg, **kwarg):
+        '''Get the demand'''
+        # Specify buses
+        if 'buses' in kwarg:
+            auxbuses = kwarg.pop('buses')
+        else:
+            auxbuses = range(self.NM.networkE.number_of_nodes())
+
+        value = 0
+        for xn in auxbuses:
+            value += self.get_Demand(mod, xn+1, *varg, **kwarg)
+
+        return value
+
+    def get_Loss(self, mod, xb, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (mod.vLoss[self.NM.connections['Loss']
+                                  [xh]+xb, xt].value)*auxweight[xt]
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_AllLoss(self, mod, *varg, **kwarg):
+        '''Get the demand'''
+        value = 0
+        if self.NM.settings['Losses']:
+            for xb in mod.sBranch:
+                value += self.get_Loss(mod, xb+1, **kwarg)
+
+        return value
+
+    def get_Generation(self, mod, index, *varg, **kwarg):
+        ''' Get kWh for a single generator '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (mod.vGen[self.NM.connections['Generation']
+                                 [xh]+index, xt].value*auxweight[xt])
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_AllGeneration(self, mod, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
-        if 'All' in argv:
+        if 'All' in varg:
             aux = range(1, self.NM.generationE['Number']+1)
-        elif 'Conv' in argv:
+        elif 'Conv' in varg:
             aux = range(1, self.NM.settings['Generators']+1)
-        elif 'RES' in argv:
-            aux = range(self.RES['Link'][0]+1,
-                        self.RES['Link'][self.RES['Number']-1]+1)
-        elif 'Hydro' in argv:
-            aux = range(self.hydropower['Link'][0]+1,
-                        self.hydropower['Link'][self.RES['Number']-1]+1)
+        elif 'RES' in varg:
+            aux = range(self.NM.RES['Link'][0]+1,
+                        self.NM.RES['Link'][self.NM.RES['Number']-1]+1)
+        elif 'Hydro' in varg:
+            aux = range(self.NM.hydropower['Link'][0]+1,
+                        self.NM.hydropower['Link']
+                        [self.NM.hydropower['Number']-1]+1)
         else:
             aux = range(1, self.NM.generationE['Number']+1)
 
         value = 0
         for xn in aux:
-            value += self.get_Generation(mod, xn)
+            value += self.get_Generation(mod, xn, *varg, **kwarg)
 
         return value
 
-    def get_RES(self, mod, index):
+    def get_RES(self, mod, index, *varg, **kwarg):
         ''' Spilled kWh of RES for the whole period'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
         xg = index-1
         value = 0
-        for xh in mod.sDL:
+        for xh in auxscens:
             acu = 0
-            for xt in mod.sTim:
+            for xt in auxtime:
                 acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
                          [self.NM.resScenario[xg][xh][1]+xt] -
                          mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
-                        self.NM.scenarios['Weights'][xt])
-            value += acu*self.OFaux[xh]
+                        auxweight[xt])
+            value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_AllRES(self, mod):
+    def get_AllRES(self, mod, *varg, **kwarg):
         ''' Total RES spilled for the whole period '''
         value = 0
         for xr in range(self.NM.RES['Number']):
-            value += self.get_RES(mod, xr+1)
+            value += self.get_RES(mod, xr+1, *varg, **kwarg)
 
         return value
 
@@ -518,7 +612,7 @@ class pyeneClass():
                 xp += 1
 
         return OFaux
-        
+
     # Run Energy and network combined model
     def Print_ENSim(self, mod, EM, NM):
         # Print results
@@ -539,7 +633,6 @@ class pyeneClass():
                     aux = mod.WInFull[xn, xv].value
                     print("%8.4f " % aux, end='')
                 print('')
-            
 
     # Print initial assumptions
     def _CheckInE(self, EM):
@@ -694,8 +787,8 @@ class pyeneClass():
                 aux1 = 1
             else:
                 aux1 = self.NM.networkE.node[xn]['BASE_KV']
-            if (self.NM.networkE.node[xn]['BUS_TYPE'] == 2 or
-                self.NM.networkE.node[xn]['BUS_TYPE'] == 3):
+            if self.NM.networkE.node[xn]['BUS_TYPE'] == 2 or \
+               self.NM.networkE.node[xn]['BUS_TYPE'] == 3:
                 aux2 = self.NM.networkE.node[xn]['VM']
             else:
                 aux2 = PVBus[xn-1]
@@ -935,3 +1028,129 @@ class pyeneClass():
     def pypower2pyene(self):
         '''Convert pyene files to pypsa format'''
         print('To be finalised pypower2pyene')
+
+
+class pyeneHDF5Settings():
+    '''pytables auxiliary'''
+    class PyeneHDF5Settings(IsDescription):
+        '''Simulation settings'''
+        treefile = StringCol(itemsize=30, dflt=" ", pos=0)  # File name (tree)
+        networkfile = StringCol(itemsize=30, dflt=" ", pos=1)  # FIle (network)
+        time = Int16Col(dflt=1, pos=2)  # generatop
+        scenarios = Int16Col(dflt=1, pos=3)  # scenarios
+        NoHydro = Int16Col(dflt=1, pos=4)  # hydropower plants
+        NoPump = Int16Col(dflt=1, pos=5)  # pumps
+        NoRES = Int16Col(dflt=1, pos=6)  # RES generators
+
+    class PyeneHDF5Devices(IsDescription):
+        '''Characteristics of devices '''
+        location = Int16Col(dflt=1, pos=0)  # Location
+        max = Float32Col(dflt=1, pos=1)  # Capacity
+        cost = Float32Col(dflt=4, pos=2)  # Cost/value
+        link = Int16Col(dflt=1, pos=3)  # Location
+
+    class PyeneHDF5Results(IsDescription):
+        time = Int16Col(dflt=1, pos=0)  # time period
+        generation = Float32Col(dflt=1, pos=1)  # generatopm
+        hydropower = Float32Col(dflt=1, pos=2)  # generatopm
+        RES = Float32Col(dflt=1, pos=3)  # generatopm
+        demand = Float32Col(dflt=1, pos=4)  # total demand
+        pump = Float32Col(dflt=1, pos=5)  # use of pumps
+        loss = Float32Col(dflt=1, pos=6)  # short integer
+        curtailment = Float32Col(dflt=1, pos=7)  # short integer
+        spill = Float32Col(dflt=1, pos=8)  # short integer
+
+    def SaveSettings(self, fileh, EN, conf, root):
+        HDF5group = fileh.create_group(root, 'Core')
+        HDF5table = fileh.create_table(HDF5group, "table",
+                                       self.PyeneHDF5Settings)
+        HDF5row = HDF5table.row
+        HDF5row['treefile'] = conf.TreeFile
+        HDF5row['networkfile'] = conf.NetworkFile
+        HDF5row['time'] = conf.Time
+        HDF5row['scenarios'] = EN.NM.scenarios['Number']
+        HDF5row['NoHydro'] = conf.NoHydro
+        HDF5row['NoPump'] = conf.NoPump
+        HDF5row['NoRES'] = conf.NoRES
+        HDF5row.append()
+        HDF5table.flush()
+
+        HDF5table = fileh.create_table(HDF5group, "Hydpopower_plants",
+                                       self.PyeneHDF5Devices)
+        HDF5row = HDF5table.row
+        for xh in range(conf.NoHydro):
+            HDF5row['location'] = EN.NM.hydropower['Bus'][xh]
+            HDF5row['max'] = EN.NM.hydropower['Max'][xh]
+            HDF5row['cost'] = EN.NM.hydropower['Cost'][xh]
+            HDF5row['link'] = EN.NM.hydropower['Link'][xh]
+            HDF5row.append()
+        HDF5table.flush()
+
+        HDF5table = fileh.create_table(HDF5group, "Pumps",
+                                       self.PyeneHDF5Devices)
+        HDF5row = HDF5table.row
+        for xh in range(conf.NoPump):
+            HDF5row['location'] = EN.NM.pumps['Bus'][xh]
+            HDF5row['max'] = EN.NM.pumps['Max'][xh]
+            HDF5row['cost'] = EN.NM.pumps['Value'][xh]
+            HDF5row.append()
+        HDF5table.flush()
+
+        HDF5table = fileh.create_table(HDF5group, "RES_generators",
+                                       self.PyeneHDF5Devices)
+        HDF5row = HDF5table.row
+        for xh in range(conf.NoRES):
+            HDF5row['location'] = EN.NM.RES['Bus'][xh]
+            HDF5row['max'] = EN.NM.RES['Max'][xh]
+            HDF5row['cost'] = EN.NM.RES['Cost'][xh]
+            HDF5row['link'] = EN.NM.RES['Link'][xh]
+            HDF5row.append()
+        HDF5table.flush()
+
+    def saveResults(self, fileh, EN, mod, root, SimNo):
+        HDF5group = fileh.create_group(root, 'Simulation_' + str(SimNo))
+        HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
+                            EN.NM.settings['NoTime']), dtype=float)
+        xp = 0
+        for xs in range(EN.NM.scenarios['NoDem']):
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5aux[xs][xt] = EN.NM.scenarios['Demand'][xp]
+                xp += 1
+        fileh.create_array(HDF5group, "Demand_profiles", HDF5aux)
+
+        HDF5aux = np.zeros((EN.NM.scenarios['NoRES'],
+                            EN.NM.settings['NoTime']), dtype=float)
+        xp = 0
+        for xs in range(EN.NM.scenarios['NoRES']):
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp]
+                xp += 1
+        fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
+
+        for xs in range(EN.NM.scenarios['Number']):
+            HDF5table = fileh.create_table(HDF5group, "Scenario_" + str(xs),
+                                           self.PyeneHDF5Results)
+            HDF5row = HDF5table.row
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5row['time'] = xt
+                HDF5row['generation'] = \
+                    EN.get_AllGeneration(mod, 'Conv', 'snapshot', times=[xt],
+                                         scens=[xs])
+                HDF5row['hydropower'] = \
+                    EN.get_AllGeneration(mod, 'Hydro', 'snapshot', times=[xt],
+                                         scens=[xs])
+                HDF5row['RES'] = EN.get_AllGeneration(mod, 'RES', 'snapshot',
+                                                      times=[xt], scens=[xs])
+                HDF5row['spill'] = EN.get_AllRES(mod, 'snapshot', times=[xt],
+                                                 scens=[xs])
+                HDF5row['demand'] = EN.get_AllDemand(mod, 'snapshot',
+                                                     times=[xt], scens=[xs])
+                HDF5row['pump'] = EN.get_AllPumps(mod, 'snapshot', times=[xt],
+                                                  scens=[xs])
+                HDF5row['loss'] = EN.get_AllLoss(mod, 'snapshot', times=[xt],
+                                                 scens=[xs])
+                HDF5row['curtailment'] = \
+                    EN.get_AllDemandCurtailment(mod, 'snapshot', times=[xt],
+                                                scens=[xs])
+                HDF5row.append()
+            HDF5table.flush()
