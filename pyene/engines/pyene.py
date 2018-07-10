@@ -1128,7 +1128,7 @@ class pyeneHDF5Settings():
         fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 
         for xs in range(EN.NM.scenarios['Number']):
-            HDF5table = fileh.create_table(HDF5group, "Scenario_" + str(xs),
+            HDF5table = fileh.create_table(HDF5group, "Scenario_{:05d}".format(xs),
                                            self.PyeneHDF5Results)
             HDF5row = HDF5table.row
             for xt in range(EN.NM.settings['NoTime']):
