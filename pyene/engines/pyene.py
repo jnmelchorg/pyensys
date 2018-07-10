@@ -1127,6 +1127,20 @@ class pyeneHDF5Settings():
                 xp += 1
         fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 
+        # Hydropower allowance
+        aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
+        if type(mod.WInFull) is np.ndarray:
+            if EN.EM.settings['Vectors'] == 1:
+                aux[0] = mod.WInFull[1]
+            else:
+                for xv in mod.sVec:
+                    aux[xv] = mod.WInFull[1][xv]
+        else:
+            for xv in mod.sVec:
+                aux[xv] = mod.WInFull[1, xv].value
+
+        fileh.create_array(HDF5group, "Hydro_Allowance", aux)
+
         for xs in range(EN.NM.scenarios['Number']):
             HDF5table = fileh.create_table(HDF5group, "Scenario_" + str(xs),
                                            self.PyeneHDF5Results)
