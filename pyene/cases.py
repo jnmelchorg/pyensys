@@ -215,25 +215,25 @@ def test_pyenetest():
     # Location of the json directory
     conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
-    conf.Time = 24  # Number of time steps
-#    conf.Weights = [0.5, 1]
+    conf.Time = 2  # Number of time steps
+    conf.Weights = [12, 12]
 
     # Add hydropower plant
-    conf.NoHydro = 3  # Number of hydropower plants
-    conf.Hydro = [1, 2, 3]  # Location of hydropower plants
-    conf.HydroMax = [1000, 1000, 1000]  # Capacity of hydropower plants
-    conf.HydroCost = [0.01, 0.01,  0.01]  # Cost of water
+    conf.NoHydro = 1  # Number of hydropower plants
+    conf.Hydro = [1]  # Location of hydropower plants
+    conf.HydroMax = [100]  # Capacity of hydropower plants
+    conf.HydroCost = [0.01]  # Cost of water
 
     # Pumps
-    conf.NoPump = 2  # Number of pumps
-    conf.Pump = [1, 2]  # Location of pumps
-    conf.PumpMax = [1, 1]  # Capacity of the pumps
-    conf.PumpVal = [0.001, 0.001]  # Value of pumped water
+    conf.NoPump = 1  # Number of pumps
+    conf.Pump = [2]  # Location of pumps
+    conf.PumpMax = [100]  # Capacity of the pumps
+    conf.PumpVal = [0.001]  # Value of pumped water
 
     # RES Generators
-    conf.NoRES = 2  # Number of RES generators
-    conf.RESMax = [100, 100]  # Capacity of hydro
-    conf.RES = [1, 2]  # Bus of RES generators
+    conf.NoRES = 1  # Number of RES generators
+    conf.RESMax = [200]  # Capacity of hydro
+    conf.RES = [3]  # Bus of RES generators
     conf.Cost = [0, 0]  # Cost of RES
 
     # Enable curtailment
@@ -244,8 +244,8 @@ def test_pyenetest():
     # Create conditions for having demand curtailment
     EN.set_GenCoFlag(1, False)  # Switching one generator off
     EN.set_GenCoFlag(2, 400)  # Reducing capacity of the other generator
-
-    EN.set_Hydro(1, 72800)
+#
+    EN.set_Hydro(1, 40000)
     
 
 #    pyenefileName = os.path.join(os.path.dirname(__file__), '..', '..', 'outputs',
@@ -261,13 +261,13 @@ def test_pyenetest():
     pyeneHDF5 = peHDF5()
     pyeneHDF5.SaveSettings(fileh, EN, conf, root)
 
-    mod = EN.run(mod)
-    Needed_hydro = EN.get_AllDemandCurtailment(mod)
-    print('Required hydro ',Needed_hydro)
-    pyeneHDF5.saveResults(fileh, EN, mod, root, 1)
-    
-
-    fileh.close()
+   
+#    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+#    print('Required hydro ',Needed_hydro)
+#    pyeneHDF5.saveResults(fileh, EN, mod, root, 1)
+#    
+#
+#    fileh.close()
 #class PyeneHDF5Results(IsDescription):
 #        loss = Float32Col(dflt=1, pos = 2)  # short integer
 
@@ -291,11 +291,16 @@ def test_pyenetest():
 #    demandNode.index = 2
 #    EN.set_Demand(demandNode.index, demandNode.value)
 #
-#    # RES profile (first scenario)
-#    resInNode = _node()
-#    resInNode.value = np.zeros(conf.Time, dtype=float)
-#    resInNode.index = 1
-#    EN.set_RES(resInNode.index, resInNode.value)
+    # RES profile (first scenario)
+    resInNode = _node()
+    resInNode.value = [0.25, 0.5]
+    resInNode.index = 1
+    EN.set_RES(resInNode.index, resInNode.value)
+    EN.set_RES(2, [1, 0.5])
+    EN.set_Demand(1, [1, 1.4])
+    EN.set_Demand(2, [0, 0.8])
+    mod = EN.run(mod)
+    pyeneHDF5.saveResults(fileh, EN, mod, root, 1)
 #    resInNode.index = 2
 #    EN.set_RES(resInNode.index, resInNode.value)
 #

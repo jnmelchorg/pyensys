@@ -594,7 +594,7 @@ class ENetworkClass:
                 print("];")
 
             if self.Print['Curtailment']:
-                print("\nvDL=[")
+                print("\nPumps=[")
                 for xdl in mod.sDL:
                     for xt in mod.sTim:
                         aux = mod.vDL[self.connections['Pump'][xh]+xdl+1,
@@ -608,7 +608,7 @@ class ENetworkClass:
                 for xf in mod.sFea:
                     for xt in mod.sTim:
                         aux = mod.vFea[self.connections['Feasibility'][xh]+xf,
-                                       xt].value
+                                       xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -769,7 +769,8 @@ class ENetworkClass:
 
     # Maximum capacity of dynamic loads
     def LDMax_rule(self, m, xdl, xt, xh):
-        return m.vDL[self.connections['Pump'][xh]+xdl, xt] <= m.MaxDL[xdl]
+        return (m.vDL[self.connections['Pump'][xh]+xdl+1, xt] <=
+                m.MaxDL[xdl]/self.networkE.graph['baseMVA'])
 
     # Initialising dynamic loads
     def LDIni_rule(self, m, xt, xh):
