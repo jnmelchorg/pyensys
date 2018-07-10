@@ -1108,7 +1108,7 @@ class pyeneHDF5Settings():
         HDF5table.flush()
 
     def saveResults(self, fileh, EN, mod, root, SimNo):
-        HDF5group = fileh.create_group(root, 'Simulation_' + str(SimNo))
+        HDF5group = fileh.create_group(root, 'Simulation_{:05d}'.format(SimNo))
         HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
                             EN.NM.settings['NoTime']), dtype=float)
         xp = 0
@@ -1142,7 +1142,7 @@ class pyeneHDF5Settings():
         fileh.create_array(HDF5group, "Hydro_Allowance", aux)
 
         for xs in range(EN.NM.scenarios['Number']):
-            HDF5table = fileh.create_table(HDF5group, "Scenario_" + str(xs),
+            HDF5table = fileh.create_table(HDF5group, "Scenario_{:02d}".format(xs),
                                            self.PyeneHDF5Results)
             HDF5row = HDF5table.row
             for xt in range(EN.NM.settings['NoTime']):
