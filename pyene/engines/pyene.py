@@ -349,6 +349,12 @@ class pyeneClass():
 
         return HydroValue
 
+    def getMeanHydroMarginal(self, mod):
+        value = 0
+        for xi in range(self.EM.settings['Vectors']):
+            value += self.get_HydroMarginal(mod, xi+1)
+        return value/self.EM.settings['Vectors']
+
     def get_HydroFlag(self, mod, index):
         ''' Get surplus kWh from specific site '''
         cobject = getattr(mod, 'SoCBalance')
@@ -1140,6 +1146,11 @@ class pyeneHDF5Settings():
                 aux[xv] = mod.WInFull[1, xv].value
 
         fileh.create_array(HDF5group, "Hydro_Allowance", aux)
+
+        hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
+        for i in range(len(hp_marginal)):
+            hp_marginal[i] = EN.get_HydroMarginal(mod, i+1)
+        fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         for xs in range(EN.NM.scenarios['Number']):
             HDF5table = fileh.create_table(HDF5group, "Scenario_{:02d}".format(xs),
