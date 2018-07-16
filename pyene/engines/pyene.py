@@ -1148,12 +1148,13 @@ class pyeneHDF5Settings():
         fileh.create_array(HDF5group, "Hydro_Allowance", aux)
 
         hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
-        for i in range(len(hp_marginal)):
-            hp_marginal[i] = EN.get_HydroMarginal(mod, i+1)
+        for xi in range(EN.EM.settings['Vectors']):
+            hp_marginal[xi] = EN.get_HydroMarginal(mod, xi+1)
         fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         for xs in range(EN.NM.scenarios['Number']):
-            HDF5table = fileh.create_table(HDF5group, "Scenario_{:02d}".format(xs),
+            HDF5table = fileh.create_table(HDF5group,
+                                           "Scenario_{:02d}".format(xs),
                                            self.PyeneHDF5Results)
             HDF5row = HDF5table.row
             for xt in range(EN.NM.settings['NoTime']):
