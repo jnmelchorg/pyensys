@@ -13,7 +13,7 @@ import numpy as np
 from .pyeneN import ENetworkClass as dn  # Network component
 from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
 from tables import Int16Col, Float32Col, StringCol
-from tables import *
+from tables import IsDescription
 import json
 import os
 try:
@@ -269,7 +269,11 @@ class pyeneClass():
         # Adjust self.NM.GenLCst
 
     def set_RES(self, index, value):
-        ''' Set PW/Wind profile '''
+        '''
+        Set PV/Wind profile  - more than one device can be connected to
+        each profile
+        '''
+
         aux1 = (index-1)*self.NM.settings['NoTime']
         aux2 = index*self.NM.settings['NoTime']
 
@@ -504,17 +508,21 @@ class pyeneClass():
         elif 'Conv' in varg:
             aux = range(1, self.NM.settings['Generators']+1)
         elif 'RES' in varg:
-            aux = range(self.NM.RES['Link'][0]+1,
-                        self.NM.RES['Link'][self.NM.RES['Number']-1]+1)
+            aux = range(self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1,
+                        self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1 +
+                        self.NM.RES['Number'])
         elif 'Hydro' in varg:
-            aux = range(self.NM.hydropower['Link'][0]+1,
-                        self.NM.hydropower['Link']
-                        [self.NM.hydropower['Number']-1]+1)
+            aux = range(self.NM.settings['Generators']+1,
+                        self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1)
         else:
             aux = range(1, self.NM.generationE['Number']+1)
 
         value = 0
         for xn in aux:
+            print(xn)
             value += self.get_Generation(mod, xn, *varg, **kwarg)
 
         return value
@@ -1129,7 +1137,8 @@ class pyeneHDF5Settings():
         xp = 0
         for xs in range(EN.NM.scenarios['NoRES']):
             for xt in range(EN.NM.settings['NoTime']):
-                HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp]
+                HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
+                    EN.NM.networkE.graph['baseMVA']
                 xp += 1
         fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 
