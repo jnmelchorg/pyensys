@@ -375,6 +375,61 @@ class pyeneClass():
 
         return HydroValue
 
+    def get_NetDemand(self, mod, auxFlags, *varg, **kwarg):
+        ''' Get MWh consumed by pumps, loads, losses '''
+        value = 0
+        if auxFlags[0]:  # Demand
+            value += self.get_AllDemand(mod, *varg, **kwarg)
+
+        if auxFlags[1]:  # Pumps
+            value += self.get_AllPumps(mod, *varg, **kwarg)
+
+        if auxFlags[2]:  # Loss
+            value += self.get_AllLoss(mod, *varg, **kwarg)
+
+        if auxFlags[3]:  # Curtailment
+            value += self.get_AllDemandCurtailment(mod, *varg, **kwarg)
+
+        if auxFlags[4]:  # Spill
+            value += self.get_AllRES(mod, *varg, **kwarg)
+
+        return value
+
+    def get_OFparts(self, m, auxFlags, *varg, **kwarg):
+        ''' Get components of the objective function '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+
+        value = 0
+        if auxFlags[0]:  # Conventional generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in range(self.NM.settings['Generators']))
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+        if auxFlags[1]:  # RES generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in self.NM.RES['Link'])
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+
+        if auxFlags[2]:  # Hydro generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in self.NM.hydropower['Link'])
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+
+        if auxFlags[3]:  # Pumps
+            value -= sum(sum(self.NM.pumps['Value'][xdl] *
+                             self.NM.networkE.graph['baseMVA'] *
+                             sum(m.vDL[self.hDL[xh]+xdl+1, xt].value *
+                                 self.NM.scenarios['Weights'][xt]
+                                 for xt in auxtime) for xdl in m.sDL) *
+                         auxOF[xh] for xh in auxscens)
+
+        if auxFlags[4]:  # Curtailment
+            value += sum(sum(sum(m.vFea[self.hFea[xh]+xf, xt].value for xf
+                                 in m.sFea)*self.Penalty for xt in auxtime) *
+                         auxOF[xh] for xh in auxscens)
+
+        return value
+
     def get_Pump(self, mod, index, *varg, **kwarg):
         ''' Get kWh consumed by a specific pump '''
         (auxtime, auxweight, auxscens,
@@ -522,7 +577,6 @@ class pyeneClass():
 
         value = 0
         for xn in aux:
-            print(xn)
             value += self.get_Generation(mod, xn, *varg, **kwarg)
 
         return value
