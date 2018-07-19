@@ -291,7 +291,7 @@ class pyeneClass():
 
         self.NM.scenarios['Demand'][aux1:aux2] = value
 
-    def set_LineCapacity(self, mod, index, value, *argv):
+    def set_LineCapacity(self, index, value, *argv):
         ''' Adjust maximum capacity of a line '''
         aux1 = value
         if 'BR_R' in argv:
@@ -303,7 +303,7 @@ class pyeneClass():
         else:
             aux1 = value/self.NM.networkE.graph['baseMVA']
             aux2 = 3
-        mod.branchData[mod.LLESec1[index-1, 0], aux1] = aux2
+        self.NM.branchData[self.NM.LLESec1[index-1][0]][aux2] = aux1
 
     def get_timeAndScenario(self, mod, *varg, **kwarg):
         # Specify times
