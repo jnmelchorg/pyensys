@@ -2,7 +2,11 @@
 """
 Created on Thu Mar 29 14:04:58 2018
 
-@author: mchihem2
+Pyene Energy provides methods for balancing multiple energy vectors at
+different time aggregation levels
+
+@author: Dr Eduardo Alejandro Martínez Ceseña
+https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 # convert in or long into float before performing divissions
 from __future__ import division
@@ -16,7 +20,6 @@ import os
 
 # Linked lists
 class EnergyClass:
-    # Initialize
     def __init__(self):
         # Read from file
         self.fRea = False
@@ -68,143 +71,8 @@ class EnergyClass:
                 'Nodes': []  # Number of nodes
                 }
 
-    # Read input data
-    def Read(self, FileName, jsonPath):
-        MODEL_JSON = os.path.join(jsonPath, FileName)
-        data = json.load(open(MODEL_JSON))
-
-        return data
-
-    # Measure the size of the data arrays
-    def _Measure(self):
-        # Get number of time periods
-        s_LL_time = len(self.data)
-
-        sv_LL_time = np.zeros(s_LL_time, dtype=int)
-        s_LL_timeVar = 1
-        s_LL_timeSum = 1
-        for x1 in range(s_LL_time):
-            sv_LL_time[x1] = len(self.data[str(x1)]["Names"])
-            s_LL_timeVar *= sv_LL_time[x1]
-            s_LL_timeSum += sv_LL_time[x1]
-
-        # Measuring the data
-        aux = np.asarray(self.data[chr(48)]["Inputs"])
-        if aux.ndim == 1:
-            NosVec = len(self.data[chr(48)]["Inputs"])
-        else:
-            NosVec = len(aux)
-
-        s_LL_Nodes = 1
-        aux = 1
-        for x1 in range(s_LL_time):
-            aux = aux*sv_LL_time[x1]
-            s_LL_Nodes = s_LL_Nodes + aux
-
-        # Storing data
-        self.size = {
-                'Periods': s_LL_time,  # Number of periods
-                'LenPeriods': sv_LL_time,  # Length of each period
-                'SumPeriods': s_LL_timeSum,  # Sum of period lengths
-                'Scenarios': s_LL_timeVar,  # Number of scenarios
-                'Vectors': NosVec,  # Number of vectors
-                'Nodes': s_LL_Nodes  # Number of nodes
-                }
-        # Data tree
-        self.tree = {
-                'Before': [],  # Node before
-                'After': [],  # Node after
-                'Scenarios': [],  # Scenarios
-                'Uncertainty': [],  # Flag for uncertainty
-                'InOut': [],  # Location of inputs/outputs
-                'Time': [],  # Nodes in each time level
-                }
-        # Weights
-        self.Weight = {
-                'In': [],  # Weight of an input
-                'Out': [],  # Weight of an output
-                'Node': [],  # Weight of each node
-                }
-        # Linked lists
-        self.LL = {
-                'Balance': [],  # Linke list for energy balance
-                'Aggregation': [],  # Aggregation
-                'Uncertainty': [],  # Weighted sum
-                'NosBal': [],  # Number of nodes for energy balance
-                'NosAgg': [],  # Number of rows for aggregation LL
-                'NosUnc': []  # Number of rows for Uncertainty LL
-                }
-
-    # Process the data as inputs, outputs, weights and uncertainty
-    def _Process(self):
-        WIn = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
-                       dtype=float)
-        WOut = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
-                        dtype=float)
-        Wght = np.ones(self.size['SumPeriods'], dtype=float)
-        Unc = np.zeros(self.size['Periods'], dtype=bool)
-
-        acu = 1
-        for x1 in range(self.size['Periods']):
-            xtxt = str(x1)
-            auxI = np.asarray(self.data[xtxt]["Inputs"])
-            auxO = np.asarray(self.data[xtxt]["Outputs"])
-            auxW = self.data[xtxt]["Weights"]
-            auxs = len(auxW)
-            auxU = self.data[xtxt]["Uncertainty"]
-            Unc[x1] = auxU
-            for x2 in range(auxs):
-                Wght[acu+x2] = auxW[x2]
-                if self.size['Vectors'] == 1:
-                    if auxI.ndim == 1:
-                        WIn[acu+x2][0] = auxI[x2]
-                        WOut[acu+x2][0] = auxO[x2]
-                    else:
-                        WIn[acu+x2][0] = auxI[0][x2]
-                        WOut[acu+x2][0] = auxO[0][x2]
-                else:
-                    if auxI.ndim == 1:
-                        for xv in range(self.size['Vectors']):
-                            WIn[acu+x2][xv] = auxI[xv]
-                            WOut[acu+x2][xv] = auxO[xv]
-                    else:
-                        for xv in range(self.size['Vectors']):
-                            WIn[acu+x2][xv] = auxI[xv][x2]
-                            WOut[acu+x2][xv] = auxO[xv][x2]
-            acu += auxs
-
-        return WIn, WOut, Wght, Unc
-
-    # Map the scenario tree (recursive function)
-    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
-                dta, Unc, s):
-        xbeforeNew = xbeforeOld
-        x1 = dta[xin-1, 0] - 1
-        while x1 < dta[xin-1, 1]:
-            x1 += 1
-            # Hold node for future nodes
-            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
-            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
-            xbeforeNew = [x1, 0]
-
-            if x1+1 <= s:
-                (LL_TimeNodeBeforeSequence,
-                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
-                                            LL_TimeNodeBeforeSequence, dta,
-                                            Unc, s)
-
-            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
-            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
-            xbeforeNew = [x1, 1]
-
-            # Hold node for deterministic studies
-            if Unc[xlvl-1] == 0:
-                xbeforeOld = xbeforeNew
-
-        return LL_TimeNodeBeforeSequence, xbeforeNew
-
-    # Produce connectivity matrices
     def _Connect(self, Unc):
+        ''' Produce connectivity matrices '''
         # Build main LL defining scenario tree connections
         LL_TimeNodeTree = np.zeros((self.size['Nodes'], 2), dtype=int)
         LL_TimeScenarioTree = np.zeros((self.size['Nodes'], 2), dtype=int)
@@ -314,28 +182,8 @@ class EnergyClass:
                 'Time': NodeTime,  # Nodes in each time level
                 }
 
-    # Build parameters for optimisation
-    # This information should ultimately be included in the input file
-    def _Parameters(self, WIn, WOut, Wght):
-        WInFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
-                           dtype=float)
-        WOutFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
-                            dtype=float)
-        WghtFull = np.ones(self.size['Nodes'], dtype=float)
-
-        for x1 in range(self.size['Nodes']):
-            WghtFull[x1] = Wght[self.tree['InOut'][x1]]
-            for xv in range(self.size['Vectors']):
-                WInFull[x1][xv] = WIn[self.tree['InOut'][x1]][xv]
-                WOutFull[x1][xv] = WOut[self.tree['InOut'][x1]][xv]
-        self.Weight = {
-                'In': WInFull,  # All inputs
-                'Out': WOutFull,  # All outputs
-                'Node': WghtFull,  # Weight of each node
-                }
-
-    # Build linked lists
     def _Link(self, Unc):
+        ''' Build linked lists '''
         # Build first linked lists, forward connections for energy balance
         LL1 = np.zeros((self.size['Nodes'], 2), dtype=int)
         for x1 in range(1, self.size['Nodes']):
@@ -379,22 +227,180 @@ class EnergyClass:
                 'NosUnc': NosLL3  # Number of rows for Uncertainty LL
                 }
 
-    # Objective function
-    def OF_rule(self, m):
-        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in m.sVec)
+    def _Measure(self):
+        ''' Measure the size of the data arrays '''
+        # Get number of time periods
+        s_LL_time = len(self.data)
 
-    # SoC initialisation conditiona
-    def ZSoC_rule(self, m, x1, xv):
-        return m.vSoC[0, x1, xv] == 0
+        sv_LL_time = np.zeros(s_LL_time, dtype=int)
+        s_LL_timeVar = 1
+        s_LL_timeSum = 1
+        for x1 in range(s_LL_time):
+            sv_LL_time[x1] = len(self.data[str(x1)]["Names"])
+            s_LL_timeVar *= sv_LL_time[x1]
+            s_LL_timeSum += sv_LL_time[x1]
 
-    # Balance at different time levels
-    def SoCBalance_rule(self, m, xL1, xv):
-        return (m.vSoC[xL1, 0, xv] ==
-                m.vSoC[m.LLTS1[xL1, 0], m.LLTS1[xL1, 1], xv] +
-                m.WInFull[xL1, xv] - m.WOutFull[xL1, xv])
+        # Measuring the data
+        aux = np.asarray(self.data[chr(48)]["Inputs"])
+        if aux.ndim == 1:
+            NosVec = len(self.data[chr(48)]["Inputs"])
+        else:
+            NosVec = len(aux)
 
-    # Aggregating (deterministic case)
-    def SoCAggregate_rule(self, m, xL2, xv):
+        s_LL_Nodes = 1
+        aux = 1
+        for x1 in range(s_LL_time):
+            aux = aux*sv_LL_time[x1]
+            s_LL_Nodes = s_LL_Nodes + aux
+
+        # Storing data
+        self.size = {
+                'Periods': s_LL_time,  # Number of periods
+                'LenPeriods': sv_LL_time,  # Length of each period
+                'SumPeriods': s_LL_timeSum,  # Sum of period lengths
+                'Scenarios': s_LL_timeVar,  # Number of scenarios
+                'Vectors': NosVec,  # Number of vectors
+                'Nodes': s_LL_Nodes  # Number of nodes
+                }
+        # Data tree
+        self.tree = {
+                'Before': [],  # Node before
+                'After': [],  # Node after
+                'Scenarios': [],  # Scenarios
+                'Uncertainty': [],  # Flag for uncertainty
+                'InOut': [],  # Location of inputs/outputs
+                'Time': [],  # Nodes in each time level
+                }
+        # Weights
+        self.Weight = {
+                'In': [],  # Weight of an input
+                'Out': [],  # Weight of an output
+                'Node': [],  # Weight of each node
+                }
+        # Linked lists
+        self.LL = {
+                'Balance': [],  # Linke list for energy balance
+                'Aggregation': [],  # Aggregation
+                'Uncertainty': [],  # Weighted sum
+                'NosBal': [],  # Number of nodes for energy balance
+                'NosAgg': [],  # Number of rows for aggregation LL
+                'NosUnc': []  # Number of rows for Uncertainty LL
+                }
+
+    def _Parameters(self, WIn, WOut, Wght):
+        ''' Build parameters for optimisation.
+        This information should ultimately be included in the input file
+        '''
+        WInFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
+                           dtype=float)
+        WOutFull = np.zeros((self.size['Nodes'], self.size['Vectors']),
+                            dtype=float)
+        WghtFull = np.ones(self.size['Nodes'], dtype=float)
+
+        for x1 in range(self.size['Nodes']):
+            WghtFull[x1] = Wght[self.tree['InOut'][x1]]
+            for xv in range(self.size['Vectors']):
+                WInFull[x1][xv] = WIn[self.tree['InOut'][x1]][xv]
+                WOutFull[x1][xv] = WOut[self.tree['InOut'][x1]][xv]
+        self.Weight = {
+                'In': WInFull,  # All inputs
+                'Out': WOutFull,  # All outputs
+                'Node': WghtFull,  # Weight of each node
+                }
+
+    def _Process(self):
+        ''' Process the data as inputs, outputs, weights and uncertainty '''
+        WIn = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
+                       dtype=float)
+        WOut = np.zeros((self.size['SumPeriods'], self.size['Vectors']),
+                        dtype=float)
+        Wght = np.ones(self.size['SumPeriods'], dtype=float)
+        Unc = np.zeros(self.size['Periods'], dtype=bool)
+
+        acu = 1
+        for x1 in range(self.size['Periods']):
+            xtxt = str(x1)
+            auxI = np.asarray(self.data[xtxt]["Inputs"])
+            auxO = np.asarray(self.data[xtxt]["Outputs"])
+            auxW = self.data[xtxt]["Weights"]
+            auxs = len(auxW)
+            auxU = self.data[xtxt]["Uncertainty"]
+            Unc[x1] = auxU
+            for x2 in range(auxs):
+                Wght[acu+x2] = auxW[x2]
+                if self.size['Vectors'] == 1:
+                    if auxI.ndim == 1:
+                        WIn[acu+x2][0] = auxI[x2]
+                        WOut[acu+x2][0] = auxO[x2]
+                    else:
+                        WIn[acu+x2][0] = auxI[0][x2]
+                        WOut[acu+x2][0] = auxO[0][x2]
+                else:
+                    if auxI.ndim == 1:
+                        for xv in range(self.size['Vectors']):
+                            WIn[acu+x2][xv] = auxI[xv]
+                            WOut[acu+x2][xv] = auxO[xv]
+                    else:
+                        for xv in range(self.size['Vectors']):
+                            WIn[acu+x2][xv] = auxI[xv][x2]
+                            WOut[acu+x2][xv] = auxO[xv][x2]
+            acu += auxs
+
+        return WIn, WOut, Wght, Unc
+
+    def addCon(self, m):
+        ''' Adding pyomo constraints '''
+        # Initialisation conditions
+        m.ZSoC = Constraint(range(2), m.sVec, rule=self.cZSoC_rule)
+        # Balance at different time levels
+        m.SoCBalance = Constraint(m.sNodz, m.sVec, rule=self.cSoCBalance_rule)
+        # Aggregating (deterministic case)
+        m.SOCAggregate = Constraint(m.sLLTS2, m.sVec,
+                                    rule=self.cSoCAggregate_rule)
+        # Aggregating (stochastic case)
+        if m.FUnc != 0:
+            m.SoCStochastic = Constraint(m.sLLTS3, m.sVec,
+                                         rule=self.cSoCStochastic_rule)
+
+        return m
+
+    # Map the scenario tree (recursive function)
+    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
+                dta, Unc, s):
+        xbeforeNew = xbeforeOld
+        x1 = dta[xin-1, 0] - 1
+        while x1 < dta[xin-1, 1]:
+            x1 += 1
+            # Hold node for future nodes
+            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
+            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
+            xbeforeNew = [x1, 0]
+
+            if x1+1 <= s:
+                (LL_TimeNodeBeforeSequence,
+                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
+                                            LL_TimeNodeBeforeSequence, dta,
+                                            Unc, s)
+
+            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
+            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
+            xbeforeNew = [x1, 1]
+
+            # Hold node for deterministic studies
+            if Unc[xlvl-1] == 0:
+                xbeforeOld = xbeforeNew
+
+        return LL_TimeNodeBeforeSequence, xbeforeNew
+
+    def Read(self, FileName, jsonPath):
+        ''' Read input data '''
+        MODEL_JSON = os.path.join(jsonPath, FileName)
+        data = json.load(open(MODEL_JSON))
+
+        return data
+
+    def cSoCAggregate_rule(self, m, xL2, xv):
+        ''' Aggregating (deterministic case) '''
         return (m.vSoC[m.LLTS2[xL2, 0], 1, xv] ==
                 m.vSoC[m.LLTS2[xL2, 1], m.LLTS2[xL2, 2], xv] *
                 m.WghtFull[m.LLTS2[xL2, 0]] +
@@ -402,8 +408,14 @@ class EnergyClass:
                        m.LLTS1[m.LLTS2[xL2, 0], 1], xv] *
                 (1-m.WghtFull[m.LLTS2[xL2, 0]]))
 
-    # Aggregating (stochastic case)
-    def SoCStochastic_rule(self, m, xL3, xv):
+    def cSoCBalance_rule(self, m, xL1, xv):
+        ''' Balance at different time levels '''
+        return (m.vSoC[xL1, 0, xv] ==
+                m.vSoC[m.LLTS1[xL1, 0], m.LLTS1[xL1, 1], xv] +
+                m.WInFull[xL1, xv] - m.WOutFull[xL1, xv])
+
+    def cSoCStochastic_rule(self, m, xL3, xv):
+        ''' Aggregating (stochastic case) '''
         return (m.vSoC[m.LLTS3[xL3, 0], 1, xv] ==
                 m.vSoC[m.LLTS1[m.LLTS3[xL3, 0], 0],
                        m.LLTS1[m.LLTS3[xL3, 0], 1], xv] *
@@ -413,8 +425,41 @@ class EnergyClass:
                  sum(m.vSoC[m.LLTS3[xL3, 1]+x1, 1, xv]
                      for x1 in range(m.LLTS3[xL3, 2]+1))))
 
-    # Initialise externally
+    def cZSoC_rule(self, m, x1, xv):
+        ''' SoC initialisation conditiona '''
+        return m.vSoC[0, x1, xv] == 0
+
+    def getPar(self, m):
+        ''' Adding pyomo parameters '''
+        m.LLTS1 = self.LL['Balance']
+        m.LLTS2 = self.LL['Aggregation']
+        m.LLTS3 = self.LL['Uncertainty']
+        m.WInFull = self.Weight['In']
+        m.WOutFull = self.Weight['Out']
+        m.WghtFull = self.Weight['Node']
+
+        return m
+
+    def getSets(self, m):
+        ''' Adding pyomo sets '''
+        m.sNod = range(1, self.LL['NosBal']+1)
+        m.sNodz = range(self.LL['NosBal']+1)
+        m.sLLTS2 = range(self.LL['NosAgg']+1)
+        m.sLLTS3 = range(self.LL['NosUnc']+1)
+        m.FUnc = self.LL['NosUnc']
+        m.sVec = range(self.size['Vectors'])
+
+        return m
+
+    def getVars(self, m):
+        ''' Adding pyomo varaibles '''
+        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
+                     initialize=0.0)
+
+        return m
+
     def initialise(self, conf):
+        ''' Initialise externally '''
         # Avoid loading file
         if conf.init:
             FileName = "NoName"
@@ -453,8 +498,8 @@ class EnergyClass:
         self._Parameters(WIn, WOut, Wght)
         self._Link(Unc)
 
-    # Print results
     def print(self, mod):
+        ''' Print results '''
         for xv in mod.sVec:
             print('Vector No:', xv)
             for x1 in mod.sNodz:
@@ -462,47 +507,6 @@ class EnergyClass:
                       % mod.vSoC[x1, 0, xv].value, ", %10.2f"
                       % mod.vSoC[x1, 1, xv].value, "]")
 
-    #                                   Sets                                  #
-    def getSets(self, m):
-#        m = ConcreteModel()
-        m.sNod = range(1, self.LL['NosBal']+1)
-        m.sNodz = range(self.LL['NosBal']+1)
-        m.sLLTS2 = range(self.LL['NosAgg']+1)
-        m.sLLTS3 = range(self.LL['NosUnc']+1)
-        m.FUnc = self.LL['NosUnc']
-        m.sVec = range(self.size['Vectors'])
-
-        return m
-
-    #                                Parameters                               #
-    def getPar(self, m):
-        m.LLTS1 = self.LL['Balance']
-        m.LLTS2 = self.LL['Aggregation']
-        m.LLTS3 = self.LL['Uncertainty']
-        m.WInFull = self.Weight['In']
-        m.WOutFull = self.Weight['Out']
-        m.WghtFull = self.Weight['Node']
-
-        return m
-
-    #                             Model Variables                             #
-    def getVars(self, m):
-        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
-                     initialize=0.0)
-
-        return m
-
-    def addCon(self, m):
-        # Initialisation conditions
-        m.ZSoC = Constraint(range(2), m.sVec, rule=self.ZSoC_rule)
-        # Balance at different time levels
-        m.SoCBalance = Constraint(m.sNodz, m.sVec, rule=self.SoCBalance_rule)
-        # Aggregating (deterministic case)
-        m.SOCAggregate = Constraint(m.sLLTS2, m.sVec,
-                                    rule=self.SoCAggregate_rule)
-        # Aggregating (stochastic case)
-        if m.FUnc != 0:
-            m.SoCStochastic = Constraint(m.sLLTS3, m.sVec,
-                                         rule=self.SoCStochastic_rule)
-
-        return m
+    def OF_rule(self, m):
+        ''' Objective function '''
+        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in m.sVec)
