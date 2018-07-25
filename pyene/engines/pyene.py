@@ -1108,20 +1108,23 @@ class RESprofiles():
         self.solar = {}
         self.solar['Latitude'] = 52  # Latitude
         self.solar['Albedo'] = 0.2  # Reflectance coefficient
+        self.solar['day'] = [1]  # Day to simulate
+        self.solar['hour'] = [1]
         # Collector type: 1:Fixed 2: Single axis tracking 3: two axis tracking
         self.solar['Collector'] = 1
         self.solar['face'] = 0  # Collector face angle
         self.solar['tilt'] = self.solar['Latitude']  # Collector tilt angle
-        self.solar['day'] = [1]  # Day to simulate
-        self.solar['hour'] = [1]
 
         # Wind generators
         self.wind = {}
+        self.wind['height'] = 10  # Height of wind measurements
+        self.wind['alpha'] = 0.1429  # Friction coefficient
         self.wind['CutIN'] = 3  # Cut in wind speed (m/s)
         self.wind['Rated'] = 10  # Rated wind speed (m/s)
         self.wind['cutOUT'] = 24  # cut out wind speed (m/s)
         self.wind['Park'] = 0.95  # Wind park efficiency
         self.wind['Model'] = 1  # 1: Linear, 2: Parabolic, 3: Cubic
+        self.wind['tower'] = 50  # Height of the turbines
 
     def buildPV(self, direct, diffuse):
         ''' Produce PV generation multiplier '''
@@ -1150,16 +1153,20 @@ class RESprofiles():
 
         # Produce multipliers
         for xw in range(datalength):
+            # Height correction
+            ws = val[xw]*(self.wind['tower']/self.wind['height']) ** \
+                self.wind['alpha']
+
             # The turbines do not generate for winds under the cut-in speed
-            if val[xw] > self.wind['CutIN']:
+            if ws > self.wind['CutIN']:
                 # Produce at rated capacity
-                if val[xw] > self.wind['Rated']:
-                    if val[xw] <= self.wind['cutOUT']:
+                if ws > self.wind['Rated']:
+                    if ws <= self.wind['cutOUT']:
                         windMultiplier[xw] = self.wind['Park']
                 else:
                     # Use function
                     windMultiplier[xw] = self.wind['Park'] * \
-                        (val[xw]**self.wind['Model'] -
+                        (ws**self.wind['Model'] -
                          self.wind['CutIN']**self.wind['Model']) / \
                         (self.wind['Rated']**self.wind['Model'] -
                          self.wind['CutIN']**self.wind['Model'])
