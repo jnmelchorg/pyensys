@@ -2,7 +2,11 @@
 """
 Created on Thu Mar 29 14:04:58 2018
 
-@author: mchihem2
+Pyene Energy provides methods for balancing multiple energy vectors at
+different time aggregation levels
+
+@author: Dr Eduardo Alejandro Martínez Ceseña
+https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 # convert in or long into float before performing divissions
 from __future__ import division

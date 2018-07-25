@@ -6,8 +6,7 @@ engine.
 # TODO complete this description once the cases are written.
 
 """
-from .engines.pyene import pyeneClass as pe, pyeneHDF5Settings as peHDF5, \
-    RESprofiles as peRES
+from .engines.pyene import pyeneClass as pe
 import numpy as np
 import os
 from pyomo.environ import *

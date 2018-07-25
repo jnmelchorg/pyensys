@@ -2,6 +2,9 @@
 """
 Created on Thu Mar 29 14:04:58 2018
 
+Pyene Networks provides methods to simulate power networks and generation units
+(i.e., Unit commitment)
+
 @author: Dr Eduardo Alejandro Martínez Ceseña
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """

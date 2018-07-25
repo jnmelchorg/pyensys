@@ -5,7 +5,7 @@ import numpy as np
 import os
 from pyomo.core import ConcreteModel, Constraint, Var, NonNegativeReals, \
                        Objective, minimize
-from pyomo.opt import SolverFactory
+from pyomo.environ import SolverFactory
 
 
 # Interaction node
@@ -103,7 +103,8 @@ def test_pyene2pypsa(conf):
     EN.initialise(conf)
     # Convert to pypsa
     xscen = 0  # Selected scenario
-    (nu, pypsaFlag) = EN.pyene2pypsa(xscen)
+    P2P = EN.getClassInterfaces()
+    (nu, pypsaFlag) = P2P.pyene2pypsa(EN.NM, xscen)
     # Run pypsa
     nu.pf()
 
