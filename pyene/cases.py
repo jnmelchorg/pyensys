@@ -13,7 +13,6 @@ from pyomo.environ import *
 from pyomo.core import *
 from pyomo.opt import SolverFactory
 from tables import *
-import matplotlib.pyplot as plt
 
 # pyene simulation test
 def pyene():
