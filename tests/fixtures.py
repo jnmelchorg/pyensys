@@ -26,16 +26,16 @@ def conf():
     conf.NM.hydropower['Cost'] = []  # Costs
 
     # Pumps
-    conf.NoPump = 0  # Number of pumps
-    conf.Pump = []  # Location (bus) of pumps
-    conf.PumpMax = []  # Generation capacity
-    conf.PumpVal = []  # Value/Profit
+    conf.NM.pumps['Number'] = 0  # Number of pumps
+    conf.NM.pumps['Bus'] = []  # Location (bus) of pumps
+    conf.NM.pumps['Max'] = []  # Generation capacity
+    conf.NM.pumps['Value'] = []  # Value/Profit
 
     # RES generators
-    conf.NoRES = 0  # Number of RES generators
-    conf.RES = []  # Location (bus) of pumps
-    conf.RESMax = []  # Generation capacity
-    conf.Cost = []  # Costs
+    conf.NM.RES['Number'] = 0  # Number of RES generators
+    conf.NM.RES['Bus'] = []  # Location (bus) of pumps
+    conf.NM.RES['Max'] = []  # Generation capacity
+    conf.NM.RES['Cost'] = []  # Costs
 
     # Network considerations
     conf.Security = []  # List of contingescies to test

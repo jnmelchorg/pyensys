@@ -526,26 +526,8 @@ class pyeneClass():
                                               dtype=float)
         self.NM.settings['NoTime'] = conf.Time
 
-        # Initialise Hydropower 
-#        if conf.NoHydro > 0: 
-#            self.NM.hydropower['Number'] = conf.NoHydro 
-#            self.NM.hydropower['Bus'] = conf.Hydro  
-#            self.NM.hydropower['Max'] = conf.HydroMax 
-#            self.NM.hydropower['Cost'] = conf.HydroCost 
-
-        # Initialise Pumps
-        if conf.NoPump > 0:
-            self.NM.pumps['Number'] = conf.NoPump
-            self.NM.pumps['Bus'] = conf.Pump
-            self.NM.pumps['Max'] = conf.PumpMax
-            self.NM.pumps['Value'] = conf.PumpVal
-
         # Initialise RES
-        if conf.NoRES > 0:
-            self.NM.RES['Number'] = conf.NoRES
-            self.NM.RES['Bus'] = conf.RES
-            self.NM.RES['Max'] = conf.RESMax
-            self.NM.RES['Cost'] = conf.Cost
+        if conf.NM.RES['Number'] > 0:
             self.NM.scenarios['RES'] = np.zeros(conf.NoRESProfiles*conf.Time,
                                                 dtype=float)
 

@@ -53,20 +53,24 @@ def _update_config_pyeneE(conf, kwargs):
 # Update config based on network data
 def _update_config_pyeneN(conf, kwargs):
     # Number and location of pumps
-    conf.NoPump = kwargs.pop('pump')
-    conf.Pump = np.zeros(conf.NoPump, dtype=int)
-    conf.PumpMax = np.zeros(conf.NoPump, dtype=float)
-    conf.PumpVal = np.zeros(conf.NoPump, dtype=float)
+    NoPump = kwargs.pop('pump')
+    conf.NM.pumps['Number'] = NoPump
+    conf.NM.pumps['Bus'] = np.zeros(conf.NoPump, dtype=int)
+    conf.NM.pumps['Max'] = np.zeros(conf.NoPump, dtype=float)
+    conf.NM.pumps['Value'] = np.zeros(conf.NoPump, dtype=float)
     # assume the location of the hydropower plants
     for x in range(conf.NoPump):
-        conf.Pump[x] = x+1
-        conf.PumpMax[x] = 1
-        conf.PumpVal[x] = 0.001
+        conf.NM.pumps['Bus'][x] = x+1
+        conf.NM.pumps['Max'][x] = 1
+        conf.NM.pumps['Value'][x] = 0.001
 
-    # Number and location of pumps
-    conf.NoRES = kwargs.pop('res')  # Number of RES generators
-    conf.NoDemProfiles = 2  # Number of demand profiles
-    conf.NoRESProfiles = 2  # Number of RES profiles
+    # Number and location of RES
+    NoRES = kwargs.pop('res')
+    conf.NM.RES['Number'] = NoRES
+    conf.NM.RES['Bus'] = np.zeros(conf.NoRES, dtype=int)
+    conf.NM.RES['Max'] = np.zeros(conf.NoRES, dtype=float)
+    conf.NM.RES['Cost'] = np.zeros(conf.NoRES, dtype=float)
+    conf.NoRES = NoRES  # Number of RES generators
     conf.RES = np.zeros(conf.NoRES, dtype=int)
     conf.RESMax = np.zeros(conf.NoRES, dtype=int)
     conf.Cost = np.zeros(conf.NoRES, dtype=float)
@@ -75,6 +79,12 @@ def _update_config_pyeneN(conf, kwargs):
         conf.RES[x] = x+1
         conf.Cost[x] = 0
         conf.RESMax[x] = 10
+        conf.NM.RES['Bus'][x] = x+1
+        conf.NM.RES['Max'] = 0
+        conf.NM.RES['Cost'] = 10
+
+    conf.NoDemProfiles = 2  # Number of demand profiles
+    conf.NoRESProfiles = 2  # Number of RES profiles
 
     conf.Security = kwargs.pop('sec')
     conf.Losses = kwargs.pop('loss')
