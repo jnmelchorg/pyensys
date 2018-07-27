@@ -33,12 +33,12 @@ class pyeneHDF5Settings():
 
     class PyeneHDF5Results(IsDescription):
         time = Int16Col(dflt=1, pos=0)  # time period
-        generation = Float32Col(dflt=1, pos=1)  # generatopm
-        hydropower = Float32Col(dflt=1, pos=2)  # generatopm
-        RES = Float32Col(dflt=1, pos=3)  # generatopm
+        generation = Float32Col(dflt=1, pos=1)  # conventional generator
+        hydropower = Float32Col(dflt=1, pos=2)  # hydropower
+        RES = Float32Col(dflt=1, pos=3)  # RES generator
         demand = Float32Col(dflt=1, pos=4)  # total demand
         pump = Float32Col(dflt=1, pos=5)  # use of pumps
-        loss = Float32Col(dflt=1, pos=6)  # short integer
+        loss = Float32Col(dflt=1, pos=6)  # losses
         curtailment = Float32Col(dflt=1, pos=7)  # short integer
         spill = Float32Col(dflt=1, pos=8)  # short integer
 

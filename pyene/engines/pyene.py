@@ -21,11 +21,23 @@ import json
 import os
 
 
-class pyeneClass():
+class ENEConfig():
     def __init__(self):
         # Chose to load data from file
         self.fRea = True
         self.Penalty = 1000000
+
+
+class pyeneClass():
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = ENEConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _AddPyeneCons(self, EM, NM, mod):
         ''' Model additional variables '''
@@ -134,6 +146,324 @@ class pyeneClass():
         results = opt.solve(EModel)
 
         return (EM, EModel, results)
+
+    def get_AllDemand(self, mod, *varg, **kwarg):
+        '''Get the demand'''
+        # Specify buses
+        if 'buses' in kwarg:
+            auxbuses = kwarg.pop('buses')
+        else:
+            auxbuses = range(self.NM.networkE.number_of_nodes())
+
+        value = 0
+        for xn in auxbuses:
+            value += self.get_Demand(mod, xn+1, *varg, **kwarg)
+
+        return value
+
+    def get_AllDemandCurtailment(self, mod, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from all buses'''
+        # Specify buses
+        if 'buses' in kwarg:
+            auxbuses = kwarg.pop('buses')
+        else:
+            auxbuses = range(self.NM.networkE.number_of_nodes())
+
+        value = 0
+        if self.NM.settings['Feasibility']:
+            for xn in auxbuses:
+                value += self.get_DemandCurtailment(mod, xn+1, *varg, **kwarg)
+
+        return value
+
+    def get_AllGeneration(self, mod, *varg, **kwarg):
+        ''' Get kWh for all generators for the whole period '''
+        if 'All' in varg:
+            aux = range(1, self.NM.generationE['Number']+1)
+        elif 'Conv' in varg:
+            aux = range(1, self.NM.settings['Generators']+1)
+        elif 'RES' in varg:
+            aux = range(self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1,
+                        self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1 +
+                        self.NM.RES['Number'])
+        elif 'Hydro' in varg:
+            aux = range(self.NM.settings['Generators']+1,
+                        self.NM.settings['Generators'] +
+                        self.NM.hydropower['Number']+1)
+        else:
+            aux = range(1, self.NM.generationE['Number']+1)
+
+        value = 0
+        for xn in aux:
+            value += self.get_Generation(mod, xn, *varg, **kwarg)
+
+        return value
+
+    def get_AllHydro(self, mod):
+        ''' Get surplus kWh from all hydropower plants '''
+        value = 0
+        for xi in range(self.EM.settings['Vectors']):
+            value += mod.WOutFull[1, xi].value
+
+        return value
+
+    def get_AllLoss(self, mod, *varg, **kwarg):
+        '''Get the total losses'''
+        value = 0
+        if self.NM.settings['Losses']:
+            for xb in mod.sBra:
+                value += self.get_Loss(mod, xb+1, *varg, **kwarg)
+
+        return value
+
+    def get_AllPumps(self, mod, *varg, **kwarg):
+        ''' Get kWh consumed by all pumps '''
+        value = 0
+        for xp in range(self.NM.pumps['Number']):
+            value += self.get_Pump(mod, xp+1, *varg, **kwarg)
+
+        return value
+
+    def get_AllRES(self, mod, *varg, **kwarg):
+        ''' Total RES spilled for the whole period '''
+        value = 0
+        for xr in range(self.NM.RES['Number']):
+            value += self.get_RES(mod, xr+1, *varg, **kwarg)
+
+        return value
+
+    def get_Demand(self, mod, bus, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        xb = bus-1
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (self.NM.busData[xb]*self.NM.scenarios['Demand']
+                        [xt+self.NM.busScenario[xb][xh]])*auxweight[xt]
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_DemandCurtailment(self, mod, bus, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        if self.NM.settings['Feasibility']:
+            for xh in auxscens:
+                acu = 0
+                for xt in auxtime:
+                    acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
+                            auxweight[xt])
+                value += acu*auxOF[xh]
+            value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_Generation(self, mod, index, *varg, **kwarg):
+        ''' Get kWh for a single generator '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (mod.vGen[self.NM.connections['Generation']
+                                 [xh]+index, xt].value*auxweight[xt])
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_Hydro(self, mod, index):
+        ''' Get surplus kWh from specific site '''
+        HydroValue = mod.WOutFull[1, index-1].value
+
+        return HydroValue
+
+    def get_HydroFlag(self, mod, index):
+        ''' Get surplus kWh from specific site '''
+        cobject = getattr(mod, 'SoCBalance')
+        aux = mod.dual.get(cobject[1, index-1])
+        if aux is None:
+            HydroValue = False
+        else:
+            aux2 = -1*int(mod.dual.get(cobject[1, index-1]))
+            aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
+            if aux2 > aux3:
+                HydroValue = True
+            else:
+                HydroValue = False
+
+        return HydroValue
+
+    def get_HydroMarginal(self, mod, index):
+        ''' Get marginal costs for specific hydropower plant '''
+        cobject = getattr(mod, 'SoCBalance')
+        aux = mod.dual.get(cobject[1, index-1])
+        if aux is None:
+            HydroValue = 0
+        else:
+            HydroValue = -1*int(mod.dual.get(cobject[1, index-1]))
+
+        return HydroValue
+
+    def get_Loss(self, mod, xb, *varg, **kwarg):
+        '''Get the kWh that had to be curtailed from a given bus'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (mod.vLoss[self.NM.connections['Loss']
+                                  [xh]+xb, xt].value)*auxweight[xt]
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_MeanHydroMarginal(self, mod):
+        value = 0
+        for xi in range(self.EM.settings['Vectors']):
+            value += self.get_HydroMarginal(mod, xi+1)
+        return value/self.EM.settings['Vectors']
+
+    def get_NetDemand(self, mod, auxFlags, *varg, **kwarg):
+        ''' Get MWh consumed by pumps, loads, losses '''
+        value = 0
+        if auxFlags[0]:  # Demand
+            value += self.get_AllDemand(mod, *varg, **kwarg)
+
+        if auxFlags[1]:  # Pumps
+            value += self.get_AllPumps(mod, *varg, **kwarg)
+
+        if auxFlags[2]:  # Loss
+            value += self.get_AllLoss(mod, *varg, **kwarg)
+
+        if auxFlags[3]:  # Curtailment
+            value += self.get_AllDemandCurtailment(mod, *varg, **kwarg)
+
+        if auxFlags[4]:  # Spill
+            value += self.get_AllRES(mod, *varg, **kwarg)
+
+        return value
+
+    def get_OFparts(self, m, auxFlags, *varg, **kwarg):
+        ''' Get components of the objective function '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+
+        value = 0
+        if auxFlags[0]:  # Conventional generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in range(self.NM.settings['Generators']))
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+        if auxFlags[1]:  # RES generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in self.NM.RES['Link'])
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+
+        if auxFlags[2]:  # Hydro generation
+            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+                                 in self.NM.hydropower['Link'])
+                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+
+        if auxFlags[3]:  # Pumps
+            value -= sum(sum(self.NM.pumps['Value'][xdl] *
+                             self.NM.networkE.graph['baseMVA'] *
+                             sum(m.vDL[self.hDL[xh]+xdl+1, xt].value *
+                                 self.NM.scenarios['Weights'][xt]
+                                 for xt in auxtime) for xdl in m.sDL) *
+                         auxOF[xh] for xh in auxscens)
+
+        if auxFlags[4]:  # Curtailment
+            value += sum(sum(sum(m.vFea[self.hFea[xh]+xf, xt].value for xf
+                                 in m.sFea)*self.Penalty for xt in auxtime) *
+                         auxOF[xh] for xh in auxscens)
+
+        return value
+
+    def get_Pump(self, mod, index, *varg, **kwarg):
+        ''' Get kWh consumed by a specific pump '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += (mod.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_RES(self, mod, index, *varg, **kwarg):
+        ''' Spilled kWh of RES for the whole period'''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+
+        xg = index-1
+        value = 0
+        for xh in auxscens:
+            acu = 0
+            for xt in auxtime:
+                acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
+                         [self.NM.resScenario[xg][xh][1]+xt] -
+                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                        auxweight[xt])
+            value += acu*auxOF[xh]
+        value *= self.NM.networkE.graph['baseMVA']
+
+        return value
+
+    def get_timeAndScenario(self, mod, *varg, **kwarg):
+        # Specify times
+        if 'times' in kwarg:
+            auxtime = kwarg.pop('times')
+        else:
+            auxtime = mod.sTim
+
+        # Remove weights
+        if 'snapshot' in varg:
+            auxweight = np.ones(len(mod.sTim), dtype=int)
+            auxOF = np.ones(len(self.h), dtype=int)
+        else:
+            auxweight = self.NM.scenarios['Weights']
+            auxOF = self.OFaux
+
+        # Specify scenario
+        if 'scens' in kwarg:
+            auxscens = kwarg.pop('scens')
+        else:
+            auxscens = self.h
+
+        return (auxtime, auxweight, auxscens, auxOF)
+
+    def getClassInterfaces(self):
+        ''' Return calss to interface with pypsa and pypower'''
+        from .pyeneI import EInterfaceClass
+        return EInterfaceClass()
+
+    def getClassOutputs(self):
+        ''' Return calss to produce outputs in H5 files'''
+        from .pyeneO import pyeneHDF5Settings
+        return pyeneHDF5Settings()
+
+    def getClassRenewables(self):
+        ''' Return calss to produce RES time series'''
+        from .pyeneR import RESprofiles
+        return RESprofiles()
 
     def getPar(self, m):
         ''' Add pyomo parameters'''
@@ -498,321 +828,3 @@ class pyeneClass():
         mod = ENM.addCon(mod)
 
         return mod
-
-    def get_AllDemand(self, mod, *varg, **kwarg):
-        '''Get the demand'''
-        # Specify buses
-        if 'buses' in kwarg:
-            auxbuses = kwarg.pop('buses')
-        else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
-
-        value = 0
-        for xn in auxbuses:
-            value += self.get_Demand(mod, xn+1, *varg, **kwarg)
-
-        return value
-
-    def get_AllDemandCurtailment(self, mod, *varg, **kwarg):
-        '''Get the kWh that had to be curtailed from all buses'''
-        # Specify buses
-        if 'buses' in kwarg:
-            auxbuses = kwarg.pop('buses')
-        else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
-
-        value = 0
-        if self.NM.settings['Feasibility']:
-            for xn in auxbuses:
-                value += self.get_DemandCurtailment(mod, xn+1, *varg, **kwarg)
-
-        return value
-
-    def get_AllGeneration(self, mod, *varg, **kwarg):
-        ''' Get kWh for all generators for the whole period '''
-        if 'All' in varg:
-            aux = range(1, self.NM.generationE['Number']+1)
-        elif 'Conv' in varg:
-            aux = range(1, self.NM.settings['Generators']+1)
-        elif 'RES' in varg:
-            aux = range(self.NM.settings['Generators'] +
-                        self.NM.hydropower['Number']+1,
-                        self.NM.settings['Generators'] +
-                        self.NM.hydropower['Number']+1 +
-                        self.NM.RES['Number'])
-        elif 'Hydro' in varg:
-            aux = range(self.NM.settings['Generators']+1,
-                        self.NM.settings['Generators'] +
-                        self.NM.hydropower['Number']+1)
-        else:
-            aux = range(1, self.NM.generationE['Number']+1)
-
-        value = 0
-        for xn in aux:
-            value += self.get_Generation(mod, xn, *varg, **kwarg)
-
-        return value
-
-    def get_AllHydro(self, mod):
-        ''' Get surplus kWh from all hydropower plants '''
-        value = 0
-        for xi in range(self.EM.settings['Vectors']):
-            value += mod.WOutFull[1, xi].value
-
-        return value
-
-    def get_AllLoss(self, mod, *varg, **kwarg):
-        '''Get the demand'''
-        value = 0
-        if self.NM.settings['Losses']:
-            for xb in mod.sBranch:
-                value += self.get_Loss(mod, xb+1, **kwarg)
-
-        return value
-
-    def get_AllPumps(self, mod, *varg, **kwarg):
-        ''' Get kWh consumed by all pumps '''
-        value = 0
-        for xp in range(self.NM.pumps['Number']):
-            value += self.get_Pump(mod, xp+1, *varg, **kwarg)
-
-        return value
-
-    def get_AllRES(self, mod, *varg, **kwarg):
-        ''' Total RES spilled for the whole period '''
-        value = 0
-        for xr in range(self.NM.RES['Number']):
-            value += self.get_RES(mod, xr+1, *varg, **kwarg)
-
-        return value
-
-    def get_Demand(self, mod, bus, *varg, **kwarg):
-        '''Get the kWh that had to be curtailed from a given bus'''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-
-        value = 0
-        xb = bus-1
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (self.NM.busData[xb]*self.NM.scenarios['Demand']
-                        [xt+self.NM.busScenario[xb][xh]])*auxweight[xt]
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_DemandCurtailment(self, mod, bus, *varg, **kwarg):
-        '''Get the kWh that had to be curtailed from a given bus'''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-
-        value = 0
-        if self.NM.settings['Feasibility']:
-            for xh in auxscens:
-                acu = 0
-                for xt in auxtime:
-                    acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
-                            auxweight[xt])
-                value += acu*auxOF[xh]
-            value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_Generation(self, mod, index, *varg, **kwarg):
-        ''' Get kWh for a single generator '''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (mod.vGen[self.NM.connections['Generation']
-                                 [xh]+index, xt].value*auxweight[xt])
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_Hydro(self, mod, index):
-        ''' Get surplus kWh from specific site '''
-        HydroValue = mod.WOutFull[1, index-1].value
-
-        return HydroValue
-
-    def get_HydroFlag(self, mod, index):
-        ''' Get surplus kWh from specific site '''
-        cobject = getattr(mod, 'SoCBalance')
-        aux = mod.dual.get(cobject[1, index-1])
-        if aux is None:
-            HydroValue = False
-        else:
-            aux2 = -1*int(mod.dual.get(cobject[1, index-1]))
-            aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
-            if aux2 > aux3:
-                HydroValue = True
-            else:
-                HydroValue = False
-
-        return HydroValue
-
-    def get_HydroMarginal(self, mod, index):
-        ''' Get marginal costs for specific hydropower plant '''
-        cobject = getattr(mod, 'SoCBalance')
-        aux = mod.dual.get(cobject[1, index-1])
-        if aux is None:
-            HydroValue = 0
-        else:
-            HydroValue = -1*int(mod.dual.get(cobject[1, index-1]))
-
-        return HydroValue
-
-    def get_Loss(self, mod, xb, *varg, **kwarg):
-        '''Get the kWh that had to be curtailed from a given bus'''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (mod.vLoss[self.NM.connections['Loss']
-                                  [xh]+xb, xt].value)*auxweight[xt]
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_MeanHydroMarginal(self, mod):
-        value = 0
-        for xi in range(self.EM.settings['Vectors']):
-            value += self.get_HydroMarginal(mod, xi+1)
-        return value/self.EM.settings['Vectors']
-
-    def get_NetDemand(self, mod, auxFlags, *varg, **kwarg):
-        ''' Get MWh consumed by pumps, loads, losses '''
-        value = 0
-        if auxFlags[0]:  # Demand
-            value += self.get_AllDemand(mod, *varg, **kwarg)
-
-        if auxFlags[1]:  # Pumps
-            value += self.get_AllPumps(mod, *varg, **kwarg)
-
-        if auxFlags[2]:  # Loss
-            value += self.get_AllLoss(mod, *varg, **kwarg)
-
-        if auxFlags[3]:  # Curtailment
-            value += self.get_AllDemandCurtailment(mod, *varg, **kwarg)
-
-        if auxFlags[4]:  # Spill
-            value += self.get_AllRES(mod, *varg, **kwarg)
-
-        return value
-
-    def get_OFparts(self, m, auxFlags, *varg, **kwarg):
-        ''' Get components of the objective function '''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
-
-        value = 0
-        if auxFlags[0]:  # Conventional generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
-                                 in range(self.NM.settings['Generators']))
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
-        if auxFlags[1]:  # RES generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
-                                 in self.NM.RES['Link'])
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
-
-        if auxFlags[2]:  # Hydro generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
-                                 in self.NM.hydropower['Link'])
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
-
-        if auxFlags[3]:  # Pumps
-            value -= sum(sum(self.NM.pumps['Value'][xdl] *
-                             self.NM.networkE.graph['baseMVA'] *
-                             sum(m.vDL[self.hDL[xh]+xdl+1, xt].value *
-                                 self.NM.scenarios['Weights'][xt]
-                                 for xt in auxtime) for xdl in m.sDL) *
-                         auxOF[xh] for xh in auxscens)
-
-        if auxFlags[4]:  # Curtailment
-            value += sum(sum(sum(m.vFea[self.hFea[xh]+xf, xt].value for xf
-                                 in m.sFea)*self.Penalty for xt in auxtime) *
-                         auxOF[xh] for xh in auxscens)
-
-        return value
-
-    def get_Pump(self, mod, index, *varg, **kwarg):
-        ''' Get kWh consumed by a specific pump '''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (mod.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_RES(self, mod, index, *varg, **kwarg):
-        ''' Spilled kWh of RES for the whole period'''
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
-
-        xg = index-1
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
-                         [self.NM.resScenario[xg][xh][1]+xt] -
-                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
-                        auxweight[xt])
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
-
-        return value
-
-    def get_timeAndScenario(self, mod, *varg, **kwarg):
-        # Specify times
-        if 'times' in kwarg:
-            auxtime = kwarg.pop('times')
-        else:
-            auxtime = mod.sTim
-
-        # Remove weights
-        if 'snapshot' in varg:
-            auxweight = np.ones(len(mod.sTim), dtype=int)
-            auxOF = np.ones(len(self.h), dtype=int)
-        else:
-            auxweight = self.NM.scenarios['Weights']
-            auxOF = self.OFaux
-
-        # Specify scenario
-        if 'scens' in kwarg:
-            auxscens = kwarg.pop('scens')
-        else:
-            auxscens = self.h
-
-        return (auxtime, auxweight, auxscens, auxOF)
-
-    def getClassInterfaces(self):
-        ''' Return calss to interface with pypsa and pypower'''
-        from .pyeneI import EInterfaceClass
-        return EInterfaceClass()
-
-    def getClassOutputs(self):
-        ''' Return calss to produce outputs in H5 files'''
-        from .pyeneO import pyeneHDF5Settings
-        return pyeneHDF5Settings()
-
-    def getClassRenewables(self):
-        ''' Return calss to produce RES time series'''
-        from .pyeneR import RESprofiles
-        return RESprofiles()

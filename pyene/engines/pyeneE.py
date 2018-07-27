@@ -18,8 +18,8 @@ import json
 import os
 
 
-# Linked lists
-class EnergyClass:
+class EConfig:
+    ''' Default settings used for this class '''
     def __init__(self):
         # Read from file
         self.fRea = False
@@ -70,6 +70,18 @@ class EnergyClass:
                 'Vectors': [],  # Number of vectors
                 'Nodes': []  # Number of nodes
                 }
+
+
+class EnergyClass:
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = EConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _Connect(self, Unc):
         ''' Produce connectivity matrices '''

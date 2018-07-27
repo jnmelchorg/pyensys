@@ -286,7 +286,7 @@ def test_pyene_RESPump(conf):
     resInNode.value = [0.5, 1.0]
     resInNode.index = 1
     EN.set_RES(resInNode.index, resInNode.value)
-    # RES profile (first scenario)
+    # RES profile (second scenario)
     resInNode = _node()
     resInNode.value = [0.5, 0.0]
     resInNode.index = 2

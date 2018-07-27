@@ -17,7 +17,8 @@ import json
 import os
 
 
-class ENetworkClass:
+class NConfig:
+    ''' Default settings used for this class '''
     def __init__(self):
         # Basic settings
         self.settings = {
@@ -87,6 +88,18 @@ class ENetworkClass:
                 'Curtailment': True,
                 'Feasibility': True,
                 }
+
+
+class ENetworkClass:
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = NConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _getLL(self, NoLL, NoDt, DtLL):
         ''' Produce LL while removing the 'next' '''
@@ -863,8 +876,12 @@ class ENetworkClass:
                     acu += 1
 
         # Default settings for RES profiles
+        # All devices are linked to the same profile
+        if self.scenarios['NoRES'] == 1:
+            self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
+                                                 self.RES['Number'], dtype=int)
         # i.e., each scenario is linked to a profile
-        if self.scenarios['LinksRes'] == 'Default':
+        elif self.scenarios['LinksRes'] == 'Default':
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
                                                  self.RES['Number'], dtype=int)
             acu = self.RES['Number']
