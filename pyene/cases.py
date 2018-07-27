@@ -77,7 +77,7 @@ def test_pyeneE(config):
 def test_pyeneN(config):
     """ Execute pyene to access pyeneN - Full json based simulation."""
     # Create object
-    EN = pe()
+    EN = pe(config.EN)
     # Run model
     (NM, NModel, results) = EN.NSim(config)
     print('\n\nOF: ', NModel.OF.expr())
@@ -190,22 +190,29 @@ def test_pyene(conf):
 def test_pyenetest():
     '''Test specific functionalities'''
     conf = default_conf()
-    print('\n\n', os.path.dirname(__file__))
 
-    conf.NetworkFile = 'case4.json'
-    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.EM.fRes = os.path.join(os.path.dirname(__file__), '..', 'tests', 'json', 'ResolutionTreeMonth01.json')
-    conf.Time = 1  # Single period
-    # Create object
-    EN = pe(conf.EN)
-    # Initialise with selected configuration
-    EN.initialise(conf)
-    # Run integrated pyene
-    mod = ConcreteModel()
-    mod = EN.run(mod)
-    EN.Print_ENSim(mod, EN.EM, EN.NM)
-    print(mod.OF.expr())
+
+#    conf.NetworkFile = 'case4.json'
+#    conf.TreeFile = 'ResolutionTreeMonth01.json'
+#    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests', 'json', 'ResolutionTreeMonth01.json')
+#    conf.Time = 1  # Single period
+#    # Create object
+#    EN = pe(conf.EN)
+#    # Initialise with selected configuration
+#    EN.initialise(conf)
+#    # Run integrated pyene
+#    mod = ConcreteModel()
+#    mod = EN.run(mod)
+#    EN.Print_ENSim(mod, EN.EM, EN.NM)
+#    print(mod.OF.expr())
+#    print(EN.EM.data)
     
+    
+
+    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests', 'json', 'TreeMonth01Unc.json')
+    EN = pe(conf.EN)
+    (EM, EModel, results) = EN.ESim(conf)
+    EM.print(EModel)
     
 
 #    '''                         First step

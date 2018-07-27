@@ -501,7 +501,8 @@ class pyeneClass():
         # Creat objects
 #        self.conf = conf
         self.EM = de(conf.EM)
-        self.NM = dn()
+
+        self.NM = dn(conf.NM)
 
         # Adding hydro to the energy balance tree
         self.EM.settings = {

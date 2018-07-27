@@ -23,7 +23,8 @@ def test_pyene_Small(conf):
     print('test_pyene_Small')
     conf.NetworkFile = 'case4.json'
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.EM.fRes = os.path.join(json_directory(), 'ResolutionTreeMonth01.json')
+    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
+                                'json', 'ResolutionTreeMonth01.json')
     conf.Time = 1  # Single period
     # Create object
     EN = pe(conf.EN)
@@ -42,7 +43,8 @@ def test_pyene_Small(conf):
 def test_pyene_SmallHydro(conf):
     print('test_pyene_SmallHydro')
     conf.NetworkFile = 'case4.json'
-    conf.TreeFile = 'ResolutionTreeMonth01.json'
+    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
+                                'json', 'ResolutionTreeMonth01.json')
     conf.Time = 1  # Single period
 
     # Adding hydropower plants
@@ -56,7 +58,7 @@ def test_pyene_SmallHydro(conf):
         conf.HydroCost[x] = 0.01
 
     # Create object
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialise with selected configuration
     EN.initialise(conf)
     # Add hydro nodes
@@ -99,7 +101,7 @@ def test_pyene2pypsa(conf):
     conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
 
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Convert to pypsa
@@ -133,7 +135,7 @@ def test_pyene_Curtailment2Hydro(conf):
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # one generator off
@@ -192,7 +194,7 @@ def test_pyene_AllHydro(conf):
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Single demand node (first scenario)
@@ -269,7 +271,7 @@ def test_pyene_RESPump(conf):
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Single demand node (first scenario)
@@ -345,7 +347,6 @@ def test_pyene_RESPump(conf):
            0.0001 > abs(Final_Curtailed) and
            0.0001 > abs(Final_ConvGeneration))
 
-
 # Test dummy integrated LP
 def test_pyene_SingleLP(conf):
     '''
@@ -356,7 +357,8 @@ def test_pyene_SingleLP(conf):
     print('test_pyene_SingleLP')
 
     def UpdateConfig(conf):
-        conf.TreeFile = 'TestCase.json'
+        conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
+                                'json', 'TestCase.json')
         conf.NetworkFile = 'case4.json'
         conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
         conf.Time = 24  # Number of time steps
@@ -433,7 +435,7 @@ def test_pyene_SingleLP(conf):
     '''                         Second step
     The engine creates a pyene object
     '''
-    EN = pe()
+    EN = pe(conf.EN)
 
     '''                          Third step
     pyene is initialised with a predefined configuration (e.g., from MOEA)

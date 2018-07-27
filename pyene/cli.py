@@ -18,9 +18,6 @@ pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 def cli(conf, **kwargs):
     """Prepare pyene simulation"""
 
-    # Initialisation assumptions
-    conf.init = kwargs.pop('init')
-
     # Assume location, capacity and cost of hydro
     conf.NoHydro = kwargs.pop('hydro')
     conf.Hydro = np.zeros(conf.NoHydro, dtype=int)
@@ -46,9 +43,8 @@ def cli(conf, **kwargs):
 
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
-    aux = kwargs.pop('tree')
-    conf.TreeFile = aux
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), 'json', aux)
+    conf.EM.fRea = os.path.join(os.path.dirname(__file__), 'json',
+                                kwargs.pop('tree'))
 
     return conf
 

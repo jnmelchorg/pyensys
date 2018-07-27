@@ -376,41 +376,6 @@ class EnergyClass:
 
         return m
 
-    # Map the scenario tree (recursive function)
-    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
-                dta, Unc, s):
-        xbeforeNew = xbeforeOld
-        x1 = dta[xin-1, 0] - 1
-        while x1 < dta[xin-1, 1]:
-            x1 += 1
-            # Hold node for future nodes
-            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
-            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
-            xbeforeNew = [x1, 0]
-
-            if x1+1 <= s:
-                (LL_TimeNodeBeforeSequence,
-                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
-                                            LL_TimeNodeBeforeSequence, dta,
-                                            Unc, s)
-
-            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
-            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
-            xbeforeNew = [x1, 1]
-
-            # Hold node for deterministic studies
-            if Unc[xlvl-1] == 0:
-                xbeforeOld = xbeforeNew
-
-        return LL_TimeNodeBeforeSequence, xbeforeNew
-
-    def Read(self, FileName, jsonPath):
-        ''' Read input data '''
-        MODEL_JSON = os.path.join(jsonPath, FileName)
-        data = json.load(open(MODEL_JSON))
-
-        return data
-
     def cSoCAggregate_rule(self, m, xL2, xv):
         ''' Aggregating (deterministic case) '''
         return (m.vSoC[m.LLTS2[xL2, 0], 1, xv] ==
@@ -475,15 +440,6 @@ class EnergyClass:
         # Should a file be loaded?
         if self.fRea is not None:
             self.data = json.load(open(self.fRea))
-#        if conf.init:   
-#            FileName = "NoName"
-#        else:
-#            FileName = conf.TreeFile
-#            self.fRea = True
-#   
-#        # Read input data
-#        if self.fRea:
-#            self.data = self.Read(FileName, conf.json)   
 
         # Measure the size of the data arrays
         self._Measure()
@@ -512,6 +468,34 @@ class EnergyClass:
         self._Parameters(WIn, WOut, Wght)
         self._Link(Unc)
 
+    # Map the scenario tree (recursive function)
+    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
+                dta, Unc, s):
+        xbeforeNew = xbeforeOld
+        x1 = dta[xin-1, 0] - 1
+        while x1 < dta[xin-1, 1]:
+            x1 += 1
+            # Hold node for future nodes
+            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
+            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
+            xbeforeNew = [x1, 0]
+
+            if x1+1 <= s:
+                (LL_TimeNodeBeforeSequence,
+                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
+                                            LL_TimeNodeBeforeSequence, dta,
+                                            Unc, s)
+
+            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
+            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
+            xbeforeNew = [x1, 1]
+
+            # Hold node for deterministic studies
+            if Unc[xlvl-1] == 0:
+                xbeforeOld = xbeforeNew
+
+        return LL_TimeNodeBeforeSequence, xbeforeNew
+
     def print(self, mod):
         ''' Print results '''
         for xv in mod.sVec:
@@ -520,6 +504,14 @@ class EnergyClass:
                 print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
                       % mod.vSoC[x1, 0, xv].value, ", %10.2f"
                       % mod.vSoC[x1, 1, xv].value, "]")
+
+    def Read(self, FileName, jsonPath):
+        ''' Read input data '''
+        MODEL_JSON = os.path.join(jsonPath, FileName)
+        data = json.load(open(MODEL_JSON))
+
+        return data
+
 
     def OF_rule(self, m):
         ''' Objective function '''
