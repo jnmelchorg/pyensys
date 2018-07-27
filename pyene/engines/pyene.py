@@ -507,7 +507,7 @@ class pyeneClass():
         # Adding hydro to the energy balance tree
         self.EM.settings = {
                 'Fix': True,  # Force a specific number of vectors
-                'Vectors': conf.NoHydro  # Number of vectors
+                'Vectors': self.NM.hydropower['Number']  # Number of vectors
                 }
 
         # Initialise energy balance model
@@ -526,12 +526,12 @@ class pyeneClass():
                                               dtype=float)
         self.NM.settings['NoTime'] = conf.Time
 
-        # Initialise Hydropower
-        if conf.NoHydro > 0:
-            self.NM.hydropower['Number'] = conf.NoHydro
-            self.NM.hydropower['Bus'] = conf.Hydro
-            self.NM.hydropower['Max'] = conf.HydroMax
-            self.NM.hydropower['Cost'] = conf.HydroCost
+        # Initialise Hydropower 
+#        if conf.NoHydro > 0: 
+#            self.NM.hydropower['Number'] = conf.NoHydro 
+#            self.NM.hydropower['Bus'] = conf.Hydro  
+#            self.NM.hydropower['Max'] = conf.HydroMax 
+#            self.NM.hydropower['Cost'] = conf.HydroCost 
 
         # Initialise Pumps
         if conf.NoPump > 0:

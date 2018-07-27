@@ -20,10 +20,10 @@ def conf():
     conf.json = json_directory()  # Location of the json directory
 
     # Hydropower
-    conf.NoHydro = 0  # Number of hydropower plants
-    conf.Hydro = []  # Location (bus) of hydro
-    conf.HydroMax = []  # Generation capacity
-    conf.HydroCost = []  # Costs
+    conf.NM.hydropower['Number'] = 0  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = []  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = []  # Generation capacity
+    conf.NM.hydropower['Cost'] = []  # Costs
 
     # Pumps
     conf.NoPump = 0  # Number of pumps

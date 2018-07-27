@@ -56,6 +56,10 @@ def test_pyene_SmallHydro(conf):
         conf.Hydro[x] = x+1
         conf.HydroMax[x] = 100
         conf.HydroCost[x] = 0.01
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 2]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100, 100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01]  # Costs
 
     # Create object
     EN = pe(conf.EN)
@@ -87,6 +91,10 @@ def test_pyene2pypsa(conf):
     conf.Hydro = [1, 2]  # Location (bus) of hydro
     conf.HydroMax = [100, 100]  # Generation capacity
     conf.HydroCost = [0.01, 0.01]  # Costs
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 2]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100, 100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01]  # Costs
 
     # Pumps
     conf.NoPump = 1  # Number of pumps
@@ -132,6 +140,10 @@ def test_pyene_Curtailment2Hydro(conf):
     conf.Hydro = [1]  # Location (bus) of hydro
     conf.HydroMax = [100]  # Generation capacity
     conf.HydroCost = [0.01]  # Costs
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     # Enable curtailment
     conf.Feasibility = True
     # Get Pyene model
@@ -181,6 +193,10 @@ def test_pyene_AllHydro(conf):
     conf.Time = 2  # Number of time steps
     conf.Weights = [0.5, 1]  # Add different weights to the time steps
     # Add hydropower plant
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [150]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     conf.NoHydro = 1  # Number of hydropower plants
     conf.Hydro = [1]  # Location (bus) of hydro
     conf.HydroMax = [150]  # Generation capacity
@@ -254,6 +270,10 @@ def test_pyene_RESPump(conf):
     conf.Time = 2  # Number of time steps
     conf.Weights = [0.5, 1]
     # Add hydropower plant
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [500]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     conf.NoHydro = 1  # Number of hydropower plants
     conf.Hydro = [1]  # Location (bus) of hydro
     conf.HydroMax = [500]  # Generation capacity
@@ -366,6 +386,10 @@ def test_pyene_SingleLP(conf):
         conf.Hydro = [1, 2, 3]  # Location of hydropower plants
         conf.HydroMax = [1000, 1000, 1000]  # Capacity of hydropower plants
         conf.HydroCost = [0.01, 0.01,  0.01]  # Cost of water
+        conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
+        conf.NM.hydropower['Bus'] = [1, 2, 3]  # Location (bus) of hydro
+        conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
+        conf.NM.hydropower['Cost'] = [0.01, 0.01, 0.01]  # Costs
         conf.NoPump = 2  # Number of pumps
         conf.Pump = [1, 2]  # Location of pumps
         conf.PumpMax = [1, 1]  # Capacity of the pumps

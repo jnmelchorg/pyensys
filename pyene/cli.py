@@ -19,16 +19,17 @@ def cli(conf, **kwargs):
     """Prepare pyene simulation"""
 
     # Assume location, capacity and cost of hydro
-    conf.NoHydro = kwargs.pop('hydro')
-    conf.Hydro = np.zeros(conf.NoHydro, dtype=int)
-    conf.HydroMax = np.zeros(conf.NoHydro, dtype=float)
-    conf.HydroCost = np.zeros(conf.NoHydro, dtype=float)
+    NoHydro = kwargs.pop('hydro')
+    conf.NM.hydropower['Number'] = NoHydro
+    conf.NM.hydropower['Bus'] = np.zeros(NoHydro, dtype=int)
+    conf.NM.hydropower['Max'] = np.zeros(NoHydro, dtype=float)
+    conf.NM.hydropower['Cost'] = np.zeros(NoHydro, dtype=float)
 
     # assume the location of the hydropower plants
     for x in range(conf.NoHydro):
-        conf.Hydro[x] = x+1
-        conf.HydroMax[x] = 1000
-        conf.HydroCost[x] = 0.01
+        conf.NM.hydropower['Bus'][x] = x+1
+        conf.NM.hydropower['Max'][x] = 1000
+        conf.NM.hydropower['Cost'][x] = 0.01
 
     # Add profiler
     if 'profile' in kwargs:
