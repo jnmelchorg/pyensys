@@ -3,14 +3,10 @@ import numpy as np
 import cProfile
 import os
 from .cases import *
+from .engines.pyene import pyeneConfig
 
 
-class ConfigClass(object):
-    def __init__(self):
-        self.init = False
-
-
-pass_conf = click.make_pass_decorator(ConfigClass, ensure=True)
+pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 
 
 @click.group()
@@ -50,7 +46,9 @@ def cli(conf, **kwargs):
 
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
-    conf.TreeFile = kwargs.pop('tree')
+    aux = kwargs.pop('tree')
+    conf.TreeFile = aux
+    conf.EM.fRea = os.path.join(os.path.dirname(__file__), 'json', aux)
 
     return conf
 

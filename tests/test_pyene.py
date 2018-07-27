@@ -22,10 +22,11 @@ class _node():
 def test_pyene_Small(conf):
     print('test_pyene_Small')
     conf.NetworkFile = 'case4.json'
-    conf.TreeFile = 'ResolutionTreeMonth01.json'
+#    conf.TreeFile = 'ResolutionTreeMonth01.json'
+    conf.EM.fRes = os.path.join(json_directory(), 'ResolutionTreeMonth01.json')
     conf.Time = 1  # Single period
     # Create object
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialise with selected configuration
     EN.initialise(conf)
     # Run integrated pyene

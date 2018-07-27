@@ -22,7 +22,7 @@ class EConfig:
     ''' Default settings used for this class '''
     def __init__(self):
         # Read from file
-        self.fRea = False
+        self.fRea = None
         # Default time-step and map
         self.data = {}
         # Monthly resolution
@@ -470,18 +470,20 @@ class EnergyClass:
 
         return m
 
-    def initialise(self, conf):
+    def initialise(self):
         ''' Initialise externally '''
-        # Avoid loading file
-        if conf.init:
-            FileName = "NoName"
-        else:
-            FileName = conf.TreeFile
-            self.fRea = True
-
-        # Read input data
-        if self.fRea:
-            self.data = self.Read(FileName, conf.json)
+        # Should a file be loaded?
+        if self.fRea is not None:
+            self.data = json.load(open(self.fRea))
+#        if conf.init:   
+#            FileName = "NoName"
+#        else:
+#            FileName = conf.TreeFile
+#            self.fRea = True
+#   
+#        # Read input data
+#        if self.fRea:
+#            self.data = self.Read(FileName, conf.json)   
 
         # Measure the size of the data arrays
         self._Measure()

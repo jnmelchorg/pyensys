@@ -15,13 +15,22 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn  # Network component
-from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
+from .pyeneN import ENetworkClass as dn, NConfig  # Network component
+from .pyeneE import EnergyClass as de, EConfig  # Energy component
 import json
 import os
 
 
+class pyeneConfig():
+    ''' Overall default configuration '''
+    def __init__(self):
+        self.EN = ENEConfig()
+        self.EM = EConfig()
+        self.NM = NConfig()
+
+
 class ENEConfig():
+    ''' Default consifuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
         self.fRea = True
@@ -125,13 +134,15 @@ class pyeneClass():
     def ESim(self, conf):
         ''' Energy only optimisation '''
         # Get energy object
-        EM = de()
+        EM = de(conf.EM)
 
-        # Chose to load data from file
-        EM.fRea = True
-
+#        # Chose to load data from file  
+#        EM.fRea = True    
+#   
+#        # Initialise  
+#        EM.initialise(conf)  
         # Initialise
-        EM.initialise(conf)
+        EM.initialise()
 
         # Build LP model
         EModel = self.SingleLP(EM)
@@ -488,8 +499,8 @@ class pyeneClass():
     def initialise(self, conf):
         ''' Initialise energy and networks simulator '''
         # Creat objects
-        self.conf = conf
-        self.EM = de()
+#        self.conf = conf
+        self.EM = de(conf.EM)
         self.NM = dn()
 
         # Adding hydro to the energy balance tree
@@ -499,7 +510,7 @@ class pyeneClass():
                 }
 
         # Initialise energy balance model
-        self.EM.initialise(conf)
+        self.EM.initialise()
 
         # Get number of required network model instances
         NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
