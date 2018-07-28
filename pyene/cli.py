@@ -55,11 +55,11 @@ def _update_config_pyeneN(conf, kwargs):
     # Number and location of pumps
     NoPump = kwargs.pop('pump')
     conf.NM.pumps['Number'] = NoPump
-    conf.NM.pumps['Bus'] = np.zeros(conf.NoPump, dtype=int)
-    conf.NM.pumps['Max'] = np.zeros(conf.NoPump, dtype=float)
-    conf.NM.pumps['Value'] = np.zeros(conf.NoPump, dtype=float)
+    conf.NM.pumps['Bus'] = np.zeros(NoPump, dtype=int)
+    conf.NM.pumps['Max'] = np.zeros(NoPump, dtype=float)
+    conf.NM.pumps['Value'] = np.zeros(NoPump, dtype=float)
     # assume the location of the hydropower plants
-    for x in range(conf.NoPump):
+    for x in range(NoPump):
         conf.NM.pumps['Bus'][x] = x+1
         conf.NM.pumps['Max'][x] = 1
         conf.NM.pumps['Value'][x] = 0.001
@@ -67,30 +67,24 @@ def _update_config_pyeneN(conf, kwargs):
     # Number and location of RES
     NoRES = kwargs.pop('res')
     conf.NM.RES['Number'] = NoRES
-    conf.NM.RES['Bus'] = np.zeros(conf.NoRES, dtype=int)
-    conf.NM.RES['Max'] = np.zeros(conf.NoRES, dtype=float)
-    conf.NM.RES['Cost'] = np.zeros(conf.NoRES, dtype=float)
-    conf.NoRES = NoRES  # Number of RES generators
-    conf.RES = np.zeros(conf.NoRES, dtype=int)
-    conf.RESMax = np.zeros(conf.NoRES, dtype=int)
-    conf.Cost = np.zeros(conf.NoRES, dtype=float)
+    conf.NM.RES['Bus'] = np.zeros(NoRES, dtype=int)
+    conf.NM.RES['Max'] = np.zeros(NoRES, dtype=float)
+    conf.NM.RES['Cost'] = np.zeros(NoRES, dtype=float)
     # assume the location of the hydropower plants
     for x in range(conf.NoRES):
-        conf.RES[x] = x+1
-        conf.Cost[x] = 0
-        conf.RESMax[x] = 10
         conf.NM.RES['Bus'][x] = x+1
         conf.NM.RES['Max'] = 0
         conf.NM.RES['Cost'] = 10
 
-    conf.NoDemProfiles = 2  # Number of demand profiles
-    conf.NoRESProfiles = 2  # Number of RES profiles
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+    conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
+    NM.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
 
+#    conf.Time = NM.settings['NoTime']
     conf.Security = kwargs.pop('sec')
     conf.Losses = kwargs.pop('loss')
     conf.Feasibility = kwargs.pop('feas')
     conf.NetworkFile = kwargs.pop('network')
-    conf.Time = kwargs.pop('time')
     conf.Weights = None
 
     return conf

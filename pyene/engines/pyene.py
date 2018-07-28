@@ -136,11 +136,6 @@ class pyeneClass():
         # Get energy object
         EM = de(conf.EM)
 
-#        # Chose to load data from file  
-#        EM.fRea = True    
-#   
-#        # Initialise  
-#        EM.initialise(conf)  
         # Initialise
         EM.initialise()
 
@@ -520,16 +515,15 @@ class pyeneClass():
         # Add time steps
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
-        self.NM.scenarios['NoDem'] = conf.NoDemProfiles
-        self.NM.scenarios['NoRES'] = conf.NoRESProfiles
-        self.NM.scenarios['Demand'] = np.ones(conf.Time*conf.NoDemProfiles,
-                                              dtype=float)
-        self.NM.settings['NoTime'] = conf.Time
+        self.NM.scenarios['Demand'] = \
+            np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
+                    dtype=float)
 
         # Initialise RES
         if conf.NM.RES['Number'] > 0:
-            self.NM.scenarios['RES'] = np.zeros(conf.NoRESProfiles*conf.Time,
-                                                dtype=float)
+            self.NM.scenarios['RES'] = \
+                np.zeros(self.NM.settings['NoTime']*self.NM.scenarios['NoRES'],
+                         dtype=float)
 
         # Initialise network model
         self.NM.initialise(conf)

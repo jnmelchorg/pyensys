@@ -25,7 +25,8 @@ def test_pyene_Small(conf):
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
     conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
                                 'json', 'ResolutionTreeMonth01.json')
-    conf.Time = 1  # Single period
+#    conf.Time = 1  # Single period 
+    conf.NM.settings['NoTime'] = 1  # Number of time steps
     # Create object
     EN = pe(conf.EN)
     # Initialise with selected configuration
@@ -45,7 +46,8 @@ def test_pyene_SmallHydro(conf):
     conf.NetworkFile = 'case4.json'
     conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
                                 'json', 'ResolutionTreeMonth01.json')
-    conf.Time = 1  # Single period
+#    conf.Time = 1  # Single period 
+    conf.NM.settings['NoTime'] = 1  # Single period
 
     # Adding hydropower plants
     conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
@@ -77,7 +79,8 @@ def test_pyene2pypsa(conf):
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Define number of time spets
-    conf.Time = 1  # Number of time steps
+#    conf.Time = 1  # Number of time steps 
+    conf.NM.settings['NoTime'] = 1  # Single period
     # Hydropower
     conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [1, 2]  # Location (bus) of hydro
@@ -122,7 +125,8 @@ def test_pyene_Curtailment2Hydro(conf):
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
-    conf.Time = 1  # Number of time steps
+#    conf.Time = 1  # Number of time steps 
+    conf.NM.settings['NoTime'] = 1  # Single period
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
@@ -174,7 +178,8 @@ def test_pyene_AllHydro(conf):
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider two time steps
-    conf.Time = 2  # Number of time steps
+#    conf.Time = 2  # Number of time steps
+    conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.Weights = [0.5, 1]  # Add different weights to the time steps
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
@@ -246,7 +251,8 @@ def test_pyene_RESPump(conf):
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
-    conf.Time = 2  # Number of time steps
+#    conf.Time = 2  # Number of time steps 
+    conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.Weights = [0.5, 1]
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
@@ -362,7 +368,8 @@ def test_pyene_SingleLP(conf):
                                     'json', 'TestCase.json')
         conf.NetworkFile = 'case4.json'
         conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-        conf.Time = 24  # Number of time steps
+#        conf.Time = 24  # Number of time steps  
+        conf.NM.settings['NoTime'] = 24  # Number of time steps
         conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
         conf.NM.hydropower['Bus'] = [1, 2, 3]  # Location (bus) of hydro
         conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity

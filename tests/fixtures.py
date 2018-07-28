@@ -41,11 +41,11 @@ def conf():
     conf.Security = []  # List of contingescies to test
     conf.Losses = False  # Model losses
     conf.Feasibility = False  # Add dummy generators
-    conf.Time = 0  # Number of time steps
+    conf.NM.settings['NoTime'] = 0  # Number of time steps
 
     # Scenarios
-    conf.NoDemProfiles = 2  # Number of demand profiles
-    conf.NoRESProfiles = 2  # Number of RES profiles
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+    conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
     conf.Weights = None  # Weights for each time step
 
     return conf
