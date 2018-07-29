@@ -23,9 +23,9 @@ def test_pyene_Small(conf):
     print('test_pyene_Small')
     conf.NetworkFile = 'case4.json'
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                'json', 'ResolutionTreeMonth01.json')
-#    conf.Time = 1  # Single period 
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
+                                            'tests', 'json',
+                                            'ResolutionTreeMonth01.json')
     conf.NM.settings['NoTime'] = 1  # Number of time steps
     # Create object
     EN = pe(conf.EN)
@@ -44,9 +44,9 @@ def test_pyene_Small(conf):
 def test_pyene_SmallHydro(conf):
     print('test_pyene_SmallHydro')
     conf.NetworkFile = 'case4.json'
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                'json', 'ResolutionTreeMonth01.json')
-#    conf.Time = 1  # Single period 
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
+                                            'tests', 'json',
+                                            'ResolutionTreeMonth01.json')
     conf.NM.settings['NoTime'] = 1  # Single period
 
     # Adding hydropower plants
@@ -364,11 +364,11 @@ def test_pyene_SingleLP(conf):
     print('test_pyene_SingleLP')
 
     def UpdateConfig(conf):
-        conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                    'json', 'TestCase.json')
+        conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__),
+                                                '..', 'tests', 'json',
+                                                'TestCase.json')
         conf.NetworkFile = 'case4.json'
         conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-#        conf.Time = 24  # Number of time steps  
         conf.NM.settings['NoTime'] = 24  # Number of time steps
         conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
         conf.NM.hydropower['Bus'] = [1, 2, 3]  # Location (bus) of hydro

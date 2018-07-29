@@ -44,8 +44,8 @@ def cli(conf, **kwargs):
 
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), 'json',
-                                kwargs.pop('tree'))
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
+                                            kwargs.pop('tree'))
 
     return conf
 
@@ -78,7 +78,7 @@ def _update_config_pyeneN(conf, kwargs):
 
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
-    NM.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
+    conf.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
 
 #    conf.Time = NM.settings['NoTime']
     conf.Security = kwargs.pop('sec')

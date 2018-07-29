@@ -33,7 +33,7 @@ class ENEConfig():
     ''' Default consifuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
-        self.fRea = True
+#        self.fRea = True
         self.Penalty = 1000000
 
 
@@ -76,7 +76,7 @@ class pyeneClass():
 
     def _CheckInE(self, EM):
         ''' Print initial assumptions '''
-        if EM.fRea:
+        if EM.settings['File']:
             print('Loading resolution tree from file')
         else:
             print('Predefined resolution tree')
@@ -500,10 +500,8 @@ class pyeneClass():
         self.NM = dn(conf.NM)
 
         # Adding hydro to the energy balance tree
-        self.EM.settings = {
-                'Fix': True,  # Force a specific number of vectors
-                'Vectors': self.NM.hydropower['Number']  # Number of vectors
-                }
+        self.EM.settings['Fix'] = True,  # Force a specific number of vectors
+        self.EM.settings['Vectors'] = self.NM.hydropower['Number']  # Number
 
         # Initialise energy balance model
         self.EM.initialise()

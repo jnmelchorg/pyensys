@@ -7,8 +7,9 @@ import os
 # Single vector energy balance test
 def test_pyeneE_TreeMonth01(conf):
     print('test_pyeneE_TreeMonth01: TreeMonth01.json')
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                'json', 'TreeMonth01.json')
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
+                                            'tests', 'json',
+                                            'TreeMonth01.json')
     EN = pe()
 
     (EM, EModel, results) = EN.ESim(conf)
@@ -21,8 +22,8 @@ def test_pyeneE_TreeMonth01(conf):
 # Multiple vector test
 def test_pyeneE_TreeYear02(conf):
     print('test_pyeneE_TreeYear02: TreeYear02.json')
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                'json', 'TreeYear02.json')
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
+                                            'tests', 'json', 'TreeYear02.json')
     EN = pe()
 
     (EM, EModel, results) = EN.ESim(conf)
@@ -41,8 +42,9 @@ def test_pyeneE_TreeYear02(conf):
 # Consideration of uncertainty
 def test_pyeneE_Uncertainty(conf):
     print('test_pyeneE_Uncertainty: TreeMonth01Unc.json')
-    conf.EM.fRea = os.path.join(os.path.dirname(__file__), '..', 'tests',
-                                'json', 'TreeMonth01Unc.json')
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
+                                            'tests', 'json',
+                                            'TreeMonth01Unc.json')
     EN = pe(conf.EN)
 
     (EM, EModel, results) = EN.ESim(conf)

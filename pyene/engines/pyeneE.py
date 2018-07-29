@@ -21,8 +21,6 @@ import os
 class EConfig:
     ''' Default settings used for this class '''
     def __init__(self):
-        # Read from file
-        self.fRea = None
         # Default time-step and map
         self.data = {}
         # Monthly resolution
@@ -58,6 +56,7 @@ class EConfig:
                 }
         # CONTROL SETTINGS AND OTHER INTERNAL DATA
         self.settings = {
+                'File': None,
                 'Fix': False,  # Force a specific number of vectors
                 'Vectors': NoVec  # Number of vectors
                 }
@@ -438,8 +437,9 @@ class EnergyClass:
     def initialise(self):
         ''' Initialise externally '''
         # Should a file be loaded?
-        if self.fRea is not None:
-            self.data = json.load(open(self.fRea))
+        if self.settings['File'] is not None:
+            print(self.settings['File'])
+            self.data = json.load(open(self.settings['File']))
 
         # Measure the size of the data arrays
         self._Measure()

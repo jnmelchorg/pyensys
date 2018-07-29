@@ -14,8 +14,8 @@ def conf():
     obj = pyeneConfig()
     for pars in obj.__dict__.keys():
         setattr(conf, pars, getattr(obj, pars))
-    conf.EM.fRea = os.path.join(json_directory(), 'ResolutionTreeMonth01.json')
-
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
     conf.NetworkFile = 'case4.json'  # Selected network file
     conf.json = json_directory()  # Location of the json directory
 
