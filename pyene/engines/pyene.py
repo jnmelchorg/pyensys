@@ -494,7 +494,6 @@ class pyeneClass():
     def initialise(self, conf):
         ''' Initialise energy and networks simulator '''
         # Creat objects
-#        self.conf = conf
         self.EM = de(conf.EM)
 
         self.NM = dn(conf.NM)
@@ -518,7 +517,7 @@ class pyeneClass():
                     dtype=float)
 
         # Initialise RES
-        if conf.NM.RES['Number'] > 0:
+        if self.NM.RES['Number'] > 0:
             self.NM.scenarios['RES'] = \
                 np.zeros(self.NM.settings['NoTime']*self.NM.scenarios['NoRES'],
                          dtype=float)
@@ -567,7 +566,7 @@ class pyeneClass():
     def NSim(self, conf):
         ''' Network only optimisation '''
         # Get network object
-        NM = dn()
+        NM = dn(conf.NM)
 
         # Initialise
         NM.initialise(conf)

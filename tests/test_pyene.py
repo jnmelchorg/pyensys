@@ -1,5 +1,5 @@
 """ Test the pyeneE engine. """
-from fixtures import *
+from fixtures import testConfig, json_directory
 from pyene.engines.pyene import pyeneClass as pe
 import numpy as np
 import os
@@ -19,12 +19,12 @@ class _node():
 
 
 # Energy balance and network simulation
-def test_pyene_Small(conf):
+def test_pyene_Small():
     print('test_pyene_Small')
+    conf = testConfig()
     conf.NetworkFile = 'case4.json'
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
-                                            'tests', 'json',
+    conf.EM.settings['File'] = os.path.join(json_directory(),
                                             'ResolutionTreeMonth01.json')
     conf.NM.settings['NoTime'] = 1  # Number of time steps
     # Create object
@@ -41,11 +41,11 @@ def test_pyene_Small(conf):
 
 
 # Adding hydropower
-def test_pyene_SmallHydro(conf):
+def test_pyene_SmallHydro():
     print('test_pyene_SmallHydro')
+    conf = testConfig()
     conf.NetworkFile = 'case4.json'
-    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), '..',
-                                            'tests', 'json',
+    conf.EM.settings['File'] = os.path.join(json_directory(),
                                             'ResolutionTreeMonth01.json')
     conf.NM.settings['NoTime'] = 1  # Single period
 
@@ -72,14 +72,14 @@ def test_pyene_SmallHydro(conf):
 
 
 # Converting to pypsa
-def test_pyene2pypsa(conf):
+def test_pyene2pypsa():
     print('test_pyene2pypsa')
+    conf = testConfig()
     # Selected network file
-    conf.NetworkFile = 'case14.json'
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'case14.json')
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Define number of time spets
-#    conf.Time = 1  # Number of time steps 
     conf.NM.settings['NoTime'] = 1  # Single period
     # Hydropower
     conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
@@ -114,18 +114,18 @@ def test_pyene2pypsa(conf):
 
 
 # Test iteration where hydro covers load curtailment
-def test_pyene_Curtailment2Hydro(conf):
+def test_pyene_Curtailment2Hydro():
     '''
     Identify demand curtailment in a first iteration
     and supply customers with hydropower in another.
     '''
     print('test_pyene_Curtailment2Hydro')
+    conf = testConfig()
     # Selected network file
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
-#    conf.Time = 1  # Number of time steps 
     conf.NM.settings['NoTime'] = 1  # Single period
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
@@ -167,12 +167,13 @@ def test_pyene_Curtailment2Hydro(conf):
 
 
 # Test iteration where hydro covers full demand
-def test_pyene_AllHydro(conf):
+def test_pyene_AllHydro():
     '''
     Get all power generation, replace it with hydro, add surplus
     and make sure that it is not used by the pumps
     '''
     print('test_pyene_AllHydro')
+    conf = testConfig()
     # Selected network file
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
@@ -238,7 +239,7 @@ def test_pyene_AllHydro(conf):
 
 
 # Test use of renewables and pumps
-def test_pyene_RESPump(conf):
+def test_pyene_RESPump():
     '''
     Set case with surplus RES in one period, and curtailment in another
     Add hydro to cover all conventional genertaion, instead part of it will
@@ -246,12 +247,11 @@ def test_pyene_RESPump(conf):
     conventional generation and curtailment
     '''
     print('test_pyene_RESPump')
+    conf = testConfig()
     # Selected network file
     conf.NetworkFile = 'case4.json'
     # Location of the json directory
     conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-    # Consider single time step
-#    conf.Time = 2  # Number of time steps 
     conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.Weights = [0.5, 1]
     # Add hydropower plant
@@ -265,10 +265,6 @@ def test_pyene_RESPump(conf):
     conf.NM.pumps['Max'] = [1000]  # Generation capacity
     conf.NM.pumps['Value'] = [0.001]  # Value/Profit
     # RES generators
-#    conf.NoRES = 1  # Number of RES generators
-#    conf.RES = [3]  # Location (bus) of pumps
-#    conf.RESMax = [100]  # Generation capacity
-#    conf.Cost = [0.0001]  # Costs
     conf.NM.RES['Number'] = 1  # Number of RES generators
     conf.NM.RES['Bus'] = [3]  # Location (bus) of pumps
     conf.NM.RES['Max'] = [100]  # Generation capacity
@@ -355,17 +351,16 @@ def test_pyene_RESPump(conf):
 
 
 # Test dummy integrated LP
-def test_pyene_SingleLP(conf):
+def test_pyene_SingleLP():
     '''
     Assume an external engine couples the pyomo model of pyene with some
     constraints to optimise use of hydropower
     '''
-
     print('test_pyene_SingleLP')
+    conf = testConfig()
 
     def UpdateConfig(conf):
-        conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__),
-                                                '..', 'tests', 'json',
+        conf.EM.settings['File'] = os.path.join(json_directory(),
                                                 'TestCase.json')
         conf.NetworkFile = 'case4.json'
         conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')

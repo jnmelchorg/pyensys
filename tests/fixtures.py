@@ -9,15 +9,12 @@ def json_directory():
 
 
 @pytest.fixture()
-def conf():
-    # Copy attributes
-    obj = pyeneConfig()
-    for pars in obj.__dict__.keys():
-        setattr(conf, pars, getattr(obj, pars))
+def testConfig():
+    '''Dedicated configuration for the tests '''
+    conf = pyeneConfig()
     conf.EM.settings['File'] = os.path.join(json_directory(),
                                             'ResolutionTreeMonth01.json')
-    conf.NetworkFile = 'case4.json'  # Selected network file
-    conf.json = json_directory()  # Location of the json directory
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'case4.json')
 
     # Hydropower
     conf.NM.hydropower['Number'] = 0  # Number of hydropower plants
@@ -41,7 +38,7 @@ def conf():
     conf.Security = []  # List of contingescies to test
     conf.Losses = False  # Model losses
     conf.Feasibility = False  # Add dummy generators
-    conf.NM.settings['NoTime'] = 0  # Number of time steps
+    conf.NM.settings['NoTime'] = 1  # Number of time steps
 
     # Scenarios
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles

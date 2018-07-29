@@ -22,6 +22,7 @@ class NConfig:
     def __init__(self):
         # Basic settings
         self.settings = {
+                'File': None,  # File to be loaded
                 'NoTime': 1,  # Number of time steps
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
@@ -383,7 +384,7 @@ class ENetworkClass:
         self.settings['Feasibility'] = conf.Feasibility
 
         # Read network data
-        self.Read(conf.NetworkFile, conf.json)
+        self.Read()
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
@@ -760,11 +761,10 @@ class ENetworkClass:
                 LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1,
                 Loss_Con2, LLDL, NoFea, LLFea)
 
-    def Read(self, FileName, jsonPath):
+    def Read(self):
         ''' Read input data '''
         # Load file
-        MODEL_JSON = os.path.join(jsonPath, FileName)
-        mpc = json.load(open(MODEL_JSON))
+        mpc = json.load(open(self.settings['File']))
         self.networkE = nx.Graph()
 
         # Adding network attributes
