@@ -15,17 +15,37 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn  # Network component
-from .pyeneE import EnergyClass as de  # Energy balance/aggregation component
+from .pyeneN import ENetworkClass as dn, NConfig  # Network component
+from .pyeneE import EnergyClass as de, EConfig  # Energy component
 import json
 import os
 
 
-class pyeneClass():
+class pyeneConfig():
+    ''' Overall default configuration '''
+    def __init__(self):
+        self.EN = ENEConfig()
+        self.EM = EConfig()
+        self.NM = NConfig()
+
+
+class ENEConfig():
+    ''' Default consifuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
-        self.fRea = True
         self.Penalty = 1000000
+
+
+class pyeneClass():
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = ENEConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _AddPyeneCons(self, EM, NM, mod):
         ''' Model additional variables '''
@@ -55,7 +75,7 @@ class pyeneClass():
 
     def _CheckInE(self, EM):
         ''' Print initial assumptions '''
-        if EM.fRea:
+        if EM.settings['File']:
             print('Loading resolution tree from file')
         else:
             print('Predefined resolution tree')
@@ -113,13 +133,10 @@ class pyeneClass():
     def ESim(self, conf):
         ''' Energy only optimisation '''
         # Get energy object
-        EM = de()
-
-        # Chose to load data from file
-        EM.fRea = True
+        EM = de(conf.EM)
 
         # Initialise
-        EM.initialise(conf)
+        EM.initialise()
 
         # Build LP model
         EModel = self.SingleLP(EM)
@@ -134,370 +151,6 @@ class pyeneClass():
         results = opt.solve(EModel)
 
         return (EM, EModel, results)
-
-    def getPar(self, m):
-        ''' Add pyomo parameters'''
-        m.LLENM = self.LLENM
-
-        return m
-
-    def getSets(self, m):
-        '''Add pyomo sets'''
-        m.sLLEN = range(self.NoLL)
-
-        return m
-
-    def getVars(self, m):
-        ''' Add pyomo variables '''
-        # Converting some parameters to variables
-        del m.WOutFull
-        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
-                         initialize=0.0)
-        return m
-
-    def initialise(self, conf):
-        ''' Initialise energy and networks simulator '''
-        # Creat objects
-        self.conf = conf
-        self.EM = de()
-        self.NM = dn()
-
-        # Adding hydro to the energy balance tree
-        self.EM.settings = {
-                'Fix': True,  # Force a specific number of vectors
-                'Vectors': conf.NoHydro  # Number of vectors
-                }
-
-        # Initialise energy balance model
-        self.EM.initialise(conf)
-
-        # Get number of required network model instances
-        NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
-                self.EM.tree['Time'][self.EM.size['Periods']][0])
-
-        # Add time steps
-        aux = self.EM.size['Scenarios']
-        self.NM.scenarios['Number'] = aux
-        self.NM.scenarios['NoDem'] = conf.NoDemProfiles
-        self.NM.scenarios['NoRES'] = conf.NoRESProfiles
-        self.NM.scenarios['Demand'] = np.ones(conf.Time*conf.NoDemProfiles,
-                                              dtype=float)
-        self.NM.settings['NoTime'] = conf.Time
-
-        # Initialise Hydropower
-        if conf.NoHydro > 0:
-            self.NM.hydropower['Number'] = conf.NoHydro
-            self.NM.hydropower['Bus'] = conf.Hydro
-            self.NM.hydropower['Max'] = conf.HydroMax
-            self.NM.hydropower['Cost'] = conf.HydroCost
-
-        # Initialise Pumps
-        if conf.NoPump > 0:
-            self.NM.pumps['Number'] = conf.NoPump
-            self.NM.pumps['Bus'] = conf.Pump
-            self.NM.pumps['Max'] = conf.PumpMax
-            self.NM.pumps['Value'] = conf.PumpVal
-
-        # Initialise RES
-        if conf.NoRES > 0:
-            self.NM.RES['Number'] = conf.NoRES
-            self.NM.RES['Bus'] = conf.RES
-            self.NM.RES['Max'] = conf.RESMax
-            self.NM.RES['Cost'] = conf.Cost
-            self.NM.scenarios['RES'] = np.zeros(conf.NoRESProfiles*conf.Time,
-                                                dtype=float)
-
-        # Initialise network model
-        self.NM.initialise(conf)
-
-        # Add connections between energy balance and networ models
-        self.NM.connections['set'] = range(NoNM)
-        self.NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
-        # Location of each instance
-        aux = self.NM.networkE.number_of_edges()
-        for xc in self.NM.connections['set']:
-            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
-            self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
-            self.NM.connections['Loss'][xc] = xc*(aux+1)
-            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE
-                                                        ['Number']+1)
-            self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']
-            self.NM.connections['Pump'][xc] = xc*(self.NM.pumps['Number']+1)
-            self.NM.connections['Feasibility'][xc] = xc*self.NM.NoFea
-
-        # Build LL to link the models through hydro consumption
-        self.NoLL = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
-                     self.EM.tree['Time'][self.EM.size['Periods']][0])
-        self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
-        NoGen0 = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
-                  self.NM.RES['Number']+1)
-        for xc in range(self.NoLL):
-            self.LLENM[xc][:] = ([self.EM.tree['Time'][self.EM.size['Periods']]
-                                  [0]+xc, self.NM.connections['Generation']
-                                  [xc]+NoGen0])
-
-        # Taking sets for modelling local objective function
-        self.hGC = self.NM.connections['Cost']
-        self.hDL = self.NM.connections['Pump']
-        self.hFea = self.NM.connections['Feasibility']
-        self.h = self.NM.connections['set']
-
-    def NSim(self, conf):
-        ''' Network only optimisation '''
-        # Get network object
-        NM = dn()
-
-        # Initialise
-        NM.initialise(conf)
-
-        # Build LP model
-        NModel = self.SingleLP(NM)
-
-        #                          Objective function                         #
-        NModel.OF = Objective(rule=NM.OF_rule, sense=minimize)
-
-        # Optimise
-        opt = SolverFactory('glpk')
-
-        # Print results
-        results = opt.solve(NModel)
-
-        return (NM, NModel, results)
-
-    def OF_rule(self, m):
-        ''' Objective function for energy and networkd model'''
-        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
-                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                        self.Penalty for xt in m.sTim) -
-                    sum(self.NM.pumps['Value'][xdl] *
-                        self.NM.networkE.graph['baseMVA'] *
-                        sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
-                            self.NM.scenarios['Weights'][xt]
-                            for xt in m.sTim) for xdl in m.sDL)) *
-                   self.OFaux[xh] for xh in self.h)
-
-    def Print_ENSim(self, mod, EM, NM):
-        ''' Print results '''
-        EM.print(mod)
-        NM.print(mod)
-        print('Water outputs:')
-        for xn in mod.sNodz:
-            for xv in mod.sVec:
-                aux = mod.WOutFull[xn, xv].value
-                print("%8.4f " % aux, end='')
-            print('')
-        print('Water inputs:')
-        if type(mod.WInFull) is np.ndarray:
-            print(mod.WInFull)
-        else:
-            for xn in mod.sNodz:
-                for xv in mod.sVec:
-                    aux = mod.WInFull[xn, xv].value
-                    print("%8.4f " % aux, end='')
-                print('')
-
-    def ReadTimeS(self, FileName):
-        ''' Read time series for demand and RES '''
-        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
-                                  FileName)
-        Profile_Data = json.load(open(MODEL_JSON))
-
-        # Get number of profiles
-        RESTypes = Profile_Data['metadata']['title']
-        NoRESP = len(RESTypes)
-
-        # Search for demand profile
-        if "Demand" in RESTypes:
-            DemandProfiles = Profile_Data['Demand']['Values']
-            BusDem = Profile_Data['Demand']['Bus']
-            LinkDem = Profile_Data['Demand']['Links']
-            NoDemPeriod = len(Profile_Data['Demand']['Period'])
-            RESTypes.remove('Demand')
-            NoRESP -= 1
-        else:
-            DemandProfiles = [1]
-            NoDemPeriod = 1
-            BusDem = 'All'
-            LinkDem = 0
-
-        # Check if there is generation data
-        if NoRESP == 0:
-            # Remove demand data
-            LLRESType = 0
-            LLRESPeriod = 0
-            RESProfs = 0
-        else:
-            # Location of each type of RES generation technology
-            LLRESType = np.zeros((NoRESP, 2), dtype=int)
-            NoRES = -1
-            xt = -1
-            sRes = np.zeros((NoRESP, 3), dtype=int)
-            NoLink = 0
-            for xr in RESTypes:
-                xt += 1
-                # Get number of periods and links
-                sRes[xt][0] = len(Profile_Data[xr]['Period'])
-                sRes[xt][1] = max(Profile_Data[xr]['Links'])
-                sRes[xt][2] = len(Profile_Data[xr]['Bus'])
-                LLRESType[xt][:] = [NoRES+1, NoRES+sRes[xt][0]]
-                NoRES += sRes[xt][0]
-                NoLink += sRes[xt][1]
-
-            # Location of data for each period
-            LLRESPeriod = np.zeros((NoRES+1, 2), dtype=int)
-            RESBus = np.zeros(NoRES, dtype=int)
-            RESLink = np.zeros(NoRES, dtype=int)
-            xL = -1
-            acu = -1
-            for xt in range(NoRESP):
-                for xp in range(sRes[xt][0]):
-                    xL += 1
-                    LLRESPeriod[xL][:] = [acu+1, acu+sRes[xt][1]]
-                    acu += sRes[xt][1]
-
-            # RES genertaion profiles
-            if sRes[0][0]*sRes[0][1] == 1:
-                Nohr = len(Profile_Data[RESTypes[0]]['Values'])
-            else:
-                Nohr = len(Profile_Data[RESTypes[0]]['Values'][0])
-            RESProfs = np.zeros((acu+1, Nohr), dtype=float)
-            acu = [0, 0, 0]
-            xt = -1
-            for xr in RESTypes:
-                xt += 1
-                aux = Profile_Data[xr]['Values']
-                RESProfs[acu[0]:acu[0]+sRes[xt][0]*sRes[xt][1]][:] = aux
-                acu[0] += sRes[xt][0]*sRes[xt][1]
-                for xL in range(sRes[xt][2]):
-                    RESBus[acu[1]] = Profile_Data[xr]['Bus'][xL]
-                    RESLink[acu[1]] = Profile_Data[xr]['Links'][xL]+acu[2]
-                    acu[1] += 1
-                acu[2] += sRes[xt][1]
-
-            return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES,
-                    NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
-                    NoLink, Nohr)
-
-    def run(self, mod):
-        ''' Run integrated pyene model '''
-        # Build pyomo model
-        mod = self.build_Mod(self.EM, self.NM, mod)
-
-        # Run pyomo model
-        (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
-
-        return mod
-
-    def Run_Mod(self, mod, EM, NM):
-        ''' Run pyomo model '''
-        # Finalise model
-        mod = self._AddPyeneCons(EM, NM, mod)
-
-        #                          Objective function                         #
-        self.OFaux = self._Calculate_OFaux(EM, NM)
-
-        mod.OF = Objective(rule=self.OF_rule, sense=minimize)
-
-        # Optimise
-        opt = SolverFactory('glpk')
-        # Print
-        results = opt.solve(mod)
-
-        return (mod, results)
-
-    def set_Demand(self, index, value):
-        ''' Set a demand profile '''
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
-
-        self.NM.scenarios['Demand'][aux1:aux2] = value
-
-    def set_GenCoFlag(self, index, value):
-        ''' Adjust maximum output of generators '''
-        if isinstance(value, bool):
-            if value:
-                # Maximum capacity
-                self.NM.GenMax[index-1] = (self.generationE['Data']['PMAX']
-                                           [index-1]/self.NM.networkE.graph
-                                           ['baseMVA'])
-            else:
-                # Switch off
-                self.NM.GenMax[index-1] = 0
-        else:
-            # Adjust capacity
-            self.NM.GenMax[index-1] = value/self.NM.networkE.graph['baseMVA']
-
-    def set_Hydro(self, index, value):
-        ''' Set kWh of hydro that are available for a single site '''
-        if self.NM.hydropower['Number'] == 1:
-            self.EM.Weight['In'][1] = value
-        else:
-            self.EM.Weight['In'][1][index-1] = value
-
-    def set_HydroPrice(self, index, value):
-        ''' Set kWh of hydro that are available for a single site '''
-        raise NotImplementedError('Water prices not yet enabled')
-        # Adjust self.NM.GenLCst
-
-    def set_LineCapacity(self, index, value, *argv):
-        ''' Adjust maximum capacity of a line '''
-        aux1 = value
-        if 'BR_R' in argv:
-            aux2 = 0
-        elif 'BR_X' in argv:
-            aux2 = 1
-        elif 'BR_B' in argv:
-            aux2 = 2
-        else:
-            aux1 = value/self.NM.networkE.graph['baseMVA']
-            aux2 = 3
-        self.NM.branchData[self.NM.LLESec1[index-1][0]][aux2] = aux1
-
-    def set_PumpPrice(self, index, value):
-        ''' Set value for water pumped '''
-        raise NotImplementedError('Pump prices not yet enabled')
-        # Adjust self.NM.GenLCst
-
-    def set_RES(self, index, value):
-        '''
-        Set PV/Wind profile  - more than one device can be connected to
-        each profile
-        '''
-
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
-
-        self.NM.scenarios['RES'][aux1:aux2] = value
-        xi = 0
-        for xs in range(aux1, aux2):
-            self.NM.scenarios['RES'][xs] = (value[xi] /
-                                            self.NM.networkE.graph['baseMVA'])
-            xi += 1
-
-    def SingleLP(self, ENM):
-        ''' Get mathematical model '''
-        # Define pyomo model
-        mod = ConcreteModel()
-
-        #                                 Sets                                #
-        mod = ENM.getSets(mod)
-
-        #                              Parameters                             #
-        mod = ENM.getPar(mod)
-
-        #                           Model Variables                           #
-        mod = ENM.getVars(mod)
-
-        #                             Constraints                             #
-        mod = ENM.addCon(mod)
-
-        return mod
 
     def get_AllDemand(self, mod, *varg, **kwarg):
         '''Get the demand'''
@@ -562,11 +215,11 @@ class pyeneClass():
         return value
 
     def get_AllLoss(self, mod, *varg, **kwarg):
-        '''Get the demand'''
+        '''Get the total losses'''
         value = 0
         if self.NM.settings['Losses']:
-            for xb in mod.sBranch:
-                value += self.get_Loss(mod, xb+1, **kwarg)
+            for xb in mod.sBra:
+                value += self.get_Loss(mod, xb+1, *varg, **kwarg)
 
         return value
 
@@ -816,3 +469,347 @@ class pyeneClass():
         ''' Return calss to produce RES time series'''
         from .pyeneR import RESprofiles
         return RESprofiles()
+
+    def getPar(self, m):
+        ''' Add pyomo parameters'''
+        m.LLENM = self.LLENM
+
+        return m
+
+    def getSets(self, m):
+        '''Add pyomo sets'''
+        m.sLLEN = range(self.NoLL)
+
+        return m
+
+    def getVars(self, m):
+        ''' Add pyomo variables '''
+        # Converting some parameters to variables
+        del m.WOutFull
+        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
+                         initialize=0.0)
+        return m
+
+    def initialise(self, conf):
+        ''' Initialise energy and networks simulator '''
+        # Creat objects
+        self.EM = de(conf.EM)
+
+        self.NM = dn(conf.NM)
+
+        # Adding hydro to the energy balance tree
+        self.EM.settings['Fix'] = True,  # Force a specific number of vectors
+        self.EM.settings['Vectors'] = self.NM.hydropower['Number']  # Number
+
+        # Initialise energy balance model
+        self.EM.initialise()
+
+        # Get number of required network model instances
+        NoNM = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
+                self.EM.tree['Time'][self.EM.size['Periods']][0])
+
+        # Add time steps
+        aux = self.EM.size['Scenarios']
+        self.NM.scenarios['Number'] = aux
+
+        self.NM.scenarios['Demand'] = \
+            np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
+                    dtype=float)
+
+        # Initialise RES
+        if self.NM.RES['Number'] > 0:
+            self.NM.scenarios['RES'] = \
+                np.zeros(self.NM.settings['NoTime']*self.NM.scenarios['NoRES'],
+                         dtype=float)
+
+        # Initialise network model
+        self.NM.initialise()
+
+        # Add connections between energy balance and networ models
+        self.NM.connections['set'] = range(NoNM)
+        self.NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
+        self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
+        # Location of each instance
+        aux = self.NM.networkE.number_of_edges()
+        for xc in self.NM.connections['set']:
+            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
+            self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
+            self.NM.connections['Loss'][xc] = xc*(aux+1)
+            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE
+                                                        ['Number']+1)
+            self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']
+            self.NM.connections['Pump'][xc] = xc*(self.NM.pumps['Number']+1)
+            self.NM.connections['Feasibility'][xc] = xc*self.NM.NoFea
+
+        # Build LL to link the models through hydro consumption
+        self.NoLL = (1+self.EM.tree['Time'][self.EM.size['Periods']][1] -
+                     self.EM.tree['Time'][self.EM.size['Periods']][0])
+        self.LLENM = np.zeros((self.NoLL, 2), dtype=int)
+        NoGen0 = (self.NM.generationE['Number']-self.NM.hydropower['Number'] -
+                  self.NM.RES['Number']+1)
+        for xc in range(self.NoLL):
+            self.LLENM[xc][:] = ([self.EM.tree['Time'][self.EM.size['Periods']]
+                                  [0]+xc, self.NM.connections['Generation']
+                                  [xc]+NoGen0])
+
+        # Taking sets for modelling local objective function
+        self.hGC = self.NM.connections['Cost']
+        self.hDL = self.NM.connections['Pump']
+        self.hFea = self.NM.connections['Feasibility']
+        self.h = self.NM.connections['set']
+
+    def NSim(self, conf):
+        ''' Network only optimisation '''
+        # Get network object
+        NM = dn(conf.NM)
+
+        # Initialise
+        NM.initialise()
+
+        # Build LP model
+        NModel = self.SingleLP(NM)
+
+        #                          Objective function                         #
+        NModel.OF = Objective(rule=NM.OF_rule, sense=minimize)
+
+        # Optimise
+        opt = SolverFactory('glpk')
+
+        # Print results
+        results = opt.solve(NModel)
+
+        return (NM, NModel, results)
+
+    def OF_rule(self, m):
+        ''' Objective function for energy and networkd model'''
+        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
+                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
+                        self.Penalty for xt in m.sTim) -
+                    sum(self.NM.pumps['Value'][xdl] *
+                        self.NM.networkE.graph['baseMVA'] *
+                        sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
+                            self.NM.scenarios['Weights'][xt]
+                            for xt in m.sTim) for xdl in m.sDL)) *
+                   self.OFaux[xh] for xh in self.h)
+
+    def Print_ENSim(self, mod, EM, NM):
+        ''' Print results '''
+        EM.print(mod)
+        NM.print(mod)
+        print('Water outputs:')
+        for xn in mod.sNodz:
+            for xv in mod.sVec:
+                aux = mod.WOutFull[xn, xv].value
+                print("%8.4f " % aux, end='')
+            print('')
+        print('Water inputs:')
+        if type(mod.WInFull) is np.ndarray:
+            print(mod.WInFull)
+        else:
+            for xn in mod.sNodz:
+                for xv in mod.sVec:
+                    aux = mod.WInFull[xn, xv].value
+                    print("%8.4f " % aux, end='')
+                print('')
+
+    def ReadTimeS(self, FileName):
+        ''' Read time series for demand and RES '''
+        MODEL_JSON = os.path.join(os.path.dirname(__file__), '..', 'json',
+                                  FileName)
+        Profile_Data = json.load(open(MODEL_JSON))
+
+        # Get number of profiles
+        RESTypes = Profile_Data['metadata']['title']
+        NoRESP = len(RESTypes)
+
+        # Search for demand profile
+        if "Demand" in RESTypes:
+            DemandProfiles = Profile_Data['Demand']['Values']
+            BusDem = Profile_Data['Demand']['Bus']
+            LinkDem = Profile_Data['Demand']['Links']
+            NoDemPeriod = len(Profile_Data['Demand']['Period'])
+            RESTypes.remove('Demand')
+            NoRESP -= 1
+        else:
+            DemandProfiles = [1]
+            NoDemPeriod = 1
+            BusDem = 'All'
+            LinkDem = 0
+
+        # Check if there is generation data
+        if NoRESP == 0:
+            # Remove demand data
+            LLRESType = 0
+            LLRESPeriod = 0
+            RESProfs = 0
+        else:
+            # Location of each type of RES generation technology
+            LLRESType = np.zeros((NoRESP, 2), dtype=int)
+            NoRES = -1
+            xt = -1
+            sRes = np.zeros((NoRESP, 3), dtype=int)
+            NoLink = 0
+            for xr in RESTypes:
+                xt += 1
+                # Get number of periods and links
+                sRes[xt][0] = len(Profile_Data[xr]['Period'])
+                sRes[xt][1] = max(Profile_Data[xr]['Links'])
+                sRes[xt][2] = len(Profile_Data[xr]['Bus'])
+                LLRESType[xt][:] = [NoRES+1, NoRES+sRes[xt][0]]
+                NoRES += sRes[xt][0]
+                NoLink += sRes[xt][1]
+
+            # Location of data for each period
+            LLRESPeriod = np.zeros((NoRES+1, 2), dtype=int)
+            RESBus = np.zeros(NoRES, dtype=int)
+            RESLink = np.zeros(NoRES, dtype=int)
+            xL = -1
+            acu = -1
+            for xt in range(NoRESP):
+                for xp in range(sRes[xt][0]):
+                    xL += 1
+                    LLRESPeriod[xL][:] = [acu+1, acu+sRes[xt][1]]
+                    acu += sRes[xt][1]
+
+            # RES genertaion profiles
+            if sRes[0][0]*sRes[0][1] == 1:
+                Nohr = len(Profile_Data[RESTypes[0]]['Values'])
+            else:
+                Nohr = len(Profile_Data[RESTypes[0]]['Values'][0])
+            RESProfs = np.zeros((acu+1, Nohr), dtype=float)
+            acu = [0, 0, 0]
+            xt = -1
+            for xr in RESTypes:
+                xt += 1
+                aux = Profile_Data[xr]['Values']
+                RESProfs[acu[0]:acu[0]+sRes[xt][0]*sRes[xt][1]][:] = aux
+                acu[0] += sRes[xt][0]*sRes[xt][1]
+                for xL in range(sRes[xt][2]):
+                    RESBus[acu[1]] = Profile_Data[xr]['Bus'][xL]
+                    RESLink[acu[1]] = Profile_Data[xr]['Links'][xL]+acu[2]
+                    acu[1] += 1
+                acu[2] += sRes[xt][1]
+
+            return (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES,
+                    NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
+                    NoLink, Nohr)
+
+    def run(self, mod):
+        ''' Run integrated pyene model '''
+        # Build pyomo model
+        mod = self.build_Mod(self.EM, self.NM, mod)
+
+        # Run pyomo model
+        (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
+
+        return mod
+
+    def Run_Mod(self, mod, EM, NM):
+        ''' Run pyomo model '''
+        # Finalise model
+        mod = self._AddPyeneCons(EM, NM, mod)
+
+        #                          Objective function                         #
+        self.OFaux = self._Calculate_OFaux(EM, NM)
+
+        mod.OF = Objective(rule=self.OF_rule, sense=minimize)
+
+        # Optimise
+        opt = SolverFactory('glpk')
+        # Print
+        results = opt.solve(mod)
+
+        return (mod, results)
+
+    def set_Demand(self, index, value):
+        ''' Set a demand profile '''
+        aux1 = (index-1)*self.NM.settings['NoTime']
+        aux2 = index*self.NM.settings['NoTime']
+
+        self.NM.scenarios['Demand'][aux1:aux2] = value
+
+    def set_GenCoFlag(self, index, value):
+        ''' Adjust maximum output of generators '''
+        if isinstance(value, bool):
+            if value:
+                # Maximum capacity
+                self.NM.GenMax[index-1] = (self.generationE['Data']['PMAX']
+                                           [index-1]/self.NM.networkE.graph
+                                           ['baseMVA'])
+            else:
+                # Switch off
+                self.NM.GenMax[index-1] = 0
+        else:
+            # Adjust capacity
+            self.NM.GenMax[index-1] = value/self.NM.networkE.graph['baseMVA']
+
+    def set_Hydro(self, index, value):
+        ''' Set kWh of hydro that are available for a single site '''
+        if self.NM.hydropower['Number'] == 1:
+            self.EM.Weight['In'][1] = value
+        else:
+            self.EM.Weight['In'][1][index-1] = value
+
+    def set_HydroPrice(self, index, value):
+        ''' Set kWh of hydro that are available for a single site '''
+        raise NotImplementedError('Water prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_LineCapacity(self, index, value, *argv):
+        ''' Adjust maximum capacity of a line '''
+        aux1 = value
+        if 'BR_R' in argv:
+            aux2 = 0
+        elif 'BR_X' in argv:
+            aux2 = 1
+        elif 'BR_B' in argv:
+            aux2 = 2
+        else:
+            aux1 = value/self.NM.networkE.graph['baseMVA']
+            aux2 = 3
+        self.NM.branchData[self.NM.LLESec1[index-1][0]][aux2] = aux1
+
+    def set_PumpPrice(self, index, value):
+        ''' Set value for water pumped '''
+        raise NotImplementedError('Pump prices not yet enabled')
+        # Adjust self.NM.GenLCst
+
+    def set_RES(self, index, value):
+        '''
+        Set PV/Wind profile  - more than one device can be connected to
+        each profile
+        '''
+
+        aux1 = (index-1)*self.NM.settings['NoTime']
+        aux2 = index*self.NM.settings['NoTime']
+
+        self.NM.scenarios['RES'][aux1:aux2] = value
+        xi = 0
+        for xs in range(aux1, aux2):
+            self.NM.scenarios['RES'][xs] = (value[xi] /
+                                            self.NM.networkE.graph['baseMVA'])
+            xi += 1
+
+    def SingleLP(self, ENM):
+        ''' Get mathematical model '''
+        # Define pyomo model
+        mod = ConcreteModel()
+
+        #                                 Sets                                #
+        mod = ENM.getSets(mod)
+
+        #                              Parameters                             #
+        mod = ENM.getPar(mod)
+
+        #                           Model Variables                           #
+        mod = ENM.getVars(mod)
+
+        #                             Constraints                             #
+        mod = ENM.addCon(mod)
+
+        return mod

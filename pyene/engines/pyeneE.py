@@ -18,11 +18,9 @@ import json
 import os
 
 
-# Linked lists
-class EnergyClass:
+class EConfig:
+    ''' Default settings used for this class '''
     def __init__(self):
-        # Read from file
-        self.fRea = False
         # Default time-step and map
         self.data = {}
         # Monthly resolution
@@ -58,6 +56,7 @@ class EnergyClass:
                 }
         # CONTROL SETTINGS AND OTHER INTERNAL DATA
         self.settings = {
+                'File': None,
                 'Fix': False,  # Force a specific number of vectors
                 'Vectors': NoVec  # Number of vectors
                 }
@@ -70,6 +69,18 @@ class EnergyClass:
                 'Vectors': [],  # Number of vectors
                 'Nodes': []  # Number of nodes
                 }
+
+
+class EnergyClass:
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = EConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _Connect(self, Unc):
         ''' Produce connectivity matrices '''
@@ -364,41 +375,6 @@ class EnergyClass:
 
         return m
 
-    # Map the scenario tree (recursive function)
-    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
-                dta, Unc, s):
-        xbeforeNew = xbeforeOld
-        x1 = dta[xin-1, 0] - 1
-        while x1 < dta[xin-1, 1]:
-            x1 += 1
-            # Hold node for future nodes
-            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
-            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
-            xbeforeNew = [x1, 0]
-
-            if x1+1 <= s:
-                (LL_TimeNodeBeforeSequence,
-                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
-                                            LL_TimeNodeBeforeSequence, dta,
-                                            Unc, s)
-
-            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
-            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
-            xbeforeNew = [x1, 1]
-
-            # Hold node for deterministic studies
-            if Unc[xlvl-1] == 0:
-                xbeforeOld = xbeforeNew
-
-        return LL_TimeNodeBeforeSequence, xbeforeNew
-
-    def Read(self, FileName, jsonPath):
-        ''' Read input data '''
-        MODEL_JSON = os.path.join(jsonPath, FileName)
-        data = json.load(open(MODEL_JSON))
-
-        return data
-
     def cSoCAggregate_rule(self, m, xL2, xv):
         ''' Aggregating (deterministic case) '''
         return (m.vSoC[m.LLTS2[xL2, 0], 1, xv] ==
@@ -458,18 +434,12 @@ class EnergyClass:
 
         return m
 
-    def initialise(self, conf):
+    def initialise(self):
         ''' Initialise externally '''
-        # Avoid loading file
-        if conf.init:
-            FileName = "NoName"
-        else:
-            FileName = conf.TreeFile
-            self.fRea = True
-
-        # Read input data
-        if self.fRea:
-            self.data = self.Read(FileName, conf.json)
+        # Should a file be loaded?
+        if self.settings['File'] is not None:
+            print(self.settings['File'])
+            self.data = json.load(open(self.settings['File']))
 
         # Measure the size of the data arrays
         self._Measure()
@@ -498,6 +468,34 @@ class EnergyClass:
         self._Parameters(WIn, WOut, Wght)
         self._Link(Unc)
 
+    # Map the scenario tree (recursive function)
+    def Mapping(self, xin, xlvl, xbeforeOld, LL_TimeNodeBeforeSequence,
+                dta, Unc, s):
+        xbeforeNew = xbeforeOld
+        x1 = dta[xin-1, 0] - 1
+        while x1 < dta[xin-1, 1]:
+            x1 += 1
+            # Hold node for future nodes
+            LL_TimeNodeBeforeSequence[x1, 0] = xbeforeOld[0]
+            LL_TimeNodeBeforeSequence[x1, 1] = xbeforeOld[1]
+            xbeforeNew = [x1, 0]
+
+            if x1+1 <= s:
+                (LL_TimeNodeBeforeSequence,
+                 xbeforeNew) = self.Mapping(x1+1, xlvl+1, xbeforeNew,
+                                            LL_TimeNodeBeforeSequence, dta,
+                                            Unc, s)
+
+            LL_TimeNodeBeforeSequence[x1, 2] = xbeforeNew[0]
+            LL_TimeNodeBeforeSequence[x1, 3] = xbeforeNew[1]
+            xbeforeNew = [x1, 1]
+
+            # Hold node for deterministic studies
+            if Unc[xlvl-1] == 0:
+                xbeforeOld = xbeforeNew
+
+        return LL_TimeNodeBeforeSequence, xbeforeNew
+
     def print(self, mod):
         ''' Print results '''
         for xv in mod.sVec:
@@ -506,6 +504,14 @@ class EnergyClass:
                 print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
                       % mod.vSoC[x1, 0, xv].value, ", %10.2f"
                       % mod.vSoC[x1, 1, xv].value, "]")
+
+    def Read(self, FileName, jsonPath):
+        ''' Read input data '''
+        MODEL_JSON = os.path.join(jsonPath, FileName)
+        data = json.load(open(MODEL_JSON))
+
+        return data
+
 
     def OF_rule(self, m):
         ''' Objective function '''

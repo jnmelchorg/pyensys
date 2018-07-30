@@ -2,15 +2,11 @@ import click
 import numpy as np
 import cProfile
 import os
-from .cases import *
+from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyenetest
+from .engines.pyene import pyeneConfig
 
 
-class ConfigClass(object):
-    def __init__(self):
-        self.init = False
-
-
-pass_conf = click.make_pass_decorator(ConfigClass, ensure=True)
+pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 
 
 @click.group()
@@ -22,20 +18,18 @@ pass_conf = click.make_pass_decorator(ConfigClass, ensure=True)
 def cli(conf, **kwargs):
     """Prepare pyene simulation"""
 
-    # Initialisation assumptions
-    conf.init = kwargs.pop('init')
-
     # Assume location, capacity and cost of hydro
-    conf.NoHydro = kwargs.pop('hydro')
-    conf.Hydro = np.zeros(conf.NoHydro, dtype=int)
-    conf.HydroMax = np.zeros(conf.NoHydro, dtype=float)
-    conf.HydroCost = np.zeros(conf.NoHydro, dtype=float)
+    NoHydro = kwargs.pop('hydro')
+    conf.NM.hydropower['Number'] = NoHydro
+    conf.NM.hydropower['Bus'] = np.zeros(NoHydro, dtype=int)
+    conf.NM.hydropower['Max'] = np.zeros(NoHydro, dtype=float)
+    conf.NM.hydropower['Cost'] = np.zeros(NoHydro, dtype=float)
 
     # assume the location of the hydropower plants
-    for x in range(conf.NoHydro):
-        conf.Hydro[x] = x+1
-        conf.HydroMax[x] = 1000
-        conf.HydroCost[x] = 0.01
+    for x in range(NoHydro):
+        conf.NM.hydropower['Bus'][x] = x+1
+        conf.NM.hydropower['Max'][x] = 1000
+        conf.NM.hydropower['Cost'][x] = 0.01
 
     # Add profiler
     if 'profile' in kwargs:
@@ -44,13 +38,11 @@ def cli(conf, **kwargs):
     else:
         profiler = None
 
-    # Get json directory
-    conf.json = os.path.join(os.path.dirname(__file__), 'json')
-
 
 # Update conf based on tree data
 def _update_config_pyeneE(conf, kwargs):
-    conf.TreeFile = kwargs.pop('tree')
+    conf.EM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
+                                            kwargs.pop('tree'))
 
     return conf
 
@@ -58,35 +50,39 @@ def _update_config_pyeneE(conf, kwargs):
 # Update config based on network data
 def _update_config_pyeneN(conf, kwargs):
     # Number and location of pumps
-    conf.NoPump = kwargs.pop('pump')
-    conf.Pump = np.zeros(conf.NoPump, dtype=int)
-    conf.PumpMax = np.zeros(conf.NoPump, dtype=float)
-    conf.PumpVal = np.zeros(conf.NoPump, dtype=float)
+    NoPump = kwargs.pop('pump')
+    conf.NM.pumps['Number'] = NoPump
+    conf.NM.pumps['Bus'] = np.zeros(NoPump, dtype=int)
+    conf.NM.pumps['Max'] = np.zeros(NoPump, dtype=float)
+    conf.NM.pumps['Value'] = np.zeros(NoPump, dtype=float)
     # assume the location of the hydropower plants
-    for x in range(conf.NoPump):
-        conf.Pump[x] = x+1
-        conf.PumpMax[x] = 1
-        conf.PumpVal[x] = 0.001
+    for x in range(NoPump):
+        conf.NM.pumps['Bus'][x] = x+1
+        conf.NM.pumps['Max'][x] = 1
+        conf.NM.pumps['Value'][x] = 0.001
 
-    # Number and location of pumps
-    conf.NoRES = kwargs.pop('res')  # Number of RES generators
-    conf.NoDemProfiles = 2  # Number of demand profiles
-    conf.NoRESProfiles = 2  # Number of RES profiles
-    conf.RES = np.zeros(conf.NoRES, dtype=int)
-    conf.RESMax = np.zeros(conf.NoRES, dtype=int)
-    conf.Cost = np.zeros(conf.NoRES, dtype=float)
+    # Number and location of RES
+    NoRES = kwargs.pop('res')
+    conf.NM.RES['Number'] = NoRES
+    conf.NM.RES['Bus'] = np.zeros(NoRES, dtype=int)
+    conf.NM.RES['Max'] = np.zeros(NoRES, dtype=float)
+    conf.NM.RES['Cost'] = np.zeros(NoRES, dtype=float)
     # assume the location of the hydropower plants
-    for x in range(conf.NoRES):
-        conf.RES[x] = x+1
-        conf.Cost[x] = 0
-        conf.RESMax[x] = 10
+    for x in range(NoRES):
+        conf.NM.RES['Bus'][x] = x+1
+        conf.NM.RES['Max'] = 0
+        conf.NM.RES['Cost'] = 10
 
-    conf.Security = kwargs.pop('sec')
-    conf.Losses = kwargs.pop('loss')
-    conf.Feasibility = kwargs.pop('feas')
-    conf.NetworkFile = kwargs.pop('network')
-    conf.Time = kwargs.pop('time')
-    conf.Weights = None
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+    conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
+    conf.NM.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
+
+    conf.NM.settings['Security'] = kwargs.pop('sec')  # Contingescies to test
+    conf.NM.settings['Losses'] = kwargs.pop('loss')  # Model losses
+    conf.NM.settings['Feasibility'] = kwargs.pop('feas')  # Dummy generators
+    conf.NM.scenarios['Weights'] = None  # Weights for each time step
+    conf.NM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
+                                            kwargs.pop('network'))
 
     return conf
 
@@ -113,11 +109,14 @@ def energy_balance_pyeneE(conf, **kwargs):
               help='Estimate losses')
 @click.option('--feas', default=False, type=bool,
               help='Consider feasibility constratints')
-@click.option('--time', default=0, help='Number of time steps')
+@click.option('--time', default=1, help='Number of time steps')
 @pass_conf
 def network_simulation_pyeneE(conf, **kwargs):
     """Prepare electricity network simulation"""
     conf = _update_config_pyeneN(conf, kwargs)
+    print('\n\nChecking results\n\n')
+    print(conf.NM.settings)
+    print('\n\nDt\n\n')
 
     test_pyeneN(conf)
 

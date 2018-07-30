@@ -14,18 +14,19 @@ import math
 import numpy as np
 import networkx as nx
 import json
-import os
 
 
-class ENetworkClass:
+class NConfig:
+    ''' Default settings used for this class '''
     def __init__(self):
         # Basic settings
         self.settings = {
+                'File': None,  # File to be loaded
                 'NoTime': 1,  # Number of time steps
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 0,  # Size of pieces used for piece-wise estimations
+                'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Generators': None  # Number of conventional generators
                 }
         # Connections
@@ -87,6 +88,18 @@ class ENetworkClass:
                 'Curtailment': True,
                 'Feasibility': True,
                 }
+
+
+class ENetworkClass:
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = NConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def _getLL(self, NoLL, NoDt, DtLL):
         ''' Produce LL while removing the 'next' '''
@@ -361,16 +374,12 @@ class ENetworkClass:
 
         return m
 
-    def initialise(self, conf):
+    def initialise(self):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
-        if conf.Security is not None:
-            self.settings['Security'] = conf.Security
-        self.settings['Losses'] = conf.Losses
-        self.settings['Feasibility'] = conf.Feasibility
 
         # Read network data
-        self.Read(conf.NetworkFile, conf.json)
+        self.Read()
 
         (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
          self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
@@ -401,11 +410,9 @@ class ENetworkClass:
             self.LLTime[xt] = xt-1
 
         # Initialise weights per scenario
-        if conf.Weights is None:
+        if self.scenarios['Weights'] is None:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
-        else:
-            self.scenarios['Weights'] = conf.Weights
 
     def OF_rule(self, m):
         ''' Objective function '''
@@ -538,23 +545,38 @@ class ENetworkClass:
                                        self.generationE['Number'],
                                        self.generationE['Data']['GEN_BUS'])
 
-        # Get number of reqruied piece wise cost constraints
+        # Get size of the required pieces
+        laux = len(self.settings['Pieces'])
+        vaux = self.settings['Pieces']
+        self.settings['Pieces'] = np.zeros(self.generationE['Number'],
+                                           dtype=int)
+        # Set selected value for conventional generators
+        if laux == 1:
+            for xg in range(self.settings['Generators']):
+                self.settings['Pieces'][xg] = vaux[0]
+        # Set selected values for the first set of generators
+        elif laux < self.generationE['Number']:
+            for xg in range(laux):
+                self.settings['Pieces'][xg] = vaux[xg]
+
+        # Get number of variables and differentials required
         pwNo = np.zeros(self.generationE['Number'], dtype=int)
         NoGenC = 0
-        if self.settings['Pieces'] == 0:
-            for xg in range(self.generationE['Number']):
+        for xg in range(self.generationE['Number']):
+            # Linear model - single piece
+            if self.generationE['Costs']['MODEL'][xg] == 1:
+                NoGenC += self.generationE['Costs']['NCOST'][xg]
+            # Quadratic with default settings
+            elif self.settings['Pieces'][xg] == 0:
                 pwNo[xg] = self.generationE['Costs']['NCOST'][xg]
                 NoGenC += pwNo[xg]
-        else:
-            for xg in range(self.generationE['Number']):
-                if self.generationE['Costs']['MODEL'][xg] == 1:
-                    NoGenC += self.generationE['Costs']['NCOST'][xg]
-                elif self.generationE['Costs']['MODEL'][xg] == 2:  # Pol model
+            # Quadratic with bespoke number of pieces
+            elif self.generationE['Costs']['MODEL'][xg] == 2:
                     pwNo[xg] = math.ceil((self.generationE['Data']
                                           ['PMAX'][xg] -
                                           self.generationE['Data']
                                           ['PMIN'][xg]) /
-                                         self.settings['Pieces'])
+                                         self.settings['Pieces'][xg])
                     NoGenC += pwNo[xg]
 
         LLGenC = np.zeros(NoGenC, dtype=int)
@@ -747,11 +769,10 @@ class ENetworkClass:
                 LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1,
                 Loss_Con2, LLDL, NoFea, LLFea)
 
-    def Read(self, FileName, jsonPath):
+    def Read(self):
         ''' Read input data '''
         # Load file
-        MODEL_JSON = os.path.join(jsonPath, FileName)
-        mpc = json.load(open(MODEL_JSON))
+        mpc = json.load(open(self.settings['File']))
         self.networkE = nx.Graph()
 
         # Adding network attributes
@@ -863,8 +884,12 @@ class ENetworkClass:
                     acu += 1
 
         # Default settings for RES profiles
+        # All devices are linked to the same profile
+        if self.scenarios['NoRES'] == 1:
+            self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
+                                                 self.RES['Number'], dtype=int)
         # i.e., each scenario is linked to a profile
-        if self.scenarios['LinksRes'] == 'Default':
+        elif self.scenarios['LinksRes'] == 'Default':
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
                                                  self.RES['Number'], dtype=int)
             acu = self.RES['Number']

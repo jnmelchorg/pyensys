@@ -1,5 +1,5 @@
 """ Test the pyeneE engine. """
-from fixtures import *
+from fixtures import testConfig, json_directory
 from pyene.engines.pyene import pyeneClass as pe
 import numpy as np
 import os
@@ -19,13 +19,15 @@ class _node():
 
 
 # Energy balance and network simulation
-def test_pyene_Small(conf):
+def test_pyene_Small():
     print('test_pyene_Small')
-    conf.NetworkFile = 'case4.json'
-    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.Time = 1  # Single period
+    conf = testConfig()
+#    conf.TreeFile = 'ResolutionTreeMonth01.json'
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+    conf.NM.settings['NoTime'] = 1  # Number of time steps
     # Create object
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialise with selected configuration
     EN.initialise(conf)
     # Run integrated pyene
@@ -38,28 +40,26 @@ def test_pyene_Small(conf):
 
 
 # Adding hydropower
-def test_pyene_SmallHydro(conf):
+def test_pyene_SmallHydro():
     print('test_pyene_SmallHydro')
+    conf = testConfig()
     conf.NetworkFile = 'case4.json'
-    conf.TreeFile = 'ResolutionTreeMonth01.json'
-    conf.Time = 1  # Single period
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+    conf.NM.settings['NoTime'] = 1  # Single period
 
     # Adding hydropower plants
-    conf.NoHydro = 2
-    conf.Hydro = np.zeros(conf.NoHydro, dtype=int)
-    conf.HydroMax = np.zeros(conf.NoHydro, dtype=float)
-    conf.HydroCost = np.zeros(conf.NoHydro, dtype=float)
-    for x in range(conf.NoHydro):
-        conf.Hydro[x] = x+1
-        conf.HydroMax[x] = 100
-        conf.HydroCost[x] = 0.01
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 2]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100, 100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01]  # Costs
 
     # Create object
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialise with selected configuration
     EN.initialise(conf)
     # Add hydro nodes
-    for xh in range(conf.NoHydro):
+    for xh in range(conf.NM.hydropower['Number']):
         EN.set_Hydro(xh+1, 1000)
     # Run integrated pyene
     mod = ConcreteModel()
@@ -71,34 +71,33 @@ def test_pyene_SmallHydro(conf):
 
 
 # Converting to pypsa
-def test_pyene2pypsa(conf):
+def test_pyene2pypsa():
     print('test_pyene2pypsa')
+    conf = testConfig()
     # Selected network file
-    conf.NetworkFile = 'case14.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'case14.json')
     # Define number of time spets
-    conf.Time = 1  # Number of time steps
+    conf.NM.settings['NoTime'] = 1  # Single period
     # Hydropower
-    conf.NoHydro = 2  # Number of hydropower plants
-    conf.Hydro = [1, 2]  # Location (bus) of hydro
-    conf.HydroMax = [100, 100]  # Generation capacity
-    conf.HydroCost = [0.01, 0.01]  # Costs
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 2]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100, 100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01]  # Costs
 
     # Pumps
-    conf.NoPump = 1  # Number of pumps
-    conf.Pump = [3]  # Location (bus) of pumps
-    conf.PumpMax = [1000]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+    conf.NM.pumps['Number'] = 1  # Number of pumps
+    conf.NM.pumps['Bus'] = [3]  # Location (bus) of pumps
+    conf.NM.pumps['Max'] = [1000]  # Generation capacity
+    conf.NM.pumps['Value'] = [0.001]  # Value/Profit
 
     # RES generators
-    conf.NoRES = 3  # Number of RES generators
-    conf.RES = [3, 4, 5]  # Location (bus) of pumps
-    conf.RESMax = [500, 500, 500]  # Generation capacity
-    conf.Cost = [0.0001, 0.0001, 0.0001]  # Costs
+    conf.NM.RES['Number'] = 3  # Number of RES generators
+    conf.NM.RES['Bus'] = [3, 4, 5]  # Location (bus) of pumps
+    conf.NM.RES['Max'] = [500, 500, 500]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.0001, 0.0001, 0.0001]  # Costs
 
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Convert to pypsa
@@ -112,27 +111,24 @@ def test_pyene2pypsa(conf):
 
 
 # Test iteration where hydro covers load curtailment
-def test_pyene_Curtailment2Hydro(conf):
+def test_pyene_Curtailment2Hydro():
     '''
     Identify demand curtailment in a first iteration
     and supply customers with hydropower in another.
     '''
     print('test_pyene_Curtailment2Hydro')
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    conf = testConfig()
     # Consider single time step
-    conf.Time = 1  # Number of time steps
+    conf.NM.settings['NoTime'] = 1  # Single period
     # Add hydropower plant
-    conf.NoHydro = 1  # Number of hydropower plants
-    conf.Hydro = [1]  # Location (bus) of hydro
-    conf.HydroMax = [100]  # Generation capacity
-    conf.HydroCost = [0.01]  # Costs
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [100]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # one generator off
@@ -164,34 +160,30 @@ def test_pyene_Curtailment2Hydro(conf):
 
 
 # Test iteration where hydro covers full demand
-def test_pyene_AllHydro(conf):
+def test_pyene_AllHydro():
     '''
     Get all power generation, replace it with hydro, add surplus
     and make sure that it is not used by the pumps
     '''
     print('test_pyene_AllHydro')
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
+    conf = testConfig()
     # Consider two time steps
-    conf.Time = 2  # Number of time steps
-    conf.Weights = [0.5, 1]  # Add different weights to the time steps
+    conf.NM.settings['NoTime'] = 2  # Number of time steps
+    conf.NM.scenarios['Weights'] = [0.5, 1]  # Add weights to the time steps
     # Add hydropower plant
-    conf.NoHydro = 1  # Number of hydropower plants
-    conf.Hydro = [1]  # Location (bus) of hydro
-    conf.HydroMax = [150]  # Generation capacity
-    conf.HydroCost = [0.01]  # Costs
-
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [150]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     # Pumps
-    conf.NoPump = 1  # Number of pumps
-    conf.Pump = [2]  # Location (bus) of pumps
-    conf.PumpMax = [1000]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+    conf.NM.pumps['Number'] = 1  # Number of pumps
+    conf.NM.pumps['Bus'] = [2]  # Location (bus) of pumps
+    conf.NM.pumps['Max'] = [1000]  # Generation capacity
+    conf.NM.pumps['Value'] = [0.001]  # Value/Profit
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Single demand node (first scenario)
@@ -235,7 +227,7 @@ def test_pyene_AllHydro(conf):
 
 
 # Test use of renewables and pumps
-def test_pyene_RESPump(conf):
+def test_pyene_RESPump():
     '''
     Set case with surplus RES in one period, and curtailment in another
     Add hydro to cover all conventional genertaion, instead part of it will
@@ -243,32 +235,29 @@ def test_pyene_RESPump(conf):
     conventional generation and curtailment
     '''
     print('test_pyene_RESPump')
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-    # Consider single time step
-    conf.Time = 2  # Number of time steps
-    conf.Weights = [0.5, 1]
+    conf = testConfig()
+    conf.NM.settings['NoTime'] = 2  # Number of time steps
+    conf.NM.scenarios['Weights'] = [0.5, 1]
     # Add hydropower plant
-    conf.NoHydro = 1  # Number of hydropower plants
-    conf.Hydro = [1]  # Location (bus) of hydro
-    conf.HydroMax = [500]  # Generation capacity
-    conf.HydroCost = [0.01]  # Costs
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [500]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01]  # Costs
     # Pumps
-    conf.NoPump = 1  # Number of pumps
-    conf.Pump = [2]  # Location (bus) of pumps
-    conf.PumpMax = [100]  # Generation capacity
-    conf.PumpVal = [0.001]  # Value/Profit
+    conf.NM.pumps['Number'] = 1  # Number of pumps
+    conf.NM.pumps['Bus'] = [2]  # Location (bus) of pumps
+    conf.NM.pumps['Max'] = [1000]  # Generation capacity
+    conf.NM.pumps['Value'] = [0.001]  # Value/Profit
     # RES generators
-    conf.NoRES = 1  # Number of RES generators
-    conf.RES = [3]  # Location (bus) of pumps
-    conf.RESMax = [100]  # Generation capacity
-    conf.Cost = [0.0001]  # Costs
+    conf.NM.RES['Number'] = 1  # Number of RES generators
+    conf.NM.RES['Bus'] = [3]  # Location (bus) of pumps
+    conf.NM.RES['Max'] = [100]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.0001]  # Costs
+
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
-    EN = pe()
+    EN = pe(conf.EN)
     # Initialize network model using the selected configuration
     EN.initialise(conf)
     # Single demand node (first scenario)
@@ -286,7 +275,7 @@ def test_pyene_RESPump(conf):
     resInNode.value = [0.5, 1.0]
     resInNode.index = 1
     EN.set_RES(resInNode.index, resInNode.value)
-    # RES profile (first scenario)
+    # RES profile (second scenario)
     resInNode = _node()
     resInNode.value = [0.5, 0.0]
     resInNode.index = 2
@@ -346,32 +335,31 @@ def test_pyene_RESPump(conf):
 
 
 # Test dummy integrated LP
-def test_pyene_SingleLP(conf):
+def test_pyene_SingleLP():
     '''
     Assume an external engine couples the pyomo model of pyene with some
     constraints to optimise use of hydropower
     '''
-
     print('test_pyene_SingleLP')
+    conf = testConfig()
 
     def UpdateConfig(conf):
-        conf.TreeFile = 'TestCase.json'
-        conf.NetworkFile = 'case4.json'
-        conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
-        conf.Time = 24  # Number of time steps
-        conf.NoHydro = 3  # Number of hydropower plants
-        conf.Hydro = [1, 2, 3]  # Location of hydropower plants
-        conf.HydroMax = [1000, 1000, 1000]  # Capacity of hydropower plants
-        conf.HydroCost = [0.01, 0.01,  0.01]  # Cost of water
-        conf.NoPump = 2  # Number of pumps
-        conf.Pump = [1, 2]  # Location of pumps
-        conf.PumpMax = [1, 1]  # Capacity of the pumps
-        conf.PumpVal = [0.001, 0.001]  # Value of pumped water
-        conf.NoRES = 2  # Number of RES generators
-        conf.RESMax = [100, 100]  # Capacity of hydro
-        conf.RES = [1, 2]  # Bus of RES generators
-        conf.Cost = [0, 0]  # Cost of RES
-        conf.Feasibility = True  # Enable curtailment
+        conf.EM.settings['File'] = os.path.join(json_directory(),
+                                                'TestCase.json')
+        conf.NM.settings['NoTime'] = 24  # Number of time steps
+        conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
+        conf.NM.hydropower['Bus'] = [1, 2, 3]  # Location (bus) of hydro
+        conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
+        conf.NM.hydropower['Cost'] = [0.01, 0.01, 0.01]  # Costs
+        conf.NM.pumps['Number'] = 2  # Number of pumps
+        conf.NM.pumps['Bus'] = [1, 2]  # Location (bus) of pumps
+        conf.NM.pumps['Max'] = [1, 1]  # Generation capacity
+        conf.NM.pumps['Value'] = [0.001, 0.001]  # Value/Profit
+        conf.NM.RES['Number'] = 2  # Number of RES generators
+        conf.NM.RES['Bus'] = [1, 2]  # Location (bus) of pumps
+        conf.NM.RES['Max'] = [100, 100]  # Generation capacity
+        conf.NM.RES['Cost'] = [0, 0]  # Costs
+        conf.NM.settings['Feasibility'] = True  # Enable curtailment
 
         return conf
 
@@ -432,7 +420,7 @@ def test_pyene_SingleLP(conf):
     '''                         Second step
     The engine creates a pyene object
     '''
-    EN = pe()
+    EN = pe(conf.EN)
 
     '''                          Third step
     pyene is initialised with a predefined configuration (e.g., from MOEA)
@@ -452,7 +440,7 @@ def test_pyene_SingleLP(conf):
     Redefine hydropower inputs as variables
     '''
     del mod.WInFull
-    if conf.NoHydro > 1:
+    if conf.NM.hydropower['Number'] > 1:
         mod.WInFull = Var(mod.sNodz, mod.sVec, domain=NonNegativeReals,
                           initialize=0.0)
     else:
@@ -465,8 +453,8 @@ def test_pyene_SingleLP(conf):
     '''
     mod.vHydropowerAllowance = Var(mod.sVec, domain=NonNegativeReals,
                                    initialize=0.0)
-    mod.MaxHydro = np.zeros(conf.NoHydro, dtype=float)
-    for xh in range(conf.NoHydro):
+    mod.MaxHydro = np.zeros(conf.NM.hydropower['Number'], dtype=float)
+    for xh in range(conf.NM.hydropower['Number']):
         mod.MaxHydro[xh] = 134000
 
     # Add constraint to limit hydropower allowance
