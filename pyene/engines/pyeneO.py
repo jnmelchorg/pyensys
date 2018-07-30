@@ -42,25 +42,25 @@ class pyeneHDF5Settings():
         curtailment = Float32Col(dflt=1, pos=7)  # short integer
         spill = Float32Col(dflt=1, pos=8)  # short integer
 
-    def SaveSettings(self, fileh, EN, conf, root):
+    def SaveSettings(self, fileh, EN, root):
         HDF5group = fileh.create_group(root, 'Core')
         HDF5table = fileh.create_table(HDF5group, "table",
                                        self.PyeneHDF5Settings)
         HDF5row = HDF5table.row
-        HDF5row['treefile'] = conf.TreeFile
-        HDF5row['networkfile'] = conf.NetworkFile
-        HDF5row['time'] = conf.Time
+        HDF5row['treefile'] = EN.EM.settings['File']
+        HDF5row['networkfile'] = EN.NM.settings['File']
+        HDF5row['time'] = EN.NM.settings['NoTime']
         HDF5row['scenarios'] = EN.NM.scenarios['Number']
-        HDF5row['NoHydro'] = conf.NoHydro
-        HDF5row['NoPump'] = conf.NoPump
-        HDF5row['NoRES'] = conf.NoRES
+        HDF5row['NoHydro'] = EN.NM.hydropower['Number']
+        HDF5row['NoPump'] = EN.NM.pumps['Number']
+        HDF5row['NoRES'] = EN.NM.RES['Number']
         HDF5row.append()
         HDF5table.flush()
 
         HDF5table = fileh.create_table(HDF5group, "Hydpopower_plants",
                                        self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(conf.NoHydro):
+        for xh in range(EN.NM.hydropower['Number']):
             HDF5row['location'] = EN.NM.hydropower['Bus'][xh]
             HDF5row['max'] = EN.NM.hydropower['Max'][xh]
             HDF5row['cost'] = EN.NM.hydropower['Cost'][xh]
@@ -71,7 +71,7 @@ class pyeneHDF5Settings():
         HDF5table = fileh.create_table(HDF5group, "Pumps",
                                        self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(conf.NoPump):
+        for xh in range(EN.NM.pumps['Number']):
             HDF5row['location'] = EN.NM.pumps['Bus'][xh]
             HDF5row['max'] = EN.NM.pumps['Max'][xh]
             HDF5row['cost'] = EN.NM.pumps['Value'][xh]
@@ -81,7 +81,7 @@ class pyeneHDF5Settings():
         HDF5table = fileh.create_table(HDF5group, "RES_generators",
                                        self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(conf.NoRES):
+        for xh in range(EN.NM.RES['Number']):
             HDF5row['location'] = EN.NM.RES['Bus'][xh]
             HDF5row['max'] = EN.NM.RES['Max'][xh]
             HDF5row['cost'] = EN.NM.RES['Cost'][xh]

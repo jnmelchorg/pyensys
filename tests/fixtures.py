@@ -35,14 +35,14 @@ def testConfig():
     conf.NM.RES['Cost'] = []  # Costs
 
     # Network considerations
-    conf.Security = []  # List of contingescies to test
-    conf.Losses = False  # Model losses
-    conf.Feasibility = False  # Add dummy generators
+    conf.NM.settings['Security'] = []  # List of contingescies to test
+    conf.NM.settings['Losses'] = False  # Model losses
+    conf.NM.settings['Feasibility'] = False  # Add dummy generators
+    conf.NM.scenarios['Weights'] = None  # Weights for each time step
     conf.NM.settings['NoTime'] = 1  # Number of time steps
 
     # Scenarios
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
-    conf.Weights = None  # Weights for each time step
 
     return conf

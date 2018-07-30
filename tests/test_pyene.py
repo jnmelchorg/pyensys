@@ -22,7 +22,6 @@ class _node():
 def test_pyene_Small():
     print('test_pyene_Small')
     conf = testConfig()
-    conf.NetworkFile = 'case4.json'
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
     conf.EM.settings['File'] = os.path.join(json_directory(),
                                             'ResolutionTreeMonth01.json')
@@ -77,8 +76,6 @@ def test_pyene2pypsa():
     conf = testConfig()
     # Selected network file
     conf.NM.settings['File'] = os.path.join(json_directory(), 'case14.json')
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Define number of time spets
     conf.NM.settings['NoTime'] = 1  # Single period
     # Hydropower
@@ -121,10 +118,6 @@ def test_pyene_Curtailment2Hydro():
     '''
     print('test_pyene_Curtailment2Hydro')
     conf = testConfig()
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider single time step
     conf.NM.settings['NoTime'] = 1  # Single period
     # Add hydropower plant
@@ -133,7 +126,7 @@ def test_pyene_Curtailment2Hydro():
     conf.NM.hydropower['Max'] = [100]  # Generation capacity
     conf.NM.hydropower['Cost'] = [0.01]  # Costs
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
     EN = pe(conf.EN)
     # Initialize network model using the selected configuration
@@ -174,14 +167,9 @@ def test_pyene_AllHydro():
     '''
     print('test_pyene_AllHydro')
     conf = testConfig()
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     # Consider two time steps
-#    conf.Time = 2  # Number of time steps
     conf.NM.settings['NoTime'] = 2  # Number of time steps
-    conf.Weights = [0.5, 1]  # Add different weights to the time steps
+    conf.NM.scenarios['Weights'] = [0.5, 1]  # Add weights to the time steps
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
@@ -193,7 +181,7 @@ def test_pyene_AllHydro():
     conf.NM.pumps['Max'] = [1000]  # Generation capacity
     conf.NM.pumps['Value'] = [0.001]  # Value/Profit
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
     EN = pe(conf.EN)
     # Initialize network model using the selected configuration
@@ -248,12 +236,8 @@ def test_pyene_RESPump():
     '''
     print('test_pyene_RESPump')
     conf = testConfig()
-    # Selected network file
-    conf.NetworkFile = 'case4.json'
-    # Location of the json directory
-    conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
     conf.NM.settings['NoTime'] = 2  # Number of time steps
-    conf.Weights = [0.5, 1]
+    conf.NM.scenarios['Weights'] = [0.5, 1]
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [1]  # Location (bus) of hydro
@@ -271,7 +255,7 @@ def test_pyene_RESPump():
     conf.NM.RES['Cost'] = [0.0001]  # Costs
 
     # Enable curtailment
-    conf.Feasibility = True
+    conf.NM.settings['Feasibility'] = True
     # Get Pyene model
     EN = pe(conf.EN)
     # Initialize network model using the selected configuration
@@ -362,8 +346,6 @@ def test_pyene_SingleLP():
     def UpdateConfig(conf):
         conf.EM.settings['File'] = os.path.join(json_directory(),
                                                 'TestCase.json')
-        conf.NetworkFile = 'case4.json'
-        conf.json = conf.json = os.path.join(os.path.dirname(__file__), 'json')
         conf.NM.settings['NoTime'] = 24  # Number of time steps
         conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
         conf.NM.hydropower['Bus'] = [1, 2, 3]  # Location (bus) of hydro
@@ -377,7 +359,7 @@ def test_pyene_SingleLP():
         conf.NM.RES['Bus'] = [1, 2]  # Location (bus) of pumps
         conf.NM.RES['Max'] = [100, 100]  # Generation capacity
         conf.NM.RES['Cost'] = [0, 0]  # Costs
-        conf.Feasibility = True  # Enable curtailment
+        conf.NM.settings['Feasibility'] = True  # Enable curtailment
 
         return conf
 

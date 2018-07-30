@@ -2,7 +2,7 @@ import click
 import numpy as np
 import cProfile
 import os
-from .cases import *
+from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyenetest
 from .engines.pyene import pyeneConfig
 
 
@@ -26,7 +26,7 @@ def cli(conf, **kwargs):
     conf.NM.hydropower['Cost'] = np.zeros(NoHydro, dtype=float)
 
     # assume the location of the hydropower plants
-    for x in range(conf.NoHydro):
+    for x in range(NoHydro):
         conf.NM.hydropower['Bus'][x] = x+1
         conf.NM.hydropower['Max'][x] = 1000
         conf.NM.hydropower['Cost'][x] = 0.01
@@ -37,9 +37,6 @@ def cli(conf, **kwargs):
         profiler.enable()
     else:
         profiler = None
-
-    # Get json directory
-    conf.json = os.path.join(os.path.dirname(__file__), 'json')
 
 
 # Update conf based on tree data
@@ -71,21 +68,21 @@ def _update_config_pyeneN(conf, kwargs):
     conf.NM.RES['Max'] = np.zeros(NoRES, dtype=float)
     conf.NM.RES['Cost'] = np.zeros(NoRES, dtype=float)
     # assume the location of the hydropower plants
-    for x in range(conf.NoRES):
+    for x in range(NoRES):
         conf.NM.RES['Bus'][x] = x+1
         conf.NM.RES['Max'] = 0
         conf.NM.RES['Cost'] = 10
 
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
-    conf.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
+    conf.NM.settings['NoTime'] = kwargs.pop('time')  # Time steps per scenario
 
-#    conf.Time = NM.settings['NoTime']
-    conf.Security = kwargs.pop('sec')
-    conf.Losses = kwargs.pop('loss')
-    conf.Feasibility = kwargs.pop('feas')
-    conf.NetworkFile = kwargs.pop('network')
-    conf.Weights = None
+    conf.NM.settings['Security'] = kwargs.pop('sec')  # Contingescies to test
+    conf.NM.settings['Losses'] = kwargs.pop('loss')  # Model losses
+    conf.NM.settings['Feasibility'] = kwargs.pop('feas')  # Dummy generators
+    conf.NM.scenarios['Weights'] = None  # Weights for each time step
+    conf.NM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
+                                            kwargs.pop('network'))
 
     return conf
 
@@ -112,11 +109,14 @@ def energy_balance_pyeneE(conf, **kwargs):
               help='Estimate losses')
 @click.option('--feas', default=False, type=bool,
               help='Consider feasibility constratints')
-@click.option('--time', default=0, help='Number of time steps')
+@click.option('--time', default=1, help='Number of time steps')
 @pass_conf
 def network_simulation_pyeneE(conf, **kwargs):
     """Prepare electricity network simulation"""
     conf = _update_config_pyeneN(conf, kwargs)
+    print('\n\nChecking results\n\n')
+    print(conf.NM.settings)
+    print('\n\nDt\n\n')
 
     test_pyeneN(conf)
 

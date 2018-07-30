@@ -14,7 +14,6 @@ import math
 import numpy as np
 import networkx as nx
 import json
-import os
 
 
 class NConfig:
@@ -375,13 +374,9 @@ class ENetworkClass:
 
         return m
 
-    def initialise(self, conf):
+    def initialise(self):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
-        if conf.Security is not None:
-            self.settings['Security'] = conf.Security
-        self.settings['Losses'] = conf.Losses
-        self.settings['Feasibility'] = conf.Feasibility
 
         # Read network data
         self.Read()
@@ -415,11 +410,9 @@ class ENetworkClass:
             self.LLTime[xt] = xt-1
 
         # Initialise weights per scenario
-        if conf.Weights is None:
+        if self.scenarios['Weights'] is None:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
-        else:
-            self.scenarios['Weights'] = conf.Weights
 
     def OF_rule(self, m):
         ''' Objective function '''
@@ -616,6 +609,14 @@ class ENetworkClass:
                                       yval[xv]) / (xval[xv+1]-xval[xv])
                 GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
             acu += pwNo[xg]
+        
+        print(GenLCst)
+        for x in range(20):
+            print('%.4f %.4f' % (GenLCst[x][0], GenLCst[x][1]))
+            
+        print(pwNo)
+        print()
+        aux[1000]
 
         # Changing to pu
         for xg in range(self.generationE['Number']):

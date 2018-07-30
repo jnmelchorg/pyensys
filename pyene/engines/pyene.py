@@ -33,7 +33,6 @@ class ENEConfig():
     ''' Default consifuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
-#        self.fRea = True
         self.Penalty = 1000000
 
 
@@ -512,6 +511,7 @@ class pyeneClass():
         # Add time steps
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
+
         self.NM.scenarios['Demand'] = \
             np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
                     dtype=float)
@@ -523,7 +523,7 @@ class pyeneClass():
                          dtype=float)
 
         # Initialise network model
-        self.NM.initialise(conf)
+        self.NM.initialise()
 
         # Add connections between energy balance and networ models
         self.NM.connections['set'] = range(NoNM)
@@ -569,7 +569,7 @@ class pyeneClass():
         NM = dn(conf.NM)
 
         # Initialise
-        NM.initialise(conf)
+        NM.initialise()
 
         # Build LP model
         NModel = self.SingleLP(NM)
