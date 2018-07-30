@@ -26,7 +26,7 @@ class NConfig:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
-                'Pieces': 0,  # Size of pieces used for piece-wise estimations
+                'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Generators': None  # Number of conventional generators
                 }
         # Connections
@@ -545,23 +545,38 @@ class ENetworkClass:
                                        self.generationE['Number'],
                                        self.generationE['Data']['GEN_BUS'])
 
-        # Get number of reqruied piece wise cost constraints
+        # Get size of the required pieces
+        laux = len(self.settings['Pieces'])
+        vaux = self.settings['Pieces']
+        self.settings['Pieces'] = np.zeros(self.generationE['Number'],
+                                           dtype=int)
+        # Set selected value for conventional generators
+        if laux == 1:
+            for xg in range(self.settings['Generators']):
+                self.settings['Pieces'][xg] = vaux[0]
+        # Set selected values for the first set of generators
+        elif laux < self.generationE['Number']:
+            for xg in range(laux):
+                self.settings['Pieces'][xg] = vaux[xg]
+
+        # Get number of variables and differentials required
         pwNo = np.zeros(self.generationE['Number'], dtype=int)
         NoGenC = 0
-        if self.settings['Pieces'] == 0:
-            for xg in range(self.generationE['Number']):
+        for xg in range(self.generationE['Number']):
+            # Linear model - single piece
+            if self.generationE['Costs']['MODEL'][xg] == 1:
+                NoGenC += self.generationE['Costs']['NCOST'][xg]
+            # Quadratic with default settings
+            elif self.settings['Pieces'][xg] == 0:
                 pwNo[xg] = self.generationE['Costs']['NCOST'][xg]
                 NoGenC += pwNo[xg]
-        else:
-            for xg in range(self.generationE['Number']):
-                if self.generationE['Costs']['MODEL'][xg] == 1:
-                    NoGenC += self.generationE['Costs']['NCOST'][xg]
-                elif self.generationE['Costs']['MODEL'][xg] == 2:  # Pol model
+            # Quadratic with bespoke number of pieces
+            elif self.generationE['Costs']['MODEL'][xg] == 2:
                     pwNo[xg] = math.ceil((self.generationE['Data']
                                           ['PMAX'][xg] -
                                           self.generationE['Data']
                                           ['PMIN'][xg]) /
-                                         self.settings['Pieces'])
+                                         self.settings['Pieces'][xg])
                     NoGenC += pwNo[xg]
 
         LLGenC = np.zeros(NoGenC, dtype=int)
@@ -609,14 +624,6 @@ class ENetworkClass:
                                       yval[xv]) / (xval[xv+1]-xval[xv])
                 GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
             acu += pwNo[xg]
-        
-        print(GenLCst)
-        for x in range(20):
-            print('%.4f %.4f' % (GenLCst[x][0], GenLCst[x][1]))
-            
-        print(pwNo)
-        print()
-        aux[1000]
 
         # Changing to pu
         for xg in range(self.generationE['Number']):

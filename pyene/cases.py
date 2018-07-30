@@ -186,7 +186,7 @@ def test_pyenetest():
     # Scenarios
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 1  # Number of RES profiles
-    conf.NM.settings['Pieces'] = 100
+    conf.NM.settings['Pieces'] = [1]
 
     # Create object
     EN = pyeneClass(conf.EN)
@@ -203,10 +203,10 @@ def test_pyenetest():
     EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
 
     # Introduce network issues
-#    EN.set_GenCoFlag(2, 500)
-#    EN.set_GenCoFlag(1, False)
-    for xb in range(EN.NM.networkE.number_of_edges()):
-        EN.set_LineCapacity(xb, 50)
+    EN.set_GenCoFlag(1, 450)
+    EN.set_GenCoFlag(2, 450)
+#    for xb in range(EN.NM.networkE.number_of_edges()):
+#        EN.set_LineCapacity(xb, 50)
     EN.set_Hydro(1, 1108.00167264)
 
     # Save simulation settings
