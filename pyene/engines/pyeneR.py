@@ -8,8 +8,8 @@ import numpy as np
 import math
 
 
-class RESprofiles():
-    ''' Produce time series for different RES '''
+class pyeneRConfig():
+    ''' Overall default configuration '''
     def __init__(self):
         '''Inital assumptions'''
 
@@ -34,6 +34,19 @@ class RESprofiles():
         self.wind['Park'] = 0.95  # Wind park efficiency
         self.wind['Model'] = 1  # 1: Linear, 2: Parabolic, 3: Cubic
         self.wind['tower'] = 50  # Height of the turbines
+
+
+class RESprofiles():
+    ''' Produce time series for different RES '''
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = pyeneRConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
 
     def buildPV(self, direct, diffuse):
         ''' Produce PV generation multiplier '''
