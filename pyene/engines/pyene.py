@@ -15,8 +15,8 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn, NConfig  # Network component
-from .pyeneE import EnergyClass as de, EConfig  # Energy component
+from .pyeneN import ENetworkClass as dn  # Network component
+from .pyeneE import EnergyClass as de  # Energy component
 import json
 import os
 
@@ -24,9 +24,14 @@ import os
 class pyeneConfig():
     ''' Overall default configuration '''
     def __init__(self):
-        self.EN = ENEConfig()
-        self.EM = EConfig()
-        self.NM = NConfig()
+        from .pyeneE import pyeneEConfig
+        from .pyeneN import pyeneNConfig
+        from .pyeneR import pyeneRConfig
+
+        self.EN = ENEConfig()  # pyene
+        self.EM = pyeneEConfig()  # pyeneE - Energy
+        self.NM = pyeneNConfig()  # pyeneN - Networks
+        self.RM = pyeneRConfig()  # pyeneR - Renewables
 
 
 class ENEConfig():
@@ -97,7 +102,7 @@ class pyeneClass():
     def addCon(self, m):
         ''' Adding pyomo constraints'''
         # Link water consumption from both models
-        m.EMNM = Constraint(m.sLLEN, m.sVec, rule=self.cEMNM_rule)
+        m.cEMNM = Constraint(m.sLLEN, m.sVec, rule=self.cEMNM_rule)
         # Allow collection of ual values
         m.dual = Suffix(direction=Suffix.IMPORT)
 
@@ -297,7 +302,7 @@ class pyeneClass():
 
     def get_HydroFlag(self, mod, index):
         ''' Get surplus kWh from specific site '''
-        cobject = getattr(mod, 'SoCBalance')
+        cobject = getattr(mod, 'cSoCBalance')
         aux = mod.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = False
@@ -313,7 +318,7 @@ class pyeneClass():
 
     def get_HydroMarginal(self, mod, index):
         ''' Get marginal costs for specific hydropower plant '''
-        cobject = getattr(mod, 'SoCBalance')
+        cobject = getattr(mod, 'cSoCBalance')
         aux = mod.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = 0
@@ -465,10 +470,10 @@ class pyeneClass():
         from .pyeneO import pyeneHDF5Settings
         return pyeneHDF5Settings()
 
-    def getClassRenewables(self):
+    def getClassRenewables(self, obj=None):
         ''' Return calss to produce RES time series'''
         from .pyeneR import RESprofiles
-        return RESprofiles()
+        return RESprofiles(obj)
 
     def getPar(self, m):
         ''' Add pyomo parameters'''
@@ -738,7 +743,7 @@ class pyeneClass():
         if isinstance(value, bool):
             if value:
                 # Maximum capacity
-                self.NM.GenMax[index-1] = (self.generationE['Data']['PMAX']
+                self.NM.GenMax[index-1] = (self.NM.generationE['Data']['PMAX']
                                            [index-1]/self.NM.networkE.graph
                                            ['baseMVA'])
             else:
@@ -746,7 +751,14 @@ class pyeneClass():
                 self.NM.GenMax[index-1] = 0
         else:
             # Adjust capacity
-            self.NM.GenMax[index-1] = value/self.NM.networkE.graph['baseMVA']
+            # TODO: Costs should be recalculated for higher capacities
+            value /= self.NM.networkE.graph['baseMVA']
+            if value > self.NM.generationE['Data']['PMAX'][index-1]:
+                import warnings
+                warnings.warn('Increasing generation capacity is not'
+                              ' supported yet')
+
+            self.NM.GenMax[index-1] = value
 
     def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''

@@ -16,7 +16,7 @@ import networkx as nx
 import json
 
 
-class NConfig:
+class pyeneNConfig:
     ''' Default settings used for this class '''
     def __init__(self):
         # Basic settings
@@ -95,7 +95,7 @@ class ENetworkClass:
         ''' Initialise network class '''
         # Get default values
         if obj is None:
-            obj = NConfig()
+            obj = pyeneNConfig()
 
         # Copy attributes
         for pars in obj.__dict__.keys():
@@ -137,52 +137,52 @@ class ENetworkClass:
     def addCon(self, m):
         ''' Add pyomo constraints '''
         # Reference line flow
-        m.EPow0 = Constraint(m.sTim, m.sCon, rule=self.cEPow0_rule)
+        m.cEPow0 = Constraint(m.sTim, m.sCon, rule=self.cEPow0_rule)
         # Reference generation
-        m.EGen0 = Constraint(m.sTim, m.sCon, rule=self.cEGen0_rule)
+        m.cEGen0 = Constraint(m.sTim, m.sCon, rule=self.cEGen0_rule)
         # Maximum generation
-        m.EGMax = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMax_rule)
+        m.cEGMax = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMax_rule)
         # Minimum generation
-        m.EGMin = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMin_rule)
+        m.cEGMin = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMin_rule)
         # Piece-wise generation costs approximation
-        m.EGenC = Constraint(m.sGenCM, m.sTim, m.sCon, rule=self.cEGenC_rule)
+        m.cEGenC = Constraint(m.sGenCM, m.sTim, m.sCon, rule=self.cEGenC_rule)
         # Branch flows
-        m.EFlow = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFlow_rule)
+        m.cEFlow = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFlow_rule)
         # Branch capacity constraint (positive)
-        m.EFMax = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMax_rule)
+        m.cEFMax = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMax_rule)
         # Branch capacity constraint (negative)
-        m.EFMin = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMin_rule)
+        m.cEFMin = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMin_rule)
         # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
-        m.EBalance = Constraint(m.sBus, m.sTim, m.sSec2, m.sCon,
-                                rule=self.cEBalance_rule)
+        m.cEBalance = Constraint(m.sBus, m.sTim, m.sSec2, m.sCon,
+                                 rule=self.cEBalance_rule)
         # Dinamic load maximum capacity
-        m.DLMax = Constraint(m.sDL, m.sTim, m.sCon, rule=self.cLDMax_rule)
+        m.cDLMax = Constraint(m.sDL, m.sTim, m.sCon, rule=self.cLDMax_rule)
         # Dinamic load initialisation
-        m.DLIni = Constraint(m.sTim, m.sCon, rule=self.cLDIni_rule)
+        m.cDLIni = Constraint(m.sTim, m.sCon, rule=self.cLDIni_rule)
         # Feasibility constraints
-        m.setFea = Constraint(m.sTim, m.sCon, rule=self.csetFea_rule)
+        m.csetFea = Constraint(m.sTim, m.sCon, rule=self.csetFea_rule)
         # Adding piece wise estimation of losses
         if self.settings['Losses']:
-            m.DCLossA = Constraint(m.sBra, m.sLoss,
-                                   m.sTim, m.sCon, rule=self.cDCLossA_rule)
-            m.DCLossB = Constraint(m.sBra, m.sLoss,
-                                   m.sTim, m.sCon, rule=self.cDCLossB_rule)
+            m.cDCLossA = Constraint(m.sBra, m.sLoss,
+                                    m.sTim, m.sCon, rule=self.cDCLossA_rule)
+            m.cDCLossB = Constraint(m.sBra, m.sLoss,
+                                    m.sTim, m.sCon, rule=self.cDCLossB_rule)
         else:
-            m.DCLossNo = Constraint(m.sBra, m.sTim, m.sCon,
-                                    rule=self.cDCLossN_rule)
+            m.cDCLossNo = Constraint(m.sBra, m.sTim, m.sCon,
+                                     rule=self.cDCLossN_rule)
         # Adding RES limits
         if self.RES['Number'] > 0:
-            m.RESMax = Constraint(m.sTim, range(self.RES['Number']),
-                                  m.sCon,
-                                  rule=self.cRESMax_rule)
+            m.cRESMax = Constraint(m.sTim, range(self.RES['Number']),
+                                   m.sCon,
+                                   rule=self.cRESMax_rule)
 
         # Storage
         if self.Storage['Number'] > 0:
-            m.StoreMax = Constraint(m.sSto, m.sTim, m.sCon,
-                                    rule=self.cStoreMax_rule)
-            m.StoreMin = Constraint(m.sSto, m.sTim, m.sCon,
-                                    rule=self.cStoreMin_rule)
-        m.Store0 = Constraint(m.sTim, rule=self.cStore0_rule)
+            m.cStoreMax = Constraint(m.sSto, m.sTim, m.sCon,
+                                     rule=self.cStoreMax_rule)
+            m.cStoreMin = Constraint(m.sSto, m.sTim, m.sCon,
+                                     rule=self.cStoreMin_rule)
+        m.cStore0 = Constraint(m.sTim, rule=self.cStore0_rule)
 
         return m
 
@@ -572,12 +572,12 @@ class ENetworkClass:
                 NoGenC += pwNo[xg]
             # Quadratic with bespoke number of pieces
             elif self.generationE['Costs']['MODEL'][xg] == 2:
-                    pwNo[xg] = math.ceil((self.generationE['Data']
-                                          ['PMAX'][xg] -
-                                          self.generationE['Data']
-                                          ['PMIN'][xg]) /
-                                         self.settings['Pieces'][xg])
-                    NoGenC += pwNo[xg]
+                pwNo[xg] = math.ceil((self.generationE['Data']
+                                      ['PMAX'][xg] -
+                                      self.generationE['Data']
+                                      ['PMIN'][xg]) /
+                                     self.settings['Pieces'][xg])
+                NoGenC += pwNo[xg]
 
         LLGenC = np.zeros(NoGenC, dtype=int)
         GenLCst = np.zeros((NoGenC, 2), dtype=float)

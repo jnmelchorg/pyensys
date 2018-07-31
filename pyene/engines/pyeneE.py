@@ -18,7 +18,7 @@ import json
 import os
 
 
-class EConfig:
+class pyeneEConfig:
     ''' Default settings used for this class '''
     def __init__(self):
         # Default time-step and map
@@ -76,7 +76,7 @@ class EnergyClass:
         ''' Initialise network class '''
         # Get default values
         if obj is None:
-            obj = EConfig()
+            obj = pyeneEConfig()
 
         # Copy attributes
         for pars in obj.__dict__.keys():
@@ -362,16 +362,16 @@ class EnergyClass:
     def addCon(self, m):
         ''' Adding pyomo constraints '''
         # Initialisation conditions
-        m.ZSoC = Constraint(range(2), m.sVec, rule=self.cZSoC_rule)
+        m.cZSoC = Constraint(range(2), m.sVec, rule=self.cZSoC_rule)
         # Balance at different time levels
-        m.SoCBalance = Constraint(m.sNodz, m.sVec, rule=self.cSoCBalance_rule)
+        m.cSoCBalance = Constraint(m.sNodz, m.sVec, rule=self.cSoCBalance_rule)
         # Aggregating (deterministic case)
-        m.SOCAggregate = Constraint(m.sLLTS2, m.sVec,
-                                    rule=self.cSoCAggregate_rule)
+        m.cSOCAggregate = Constraint(m.sLLTS2, m.sVec,
+                                     rule=self.cSoCAggregate_rule)
         # Aggregating (stochastic case)
         if m.FUnc != 0:
-            m.SoCStochastic = Constraint(m.sLLTS3, m.sVec,
-                                         rule=self.cSoCStochastic_rule)
+            m.cSoCStochastic = Constraint(m.sLLTS3, m.sVec,
+                                          rule=self.cSoCStochastic_rule)
 
         return m
 

@@ -11,7 +11,7 @@ from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 
 
-def get_pyene(conf):
+def get_pyene(conf=None):
     """ Get pyene object."""
 
     return pyeneClass(conf)
@@ -152,15 +152,19 @@ def test_pyenetest():
     jsonDirectory1 = os.path.join(os.path.dirname(__file__), 'json')
     jsonDirectory2 = os.path.join(os.path.dirname(__file__), '..', 'tests',
                                   'json')
+    jsonDirectory3 = os.path.join(os.path.dirname(__file__), '..', '..',
+                                  'test-case-integrated', 'fdtc_integrated',
+                                  'json')
     # Example of the contents of conf
     conf = pyeneConfig()
-    conf.EM.settings['File'] = os.path.join(jsonDirectory1,
-                                            'ResolutionTreeMonth01.json')
-    conf.NM.settings['File'] = os.path.join(jsonDirectory1, 'case4.json')
+    conf.EM.settings['File'] = \
+        os.path.join(jsonDirectory3, 'ResolutionTreeMonth01.json')
+    conf.NM.settings['File'] = \
+        os.path.join(jsonDirectory3, 'case4modified.json')
 
     # Hydropower
     conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
-    conf.NM.hydropower['Bus'] = [4, 3, 2]  # Location (bus) of hydro
+    conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
     conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
     conf.NM.hydropower['Cost'] = [0.01, 0.01,  0.01]  # Costs
 
@@ -203,11 +207,11 @@ def test_pyenetest():
     EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
 
     # Introduce network issues
-    EN.set_GenCoFlag(1, 450)
-    EN.set_GenCoFlag(2, 450)
-#    for xb in range(EN.NM.networkE.number_of_edges()):
-#        EN.set_LineCapacity(xb, 50)
-    EN.set_Hydro(1, 1108.00167264)
+#    EN.set_GenCoFlag(1, 450)
+#    EN.set_GenCoFlag(2, 450)
+    for xb in range(EN.NM.networkE.number_of_edges()):
+        EN.set_LineCapacity(xb, 50)
+#    EN.set_Hydro(1, 1108.00167264)
 
     # Save simulation settings
     from tables import open_file
@@ -302,6 +306,7 @@ def test_pyenetest():
 #    
     print('Spill ', EN.get_AllRES(mod))
     print('OF: ', mod.OF.expr())
+    print('OF: ', EN.get_OFparts(mod, [True, True, True, True, True]))
 
 
 
