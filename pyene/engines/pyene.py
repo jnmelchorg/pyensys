@@ -27,11 +27,13 @@ class pyeneConfig():
         from .pyeneE import pyeneEConfig
         from .pyeneN import pyeneNConfig
         from .pyeneR import pyeneRConfig
+        from .pyeneH import pyeneHConfig
 
         self.EN = ENEConfig()  # pyene
         self.EM = pyeneEConfig()  # pyeneE - Energy
         self.NM = pyeneNConfig()  # pyeneN - Networks
         self.RM = pyeneRConfig()  # pyeneR - Renewables
+        self.HM = pyeneHConfig()  # pyeneH - Didrology
 
 
 class ENEConfig():

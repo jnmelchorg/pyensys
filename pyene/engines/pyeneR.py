@@ -2,7 +2,11 @@
 """
 Created on Wed Jul 25 14:19:20 2018
 
-@author: mchihem2
+Pyene Renewable energy sources provides methods to calculate electricity
+generation from different energy resources, currently PV and wind
+
+@author: Dr Eduardo Alejandro Martínez Ceseña
+https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
 import math

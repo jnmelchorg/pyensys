@@ -641,7 +641,7 @@ class ENetworkClass:
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
         LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
         LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
-        # Position of first connection and number of cinnections
+        # Position of first connection and number of connections
         LLN2B2 = np.zeros((self.networkE.number_of_nodes(), 4), dtype=int)
 
         x0 = 0  # Initial position (LLaux)
