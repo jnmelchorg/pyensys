@@ -172,9 +172,9 @@ def test_pyenetest():
     mod.OF = Objective(rule=HM.OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
     results = opt.solve(mod)
-    print(results)
+#    print(results)
     HM.print(mod)
-    
+    print('OF: ', mod.OF.expr())
     
 #    # Example of the contents of conf
 #    conf = pyeneConfig()
