@@ -173,6 +173,7 @@ def test_pyenetest():
     opt = SolverFactory('glpk')
     results = opt.solve(mod)
     print(results)
+    HM.print(mod)
     
     
 #    # Example of the contents of conf

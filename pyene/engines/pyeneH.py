@@ -27,7 +27,7 @@ class pyeneHConfig:
                 'Number': None,  # Connections between nodes
                 'From': [1, 2, 4, 4],  # Node - from
                 'To': [2, 3, 5, 6],  # Node -to
-                'Weights': [1, 1, 0.4, 0.6],  # Links between water flows
+                'Share': [1, 1, 0.4, 0.6],  # Links between water flows
                 'Parts': [],
                 'Length': [1000, 1000, 1000, 1000],  # length (m)
                 'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
@@ -141,6 +141,17 @@ class HydrologyClass:
         # River balance
         m.cHRiverBalance = Constraint(m.sHBra, m.sHTim, m.sHSce,
                                       rule=self.cHRiverBalance_rule)
+        # Sharing water among connected rivers
+        if self.opt['NoShare'] > 0:
+            m.cHWeights = Constraint(m.sHShare, m.sHTim, m.sHSce,
+                                     rule=self.cHWeights_rule)
+
+#        # Nodal balance
+#        m.Test0 = Constraint([0], m.sHTim, m.sHSce, rule=self.cHNodeBalance_rule)
+#        
+#        m.Test1 = Constraint(m.sHTim, rule=self.cTest1_rule)
+#        m.Test2 = Constraint(m.sHTim, rule=self.cTest2_rule)
+#        m.Test3 = Constraint(m.sHTim, rule=self.cTest3_rule)
 
         return m
 
@@ -152,7 +163,6 @@ class HydrologyClass:
         m.pHConInNode = self.connections['InNode']
         m.pHConOutNode = self.connections['OutNode']
         m.pHLLN2B1 = self.connections['LLN2B1']
-        m.pHLLN2B2 = [0, self.rivers['Weights']]
         m.pHLLN2B3 = self.connections['LLN2B3']
         m.pHLLInNode = self.opt['InLL']
         m.pHLLOutNode = self.opt['OutLL']
@@ -161,6 +171,8 @@ class HydrologyClass:
         m.pHFeas = self.opt['Feas']
         m.pHFeasTime = self.opt['FeasTime']
         m.pHPenalty = self.settings['Penalty']
+        m.pHLLShare1 = self.opt['LLShare1']
+        m.pHLLShare2 = self.opt['LLShare2']
 
         return m
 
@@ -172,6 +184,8 @@ class HydrologyClass:
         m.sHTimP = range(self.settings['NoTime']+1)
         m.sHSce = range(self.connections['Number'])
         m.sHInNod = range(self.nodes['OutNumber'])
+        m.sHOutNod = range(self.nodes['OutNumber'])
+        m.sHShare = range(self.opt['NoShare'])
 
         return m
 
@@ -213,15 +227,30 @@ class HydrologyClass:
             m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
 
     def cHNodeBalance_rule(self, m, xn, xt, xh):
-        ''' Constraint on minimum flow upstream '''
+        ''' Nodal balance '''
         return sum(m.vHin[m.pHConInNode[xh]+m.pHLLInNode[xn, 1], xt]
-                   for xn in range(m.pHLLInNode[xn, 0])) + \
-            sum(m.vHdown[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B3[xn, 3]+xd], xt]
-                for xd in range(m.pHLLN2B3[xn, 2])) == \
-            sum(m.vHup[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B3[xn, 1]+xd], xt]
-                for xd in range(m.pHLLN2B3[xn, 0])) +\
+                   for xb in range(m.pHLLInNode[xn, 0])) + \
+            sum(m.vHdown[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B3[xn, 1]+xd], xt]
+                for xd in range(m.pHLLN2B3[xn, 0])) == \
+            sum(m.vHup[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B3[xn, 3]+xd], xt]
+                for xd in range(m.pHLLN2B3[xn, 2])) +\
             sum(m.vHout[m.pHConOutNode[xh]+m.pHLLOutNode[xn, 1], xt]
-                for xn in range(m.pHLLOutNode[xn, 0]))
+                for xb in range(m.pHLLOutNode[xn, 0]))
+
+    def cHWeights_rule(self, m, xw, xt, xh):
+        ''' Sharing water from a node among several rivers '''
+        return m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 0], xt] * \
+            m.pHLLShare2[xw] == \
+            m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 1], xt]
+
+    def cTest1_rule(self, m, xt):
+        return m.vHin[0, xt] == m.vHup[0, xt]
+
+    def cTest2_rule(self, m, xt):
+        return m.vHdown[0, xt] == m.vHup[1, xt]
+
+    def cTest3_rule(self, m, xt):
+        return m.vHdown[1, xt] == m.vHout[0, xt]
 
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
@@ -234,7 +263,7 @@ class HydrologyClass:
         return sum(sum(m.vHout[xn, xt] for xn in m.sHInNod) +
                    sum(m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
                    for xr in m.sHBra)*m.pHPenalty
-                   for xt in m.sHTim) 
+                   for xt in m.sHTim)
 
     def initialise(self):
         ''' Initialise engine '''
@@ -366,18 +395,106 @@ class HydrologyClass:
                         xpos = LLnext[xpos]
                         x0 = x0+1
 
+        # Linked list for nodes sending water to different rivers
+        LLNodWeight = np.zeros(self.nodes['Number'], dtype=int)
+        acu1 = 0
+        self.opt['NoShare'] = 0
+        for xn in range(self.nodes['Number']):
+            if LLN2B3[xn][2] > 1:
+                LLNodWeight[acu1] = xn
+                acu1 += 1
+                self.opt['NoShare'] += LLN2B3[xn][2]-1
+        if acu1 == 0:
+            self.opt['LLShare1'] = []
+            self.opt['LLShare2'] = []
+        else:
+            self.opt['LLShare1'] = np.zeros((self.opt['NoShare'], 2),
+                                            dtype=int)
+            self.opt['LLShare2'] = np.zeros(self.opt['NoShare'], dtype=float)
+            xr = 0
+            for xn in LLNodWeight[0:acu1]:
+                for xb in range(LLN2B3[xn][2]-1):
+                    self.opt['LLShare1'][xr][:] = \
+                        [LLN2B1[LLN2B3[xn][3]+xb], LLN2B1[LLN2B3[xn][3]+xb+1]]
+                    self.opt['LLShare2'][xr] = \
+                        self.rivers['Share'][LLN2B1[LLN2B3[xn][3]+xb+1]] / \
+                        self.rivers['Share'][LLN2B1[LLN2B3[xn][3]+xb]]
+
         self.connections['LLN2B1'] = LLN2B1
         self.connections['LLN2B3'] = LLN2B3
 
+    def print(self, m):
+        ''' Print results '''
+        self.print = {
+                'WIn': True,
+                'WOut': True,
+                'Fup': True,
+                'Fdown': True,
+                'SoC': True,
+                'Feas': True
+                }
+        # Nodal results
+        for xh in m.sHSce:
+            print('\nCASE:', xh)
 
-    def Read(self, FileName, jsonPath):
-        '''Reading hydraulic network from file'''
-        NotImplementedError('self.Read is to be created')
+            if self.print['WIn']:
+                print("\nWater_In_Node=[")
+                for xn in m.sHNod:
+                    for xt in m.sHTim:
+                        if m.pHLLInNode[xn, 0] != 0:
+                            aux = m.vHin[m.pHConInNode[xh] +
+                                         m.pHLLInNode[xn, 1], xt].value
+                        else:
+                            aux = 0
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
 
-#HN = HydrologyClass()
-#HN._Process()
-#print(HN.Opt['QLinear'])
-#
-#x = 0
-#HN.connections['Width'][x] = 150
-#HN.connections['Width'][x] = 150
+            if self.print['WOut']:
+                print("\nWater_Out_Node=[")
+                for xn in m.sHNod:
+                    for xt in m.sHTim:
+                        if m.pHLLOutNode[xn, 0] != 0:
+                            aux = m.vHout[m.pHConOutNode[xh] +
+                                          m.pHLLOutNode[xn, 1], xt].value
+                        else:
+                            aux = 0
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.print['Fup']:
+                print("\nFlow_Upstream=[")
+                for xr in m.sHBra:
+                    for xt in m.sHTim:
+                        aux = m.vHup[m.pHConRiver[xh]+xr, xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.print['Fdown']:
+                print("\nFlow_Downstream=[")
+                for xr in m.sHBra:
+                    for xt in m.sHTim:
+                        aux = m.vHdown[m.pHConRiver[xh]+xr, xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.print['SoC']:
+                print("\nRiver=[")
+                for xr in m.sHBra:
+                    for xt in m.sHTimP:
+                        aux = m.vHSoC[m.pHConRiver[xh]+xr, xt].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.print['Feas']:
+                print("\nFlow_Feasibility=[")
+                for xr in m.sHBra:
+                    for xt in m.sHTim:
+                        aux = m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]].value
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
