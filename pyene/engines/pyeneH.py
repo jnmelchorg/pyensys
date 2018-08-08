@@ -5,10 +5,9 @@ Created on Fri Jun 22 18:44:55 2018
 @author: Dr Eduardo Alejandro Martínez Ceseña
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
-import math
 import numpy as np
 import networkx as nx
-from pyomo.core import Constraint, Var, NonNegativeReals, Reals
+from pyomo.core import Constraint, Var, NonNegativeReals
 
 
 class pyeneHConfig:
@@ -29,7 +28,7 @@ class pyeneHConfig:
                 'From': [1, 2, 4, 4],  # Node - from
                 'To': [2, 3, 5, 6],  # Node -to
                 'Share': [1, 1, 0.4, 0.6],  # Links between water flows
-                'Parts': [],
+                'Parts': [4],
                 'Length': [1000, 1000, 1000, 1000],  # length (m)
                 'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
                 'Width': [200, 200, 200, 200],  # width (m)
@@ -83,6 +82,206 @@ class HydrologyClass:
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
+    def _BuildHNetwork(self):
+        ''' Build network model '''
+        self.networkH = nx.Graph()
+        # Adding nodes
+        aux = min([min(self.rivers['From']), min(self.rivers['To'])])
+        for xn in range(self.nodes['Number']):
+            self.networkH.add_node(aux+xn)
+        # Adding branches
+        for xb in range(self.rivers['Number']):
+            self.networkH.add_edge(self.rivers['From'][xb],
+                                   self.rivers['To'][xb])
+
+        # Map connections between nodes and branches (non-sequential search)
+        NoN2B = self.networkH.number_of_edges()*2  # Number of data points
+        LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
+        LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
+        LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
+        # Position of first connection and number of connections
+        LLN2B2 = np.zeros((self.networkH.number_of_nodes(), 4), dtype=int)
+
+        x0 = 0  # Initial position (LLaux)
+        x1 = 0  # Initial position (branches)
+        for xb in range(self.rivers['Number']):
+            auxNode = [self.rivers['From'][xb]-1,
+                       self.rivers['To'][xb]-1]
+            auxX = [3, 1]
+            for x2 in range(2):
+                # Get next position
+                xpos = LLN2B2[auxNode[x2]][auxX[x2]]
+                # Initialize if the position is available
+                if xpos == 0:
+                    LLN2B2[auxNode[x2]][auxX[x2]] = x0
+                    LLN2B2[auxNode[x2]][auxX[x2]-1] = 1
+                else:  # Search for next available position
+                    while LLnext[xpos] != 0:
+                        xpos = LLnext[xpos]
+                    # Storing data position
+                    LLnext[xpos] = x0
+                    LLN2B2[auxNode[x2]][auxX[x2]-1] = \
+                        LLN2B2[auxNode[x2]][auxX[x2]-1]+1
+                # Storing data point
+                LLaux[x0] = x1
+                x0 += 1
+            x1 += 1
+
+        # Remove the 'next' by arranging the data sequentially
+        x0 = 0  # Position LLN2B1
+        xacu = 0  # Total number of positions addressed so far
+        for x2 in [2, 0]:
+            for xn in range(self.networkH.number_of_nodes()):
+                # Get first branch position for this node
+                xpos = LLN2B2[xn][x2+1]
+                if LLN2B2[xn][x2] != 0:
+                    # Get other positions is available
+                    LLN2B2[xn][x2+1] = xacu
+                    xacu += LLN2B2[xn][x2]
+                    for x3 in range(LLN2B2[xn][x2]):
+                        # Store data sequentially
+                        LLN2B1[x0] = LLaux[xpos]
+                        xpos = LLnext[xpos]
+                        x0 = x0+1
+
+        # Linked list for nodes sending water to different rivers
+        LLNodWeight = np.zeros(self.nodes['Number'], dtype=int)
+        acu1 = 0
+        self.opt['NoShare'] = 0
+        for xn in range(self.nodes['Number']):
+            if LLN2B2[xn][2] > 1:
+                LLNodWeight[acu1] = xn
+                acu1 += 1
+                self.opt['NoShare'] += LLN2B2[xn][2]-1
+        if acu1 == 0:
+            self.opt['LLShare1'] = []
+            self.opt['LLShare2'] = []
+        else:
+            self.opt['LLShare1'] = np.zeros((self.opt['NoShare'], 2),
+                                            dtype=int)
+            self.opt['LLShare2'] = np.zeros(self.opt['NoShare'], dtype=float)
+            xr = 0
+            for xn in LLNodWeight[0:acu1]:
+                for xb in range(LLN2B2[xn][2]-1):
+                    self.opt['LLShare1'][xr][:] = \
+                        [LLN2B1[LLN2B2[xn][3]+xb], LLN2B1[LLN2B2[xn][3]+xb+1]]
+                    self.opt['LLShare2'][xr] = \
+                        self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb+1]] / \
+                        self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb]]
+
+        self.connections['LLN2B1'] = LLN2B1
+        self.connections['LLN2B2'] = LLN2B2
+
+    def _BuildLLScenario(self):
+        ''' Build LL to locate beginning of each scenario '''
+        self.nodes['InNumber'] = len(self.nodes['In'])
+        self.nodes['OutNumber'] = len(self.nodes['Out'])
+        self.connections['set'] = range(self.connections['Number'])
+
+        self.connections['Node'] = np.zeros(self.connections['Number'],
+                                            dtype=int)
+        self.connections['River'] = np.zeros(self.connections['Number'],
+                                             dtype=int)
+        self.connections['InNode'] = np.zeros(self.connections['Number'],
+                                              dtype=int)
+        self.connections['OutNode'] = np.zeros(self.connections['Number'],
+                                               dtype=int)
+        for xh in self.connections['set']:
+            self.connections['Node'][xh] = self.nodes['Number']*xh
+            self.connections['River'][xh] = self.rivers['Number']*xh
+            self.connections['InNode'][xh] = self.nodes['InNumber']*xh
+            self.connections['OutNode'][xh] = self.nodes['OutNumber']*xh
+
+        # Build LL to flag positions of input.output nodes
+        self.opt['InLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
+        self.opt['OutLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
+        for xn in range(self.nodes['InNumber']):
+            self.opt['InLL'][self.nodes['In'][xn]-1][:] = [1, xn]
+        for xn in range(self.nodes['OutNumber']):
+            self.opt['OutLL'][self.nodes['Out'][xn]-1][:] = [1, xn]
+
+        # Add feasibility constraints
+        self.opt['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
+        self.opt['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
+        if self.settings['Feas']:
+            self.opt['FeasNo'] = self.rivers['Number']
+            self.opt['FeasNoTime'] = self.settings['NoTime']
+            for xr in range(self.opt['FeasNo']):
+                self.opt['Feas'][xr] = xr
+            for xt in range(self.opt['FeasNoTime']):
+                self.opt['FeasTime'][xt] = xt
+        else:
+            self.opt['FeasNo'] = 1
+            self.opt['FeasNoTime'] = 1
+
+    def _BuildParts(self):
+        ''' Get number of branches (rivers) and their parts '''
+        self.rivers['Number'] = len(self.rivers['From'])
+        self.nodes['Number'] = max([max(self.rivers['From']),
+                                    max(self.rivers['To'])])
+        if len(self.rivers['Parts']) == 0:
+            # Default value of one
+            self.rivers['Parts'] = np.ones(self.rivers['Number'], dtype=int)
+        elif len(self.rivers['Parts']) == 1:
+            # preselected value
+            aux = self.rivers['Parts'][0]
+            self.rivers['Parts'] = np.zeros(self.rivers['Number'], dtype=int)
+            for xp in range(self.rivers['Number']):
+                self.rivers['Parts'][xp] = aux
+
+        # Create new river buckets
+        Noaux = sum(self.rivers['Parts'])
+        if Noaux > self.rivers['Number']:
+            RiverFrom = np.zeros(Noaux, dtype=int)
+            RiverTo = np.zeros(Noaux, dtype=int)
+            RiverShare = np.ones(Noaux, dtype=float)
+            RiverLength = np.zeros(Noaux, dtype=float)
+            RiverSlope = np.zeros(Noaux, dtype=float)
+            RiverWidth = np.zeros(Noaux, dtype=float)
+            RiverDepthMax = np.zeros(Noaux, dtype=float)
+            RiverDepthMin = np.zeros(Noaux, dtype=float)
+            RiverManning = np.zeros(Noaux, dtype=float)
+
+            xn = self.nodes['Number']
+            xb = 0
+            for xr in range(self.rivers['Number']):
+                auxL = self.rivers['Length'][xr]/self.rivers['Parts'][xr]
+                RiverFrom[xb] = self.rivers['From'][xr]
+                RiverShare[xb] = self.rivers['Share'][xr]
+                RiverLength[xb] = auxL
+                RiverSlope[xb] = self.rivers['Slope'][xr]
+                RiverWidth[xb] = self.rivers['Width'][xr]
+                RiverDepthMax[xb] = self.rivers['DepthMax'][xr]
+                RiverDepthMin[xb] = self.rivers['DepthMin'][xr]
+                RiverManning[xb] = self.rivers['Manning'][xr]
+                if self.rivers['Parts'][xr] > 1:
+                    aux = self.rivers['To'][xr]
+                    for xp in range(self.rivers['Parts'][xr]-1):
+                        xn += 1
+                        RiverTo[xb] = xn
+                        xb += 1
+                        RiverFrom[xb] = xn
+                        RiverLength[xb] = auxL
+                        RiverSlope[xb] = self.rivers['Slope'][xr]
+                        RiverWidth[xb] = self.rivers['Width'][xr]
+                        RiverDepthMax[xb] = self.rivers['DepthMax'][xr]
+                        RiverDepthMin[xb] = self.rivers['DepthMin'][xr]
+                        RiverManning[xb] = self.rivers['Manning'][xr]
+                RiverTo[xb] = self.rivers['To'][xr]
+                xb += 1
+
+            self.nodes['Number'] = xn
+            self.rivers['Number'] = Noaux
+            self.rivers['From'] = RiverFrom
+            self.rivers['To'] = RiverTo
+            self.rivers['Share'] = RiverShare
+            self.rivers['Length'] = RiverLength
+            self.rivers['Slope'] = RiverSlope
+            self.rivers['Width'] = RiverWidth
+            self.rivers['DepthMax'] = RiverDepthMax
+            self.rivers['DepthMin'] = RiverDepthMin
+            self.rivers['Manning'] = RiverManning
+
     def _Process(self):
         '''Process information for the optimisation'''
         s = self.rivers['Slope']
@@ -90,7 +289,6 @@ class HydrologyClass:
         w = self.rivers['Width']
         n = self.rivers['Manning']
         L = self.rivers['Length']
-        P = self.rivers['Parts']
         M = self.settings['M']
         Q = np.zeros((self.rivers['Number'], 2), dtype=float)
         V = np.zeros((self.rivers['Number'], 2), dtype=float)
@@ -103,9 +301,9 @@ class HydrologyClass:
             d = self.rivers[txt1[xm]]
             for xc in range(self.rivers['Number']):
                 Q[xc][xm] = w[xc]*d[xc]**(5/3)*s[xc]**0.5/n[xc]  # Flow
-                V[xc][xm] = (L[xc]/P[xc]*d[xc]*w[xc])/M  # Water volume
+                V[xc][xm] = (L[xc]*d[xc]*w[xc])/M  # Water volume
                 S[xc][xm] = d[xc]**(2/3)*s[xc]**(1/2)/n[xc]  # Water speed
-                D[xc][xm] = min([t*V[xc][xm], L[xc]/P[xc]])  # Distance
+                D[xc][xm] = min([t*V[xc][xm], L[xc]])  # Distance
 
         # Get linear functios for estimating flows
         # Flows as a function of volume
@@ -118,8 +316,8 @@ class HydrologyClass:
             QLinear[xc][1] = Q[xc][1]-QLinear[xc][0]*V[xc][1]
 
             # Time dependent constraints for downstream flows
-            aux1 = (D[xc][0]-0.5*D[xc][0]**2/t/S[xc][0])/L[xc]*P[xc]
-            aux2 = (D[xc][1]-0.5*D[xc][1]**2/t/S[xc][1])/L[xc]*P[xc]
+            aux1 = (D[xc][0]-0.5*D[xc][0]**2/t/S[xc][0])/L[xc]
+            aux2 = (D[xc][1]-0.5*D[xc][1]**2/t/S[xc][1])/L[xc]
 
             # Linear approximation
             FLinear[xc][0] = (Q[xc][0]*aux1+(1-aux1)*Q[xc][1]-Q[xc][1]*aux2 -
@@ -320,159 +518,16 @@ class HydrologyClass:
         ''' Initialise engine '''
 
         # Get number of branches (rivers) and their parts
-        self.rivers['Number'] = len(self.rivers['From'])
-        if len(self.rivers['Parts']) == 0:
-            # Default value of one
-            self.rivers['Parts'] = np.ones(self.rivers['Number'], dtype=int)
-        elif len(self.rivers['Parts']) == 1:
-            # preselected value
-            aux = self.rivers['Parts'][0]
-            self.rivers['Parts'] = np.zeros(self.rivers['Number'], dtype=int)
-            for xp in range(self.rivers['Number']):
-                self.rivers['Parts'][xp] = aux
-
-        # Build LL to connect branches with their parts
-        Noaux = sum(self.rivers['Parts'])
-        self.opt['LL'] = np.ones(Noaux, dtype=int)
-        x = 0
-        for xL in range(Noaux):
-            self.opt['LL'][x] = xL
-            x = x+1
+        self._BuildParts()
 
         # Build LL to locate beginning of each scenario
-        self.nodes['Number'] = max([max(self.rivers['From']),
-                                    max(self.rivers['To'])])
-        self.nodes['InNumber'] = len(self.nodes['In'])
-        self.nodes['OutNumber'] = len(self.nodes['Out'])
-        self.connections['set'] = range(self.connections['Number'])
-
-        self.connections['Node'] = np.zeros(self.connections['Number'],
-                                            dtype=int)
-        self.connections['River'] = np.zeros(self.connections['Number'],
-                                             dtype=int)
-        self.connections['InNode'] = np.zeros(self.connections['Number'],
-                                              dtype=int)
-        self.connections['OutNode'] = np.zeros(self.connections['Number'],
-                                               dtype=int)
-        for xh in self.connections['set']:
-            self.connections['Node'][xh] = self.nodes['Number']*xh
-            self.connections['River'][xh] = self.rivers['Number']*xh
-            self.connections['InNode'][xh] = self.nodes['InNumber']*xh
-            self.connections['OutNode'][xh] = self.nodes['OutNumber']*xh
-
-        # Build LL to flag positions of input.output nodes
-        self.opt['InLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
-        self.opt['OutLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
-        for xn in range(self.nodes['InNumber']):
-            self.opt['InLL'][self.nodes['In'][xn]-1][:] = [1, xn]
-        for xn in range(self.nodes['OutNumber']):
-            self.opt['OutLL'][self.nodes['Out'][xn]-1][:] = [1, xn]
-
-        # Add feasibility constraints
-        self.opt['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
-        self.opt['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
-        if self.settings['Feas']:
-            self.opt['FeasNo'] = self.rivers['Number']
-            self.opt['FeasNoTime'] = self.settings['NoTime']
-            for xr in range(self.opt['FeasNo']):
-                self.opt['Feas'][xr] = xr
-            for xt in range(self.opt['FeasNoTime']):
-                self.opt['FeasTime'][xt] = xt
-        else:
-            self.opt['FeasNo'] = 1
-            self.opt['FeasNoTime'] = 1
+        self._BuildLLScenario()
 
         # Get settings for each branch (part)
         self._Process()
 
         # Build network model
-        self.networkH = nx.Graph()
-        # Adding nodes
-        aux = min([min(self.rivers['From']), min(self.rivers['To'])])
-        for xn in range(self.nodes['Number']):
-            self.networkH.add_node(aux+xn)
-        # Adding branches
-        for xb in range(self.rivers['Number']):
-            self.networkH.add_edge(self.rivers['From'][xb],
-                                   self.rivers['To'][xb])
-
-        # Map connections between nodes and branches (non-sequential search)
-        NoN2B = self.networkH.number_of_edges()*2  # Number of data points
-        LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
-        LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
-        LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
-        # Position of first connection and number of connections
-        LLN2B2 = np.zeros((self.networkH.number_of_nodes(), 4), dtype=int)
-
-        x0 = 0  # Initial position (LLaux)
-        x1 = 0  # Initial position (branches)
-        for xb in range(self.rivers['Number']):
-            auxNode = [self.rivers['From'][xb]-1,
-                       self.rivers['To'][xb]-1]
-            auxX = [3, 1]
-            for x2 in range(2):
-                # Get next position
-                xpos = LLN2B2[auxNode[x2]][auxX[x2]]
-                # Initialize if the position is available
-                if xpos == 0:
-                    LLN2B2[auxNode[x2]][auxX[x2]] = x0
-                    LLN2B2[auxNode[x2]][auxX[x2]-1] = 1
-                else:  # Search for next available position
-                    while LLnext[xpos] != 0:
-                        xpos = LLnext[xpos]
-                    # Storing data position
-                    LLnext[xpos] = x0
-                    LLN2B2[auxNode[x2]][auxX[x2]-1] = \
-                        LLN2B2[auxNode[x2]][auxX[x2]-1]+1
-                # Storing data point
-                LLaux[x0] = x1
-                x0 += 1
-            x1 += 1
-
-        # Remove the 'next' by arranging the data sequentially
-        x0 = 0  # Position LLN2B1
-        xacu = 0  # Total number of positions addressed so far
-        for x2 in [2, 0]:
-            for xn in range(self.networkH.number_of_nodes()):
-                # Get first branch position for this node
-                xpos = LLN2B2[xn][x2+1]
-                if LLN2B2[xn][x2] != 0:
-                    # Get other positions is available
-                    LLN2B2[xn][x2+1] = xacu
-                    xacu += LLN2B2[xn][x2]
-                    for x3 in range(LLN2B2[xn][x2]):
-                        # Store data sequentially
-                        LLN2B1[x0] = LLaux[xpos]
-                        xpos = LLnext[xpos]
-                        x0 = x0+1
-
-        # Linked list for nodes sending water to different rivers
-        LLNodWeight = np.zeros(self.nodes['Number'], dtype=int)
-        acu1 = 0
-        self.opt['NoShare'] = 0
-        for xn in range(self.nodes['Number']):
-            if LLN2B2[xn][2] > 1:
-                LLNodWeight[acu1] = xn
-                acu1 += 1
-                self.opt['NoShare'] += LLN2B2[xn][2]-1
-        if acu1 == 0:
-            self.opt['LLShare1'] = []
-            self.opt['LLShare2'] = []
-        else:
-            self.opt['LLShare1'] = np.zeros((self.opt['NoShare'], 2),
-                                            dtype=int)
-            self.opt['LLShare2'] = np.zeros(self.opt['NoShare'], dtype=float)
-            xr = 0
-            for xn in LLNodWeight[0:acu1]:
-                for xb in range(LLN2B2[xn][2]-1):
-                    self.opt['LLShare1'][xr][:] = \
-                        [LLN2B1[LLN2B2[xn][3]+xb], LLN2B1[LLN2B2[xn][3]+xb+1]]
-                    self.opt['LLShare2'][xr] = \
-                        self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb+1]] / \
-                        self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb]]
-
-        self.connections['LLN2B1'] = LLN2B1
-        self.connections['LLN2B2'] = LLN2B2
+        self._BuildHNetwork()
 
         # List to connect the water available in the river at different times
         # e.g., volume at the end and beginning of scenario are the same
@@ -501,8 +556,6 @@ class HydrologyClass:
 
         self.opt['SoCLinks'] = SoCLinks
         self.opt['NoSoCLinks'] = NoSoCLinks
-
-        
 
     def print(self, m):
         ''' Print results '''
