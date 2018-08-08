@@ -111,19 +111,28 @@ class HydrologyClass:
         # Flows as a function of volume
         QLinear = np.zeros((self.rivers['Number'], 2), dtype=float)
         # Output flows as a function of input flows
-        FLinear = np.zeros((self.rivers['Number'], 2), dtype=float)
+        FLinear = np.zeros((self.rivers['Number'], 4), dtype=float)
         for xc in range(self.rivers['Number']):
             # Assigning linear approximation
             QLinear[xc][0] = (Q[xc][0]-Q[xc][1])/(V[xc][0]-V[xc][1])
             QLinear[xc][1] = Q[xc][1]-QLinear[xc][0]*V[xc][1]
 
-            # TODO Use time dependent constraints
+            # Time dependent constraints for downstream flows
             aux1 = (D[xc][0]-0.5*D[xc][0]**2/t/S[xc][0])/L[xc]*P[xc]
             aux2 = (D[xc][1]-0.5*D[xc][1]**2/t/S[xc][1])/L[xc]*P[xc]
+            FLinear[xc][0] = (Q[xc][0]*aux1+(1-aux1)*Q[xc][1]-Q[xc][1]*aux2 -
+                              (1-aux2)*Q[xc][1])/(Q[xc][0]-Q[xc][1])
+            FLinear[xc][1] = Q[xc][0]*aux1+(1-aux1)*Q[xc][1] - \
+                FLinear[xc][0]*Q[xc][0]
+            FLinear[xc][2] = (Q[xc][0]*aux1+(1-aux1)*Q[xc][0]-Q[xc][1]*aux2 -
+                              (1-aux2)*Q[xc][0])/(Q[xc][0]-Q[xc][1])
+            FLinear[xc][3] = Q[xc][0]*aux1+(1-aux1)*Q[xc][0] - \
+                FLinear[xc][2]*Q[xc][0]
 
         self.opt['Qmax'] = Q[:, 0]
         self.opt['Qmin'] = Q[:, 1]
         self.opt['QLinear'] = QLinear
+        self.opt['FLinear'] = FLinear
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
@@ -156,12 +165,11 @@ class HydrologyClass:
         if self.opt['NoSoCLinks'] > 0:
             m.cHSoCLink = Constraint(m.sHNoSoCLinks, m.sHBra,
                                      rule=self.cHSoCLink_rule)
-#        # Nodal balance
-#        m.Test0 = Constraint([0], m.sHTim, m.sHSce, rule=self.cHNodeBalance_rule)
-#        
-#        m.Test1 = Constraint(m.sHTim, rule=self.cTest1_rule)
-#        m.Test2 = Constraint(m.sHTim, rule=self.cTest2_rule)
-#        m.Test3 = Constraint(m.sHTim, rule=self.cTest3_rule)
+        # Time dependent constraints on downstream flows
+        m.cHQmaxTime = Constraint(m.sHBra, m.sHTim, m.sHSce,
+                                  rule=self.cHQmaxTime_rule)
+        m.cHQminTime = Constraint(m.sHBra, m.sHTim, m.sHSce,
+                                  rule=self.cHQminTime_rule)
 
         return m
 
@@ -185,8 +193,10 @@ class HydrologyClass:
 
         m.pHQLinear = self.opt['QLinear']
         m.pHDeltaT = self.settings['seconds']/self.settings['M']
-        
+
         m.pHSoCLinks = self.opt['SoCLinks']
+
+        m.pHFLinear = self.opt['FLinear']
 
         return m
 
@@ -209,7 +219,6 @@ class HydrologyClass:
         auxr = range(self.connections['Number']*self.rivers['Number'])
         auxin = range(self.connections['Number']*self.nodes['InNumber'])
         auxout = range(self.connections['Number']*self.nodes['OutNumber'])
-
         m.vHSoC = Var(auxr, m.sHTimP, domain=NonNegativeReals)
         m.vHup = Var(auxr, m.sHTim, domain=NonNegativeReals)
         m.vHdown = Var(auxr, m.sHTim, domain=NonNegativeReals)
@@ -231,6 +240,12 @@ class HydrologyClass:
         return m.vHdown[m.pHConRiver[xh]+xr, xt] <= m.pHOptQmax[xr] + \
             m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
 
+    def cHQmaxTime_rule(self, m, xr, xt, xh):
+        ''' Time dependent constraint on maximum downstream flows '''
+        return m.vHdown[m.pHConRiver[xh]+xr, xt] <= m.pHFLinear[xr][2] * \
+            m.vHup[m.pHConRiver[xh]+xr, xt]+m.pHFLinear[xr][3] + \
+            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
+
     def cHQmaxUp_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHup[m.pHConRiver[xh]+xr, xt] <= m.pHOptQmax[xr] + \
@@ -239,6 +254,12 @@ class HydrologyClass:
     def cHQminDown_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow downstream'''
         return m.vHdown[m.pHConRiver[xh]+xr, xt] >= m.pHOptQmin[xr] - \
+            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
+
+    def cHQminTime_rule(self, m, xr, xt, xh):
+        ''' Time dependent constraint on minimum downstream flows '''
+        return m.vHdown[m.pHConRiver[xh]+xr, xt] >= m.pHFLinear[xr][0] * \
+            m.vHup[m.pHConRiver[xh]+xr, xt]+m.pHFLinear[xr][1] - \
             m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
 
     def cHQminUp_rule(self, m, xr, xt, xh):
@@ -262,15 +283,6 @@ class HydrologyClass:
         return m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 0], xt] * \
             m.pHLLShare2[xw] == \
             m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 1], xt]
-
-    def cTest1_rule(self, m, xt):
-        return m.vHin[0, xt] == m.vHup[0, xt]
-
-    def cTest2_rule(self, m, xt):
-        return m.vHdown[0, xt] == m.vHup[1, xt]
-
-    def cTest3_rule(self, m, xt):
-        return m.vHdown[1, xt] == m.vHout[0, xt]
 
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
@@ -476,6 +488,8 @@ class HydrologyClass:
 
         self.opt['SoCLinks'] = SoCLinks
         self.opt['NoSoCLinks'] = NoSoCLinks
+
+        
 
     def print(self, m):
         ''' Print results '''
