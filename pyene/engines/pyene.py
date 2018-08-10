@@ -156,7 +156,7 @@ class pyeneClass():
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
                 sum(m.vGen[m.LLENM[xL][1]+xv, xt] *
-                    self.NM.scenarios['Weights'][xt] for xt in m.sTim))
+                    self.NM.scenarios['Weights'][xt] for xt in m.sNTim))
 
     def ESim(self, conf):
         ''' Energy only optimisation '''
@@ -417,12 +417,12 @@ class pyeneClass():
                              self.NM.networkE.graph['baseMVA'] *
                              sum(m.vDL[self.hDL[xh]+xdl+1, xt].value *
                                  self.NM.scenarios['Weights'][xt]
-                                 for xt in auxtime) for xdl in m.sDL) *
+                                 for xt in auxtime) for xdl in m.sNDL) *
                          auxOF[xh] for xh in auxscens)
 
         if auxFlags[4]:  # Curtailment
             value += sum(sum(sum(m.vFea[self.hFea[xh]+xf, xt].value for xf
-                                 in m.sFea)*self.Penalty for xt in auxtime) *
+                                 in m.sNFea)*self.Penalty for xt in auxtime) *
                          auxOF[xh] for xh in auxscens)
 
         return value
@@ -465,11 +465,11 @@ class pyeneClass():
         if 'times' in kwarg:
             auxtime = kwarg.pop('times')
         else:
-            auxtime = m.sTim
+            auxtime = m.sNTim
 
         # Remove weights
         if 'snapshot' in varg:
-            auxweight = np.ones(len(m.sTim), dtype=int)
+            auxweight = np.ones(len(m.sNTim), dtype=int)
             auxOF = np.ones(len(self.h), dtype=int)
         else:
             auxweight = self.NM.scenarios['Weights']
@@ -617,14 +617,14 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networkd model'''
-        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sGen) +
-                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sFea) *
-                        self.Penalty for xt in m.sTim) -
+        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sNGen) +
+                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sNFea) *
+                        self.Penalty for xt in m.sNTim) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
                         sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
                             self.NM.scenarios['Weights'][xt]
-                            for xt in m.sTim) for xdl in m.sDL)) *
+                            for xt in m.sNTim) for xdl in m.sNDL)) *
                    self.OFaux[xh] for xh in self.h)
 
     def Print_ENSim(self, m, EM, NM):

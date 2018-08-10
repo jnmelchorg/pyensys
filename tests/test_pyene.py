@@ -404,13 +404,13 @@ def test_pyene_SingleLP():
     def OF_rule(m):
         ''' Combined objective function '''
         return (m.WaterValue*sum(m.WInFull[1, xv] for xv in m.sVec) +
-                sum((sum(sum(m.vGCost[m.OFhGC[xh]+xg, xt] for xg in m.sGen) +
-                         sum(m.vFea[m.OFFea[xh]+xf, xt] for xf in m.sFea) *
-                         m.OFpenalty for xt in m.sTim) -
+                sum((sum(sum(m.vGCost[m.OFhGC[xh]+xg, xt] for xg in m.sNGen) +
+                         sum(m.vFea[m.OFFea[xh]+xf, xt] for xf in m.sNFea) *
+                         m.OFpenalty for xt in m.sNTim) -
                      sum(m.OFpumps[xdl]*m.base *
                          sum(m.vDL[m.OFhDL[xh]+xdl+1, xt] *
                              m.OFweights[xt]
-                             for xt in m.sTim) for xdl in m.sDL)) *
+                             for xt in m.sNTim) for xdl in m.sNDL)) *
                     m.OFaux[xh] for xh in m.OFh))
     '''                         First step
     Assume an external engine creates the pyomo model
