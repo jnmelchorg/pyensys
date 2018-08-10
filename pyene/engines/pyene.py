@@ -55,16 +55,16 @@ class pyeneClass():
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
-    def _AddPyeneCons(self, EM, NM, mod):
+    def _AddPyeneCons(self, EM, NM, m):
         ''' Model additional variables '''
-        mod = self.addVars(mod)
+        m = self.addVars(m)
 
         #                             Constraints                             #
-        mod = EM.addCon(mod)
-        mod = NM.addCon(mod)
-        mod = self.addCon(mod)
+        m = EM.addCon(m)
+        m = NM.addCon(m)
+        m = self.addCon(m)
 
-        return mod
+        return m
 
     def _Calculate_OFaux(self, EM, NM):
         WghtAgg = 0+EM.Weight['Node']
@@ -131,25 +131,25 @@ class pyeneClass():
                          initialize=0.0)
         return m
 
-    def build_Mod(self, EM, NM, mod):
+    def build_Mod(self, EM, NM, m):
         ''' Build pyomo model '''
         # Declare pyomo model
 
         #                                 Sets                                #
-        mod = EM.addSets(mod)
-        mod = NM.addSets(mod)
-        mod = self.addSets(mod)
+        m = EM.addSets(m)
+        m = NM.addSets(m)
+        m = self.addSets(m)
 
         #                           Model Variables                           #
-        mod = EM.addVars(mod)
-        mod = NM.addVars(mod)
+        m = EM.addVars(m)
+        m = NM.addVars(m)
 
         #                              Parameters                             #
-        mod = EM.addPar(mod)
-        mod = NM.addPar(mod)
-        mod = self.addPar(mod)
+        m = EM.addPar(m)
+        m = NM.addPar(m)
+        m = self.addPar(m)
 
-        return mod
+        return m
 
     def cEMNM_rule(self, m, xL, xv):
         ''' Water use depends on the electricity system '''
@@ -180,7 +180,7 @@ class pyeneClass():
 
         return (EM, EModel, results)
 
-    def get_AllDemand(self, mod, *varg, **kwarg):
+    def get_AllDemand(self, m, *varg, **kwarg):
         '''Get the demand'''
         # Specify buses
         if 'buses' in kwarg:
@@ -190,11 +190,11 @@ class pyeneClass():
 
         value = 0
         for xn in auxbuses:
-            value += self.get_Demand(mod, xn+1, *varg, **kwarg)
+            value += self.get_Demand(m, xn+1, *varg, **kwarg)
 
         return value
 
-    def get_AllDemandCurtailment(self, mod, *varg, **kwarg):
+    def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
         # Specify buses
         if 'buses' in kwarg:
@@ -205,11 +205,11 @@ class pyeneClass():
         value = 0
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
-                value += self.get_DemandCurtailment(mod, xn+1, *varg, **kwarg)
+                value += self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
 
         return value
 
-    def get_AllGeneration(self, mod, *varg, **kwarg):
+    def get_AllGeneration(self, m, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
         if 'All' in varg:
             aux = range(1, self.NM.generationE['Number']+1)
@@ -230,47 +230,47 @@ class pyeneClass():
 
         value = 0
         for xn in aux:
-            value += self.get_Generation(mod, xn, *varg, **kwarg)
+            value += self.get_Generation(m, xn, *varg, **kwarg)
 
         return value
 
-    def get_AllHydro(self, mod):
+    def get_AllHydro(self, m):
         ''' Get surplus kWh from all hydropower plants '''
         value = 0
         for xi in range(self.EM.settings['Vectors']):
-            value += mod.WOutFull[1, xi].value
+            value += m.WOutFull[1, xi].value
 
         return value
 
-    def get_AllLoss(self, mod, *varg, **kwarg):
+    def get_AllLoss(self, m, *varg, **kwarg):
         '''Get the total losses'''
         value = 0
         if self.NM.settings['Losses']:
-            for xb in mod.sBra:
-                value += self.get_Loss(mod, xb+1, *varg, **kwarg)
+            for xb in m.sBra:
+                value += self.get_Loss(m, xb+1, *varg, **kwarg)
 
         return value
 
-    def get_AllPumps(self, mod, *varg, **kwarg):
+    def get_AllPumps(self, m, *varg, **kwarg):
         ''' Get kWh consumed by all pumps '''
         value = 0
         for xp in range(self.NM.pumps['Number']):
-            value += self.get_Pump(mod, xp+1, *varg, **kwarg)
+            value += self.get_Pump(m, xp+1, *varg, **kwarg)
 
         return value
 
-    def get_AllRES(self, mod, *varg, **kwarg):
+    def get_AllRES(self, m, *varg, **kwarg):
         ''' Total RES spilled for the whole period '''
         value = 0
         for xr in range(self.NM.RES['Number']):
-            value += self.get_RES(mod, xr+1, *varg, **kwarg)
+            value += self.get_RES(m, xr+1, *varg, **kwarg)
 
         return value
 
-    def get_Demand(self, mod, bus, *varg, **kwarg):
+    def get_Demand(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         xb = bus-1
@@ -284,53 +284,53 @@ class pyeneClass():
 
         return value
 
-    def get_DemandCurtailment(self, mod, bus, *varg, **kwarg):
+    def get_DemandCurtailment(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         if self.NM.settings['Feasibility']:
             for xh in auxscens:
                 acu = 0
                 for xt in auxtime:
-                    acu += (mod.vFea[self.hFea[xh]+bus, xt].value *
+                    acu += (m.vFea[self.hFea[xh]+bus, xt].value *
                             auxweight[xt])
                 value += acu*auxOF[xh]
             value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_Generation(self, mod, index, *varg, **kwarg):
+    def get_Generation(self, m, index, *varg, **kwarg):
         ''' Get kWh for a single generator '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (mod.vGen[self.NM.connections['Generation']
-                                 [xh]+index, xt].value*auxweight[xt])
+                acu += (m.vGen[self.NM.connections['Generation']
+                               [xh]+index, xt].value*auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_Hydro(self, mod, index):
+    def get_Hydro(self, m, index):
         ''' Get surplus kWh from specific site '''
-        HydroValue = mod.WOutFull[1, index-1].value
+        HydroValue = m.WOutFull[1, index-1].value
 
         return HydroValue
 
-    def get_HydroFlag(self, mod, index):
+    def get_HydroFlag(self, m, index):
         ''' Get surplus kWh from specific site '''
-        cobject = getattr(mod, 'cSoCBalance')
-        aux = mod.dual.get(cobject[1, index-1])
+        cobject = getattr(m, 'cSoCBalance')
+        aux = m.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = False
         else:
-            aux2 = -1*int(mod.dual.get(cobject[1, index-1]))
+            aux2 = -1*int(m.dual.get(cobject[1, index-1]))
             aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
             if aux2 > aux3:
                 HydroValue = True
@@ -339,56 +339,56 @@ class pyeneClass():
 
         return HydroValue
 
-    def get_HydroMarginal(self, mod, index):
+    def get_HydroMarginal(self, m, index):
         ''' Get marginal costs for specific hydropower plant '''
-        cobject = getattr(mod, 'cSoCBalance')
-        aux = mod.dual.get(cobject[1, index-1])
+        cobject = getattr(m, 'cSoCBalance')
+        aux = m.dual.get(cobject[1, index-1])
         if aux is None:
             HydroValue = 0
         else:
-            HydroValue = -1*int(mod.dual.get(cobject[1, index-1]))
+            HydroValue = -1*int(m.dual.get(cobject[1, index-1]))
 
         return HydroValue
 
-    def get_Loss(self, mod, xb, *varg, **kwarg):
+    def get_Loss(self, m, xb, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (mod.vLoss[self.NM.connections['Loss']
-                                  [xh]+xb, xt].value)*auxweight[xt]
+                acu += (m.vLoss[self.NM.connections['Loss']
+                                [xh]+xb, xt].value)*auxweight[xt]
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_MeanHydroMarginal(self, mod):
+    def get_MeanHydroMarginal(self, m):
         value = 0
         for xi in range(self.EM.settings['Vectors']):
-            value += self.get_HydroMarginal(mod, xi+1)
+            value += self.get_HydroMarginal(m, xi+1)
         return value/self.EM.settings['Vectors']
 
-    def get_NetDemand(self, mod, auxFlags, *varg, **kwarg):
+    def get_NetDemand(self, m, auxFlags, *varg, **kwarg):
         ''' Get MWh consumed by pumps, loads, losses '''
         value = 0
         if auxFlags[0]:  # Demand
-            value += self.get_AllDemand(mod, *varg, **kwarg)
+            value += self.get_AllDemand(m, *varg, **kwarg)
 
         if auxFlags[1]:  # Pumps
-            value += self.get_AllPumps(mod, *varg, **kwarg)
+            value += self.get_AllPumps(m, *varg, **kwarg)
 
         if auxFlags[2]:  # Loss
-            value += self.get_AllLoss(mod, *varg, **kwarg)
+            value += self.get_AllLoss(m, *varg, **kwarg)
 
         if auxFlags[3]:  # Curtailment
-            value += self.get_AllDemandCurtailment(mod, *varg, **kwarg)
+            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)
 
         if auxFlags[4]:  # Spill
-            value += self.get_AllRES(mod, *varg, **kwarg)
+            value += self.get_AllRES(m, *varg, **kwarg)
 
         return value
 
@@ -427,24 +427,24 @@ class pyeneClass():
 
         return value
 
-    def get_Pump(self, mod, index, *varg, **kwarg):
+    def get_Pump(self, m, index, *varg, **kwarg):
         ''' Get kWh consumed by a specific pump '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
         value = 0
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (mod.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
+                acu += (m.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_RES(self, mod, index, *varg, **kwarg):
+    def get_RES(self, m, index, *varg, **kwarg):
         ''' Spilled kWh of RES for the whole period'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(mod, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         xg = index-1
         value = 0
@@ -453,23 +453,23 @@ class pyeneClass():
             for xt in auxtime:
                 acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
                          [self.NM.resScenario[xg][xh][1]+xt] -
-                         mod.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                         m.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
                         auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
         return value
 
-    def get_timeAndScenario(self, mod, *varg, **kwarg):
+    def get_timeAndScenario(self, m, *varg, **kwarg):
         # Specify times
         if 'times' in kwarg:
             auxtime = kwarg.pop('times')
         else:
-            auxtime = mod.sTim
+            auxtime = m.sTim
 
         # Remove weights
         if 'snapshot' in varg:
-            auxweight = np.ones(len(mod.sTim), dtype=int)
+            auxweight = np.ones(len(m.sTim), dtype=int)
             auxOF = np.ones(len(self.h), dtype=int)
         else:
             auxweight = self.NM.scenarios['Weights']
@@ -627,23 +627,23 @@ class pyeneClass():
                             for xt in m.sTim) for xdl in m.sDL)) *
                    self.OFaux[xh] for xh in self.h)
 
-    def Print_ENSim(self, mod, EM, NM):
+    def Print_ENSim(self, m, EM, NM):
         ''' Print results '''
-        EM.print(mod)
-        NM.print(mod)
+        EM.print(m)
+        NM.print(m)
         print('Water outputs:')
-        for xn in mod.sNodz:
-            for xv in mod.sVec:
-                aux = mod.WOutFull[xn, xv].value
+        for xn in m.sNodz:
+            for xv in m.sVec:
+                aux = m.WOutFull[xn, xv].value
                 print("%8.4f " % aux, end='')
             print('')
         print('Water inputs:')
-        if type(mod.WInFull) is np.ndarray:
-            print(mod.WInFull)
+        if type(m.WInFull) is np.ndarray:
+            print(m.WInFull)
         else:
-            for xn in mod.sNodz:
-                for xv in mod.sVec:
-                    aux = mod.WInFull[xn, xv].value
+            for xn in m.sNodz:
+                for xv in m.sVec:
+                    aux = m.WInFull[xn, xv].value
                     print("%8.4f " % aux, end='')
                 print('')
 
@@ -729,32 +729,32 @@ class pyeneClass():
                     NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
                     NoLink, Nohr)
 
-    def run(self, mod):
+    def run(self, m):
         ''' Run integrated pyene model '''
         # Build pyomo model
-        mod = self.build_Mod(self.EM, self.NM, mod)
+        m = self.build_Mod(self.EM, self.NM, m)
 
         # Run pyomo model
-        (mod, results) = self.Run_Mod(mod, self.EM, self.NM)
+        (m, results) = self.Run_Mod(m, self.EM, self.NM)
 
-        return mod
+        return m
 
-    def Run_Mod(self, mod, EM, NM):
+    def Run_Mod(self, m, EM, NM):
         ''' Run pyomo model '''
         # Finalise model
-        mod = self._AddPyeneCons(EM, NM, mod)
+        m = self._AddPyeneCons(EM, NM, m)
 
         #                          Objective function                         #
         self.OFaux = self._Calculate_OFaux(EM, NM)
 
-        mod.OF = Objective(rule=self.OF_rule, sense=minimize)
+        m.OF = Objective(rule=self.OF_rule, sense=minimize)
 
         # Optimise
         opt = SolverFactory('glpk')
         # Print
-        results = opt.solve(mod)
+        results = opt.solve(m)
 
-        return (mod, results)
+        return (m, results)
 
     def set_Demand(self, index, value):
         ''' Set a demand profile '''

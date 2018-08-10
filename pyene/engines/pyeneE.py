@@ -512,7 +512,6 @@ class EnergyClass:
 
         return data
 
-
     def OF_rule(self, m):
         ''' Objective function '''
         return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in m.sVec)

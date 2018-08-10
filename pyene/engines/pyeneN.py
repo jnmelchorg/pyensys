@@ -436,17 +436,17 @@ class ENetworkClass:
         self.Print['Curtailment'] = False
         self.Print['Feasibility'] = False
 
-    def print(self, mod):
+    def print(self, m):
         ''' Print results '''
-        for xh in mod.sCon:
+        for xh in m.sCon:
             print("\nCASE:", xh)
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
                 for xn in range(1, self.generationE['Number']+1):
-                    for x2 in mod.sTim:
-                        aux = (mod.vGen[self.connections['Generation'][xh]+xn,
-                                        x2].value *
+                    for x2 in m.sTim:
+                        aux = (m.vGen[self.connections['Generation'][xh]+xn,
+                                      x2].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -455,9 +455,9 @@ class ENetworkClass:
             if self.Print['Flows']:
                 print("\nFlow_EPower=[")
                 for x1 in range(1, self.networkE.number_of_edges()+1):
-                    for x2 in mod.sTim:
-                        aux = (mod.vFlow[self.connections['Flow'][xh] +
-                                         x1, x2].value *
+                    for x2 in m.sTim:
+                        aux = (m.vFlow[self.connections['Flow'][xh] +
+                                       x1, x2].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -465,10 +465,10 @@ class ENetworkClass:
 
             if self.Print['Voltages']:
                 print("\nVoltage_Angle=[")
-                for xn in mod.sBuses:
-                    for xt in mod.sTim:
+                for xn in m.sBuses:
+                    for xt in m.sTim:
                         aux = self.connections['Voltage'][xh]
-                        aux = mod.vVolt[aux+xn, xt].value
+                        aux = m.vVolt[aux+xn, xt].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -476,9 +476,9 @@ class ENetworkClass:
             if self.Print['Losses']:
                 print("\nEPower_Loss=[")
                 for xb in range(1, self.networkE.number_of_edges()+1):
-                    for xt in mod.sTim:
-                        aux = (mod.vLoss[self.connections['Loss'][xh]+xb,
-                                         xt].value *
+                    for xt in m.sTim:
+                        aux = (m.vLoss[self.connections['Loss'][xh]+xb,
+                                       xt].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -486,20 +486,20 @@ class ENetworkClass:
 
             if self.Print['Curtailment']:
                 print("\nPumps=[")
-                for xdl in mod.sDL:
-                    for xt in mod.sTim:
-                        aux = mod.vDL[self.connections['Pump'][xh]+xdl+1,
-                                      xt].value*self.networkE.graph['baseMVA']
+                for xdl in m.sDL:
+                    for xt in m.sTim:
+                        aux = m.vDL[self.connections['Pump'][xh]+xdl+1,
+                                    xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.Print['Feasibility']:
                 print("\nFeas=[")
-                for xf in mod.sFea:
-                    for xt in mod.sTim:
-                        aux = mod.vFea[self.connections['Feasibility'][xh]+xf,
-                                       xt].value*self.networkE.graph['baseMVA']
+                for xf in m.sFea:
+                    for xt in m.sTim:
+                        aux = m.vFea[self.connections['Feasibility'][xh]+xf,
+                                     xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
