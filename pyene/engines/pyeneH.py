@@ -17,7 +17,6 @@ class pyeneHConfig:
         self.settings = {
                 'File': None,  # TODO create input json file
                 'NoTime': 24,  # Number of time steps
-                'Weights': None,  # Weight of the time period
                 'Feas': True,  # Feasibility constraints
                 'Penalty': 10000,  # Penalty for feasibility constraints
                 'seconds': 3600,  # Time resolution
@@ -26,7 +25,6 @@ class pyeneHConfig:
                 }
         # River models
         self.rivers = {
-                'Number': None,  # Connections between nodes
                 'From': [1, 2, 4, 4],  # Node - from
                 'To': [2, 3, 5, 6],  # Node -to
                 'Share': [1, 1, 0.4, 0.6],  # Links between water flows
@@ -41,35 +39,14 @@ class pyeneHConfig:
         # Connections between scenarios
         self.connections = {
                 'Number': 1,  # Number of scenarios
-                'set': None,  # set for scenarios
-                'Node': None,  # Starting point of the scenario (Nodes)
-                'InNode': None,  # Starting point of the scenario (Inputs)
-                'OutNode': None,  # Starting point of the scenario (Outputs)
-                'River': None,  # Starting point of the scenario (Rivers)
                 'LinksF': [[0, 0]],  # Connect scen 0:Begin1:End
                 'LinksT': [[0, 1]]  # To scen 0:Begin1:End
                 }
         # Nodes
         self.nodes = {
-                'Number': None,  # Number of Nodes
                 'In': [1, 4],  # Nodes with water inflows
                 'Allowance': [1000, 1000],  # Water allowance
                 'Out': [3, 5, 6]  # Nodes with water outflows
-                }
-        # Hydropower
-        self.hydropower = {
-                'Number': 0,  # Number of hydropower plants
-                'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
-                'Cost': [0],  # Costs
-                'Link': None  # Position of hydropower plants
-                }
-        # Optimisation
-        self.opt = {
-                'QLinear': None,
-                'QMax': None,  # Maximum flow
-                'QMin': None,  # Minimum flow
-                'LL': None  # Linked lists
                 }
 
 
@@ -83,6 +60,32 @@ class HydrologyClass:
         # Copy attributes
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
+
+        # Pyomo sets and parameters
+        self.s = {}
+        self.p = {
+                'ConInNode': None,  # Node inputs
+                'ConOutNode': None,  # Node outputs
+                'DeltaT': None,  # Time differential
+                'Feas': None,  # Feasibility constraint
+                'FeasTime': None,  # Feasibility constraint
+                'FLinear': None,  # Time dependent flow approximation
+                'FXInput': None,  # Fixed input constraints
+                'LLInNode': None,  # Connection Node input
+                'LLN2B1': None,  # Conection node2Branch
+                'LLN2B2': None,  # Conection node2Branch
+                'LLOutNode': None,  # Connection Node Output
+                'LLShare1': None,  # From node to several rivers
+                'LLShare2': None,  # From node to several rivers
+                'Qmax': None,  # Maximum flow
+                'Qmin': None,  # Minimum flow
+                'Penalty': None,  # Penalty for feasibility
+                'QLinear': None,  # Volume to flow
+                'SoCLinks': None,  # Storage connections (scenarios)
+                'River': None  # Starting point of the scenario (Rivers)
+                }
+        # Optimisation
+        self.opt = {}
 
     def _BuildHNetwork(self):
         ''' Build network model '''
@@ -156,23 +159,22 @@ class HydrologyClass:
                 acu1 += 1
                 self.opt['NoShare'] += LLN2B2[xn][2]-1
         if acu1 == 0:
-            self.opt['LLShare1'] = []
-            self.opt['LLShare2'] = []
+            self.p['LLShare1'] = []
+            self.p['LLShare2'] = []
         else:
-            self.opt['LLShare1'] = np.zeros((self.opt['NoShare'], 2),
-                                            dtype=int)
-            self.opt['LLShare2'] = np.zeros(self.opt['NoShare'], dtype=float)
+            self.p['LLShare1'] = np.zeros((self.opt['NoShare'], 2), dtype=int)
+            self.p['LLShare2'] = np.zeros(self.opt['NoShare'], dtype=float)
             xr = 0
             for xn in LLNodWeight[0:acu1]:
                 for xb in range(LLN2B2[xn][2]-1):
-                    self.opt['LLShare1'][xr][:] = \
+                    self.p['LLShare1'][xr][:] = \
                         [LLN2B1[LLN2B2[xn][3]+xb], LLN2B1[LLN2B2[xn][3]+xb+1]]
-                    self.opt['LLShare2'][xr] = \
+                    self.p['LLShare2'][xr] = \
                         self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb+1]] / \
                         self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb]]
 
-        self.connections['LLN2B1'] = LLN2B1
-        self.connections['LLN2B2'] = LLN2B2
+        self.p['LLN2B1'] = LLN2B1
+        self.p['LLN2B2'] = LLN2B2
 
     def _BuildLLScenario(self):
         ''' Build LL to locate beginning of each scenario '''
@@ -182,36 +184,33 @@ class HydrologyClass:
 
         self.connections['Node'] = np.zeros(self.connections['Number'],
                                             dtype=int)
-        self.connections['River'] = np.zeros(self.connections['Number'],
-                                             dtype=int)
-        self.connections['InNode'] = np.zeros(self.connections['Number'],
-                                              dtype=int)
-        self.connections['OutNode'] = np.zeros(self.connections['Number'],
-                                               dtype=int)
+        self.p['ConRiver'] = np.zeros(self.connections['Number'], dtype=int)
+        self.p['ConInNode'] = np.zeros(self.connections['Number'], dtype=int)
+        self.p['ConOutNode'] = np.zeros(self.connections['Number'], dtype=int)
         for xh in self.connections['set']:
             self.connections['Node'][xh] = self.nodes['Number']*xh
-            self.connections['River'][xh] = self.rivers['Number']*xh
-            self.connections['InNode'][xh] = self.nodes['InNumber']*xh
-            self.connections['OutNode'][xh] = self.nodes['OutNumber']*xh
+            self.p['ConRiver'][xh] = self.rivers['Number']*xh
+            self.p['ConInNode'][xh] = self.nodes['InNumber']*xh
+            self.p['ConOutNode'][xh] = self.nodes['OutNumber']*xh
 
         # Build LL to flag positions of input.output nodes
-        self.opt['InLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
-        self.opt['OutLL'] = np.zeros((self.nodes['Number'], 2), dtype=int)
+        self.p['LLInNode'] = np.zeros((self.nodes['Number'], 2), dtype=int)
+        self.p['LLOutNode'] = np.zeros((self.nodes['Number'], 2), dtype=int)
         for xn in range(self.nodes['InNumber']):
-            self.opt['InLL'][self.nodes['In'][xn]-1][:] = [1, xn]
+            self.p['LLInNode'][self.nodes['In'][xn]-1][:] = [1, xn]
         for xn in range(self.nodes['OutNumber']):
-            self.opt['OutLL'][self.nodes['Out'][xn]-1][:] = [1, xn]
+            self.p['LLOutNode'][self.nodes['Out'][xn]-1][:] = [1, xn]
 
         # Add feasibility constraints
-        self.opt['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
-        self.opt['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
+        self.p['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
+        self.p['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
         if self.settings['Feas']:
             self.opt['FeasNo'] = self.rivers['Number']
             self.opt['FeasNoTime'] = self.settings['NoTime']
             for xr in range(self.opt['FeasNo']):
-                self.opt['Feas'][xr] = xr
+                self.p['Feas'][xr] = xr
             for xt in range(self.opt['FeasNoTime']):
-                self.opt['FeasTime'][xt] = xt
+                self.p['FeasTime'][xt] = xt
         else:
             self.opt['FeasNo'] = 1
             self.opt['FeasNoTime'] = 1
@@ -337,79 +336,68 @@ class HydrologyClass:
                               FLinear[xc][0]*Q[xc][0]-FLinear[xc][1]) / \
                 (Q[xc][0]-Q[xc][1])
 
-        self.opt['Qmax'] = Q[:, 0]
-        self.opt['Qmin'] = Q[:, 1]
-        self.opt['QLinear'] = QLinear
-        self.opt['FLinear'] = FLinear
+        self.p['Qmax'] = Q[:, 0]
+        self.p['Qmin'] = Q[:, 1]
+        self.p['QLinear'] = QLinear
+        self.p['FLinear'] = FLinear
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
         # Constraint on maximum flow upstream
-        m.cHQmaxUp = Constraint(m.sHBra, m.sHTim, m.sHSce,
+        m.cHQmaxUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
                                 rule=self.cHQmaxUp_rule)
         # Constraint on minimum flow upstream
-        m.cHQminUp = Constraint(m.sHBra, m.sHTim, m.sHSce,
+        m.cHQminUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
                                 rule=self.cHQminUp_rule)
         # Nodal balance
-        m.cHNodeBalance = Constraint(m.sHNod, m.sHTim, m.sHSce,
+        m.cHNodeBalance = Constraint(self.s['Nod'], self.s['Tim'],
+                                     self.s['Sce'],
                                      rule=self.cHNodeBalance_rule)
         # River balance
-        m.cHRiverBalance = Constraint(m.sHBra, m.sHTim, m.sHSce,
+        m.cHRiverBalance = Constraint(self.s['Bra'], self.s['Tim'],
+                                      self.s['Sce'],
                                       rule=self.cHRiverBalance_rule)
         # Sharing water among connected rivers
         if self.opt['NoShare'] > 0:
-            m.cHWeights = Constraint(m.sHShare, m.sHTim, m.sHSce,
+            m.cHWeights = Constraint(self.s['Share'], self.s['Tim'],
+                                     self.s['Sce'],
                                      rule=self.cHWeights_rule)
         # Linking SoC in different scenarios
         if self.opt['NoSoCLinks'] > 0:
-            m.cHSoCLink = Constraint(m.sHNoSoCLinks, m.sHBra,
+            m.cHSoCLink = Constraint(self.s['NoSoCLinks'], self.s['Bra'],
                                      rule=self.cHSoCLink_rule)
         # Time dependent constraints on downstream flows
-        m.cHQdownTime = Constraint(m.sHBra, m.sHTim, m.sHSce,
+        m.cHQdownTime = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
                                    rule=self.cHQdownTime_rule)
         # Fixed inputs
         if self.opt['NoFxInput'] > 0:
-            m.cHFixedInput = Constraint(m.sHFXIn, rule=self.cHFixedInput_rule)
+            m.cHFixedInput = Constraint(self.s['FXIn'],
+                                        rule=self.cHFixedInput_rule)
 
         return m
 
     def addPar(self, m):
         ''' Adding pyomo parameters '''
-        m.pHConRiver = self.connections['River']  # Connectivity branches
-        m.pHConInNode = self.connections['InNode']  # Node inputs
-        m.pHConNode = self.connections['Node']  # Connectivity nodes
-        m.pHConOutNode = self.connections['OutNode']  # Node outputs
-        m.pHDeltaT = self.settings['seconds']/self.settings['M']  # dt
-        m.pHFeas = self.opt['Feas']  # Feasibility constraint
-        m.pHFeasTime = self.opt['FeasTime']  # Feasibility constraint
-        m.pHFLinear = self.opt['FLinear']  # Time dependent flow approximation
-        m.pHFXInput = self.settings['In']  # Fixed input constraints
-        m.pHLLInNode = self.opt['InLL']  # Connection Node input
-        m.pHLLN2B1 = self.connections['LLN2B1']  # Conection node2Branch
-        m.pHLLN2B2 = self.connections['LLN2B2']  # Conection node2Branch
-        m.pHLLOutNode = self.opt['OutLL']  # Connection Node Output
-        m.pHLLShare1 = self.opt['LLShare1']  # From node to several rivers
-        m.pHLLShare2 = self.opt['LLShare2']  # From node to several rivers
-        m.pHOptQmax = self.opt['Qmax']  # Maximum flow
-        m.pHOptQmin = self.opt['Qmin']  # Minimum flow
-        m.pHPenalty = self.settings['Penalty']  # Penalty for feasibility
-        m.pHQLinear = self.opt['QLinear']  # Volume to flow
-        m.pHSoCLinks = self.opt['SoCLinks']  # Storage connections (scenarios)
+        # Calculate delta t
+        self.p['DeltaT'] = self.settings['seconds']/self.settings['M']
+        # Fixed input constraints
+        self.p['FXInput'] = self.settings['In']
+        # Penalty for feasibility
+        self.p['Penalty'] = self.settings['Penalty']
 
         return m
 
     def addSets(self, m):
         ''' Adding pyomo sets '''
-        m.sHBra = range(self.rivers['Number'])
-        m.sHFXIn = range(self.opt['NoFxInput'])
-        m.sHInNod = range(self.nodes['OutNumber'])
-        m.sHNod = range(self.nodes['Number'])
-        m.sHNoSoCLinks = range(self.opt['NoSoCLinks'])
-        m.sHOutNod = range(self.nodes['OutNumber'])
-        m.sHTim = range(self.settings['NoTime'])
-        m.sHTimP = range(self.settings['NoTime']+1)
-        m.sHSce = range(self.connections['Number'])
-        m.sHShare = range(self.opt['NoShare'])
+        self.s['Bra'] = range(self.rivers['Number'])
+        self.s['FXIn'] = range(self.opt['NoFxInput'])
+        self.s['InNod'] = range(self.nodes['OutNumber'])
+        self.s['Nod'] = range(self.nodes['Number'])
+        self.s['NoSoCLinks'] = range(self.opt['NoSoCLinks'])
+        self.s['Tim'] = range(self.settings['NoTime'])
+        self.s['TimP'] = range(self.settings['NoTime']+1)
+        self.s['Sce'] = range(self.connections['Number'])
+        self.s['Share'] = range(self.opt['NoShare'])
 
         return m
 
@@ -419,75 +407,74 @@ class HydrologyClass:
         auxin = range(self.connections['Number']*self.nodes['InNumber'])
         auxout = range(self.connections['Number']*self.nodes['OutNumber'])
 
-        m.vHdown = Var(auxr, m.sHTim, domain=NonNegativeReals)
+        m.vHdown = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
         m.vHFeas = Var(range(self.opt['FeasNo']*self.connections['Number']),
                        range(self.opt['FeasNoTime']), domain=NonNegativeReals,
                        initialize=0.0)
-        m.vHin = Var(auxin, m.sHTim, domain=NonNegativeReals)
-        m.vHout = Var(auxout, m.sHTim, domain=NonNegativeReals)
-        m.vHSoC = Var(auxr, m.sHTimP, domain=NonNegativeReals)
-        m.vHup = Var(auxr, m.sHTim, domain=NonNegativeReals)
+        m.vHin = Var(auxin, self.s['Tim'], domain=NonNegativeReals)
+        m.vHout = Var(auxout, self.s['Tim'], domain=NonNegativeReals)
+        m.vHSoC = Var(auxr, self.s['TimP'], domain=NonNegativeReals)
+        m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
 
         return m
 
     def cHFixedInput_rule(self, m, xf):
         ''' Fix some water inputs'''
-        return m.vHin[m.pHFXInput[xf][0], m.pHFXInput[xf][1]] == \
-            m.pHFXInput[xf][2]
+        return m.vHin[self.p['FXInput'][xf][0], self.p['FXInput'][xf][1]] == \
+            self.p['FXInput'][xf][2]
 
     def cHQdownTime_rule(self, m, xr, xt, xh):
         ''' Time dependent constraint on minimum downstream flows '''
-        return m.vHdown[m.pHConRiver[xh]+xr, xt] == m.pHFLinear[xr][0] * \
-            m.vHup[m.pHConRiver[xh]+xr, xt]+m.pHFLinear[xr][1] - \
-            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]] + \
-            (m.vHSoC[m.pHConRiver[xh]+xr, xt]*m.pHQLinear[xr, 0] +
-             m.pHQLinear[xr, 1]-m.pHOptQmin[xr])*m.pHFLinear[xr][2]
+        return m.vHdown[self.p['ConRiver'][xh]+xr, xt] == \
+            self.p['FLinear'][xr][0]*m.vHup[self.p['ConRiver'][xh]+xr, xt] + \
+            self.p['FLinear'][xr][1] - \
+            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]] + \
+            (m.vHSoC[self.p['ConRiver'][xh]+xr, xt]*self.p['QLinear'][xr, 0] +
+             self.p['QLinear'][xr, 1]-self.p['Qmin'][xr]) * \
+            self.p['FLinear'][xr][2]
 
     def cHSoCLink_rule(self, m, xs, xr):
         ''' Linking SoC in different scenarios '''
-        return m.vHSoC[m.pHSoCLinks[xs, 0]+xr, m.pHSoCLinks[xs, 1]] == \
-            m.vHSoC[m.pHSoCLinks[xs, 2]+xr, m.pHSoCLinks[xs, 3]]
-
-    def cHQmaxTime_rule(self, m, xr, xt, xh):
-        ''' Time dependent constraint on maximum downstream flows '''
-        return m.vHdown[m.pHConRiver[xh]+xr, xt] <= m.pHFLinear[xr][2] * \
-            m.vHup[m.pHConRiver[xh]+xr, xt]+m.pHFLinear[xr][3] + \
-            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]] + \
-            (m.vHSoC[m.pHConRiver[xh]+xr, xt]*m.pHQLinear[xr, 0] +
-             m.pHQLinear[xr, 1]-m.pHOptQmax[xr])*m.pHFLinear[xr][4]
+        return m.vHSoC[self.p['SoCLinks'][xs, 0]+xr,
+                       self.p['SoCLinks'][xs, 1]] == \
+            m.vHSoC[self.p['SoCLinks'][xs, 2]+xr, self.p['SoCLinks'][xs, 3]]
 
     def cHQmaxUp_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
-        return m.vHup[m.pHConRiver[xh]+xr, xt] <= m.pHOptQmax[xr] + \
-            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
+        return m.vHup[self.p['ConRiver'][xh]+xr, xt] <= self.p['Qmax'][xr] + \
+            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
 
     def cHQminUp_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
-        return m.vHup[m.pHConRiver[xh]+xr, xt] >= m.pHOptQmin[xr] - \
-            m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
+        return m.vHup[self.p['ConRiver'][xh]+xr, xt] >= self.p['Qmin'][xr] - \
+            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
 
     def cHNodeBalance_rule(self, m, xn, xt, xh):
         ''' Nodal balance '''
-        return sum(m.vHin[m.pHConInNode[xh]+m.pHLLInNode[xn, 1], xt]
-                   for xb in range(m.pHLLInNode[xn, 0])) + \
-            sum(m.vHdown[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B2[xn, 1]+xd], xt]
-                for xd in range(m.pHLLN2B2[xn, 0])) == \
-            sum(m.vHup[m.pHConRiver[xh]+m.pHLLN2B1[m.pHLLN2B2[xn, 3]+xd], xt]
-                for xd in range(m.pHLLN2B2[xn, 2])) +\
-            sum(m.vHout[m.pHConOutNode[xh]+m.pHLLOutNode[xn, 1], xt]
-                for xb in range(m.pHLLOutNode[xn, 0]))
+        return sum(m.vHin[self.p['ConInNode'][xh] +
+                          self.p['LLInNode'][xn, 1], xt]
+                   for xb in range(self.p['LLInNode'][xn, 0])) + \
+            sum(m.vHdown[self.p['ConRiver'][xh] +
+                         self.p['LLN2B1'][self.p['LLN2B2'][xn, 1]+xd], xt]
+                for xd in range(self.p['LLN2B2'][xn, 0])) == \
+            sum(m.vHup[self.p['ConRiver'][xh] +
+                       self.p['LLN2B1'][self.p['LLN2B2'][xn, 3]+xd], xt]
+                for xd in range(self.p['LLN2B2'][xn, 2])) +\
+            sum(m.vHout[self.p['ConOutNode'][xh] +
+                        self.p['LLOutNode'][xn, 1], xt]
+                for xb in range(self.p['LLOutNode'][xn, 0]))
 
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
-        aux = m.pHConRiver[xh]+xr
-        return m.vHdown[aux, xt]*m.pHDeltaT == m.vHup[aux, xt]*m.pHDeltaT + \
-            m.vHSoC[aux, xt]-m.vHSoC[aux, xt+1]
+        aux = self.p['ConRiver'][xh]+xr
+        return m.vHdown[aux, xt]*self.p['DeltaT'] == m.vHup[aux, xt] * \
+            self.p['DeltaT']+m.vHSoC[aux, xt]-m.vHSoC[aux, xt+1]
 
     def cHWeights_rule(self, m, xw, xt, xh):
         ''' Sharing water from a node among several rivers '''
-        return m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 0], xt] * \
-            m.pHLLShare2[xw] == \
-            m.vHup[m.pHConRiver[xh]+m.pHLLShare1[xw, 1], xt]
+        return m.vHup[self.p['ConRiver'][xh]+self.p['LLShare1'][xw, 0], xt] * \
+            self.p['LLShare2'][xw] == \
+            m.vHup[self.p['ConRiver'][xh]+self.p['LLShare1'][xw, 1], xt]
 
     def initialise(self):
         ''' Initialise engine '''
@@ -520,25 +507,24 @@ class HydrologyClass:
                 val2 = self.connections['LinksT']
 
             SoCLinks = np.zeros((NoSoCLinks, 4), dtype=int)
-            self.connections['River']
             aux = [0, self.settings['NoTime']]
 
             for xL in range(NoSoCLinks):
-                SoCLinks[xL][:] = [self.connections['River'][val1[xL][0]],
+                SoCLinks[xL][:] = [self.p['ConRiver'][val1[xL][0]],
                                    aux[val1[xL][1]],
-                                   self.connections['River'][val2[xL][0]],
+                                   self.p['ConRiver'][val2[xL][0]],
                                    aux[val2[xL][1]]]
 
-        self.opt['SoCLinks'] = SoCLinks
+        self.p['SoCLinks'] = SoCLinks
         self.opt['NoSoCLinks'] = NoSoCLinks
         self.opt['NoFxInput'] = len(self.settings['In'])
 
     def OF_rule(self, m):
         ''' Objective function '''
-        return sum(sum(m.vHout[xn, xt] for xn in m.sHInNod) +
-                   sum(m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]]
-                   for xr in m.sHBra)*m.pHPenalty
-                   for xt in m.sHTim)
+        return sum(sum(m.vHout[xn, xt] for xn in self.s['InNod']) +
+                   sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+                   for xr in self.s['Bra'])*self.p['Penalty']
+                   for xt in self.s['Tim'])
 
     def print(self, m):
         ''' Print results '''
@@ -551,16 +537,16 @@ class HydrologyClass:
                 'Feas': True
                 }
         # Nodal results
-        for xh in m.sHSce:
+        for xh in self.s['Sce']:
             print('\nCASE:', xh)
 
             if self.print['WIn']:
                 print("\nWater_In_Node=[")
-                for xn in m.sHNod:
-                    for xt in m.sHTim:
-                        if m.pHLLInNode[xn, 0] != 0:
-                            aux = m.vHin[m.pHConInNode[xh] +
-                                         m.pHLLInNode[xn, 1], xt].value
+                for xn in self.s['Nod']:
+                    for xt in self.s['Tim']:
+                        if self.p['LLInNode'][xn, 0] != 0:
+                            aux = m.vHin[self.p['ConInNode'][xh] +
+                                         self.p['LLInNode'][xn, 1], xt].value
                         else:
                             aux = 0
                         print("%8.4f " % aux, end='')
@@ -569,11 +555,11 @@ class HydrologyClass:
 
             if self.print['WOut']:
                 print("\nWater_Out_Node=[")
-                for xn in m.sHNod:
-                    for xt in m.sHTim:
-                        if m.pHLLOutNode[xn, 0] != 0:
-                            aux = m.vHout[m.pHConOutNode[xh] +
-                                          m.pHLLOutNode[xn, 1], xt].value
+                for xn in self.s['Nod']:
+                    for xt in self.s['Tim']:
+                        if self.p['LLOutNode'][xn, 0] != 0:
+                            aux = m.vHout[self.p['ConOutNode'][xh] +
+                                          self.p['LLOutNode'][xn, 1], xt].value
                         else:
                             aux = 0
                         print("%8.4f " % aux, end='')
@@ -582,36 +568,37 @@ class HydrologyClass:
 
             if self.print['Fup']:
                 print("\nFlow_Upstream=[")
-                for xr in m.sHBra:
-                    for xt in m.sHTim:
-                        aux = m.vHup[m.pHConRiver[xh]+xr, xt].value
+                for xr in self.s['Bra']:
+                    for xt in self.s['Tim']:
+                        aux = m.vHup[self.p['ConRiver'][xh]+xr, xt].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.print['Fdown']:
                 print("\nFlow_Downstream=[")
-                for xr in m.sHBra:
-                    for xt in m.sHTim:
-                        aux = m.vHdown[m.pHConRiver[xh]+xr, xt].value
+                for xr in self.s['Bra']:
+                    for xt in self.s['Tim']:
+                        aux = m.vHdown[self.p['ConRiver'][xh]+xr, xt].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.print['SoC']:
                 print("\nRiver=[")
-                for xr in m.sHBra:
-                    for xt in m.sHTimP:
-                        aux = m.vHSoC[m.pHConRiver[xh]+xr, xt].value
+                for xr in self.s['Bra']:
+                    for xt in self.s['TimP']:
+                        aux = m.vHSoC[self.p['ConRiver'][xh]+xr, xt].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.print['Feas']:
                 print("\nFlow_Feasibility=[")
-                for xr in m.sHBra:
-                    for xt in m.sHTim:
-                        aux = m.vHFeas[m.pHFeas[xr], m.pHFeasTime[xt]].value
+                for xr in self.s['Bra']:
+                    for xt in self.s['Tim']:
+                        aux = m.vHFeas[self.p['Feas'][xr],
+                                       self.p['FeasTime'][xt]].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -624,35 +611,35 @@ class HydrologyClass:
 
         print('vHSoC = [')
         for xr in auxr:
-            for xt in m.sHTimP:
+            for xt in self.s['TimP']:
                 print('%f ' % m.vHSoC[xr, xt].value, end='')
             print()
         print('];')
 
         print('vHup = [')
         for xr in auxr:
-            for xt in m.sHTim:
+            for xt in self.s['Tim']:
                 print('%f ' % m.vHup[xr, xt].value, end='')
             print()
         print('];')
 
         print('vHdown = [')
         for xr in auxr:
-            for xt in m.sHTim:
+            for xt in self.s['Tim']:
                 print('%f ' % m.vHdown[xr, xt].value, end='')
             print()
         print('];')
 
         print('vHin = [')
         for xn in auxin:
-            for xt in m.sHTim:
+            for xt in self.s['Tim']:
                 print('%f ' % m.vHin[xn, xt].value, end='')
             print()
         print('];')
 
         print('vHout = [')
         for xn in auxout:
-            for xt in m.sHTim:
+            for xt in self.s['Tim']:
                 print('%f ' % m.vHout[xn, xt].value, end='')
             print()
         print('];')
@@ -664,44 +651,44 @@ class HydrologyClass:
             print()
         print('];')
 
-        print('pHConRiver = ', self.connections['River'], end=';\n')
-        print('pHConInNode = ', self.connections['InNode'], end=';\n')
-        print('pHConOutNode = ', self.connections['OutNode'], end=';\n')
-        print('pHLLN2B1 = ', self.connections['LLN2B1'], end=';\n')
+        print('pHConRiver = ', self.p['ConRiver'], end=';\n')
+        print('pHConInNode = ', self.p['ConInNode'], end=';\n')
+        print('pHConOutNode = ', self.p['ConOutNode'], end=';\n')
+        print('pHLLN2B1 = ', self.p['LLN2B1'], end=';\n')
 
         print('pHLLN2B2 = [')
         for xn in range(self.nodes['Number']):
             for x in range(4):
-                print('%d ' % self.connections['LLN2B2'][xn][x], end='')
+                print('%d ' % self.p['LLN2B2'][xn][x], end='')
             print()
         print('];')
 
         print('pHLLInNode = [')
         for xn in range(self.nodes['Number']):
             for x in range(2):
-                print('%d ' % self.opt['InLL'][xn][x], end='')
+                print('%d ' % self.p['LLInNode'][xn][x], end='')
             print()
         print('];')
 
         print('pHLLOutNode = [')
         for xn in range(self.nodes['Number']):
             for x in range(2):
-                print('%d ' % self.opt['OutLL'][xn][x], end='')
+                print('%d ' % self.p['LLOutNode'][xn][x], end='')
             print()
         print('];')
 
-        print('pHOptQmax = ', self.opt['Qmax'], end=';\n')
-        print('pHOptQmin = ', self.opt['Qmin'], end=';\n')
-        print('pHFeas =', self.opt['Feas'], end=';\n')
-        print('pHFeasTime = ', self.opt['FeasTime'], end=';\n')
+        print('pHOptQmax = ', self.p['Qmax'], end=';\n')
+        print('pHOptQmin = ', self.p['Qmin'], end=';\n')
+        print('pHFeas =', self.p['Feas'], end=';\n')
+        print('pHFeasTime = ', self.p['FeasTime'], end=';\n')
         print('pHPenalty =', self.settings['Penalty'], end=';\n')
-        print('pHLLShare1 =', self.opt['LLShare1'], end=';\n')
-        print('pHLLShare2 =', self.opt['LLShare2'], end=';\n')
+        print('pHLLShare1 =', self.p['LLShare1'], end=';\n')
+        print('pHLLShare2 =', self.p['LLShare2'], end=';\n')
 
         print('pHQLinear =[')
         for xr in range(self.rivers['Number']):
             for x in range(2):
-                print('%f ' % self.opt['QLinear'][xr][x], end='')
+                print('%f ' % self.p['QLinear'][xr][x], end='')
             print()
         print('];')
 
@@ -711,13 +698,13 @@ class HydrologyClass:
         print('pHSoCLinks =[')
         for xs in range(self.opt['NoSoCLinks']):
             for x in range(4):
-                print('%d ' % self.opt['SoCLinks'][xs][x], end='')
+                print('%d ' % self.p['SoCLinks'][xs][x], end='')
             print()
         print('];')
 
         print('pHFLinear =[')
         for xr in range(self.rivers['Number']):
             for x in range(3):
-                print('%f ' % self.opt['FLinear'][xr][x], end='')
+                print('%f ' % self.p['FLinear'][xr][x], end='')
             print()
         print('];')

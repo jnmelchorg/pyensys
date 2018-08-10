@@ -311,7 +311,7 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += (m.vNGen[self.NM.connections['Generation']
-                               [xh]+index, xt].value*auxweight[xt])
+                                [xh]+index, xt].value*auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
@@ -360,7 +360,7 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += (m.vNLoss[self.NM.connections['Loss']
-                                [xh]+xb, xt].value)*auxweight[xt]
+                                 [xh]+xb, xt].value)*auxweight[xt]
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 

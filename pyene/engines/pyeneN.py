@@ -237,22 +237,22 @@ class ENetworkClass:
     def addVars(self, m):
         ''' Add pyomo variables '''
         Noh = len(m.sNCon)
-        m.vNFlow = Var(range(Noh*(self.NoBranch+1)), m.sNTim,
-                      domain=Reals, initialize=0.0)
-        m.vNVolt = Var(range(Noh*(self.NoBuses+1)), m.sNTim,
-                      domain=Reals, initialize=0.0)
-        m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                      m.sNTim, domain=NonNegativeReals, initialize=0.0)
-        m.vNFea = Var(range(Noh*self.NoFea), m.sNTim, domain=NonNegativeReals,
-                     initialize=0.0)
-        m.vNGen = Var(range(Noh*(self.generationE['Number']+1)), m.sNTim,
-                     domain=NonNegativeReals, initialize=0.0)
-        m.vNGCost = Var(range(Noh*self.generationE['Number']), m.sNTim,
-                       domain=NonNegativeReals, initialize=0.0)
         m.vNDL = Var(range(Noh*(self.pumps['Number']+1)), m.sNTim,
-                    domain=NonNegativeReals, initialize=0.0)
+                     domain=NonNegativeReals, initialize=0.0)
+        m.vNFea = Var(range(Noh*self.NoFea), m.sNTim, domain=NonNegativeReals,
+                      initialize=0.0)
+        m.vNFlow = Var(range(Noh*(self.NoBranch+1)), m.sNTim,
+                       domain=Reals, initialize=0.0)
+        m.vNGCost = Var(range(Noh*self.generationE['Number']), m.sNTim,
+                        domain=NonNegativeReals, initialize=0.0)
+        m.vNGen = Var(range(Noh*(self.generationE['Number']+1)), m.sNTim,
+                      domain=NonNegativeReals, initialize=0.0)
+        m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
+                       m.sNTim, domain=NonNegativeReals, initialize=0.0)
         m.vNStore = Var(range(Noh*(self.Storage['Number'])+1), m.sNTim,
-                       domain=NonNegativeReals, initialize=0.0)
+                        domain=NonNegativeReals, initialize=0.0)
+        m.vNVolt = Var(range(Noh*(self.NoBuses+1)), m.sNTim,
+                       domain=Reals, initialize=0.0)
 
         return m
 
