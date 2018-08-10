@@ -141,33 +141,39 @@ class ENetworkClass:
         # Reference generation
         m.cNEGen0 = Constraint(m.sNTim, m.sNCon, rule=self.cNEGen0_rule)
         # Maximum generation
-        m.cNEGMax = Constraint(m.sNGen, m.sNTim, m.sNCon, rule=self.cNEGMax_rule)
+        m.cNEGMax = Constraint(m.sNGen, m.sNTim, m.sNCon,
+                               rule=self.cNEGMax_rule)
         # Minimum generation
-        m.cNEGMin = Constraint(m.sNGen, m.sNTim, m.sNCon, rule=self.cNEGMin_rule)
+        m.cNEGMin = Constraint(m.sNGen, m.sNTim, m.sNCon,
+                               rule=self.cNEGMin_rule)
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(m.sNGenCM, m.sNTim, m.sNCon,
                                rule=self.cNEGenC_rule)
         # Branch flows
-        m.cNEFlow = Constraint(m.sNTim, m.sNSec1, m.sNCon, rule=self.cNEFlow_rule)
+        m.cNEFlow = Constraint(m.sNTim, m.sNSec1, m.sNCon,
+                               rule=self.cNEFlow_rule)
         # Branch capacity constraint (positive)
-        m.cNEFMax = Constraint(m.sNTim, m.sNSec1, m.sNCon, rule=self.cNEFMax_rule)
+        m.cNEFMax = Constraint(m.sNTim, m.sNSec1, m.sNCon,
+                               rule=self.cNEFMax_rule)
         # Branch capacity constraint (negative)
-        m.cNEFMin = Constraint(m.sNTim, m.sNSec1, m.sNCon, rule=self.cNEFMin_rule)
+        m.cNEFMin = Constraint(m.sNTim, m.sNSec1, m.sNCon,
+                               rule=self.cNEFMin_rule)
         # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
         m.cNEBalance = Constraint(m.sNBus, m.sNTim, m.sNSec2, m.sNCon,
                                   rule=self.cNEBalance_rule)
         # Dinamic load maximum capacity
-        m.cNDLMax = Constraint(m.sNDL, m.sNTim, m.sNCon, rule=self.cNLDMax_rule)
+        m.cNDLMax = Constraint(m.sNDL, m.sNTim, m.sNCon,
+                               rule=self.cNLDMax_rule)
         # Dinamic load initialisation
         m.cNDLIni = Constraint(m.sNTim, m.sNCon, rule=self.cNLDIni_rule)
         # Feasibility constraints
         m.cNsetFea = Constraint(m.sNTim, m.sNCon, rule=self.cNsetFea_rule)
         # Adding piece wise estimation of losses
         if self.settings['Losses']:
-            m.cNDCLossA = Constraint(m.sNBra, m.sNLoss,
-                                     m.sNTim, m.sNCon, rule=self.cNDCLossA_rule)
-            m.cNDCLossB = Constraint(m.sNBra, m.sNLoss,
-                                     m.sNTim, m.sNCon, rule=self.cNDCLossB_rule)
+            m.cNDCLossA = Constraint(m.sNBra, m.sNLoss, m.sNTim, m.sNCon,
+                                     rule=self.cNDCLossA_rule)
+            m.cNDCLossB = Constraint(m.sNBra, m.sNLoss, m.sNTim, m.sNCon,
+                                     rule=self.cNDCLossB_rule)
         else:
             m.cNDCLossNo = Constraint(m.sNBra, m.sNTim, m.sNCon,
                                       rule=self.cNDCLossN_rule)
@@ -212,19 +218,19 @@ class ENetworkClass:
         ''' Add pyomo sets '''
         m.sNBra = range(self.networkE.number_of_edges())
         m.sNBus = range(self.networkE.number_of_nodes())
-        m.sNTim = range(self.settings['NoTime'])
-        m.sNLoss = range(self.Number_LossCon)
-#        m.snBranch = range(self.NoBranch+1)
         m.sNBuses = range(self.NoBuses+1)
-#        m.sNN2B = range(self.NoN2B)
-        m.sNSec1 = range(self.NoSec1)
-        m.sNSec2 = range(self.NoSec2+1)
-        m.sNGen = range(self.generationE['Number'])
-        m.sNGenCM = range(self.NoGenC)
+        m.sNCon = self.connections['set']
         m.sNDL = range(self.pumps['Number'])
         m.sNFea = range(self.NoFea)
+        m.sNGen = range(self.generationE['Number'])
+        m.sNGenCM = range(self.NoGenC)
+        m.sNTim = range(self.settings['NoTime'])
+        m.sNLoss = range(self.Number_LossCon)
+        m.sNSec1 = range(self.NoSec1)
+        m.sNSec2 = range(self.NoSec2+1)
         m.sSto = range(self.Storage['Number'])
-        m.sNCon = self.connections['set']
+#        m.snBranch = range(self.NoBranch+1)
+#        m.sNN2B = range(self.NoN2B)
 
         return m
 
