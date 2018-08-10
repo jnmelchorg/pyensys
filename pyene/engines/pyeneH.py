@@ -352,9 +352,15 @@ class HydrologyClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
+        # Constraint on maximum flow downstream
+        m.cHQmaxDown = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
+                                  rule=self.cHQmaxDown_rule)
         # Constraint on maximum flow upstream
         m.cHQmaxUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
                                 rule=self.cHQmaxUp_rule)
+        # Constraint on minimum flow downstream
+        m.cHQminDown = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
+                                  rule=self.cHQminDown_rule)
         # Constraint on minimum flow upstream
         m.cHQminUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
                                 rule=self.cHQminUp_rule)
@@ -454,10 +460,22 @@ class HydrologyClass:
                        self.p['SoCLinks'][xs, 1]] == \
             m.vHSoC[self.p['SoCLinks'][xs, 2]+xr, self.p['SoCLinks'][xs, 3]]
 
+    def cHQmaxDown_rule(self, m, xr, xt, xh):
+        ''' Constraint on maximum flow upstream'''
+        return m.vHdown[self.p['ConRiver'][xh]+xr, xt] <= \
+            self.p['Qmax'][xr]+m.vHFeas[self.p['Feas'][xr],
+                                        self.p['FeasTime'][xt]]
+
     def cHQmaxUp_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] <= self.p['Qmax'][xr] + \
             m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+
+    def cHQminDown_rule(self, m, xr, xt, xh):
+        ''' Constraint on minimum flow upstream '''
+        return m.vHdown[self.p['ConRiver'][xh]+xr, xt] >= \
+            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr],
+                                        self.p['FeasTime'][xt]]
 
     def cHQminUp_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
@@ -536,10 +554,11 @@ class HydrologyClass:
 
     def OF_rule(self, m):
         ''' Objective function '''
-        return sum(sum(m.vHout[xn, xt] for xn in self.s['InNod']) +
-                   sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
-                   for xr in self.s['Bra'])*self.p['Penalty']
-                   for xt in self.s['Tim'])
+        return sum(sum(sum(m.vHout[self.p['ConOutNode'][xh]+xn, xt]
+                           for xn in self.s['InNod']) +
+                       sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+                           for xr in self.s['Bra'])*self.p['Penalty']
+                       for xt in self.s['Tim']) for xh in self.s['Sce'])
 
     def print_outputs(self, m):
         ''' Print results '''

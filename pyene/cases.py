@@ -158,21 +158,30 @@ def test_pyenetest():
 #                                  'test-case-integrated', 'fdtc_integrated',
 #                                  'json')
     conf = pyeneConfig()
+    conf.HM.settings['NoTime'] = 5
+    conf.HM.connections['Number'] = 2
+    conf.HM.settings['In'] = [[0, 1, 600], [3, 3, 800]]
+    
+    
+    conf.HM.connections['LinksF'] = [[0, 0], [1, 0]]
+    conf.HM.connections['LinksT'] = [[0, 1], [1, 1]]
+    conf.HM.rivers['Parts'] = [5]
+    
     EN = pyeneClass(conf.EN)
     (HM, HModel, results)=EN.HSim(conf)
-    HM.print(HModel)
+    HM.print_outputs(HModel)
     print('OF: ', HModel.OF.expr())
     print()
-    print(HModel.vHout[0, 0].value)
     print(HModel.vHout[0, 1].value)
     print(HModel.vHout[0, 2].value)
-    print(HModel.vHout[1, 2].value)
-    print(HModel.vHout[1, 3].value)
-    print(HModel.vHout[1, 4].value)
-    print(HModel.vHout[2, 2].value)
-    print(HModel.vHout[2, 3].value)
-    print(HModel.vHout[2, 4].value)
-    print()
+    print(HModel.vHout[4, 3].value)
+    print(HModel.vHout[4, 4].value)
+#    print(HModel.vHout[1, 3].value)
+#    print(HModel.vHout[1, 4].value)
+#    print(HModel.vHout[2, 2].value)
+#    print(HModel.vHout[2, 3].value)
+#    print(HModel.vHout[2, 4].value)
+#    print()
     
     
     
