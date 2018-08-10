@@ -163,6 +163,25 @@ def test_pyenetest():
     HM.print(HModel)
     print('OF: ', HModel.OF.expr())
     print()
+    print(HModel.vHout[0, 0].value)
+    print(HModel.vHout[0, 1].value)
+    print(HModel.vHout[0, 2].value)
+    print(HModel.vHout[1, 2].value)
+    print(HModel.vHout[1, 3].value)
+    print(HModel.vHout[1, 4].value)
+    print(HModel.vHout[2, 2].value)
+    print(HModel.vHout[2, 3].value)
+    print(HModel.vHout[2, 4].value)
+    print()
+    
+    
+    
+    
+    
+    
+    
+    
+    
 #    HM.print_settings(HModel)
     
     

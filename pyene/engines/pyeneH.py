@@ -15,27 +15,28 @@ class pyeneHConfig:
     def __init__(self):
         # Basic settings
         self.settings = {
+                'File': None,  # TODO create input json file
                 'NoTime': 24,  # Number of time steps
                 'Weights': None,  # Weight of the time period
                 'Feas': True,  # Feasibility constraints
                 'Penalty': 10000,  # Penalty for feasibility constraints
                 'seconds': 3600,  # Time resolution
                 'M': 1000,  # Multiplier to  reduce magnitude of time/storage
-                'In': [[0, 0, 70], [0, 3, 600]]  # Fixed water inputs
+                'In': [[0, 1, 600], [1, 3, 800]]  # Fixed water inputs
                 }
         # River models
         self.rivers = {
                 'Number': None,  # Connections between nodes
-                'From': [1, 2],  # Node - from
-                'To': [2, 3],  # Node -to
-                'Share': [1, 1],  # Links between water flows
+                'From': [1, 2, 4, 4],  # Node - from
+                'To': [2, 3, 5, 6],  # Node -to
+                'Share': [1, 1, 0.4, 0.6],  # Links between water flows
                 'Parts': [],
-                'Length': [1000, 1000],  # length (m)
-                'Slope': [0.0001, 0.0001],  # Slope (m)
-                'Width': [200, 200],  # width (m)
-                'DepthMax': [4, 4],  # Maximum depth
-                'DepthMin': [1, 1],  # MInimum depth
-                'Manning': [0.03, 0.03]  # Mannings 'n
+                'Length': [1000, 1000, 1000, 1000],  # length (m)
+                'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
+                'Width': [200, 200, 200, 200],  # width (m)
+                'DepthMax': [4, 4, 4, 4],  # Maximum depth
+                'DepthMin': [1, 1, 1, 1],  # MInimum depth
+                'Manning': [0.03, 0.03, 0.03, 0.03]  # Mannings 'n
                 }
         # Connections between scenarios
         self.connections = {
@@ -51,9 +52,9 @@ class pyeneHConfig:
         # Nodes
         self.nodes = {
                 'Number': None,  # Number of Nodes
-                'In': [1],  # Nodes with water inflows
+                'In': [1, 4],  # Nodes with water inflows
                 'Allowance': [1000, 1000],  # Water allowance
-                'Out': [3]  # Nodes with water outflows
+                'Out': [3, 5, 6]  # Nodes with water outflows
                 }
         # Hydropower
         self.hydropower = {
@@ -399,16 +400,16 @@ class HydrologyClass:
 
     def addSets(self, m):
         ''' Adding pyomo sets '''
-        m.sHNod = range(self.nodes['Number'])
         m.sHBra = range(self.rivers['Number'])
+        m.sHFXIn = range(self.opt['NoFxInput'])
+        m.sHInNod = range(self.nodes['OutNumber'])
+        m.sHNod = range(self.nodes['Number'])
+        m.sHNoSoCLinks = range(self.opt['NoSoCLinks'])
+        m.sHOutNod = range(self.nodes['OutNumber'])
         m.sHTim = range(self.settings['NoTime'])
         m.sHTimP = range(self.settings['NoTime']+1)
         m.sHSce = range(self.connections['Number'])
-        m.sHInNod = range(self.nodes['OutNumber'])
-        m.sHOutNod = range(self.nodes['OutNumber'])
         m.sHShare = range(self.opt['NoShare'])
-        m.sHNoSoCLinks = range(self.opt['NoSoCLinks'])
-        m.sHFXIn = range(self.opt['NoFxInput'])
 
         return m
 
@@ -417,14 +418,15 @@ class HydrologyClass:
         auxr = range(self.connections['Number']*self.rivers['Number'])
         auxin = range(self.connections['Number']*self.nodes['InNumber'])
         auxout = range(self.connections['Number']*self.nodes['OutNumber'])
-        m.vHSoC = Var(auxr, m.sHTimP, domain=NonNegativeReals)
-        m.vHup = Var(auxr, m.sHTim, domain=NonNegativeReals)
+
         m.vHdown = Var(auxr, m.sHTim, domain=NonNegativeReals)
-        m.vHin = Var(auxin, m.sHTim, domain=NonNegativeReals)
-        m.vHout = Var(auxout, m.sHTim, domain=NonNegativeReals)
         m.vHFeas = Var(range(self.opt['FeasNo']*self.connections['Number']),
                        range(self.opt['FeasNoTime']), domain=NonNegativeReals,
                        initialize=0.0)
+        m.vHin = Var(auxin, m.sHTim, domain=NonNegativeReals)
+        m.vHout = Var(auxout, m.sHTim, domain=NonNegativeReals)
+        m.vHSoC = Var(auxr, m.sHTimP, domain=NonNegativeReals)
+        m.vHup = Var(auxr, m.sHTim, domain=NonNegativeReals)
 
         return m
 
