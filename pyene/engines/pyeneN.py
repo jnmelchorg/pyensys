@@ -186,6 +186,70 @@ class ENetworkClass:
 
         return m
 
+    def addPar(self, m):
+        ''' Add pyomo parameters '''
+        m.branchNo = self.branchNo
+        m.branchData = self.branchData
+        m.Loss_Con1 = self.Loss_Con1
+        m.Loss_Con2 = self.Loss_Con2
+        m.LLN2B1 = self.LLN2B1
+        m.LLN2B2 = self.LLN2B2
+        m.LLESec1 = self.LLESec1
+        m.LLESec2 = self.LLESec2
+        m.GenMax = self.GenMax
+        m.GenMin = self.GenMin
+        m.LLGen1 = self.LLGen1
+        m.LLGen2 = self.LLGen2
+        m.LLGenC = self.LLGenC
+        m.GenLCst = self.GenLCst
+        m.MaxDL = self.pumps['Max']
+        m.LLDL = self.LLDL
+        m.LLFea = self.LLFea
+
+        return m
+
+    def addSets(self, m):
+        ''' Add pyomo sets '''
+        m.sBra = range(self.networkE.number_of_edges())
+        m.sBus = range(self.networkE.number_of_nodes())
+        m.sTim = range(self.settings['NoTime'])
+        m.sLoss = range(self.Number_LossCon)
+        m.sBranch = range(self.NoBranch+1)
+        m.sBuses = range(self.NoBuses+1)
+        m.sN2B = range(self.NoN2B)
+        m.sSec1 = range(self.NoSec1)
+        m.sSec2 = range(self.NoSec2+1)
+        m.sGen = range(self.generationE['Number'])
+        m.sGenCM = range(self.NoGenC)
+        m.sDL = range(self.pumps['Number'])
+        m.sFea = range(self.NoFea)
+        m.sSto = range(self.Storage['Number'])
+        m.sCon = self.connections['set']
+
+        return m
+
+    def addVars(self, m):
+        ''' Add pyomo variables '''
+        Noh = len(m.sCon)
+        m.vFlow = Var(range(Noh*(self.NoBranch+1)), m.sTim,
+                      domain=Reals, initialize=0.0)
+        m.vVolt = Var(range(Noh*(self.NoBuses+1)), m.sTim,
+                      domain=Reals, initialize=0.0)
+        m.vLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
+                      m.sTim, domain=NonNegativeReals, initialize=0.0)
+        m.vFea = Var(range(Noh*self.NoFea), m.sTim, domain=NonNegativeReals,
+                     initialize=0.0)
+        m.vGen = Var(range(Noh*(self.generationE['Number']+1)), m.sTim,
+                     domain=NonNegativeReals, initialize=0.0)
+        m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim,
+                       domain=NonNegativeReals, initialize=0.0)
+        m.vDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
+                    domain=NonNegativeReals, initialize=0.0)
+        m.vStore = Var(range(Noh*(self.Storage['Number'])+1), m.sTim,
+                       domain=NonNegativeReals, initialize=0.0)
+
+        return m
+
     def cDCLossA_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Positive) '''
         return (m.vLoss[self.connections['Loss'][xh]+xb+1, xt] >=
@@ -309,70 +373,6 @@ class ENetworkClass:
         ''' Minimum storage '''
         aux = xh*self.Storage['Number']+xst+1
         return m.vStore[aux, xt] >= 0.2*self.Storage['Max'][xst]
-
-    def getPar(self, m):
-        ''' Add pyomo parameters '''
-        m.branchNo = self.branchNo
-        m.branchData = self.branchData
-        m.Loss_Con1 = self.Loss_Con1
-        m.Loss_Con2 = self.Loss_Con2
-        m.LLN2B1 = self.LLN2B1
-        m.LLN2B2 = self.LLN2B2
-        m.LLESec1 = self.LLESec1
-        m.LLESec2 = self.LLESec2
-        m.GenMax = self.GenMax
-        m.GenMin = self.GenMin
-        m.LLGen1 = self.LLGen1
-        m.LLGen2 = self.LLGen2
-        m.LLGenC = self.LLGenC
-        m.GenLCst = self.GenLCst
-        m.MaxDL = self.pumps['Max']
-        m.LLDL = self.LLDL
-        m.LLFea = self.LLFea
-
-        return m
-
-    def getSets(self, m):
-        ''' Add pyomo sets '''
-        m.sBra = range(self.networkE.number_of_edges())
-        m.sBus = range(self.networkE.number_of_nodes())
-        m.sTim = range(self.settings['NoTime'])
-        m.sLoss = range(self.Number_LossCon)
-        m.sBranch = range(self.NoBranch+1)
-        m.sBuses = range(self.NoBuses+1)
-        m.sN2B = range(self.NoN2B)
-        m.sSec1 = range(self.NoSec1)
-        m.sSec2 = range(self.NoSec2+1)
-        m.sGen = range(self.generationE['Number'])
-        m.sGenCM = range(self.NoGenC)
-        m.sDL = range(self.pumps['Number'])
-        m.sFea = range(self.NoFea)
-        m.sSto = range(self.Storage['Number'])
-        m.sCon = self.connections['set']
-
-        return m
-
-    def getVars(self, m):
-        ''' Add pyomo variables '''
-        Noh = len(m.sCon)
-        m.vFlow = Var(range(Noh*(self.NoBranch+1)), m.sTim,
-                      domain=Reals, initialize=0.0)
-        m.vVolt = Var(range(Noh*(self.NoBuses+1)), m.sTim,
-                      domain=Reals, initialize=0.0)
-        m.vLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                      m.sTim, domain=NonNegativeReals, initialize=0.0)
-        m.vFea = Var(range(Noh*self.NoFea), m.sTim, domain=NonNegativeReals,
-                     initialize=0.0)
-        m.vGen = Var(range(Noh*(self.generationE['Number']+1)), m.sTim,
-                     domain=NonNegativeReals, initialize=0.0)
-        m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim,
-                       domain=NonNegativeReals, initialize=0.0)
-        m.vDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
-                    domain=NonNegativeReals, initialize=0.0)
-        m.vStore = Var(range(Noh*(self.Storage['Number'])+1), m.sTim,
-                       domain=NonNegativeReals, initialize=0.0)
-
-        return m
 
     def initialise(self):
         ''' Initialize externally '''

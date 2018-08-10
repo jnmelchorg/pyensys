@@ -375,6 +375,35 @@ class EnergyClass:
 
         return m
 
+    def addPar(self, m):
+        ''' Adding pyomo parameters '''
+        m.LLTS1 = self.LL['Balance']
+        m.LLTS2 = self.LL['Aggregation']
+        m.LLTS3 = self.LL['Uncertainty']
+        m.WInFull = self.Weight['In']
+        m.WOutFull = self.Weight['Out']
+        m.WghtFull = self.Weight['Node']
+
+        return m
+
+    def addSets(self, m):
+        ''' Adding pyomo sets '''
+        m.sNod = range(1, self.LL['NosBal']+1)
+        m.sNodz = range(self.LL['NosBal']+1)
+        m.sLLTS2 = range(self.LL['NosAgg']+1)
+        m.sLLTS3 = range(self.LL['NosUnc']+1)
+        m.FUnc = self.LL['NosUnc']
+        m.sVec = range(self.size['Vectors'])
+
+        return m
+
+    def addVars(self, m):
+        ''' Adding pyomo varaibles '''
+        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
+                     initialize=0.0)
+
+        return m
+
     def cSoCAggregate_rule(self, m, xL2, xv):
         ''' Aggregating (deterministic case) '''
         return (m.vSoC[m.LLTS2[xL2, 0], 1, xv] ==
@@ -404,35 +433,6 @@ class EnergyClass:
     def cZSoC_rule(self, m, x1, xv):
         ''' SoC initialisation conditiona '''
         return m.vSoC[0, x1, xv] == 0
-
-    def getPar(self, m):
-        ''' Adding pyomo parameters '''
-        m.LLTS1 = self.LL['Balance']
-        m.LLTS2 = self.LL['Aggregation']
-        m.LLTS3 = self.LL['Uncertainty']
-        m.WInFull = self.Weight['In']
-        m.WOutFull = self.Weight['Out']
-        m.WghtFull = self.Weight['Node']
-
-        return m
-
-    def getSets(self, m):
-        ''' Adding pyomo sets '''
-        m.sNod = range(1, self.LL['NosBal']+1)
-        m.sNodz = range(self.LL['NosBal']+1)
-        m.sLLTS2 = range(self.LL['NosAgg']+1)
-        m.sLLTS3 = range(self.LL['NosUnc']+1)
-        m.FUnc = self.LL['NosUnc']
-        m.sVec = range(self.size['Vectors'])
-
-        return m
-
-    def getVars(self, m):
-        ''' Adding pyomo varaibles '''
-        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
-                     initialize=0.0)
-
-        return m
 
     def initialise(self):
         ''' Initialise externally '''

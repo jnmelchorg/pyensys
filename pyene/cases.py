@@ -158,23 +158,32 @@ def test_pyenetest():
 #                                  'test-case-integrated', 'fdtc_integrated',
 #                                  'json')
     conf = pyeneConfig()
-    from .engines.pyeneH import HydrologyClass
-
-    HM = HydrologyClass(conf.HM)
-    HM.initialise()
-
-    mod = ConcreteModel()
-    mod = HM.addSets(mod)
-    mod = HM.addPar(mod)
-    mod = HM.addVars(mod)
-    mod = HM.addCon(mod)
-    from pyomo.core import Objective, minimize
-    mod.OF = Objective(rule=HM.OF_rule, sense=minimize)
-    opt = SolverFactory('glpk')
-    results = opt.solve(mod)
-#    print(results)
-    HM.print(mod)
-    print('OF: ', mod.OF.expr())
+    EN = pyeneClass(conf.EN)
+    (HM, HModel, results)=EN.HSim(conf)
+    HM.print(HModel)
+    print('OF: ', HModel.OF.expr())
+    print()
+#    HM.print_settings(HModel)
+    
+    
+#    from .engines.pyeneH import HydrologyClass
+#
+#    HM = HydrologyClass(conf.HM)
+#    HM.initialise()
+#
+#    mod = ConcreteModel()
+#    mod = HM.addSets(mod)
+#    mod = HM.addPar(mod)
+#    mod = HM.addVars(mod)
+#    mod = HM.addCon(mod)
+#    from pyomo.core import Objective, minimize
+#    mod.OF = Objective(rule=HM.OF_rule, sense=minimize)
+#    opt = SolverFactory('glpk')
+#    results = opt.solve(mod)
+##    print(results)
+#    HM.print(mod)
+#    print('OF: ', mod.OF.expr())
+#    HM.print_settings(mod)
     
 #    # Example of the contents of conf
 #    conf = pyeneConfig()

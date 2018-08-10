@@ -17,6 +17,7 @@ from pyomo.opt import SolverFactory
 import numpy as np
 from .pyeneN import ENetworkClass as dn  # Network component
 from .pyeneE import EnergyClass as de  # Energy component
+from .pyeneH import HydrologyClass as hn  # Hydrology engine
 import json
 import os
 
@@ -56,7 +57,7 @@ class pyeneClass():
 
     def _AddPyeneCons(self, EM, NM, mod):
         ''' Model additional variables '''
-        mod = self.getVars(mod)
+        mod = self.addVars(mod)
 
         #                             Constraints                             #
         mod = EM.addCon(mod)
@@ -110,23 +111,43 @@ class pyeneClass():
 
         return m
 
+    def addPar(self, m):
+        ''' Add pyomo parameters'''
+        m.LLENM = self.LLENM
+
+        return m
+
+    def addSets(self, m):
+        '''Add pyomo sets'''
+        m.sLLEN = range(self.NoLL)
+
+        return m
+
+    def addVars(self, m):
+        ''' Add pyomo variables '''
+        # Converting some parameters to variables
+        del m.WOutFull
+        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
+                         initialize=0.0)
+        return m
+
     def build_Mod(self, EM, NM, mod):
         ''' Build pyomo model '''
         # Declare pyomo model
 
         #                                 Sets                                #
-        mod = EM.getSets(mod)
-        mod = NM.getSets(mod)
-        mod = self.getSets(mod)
+        mod = EM.addSets(mod)
+        mod = NM.addSets(mod)
+        mod = self.addSets(mod)
 
         #                           Model Variables                           #
-        mod = EM.getVars(mod)
-        mod = NM.getVars(mod)
+        mod = EM.addVars(mod)
+        mod = NM.addVars(mod)
 
         #                              Parameters                             #
-        mod = EM.getPar(mod)
-        mod = NM.getPar(mod)
-        mod = self.getPar(mod)
+        mod = EM.addPar(mod)
+        mod = NM.addPar(mod)
+        mod = self.addPar(mod)
 
         return mod
 
@@ -477,25 +498,27 @@ class pyeneClass():
         from .pyeneR import RESprofiles
         return RESprofiles(obj)
 
-    def getPar(self, m):
-        ''' Add pyomo parameters'''
-        m.LLENM = self.LLENM
+    def HSim(self, conf):
+        ''' Hydrology only optimisation '''
+        # Get network object
+        HM = hn(conf.HM)
 
-        return m
+        # Initialise
+        HM.initialise()
 
-    def getSets(self, m):
-        '''Add pyomo sets'''
-        m.sLLEN = range(self.NoLL)
+        # Build LP model
+        HModel = self.SingleLP(HM)
 
-        return m
+        #                          Objective function                         #
+        HModel.OF = Objective(rule=HM.OF_rule, sense=minimize)
 
-    def getVars(self, m):
-        ''' Add pyomo variables '''
-        # Converting some parameters to variables
-        del m.WOutFull
-        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
-                         initialize=0.0)
-        return m
+        # Optimise
+        opt = SolverFactory('glpk')
+
+        # Print results
+        results = opt.solve(HModel)
+
+        return (HM, HModel, results)
 
     def initialise(self, conf):
         ''' Initialise energy and networks simulator '''
@@ -815,13 +838,13 @@ class pyeneClass():
         mod = ConcreteModel()
 
         #                                 Sets                                #
-        mod = ENM.getSets(mod)
+        mod = ENM.addSets(mod)
 
         #                              Parameters                             #
-        mod = ENM.getPar(mod)
+        mod = ENM.addPar(mod)
 
         #                           Model Variables                           #
-        mod = ENM.getVars(mod)
+        mod = ENM.addVars(mod)
 
         #                             Constraints                             #
         mod = ENM.addCon(mod)
