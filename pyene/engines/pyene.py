@@ -155,7 +155,7 @@ class pyeneClass():
         ''' Water use depends on the electricity system '''
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
-                sum(m.vGen[m.LLENM[xL][1]+xv, xt] *
+                sum(m.vNGen[m.LLENM[xL][1]+xv, xt] *
                     self.NM.scenarios['Weights'][xt] for xt in m.sNTim))
 
     def ESim(self, conf):
@@ -294,7 +294,7 @@ class pyeneClass():
             for xh in auxscens:
                 acu = 0
                 for xt in auxtime:
-                    acu += (m.vFea[self.hFea[xh]+bus, xt].value *
+                    acu += (m.vNFea[self.hFea[xh]+bus, xt].value *
                             auxweight[xt])
                 value += acu*auxOF[xh]
             value *= self.NM.networkE.graph['baseMVA']
@@ -310,7 +310,7 @@ class pyeneClass():
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (m.vGen[self.NM.connections['Generation']
+                acu += (m.vNGen[self.NM.connections['Generation']
                                [xh]+index, xt].value*auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
@@ -359,7 +359,7 @@ class pyeneClass():
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (m.vLoss[self.NM.connections['Loss']
+                acu += (m.vNLoss[self.NM.connections['Loss']
                                 [xh]+xb, xt].value)*auxweight[xt]
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
@@ -399,29 +399,29 @@ class pyeneClass():
 
         value = 0
         if auxFlags[0]:  # Conventional generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+            value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value for xg
                                  in range(self.NM.settings['Generators']))
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+            value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value for xg
                                  in self.NM.RES['Link'])
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
-            value += sum(sum(sum(m.vGCost[self.hGC[xh]+xg, xt].value for xg
+            value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value for xg
                                  in self.NM.hydropower['Link'])
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
                              self.NM.networkE.graph['baseMVA'] *
-                             sum(m.vDL[self.hDL[xh]+xdl+1, xt].value *
+                             sum(m.vNDL[self.hDL[xh]+xdl+1, xt].value *
                                  self.NM.scenarios['Weights'][xt]
                                  for xt in auxtime) for xdl in m.sNDL) *
                          auxOF[xh] for xh in auxscens)
 
         if auxFlags[4]:  # Curtailment
-            value += sum(sum(sum(m.vFea[self.hFea[xh]+xf, xt].value for xf
+            value += sum(sum(sum(m.vNFea[self.hFea[xh]+xf, xt].value for xf
                                  in m.sNFea)*self.Penalty for xt in auxtime) *
                          auxOF[xh] for xh in auxscens)
 
@@ -435,7 +435,7 @@ class pyeneClass():
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (m.vDL[self.hDL[xh]+index, xt].value*auxweight[xt])
+                acu += (m.vNDL[self.hDL[xh]+index, xt].value*auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
@@ -453,7 +453,7 @@ class pyeneClass():
             for xt in auxtime:
                 acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
                          [self.NM.resScenario[xg][xh][1]+xt] -
-                         m.vGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                         m.vNGen[self.NM.resScenario[xg][xh][0], xt].value) *
                         auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
@@ -617,12 +617,12 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networkd model'''
-        return sum((sum(sum(m.vGCost[self.hGC[xh]+xg, xt] for xg in m.sNGen) +
-                        sum(m.vFea[self.hFea[xh]+xf, xt] for xf in m.sNFea) *
+        return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt] for xg in m.sNGen) +
+                        sum(m.vNFea[self.hFea[xh]+xf, xt] for xf in m.sNFea) *
                         self.Penalty for xt in m.sNTim) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
-                        sum(m.vDL[self.hDL[xh]+xdl+1, xt] *
+                        sum(m.vNDL[self.hDL[xh]+xdl+1, xt] *
                             self.NM.scenarios['Weights'][xt]
                             for xt in m.sNTim) for xdl in m.sNDL)) *
                    self.OFaux[xh] for xh in self.h)

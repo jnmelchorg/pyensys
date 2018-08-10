@@ -404,11 +404,11 @@ def test_pyene_SingleLP():
     def OF_rule(m):
         ''' Combined objective function '''
         return (m.WaterValue*sum(m.WInFull[1, xv] for xv in m.sVec) +
-                sum((sum(sum(m.vGCost[m.OFhGC[xh]+xg, xt] for xg in m.sNGen) +
-                         sum(m.vFea[m.OFFea[xh]+xf, xt] for xf in m.sNFea) *
+                sum((sum(sum(m.vNGCost[m.OFhGC[xh]+xg, xt] for xg in m.sNGen) +
+                         sum(m.vNFea[m.OFFea[xh]+xf, xt] for xf in m.sNFea) *
                          m.OFpenalty for xt in m.sNTim) -
                      sum(m.OFpumps[xdl]*m.base *
-                         sum(m.vDL[m.OFhDL[xh]+xdl+1, xt] *
+                         sum(m.vNDL[m.OFhDL[xh]+xdl+1, xt] *
                              m.OFweights[xt]
                              for xt in m.sNTim) for xdl in m.sNDL)) *
                     m.OFaux[xh] for xh in m.OFh))
