@@ -67,7 +67,7 @@ class pyeneClass():
         return m
 
     def _Calculate_OFaux(self, EM, NM):
-        WghtAgg = 0+EM.Weight['Node']
+        WghtAgg = 0+EM.p['WghtFull']
         OFaux = np.ones(len(NM.connections['set']), dtype=float)
         xp = 0
         for xn in range(EM.LL['NosBal']+1):
@@ -105,7 +105,7 @@ class pyeneClass():
     def addCon(self, m):
         ''' Adding pyomo constraints'''
         # Link water consumption from both models
-        m.cEMNM = Constraint(m.sLLEN, m.sVec, rule=self.cEMNM_rule)
+        m.cEMNM = Constraint(m.sLLEN, self.EM.s['Vec'], rule=self.cEMNM_rule)
         # Allow collection of ual values
         m.dual = Suffix(direction=Suffix.IMPORT)
 
@@ -127,7 +127,7 @@ class pyeneClass():
         ''' Add pyomo variables '''
         # Converting some parameters to variables
         del m.WOutFull
-        m.WOutFull = Var(m.sNodz, m.sVec, domain=NonNegativeReals,
+        m.WOutFull = Var(self.EM.s['Nodz'], self.EM.s['Vec'], domain=NonNegativeReals,
                          initialize=0.0)
         return m
 
@@ -616,7 +616,7 @@ class pyeneClass():
         return (NM, NModel, results)
 
     def OF_rule(self, m):
-        ''' Objective function for energy and networkd model'''
+        ''' Objective function for energy and networks model'''
         return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt] for xg in m.sNGen) +
                         sum(m.vNFea[self.hFea[xh]+xf, xt] for xf in m.sNFea) *
                         self.Penalty for xt in m.sNTim) -
@@ -632,8 +632,8 @@ class pyeneClass():
         EM.print(m)
         NM.print(m)
         print('Water outputs:')
-        for xn in m.sNodz:
-            for xv in m.sVec:
+        for xn in EM.s['Nodz']:
+            for xv in EM.s['Vec']:
                 aux = m.WOutFull[xn, xv].value
                 print("%8.4f " % aux, end='')
             print('')
@@ -641,8 +641,8 @@ class pyeneClass():
         if type(m.WInFull) is np.ndarray:
             print(m.WInFull)
         else:
-            for xn in m.sNodz:
-                for xv in m.sVec:
+            for xn in EM.s['Nodz']:
+                for xv in EM.s['Vec']:
                     aux = m.WInFull[xn, xv].value
                     print("%8.4f " % aux, end='')
                 print('')

@@ -31,12 +31,12 @@ def test_pyene_Small():
     # Initialise with selected configuration
     EN.initialise(conf)
     # Run integrated pyene
-    mod = ConcreteModel()
-    mod = EN.run(mod)
-    EN.Print_ENSim(mod, EN.EM, EN.NM)
-    print(mod.OF.expr())
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m, EN.EM, EN.NM)
+    print(m.OF.expr())
 
-    assert 0.0001 >= abs(mod.OF.expr()-21952.5*7*4.25)
+    assert 0.0001 >= abs(m.OF.expr()-21952.5*7*4.25)
 
 
 # Adding hydropower
@@ -62,12 +62,12 @@ def test_pyene_SmallHydro():
     for xh in range(conf.NM.hydropower['Number']):
         EN.set_Hydro(xh+1, 1000)
     # Run integrated pyene
-    mod = ConcreteModel()
-    mod = EN.run(mod)
-    EN.Print_ENSim(mod, EN.EM, EN.NM)
-    print('\n%f ' % mod.OF.expr())
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m, EN.EM, EN.NM)
+    print('\n%f ' % m.OF.expr())
 
-    assert 0.0001 >= abs(mod.OF.expr()-527048.8750)
+    assert 0.0001 >= abs(m.OF.expr()-527048.8750)
 
 
 # Converting to pypsa
@@ -136,22 +136,22 @@ def test_pyene_Curtailment2Hydro():
     # reduce capcity of the other generator
     EN.set_GenCoFlag(2, 499)
     # Run integrated pyene
-    mod = ConcreteModel()
-    mod = EN.run(mod)
-    print('Marginal ', EN.get_HydroMarginal(mod, 1))
+    m = ConcreteModel()
+    m = EN.run(m)
+    print('Marginal ', EN.get_HydroMarginal(m, 1))
     # Get demand curtailment as required hydropower inputs
-    Needed_hydro = EN.get_AllDemandCurtailment(mod)
+    Needed_hydro = EN.get_AllDemandCurtailment(m)
     print('Required hydro:', Needed_hydro)
-    print('Flaf: ', EN.get_HydroFlag(mod, 1))
+    print('Flaf: ', EN.get_HydroFlag(m, 1))
     # Add hydropower
     EN.set_Hydro(1, Needed_hydro+0.00001+1)
     # Run integrated pyene
-    mod = ConcreteModel()
-    mod = EN.run(mod)
-    print('Marginal ', EN.get_HydroMarginal(mod, 1))
-    print('Flaf: ', EN.get_HydroFlag(mod, 1))
+    m = ConcreteModel()
+    m = EN.run(m)
+    print('Marginal ', EN.get_HydroMarginal(m, 1))
+    print('Flaf: ', EN.get_HydroFlag(m, 1))
     # Get updated demand curtailment
-    Demand_curtailed = EN.get_AllDemandCurtailment(mod)
+    Demand_curtailed = EN.get_AllDemandCurtailment(m)
     print('Total curtailment:', Demand_curtailed)
 
     # 4.25*(7*1 + 2*1) = 29.75
@@ -197,27 +197,27 @@ def test_pyene_AllHydro():
     demandNode.index = 2
     EN.set_Demand(demandNode.index, demandNode.value)
     # Run model
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Get total energy generation
-    Total_Generation = EN.get_AllGeneration(mod)
+    Total_Generation = EN.get_AllGeneration(m)
     print('Total generation: ', Total_Generation)
     # Replace all conventional generation with hydropower
     EN.set_Hydro(1, Total_Generation)
     # Run system again
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Check conventional power generation
-    Total_Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+    Total_Conv_Generation = EN.get_AllGeneration(m, 'Conv')
     print('Total conventional generation: ', Total_Conv_Generation)
     # Add even more hydropower
     Additional_hydro = 100
     EN.set_Hydro(1, Total_Generation+Additional_hydro)
     # Run the system again
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Check that the water is spilled instead of used by the pumps
-    Hydropower_Left = EN.get_AllHydro(mod)
+    Hydropower_Left = EN.get_AllHydro(m)
     print('Hydropower left', Hydropower_Left)
 
     # 4 .25*(5*(100*0.5+50*1.0)+2*(50+0.5+150+1.0)) = 3612.5
@@ -283,43 +283,43 @@ def test_pyene_RESPump():
     # COnstrain generation
     EN.set_GenCoFlag(1, 200)
     EN.set_GenCoFlag(2, 200)
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Get RES spilled
-    RES_Spilled = EN.get_AllRES(mod)
+    RES_Spilled = EN.get_AllRES(m)
     print('RES spilled ', RES_Spilled)
     # Get use of pumps
-    Pumps_Use = EN.get_AllPumps(mod)
+    Pumps_Use = EN.get_AllPumps(m)
     print('Energy used by pumps', Pumps_Use)
     # Get demand curtailed
-    Demand_Curtailed = EN.get_AllDemandCurtailment(mod)
+    Demand_Curtailed = EN.get_AllDemandCurtailment(m)
     print('Demand curtailed', Demand_Curtailed)
     # Add hydro to replace conventional generation
-    Conv_Generation = EN.get_AllGeneration(mod, 'Conv')
+    Conv_Generation = EN.get_AllGeneration(m, 'Conv')
     print('Conventional generation ', Conv_Generation)
     EN.set_Hydro(1, Conv_Generation)
     # Run again
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Get new curtailment
-    New_Curtailed = EN.get_AllDemandCurtailment(mod)
+    New_Curtailed = EN.get_AllDemandCurtailment(m)
     print('New demand curtailment ', New_Curtailed)
     # Get use of conventional generation
-    Use_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    Use_ConvGeneration = EN.get_AllGeneration(m, 'Conv')
     print('Conventional generation ', Use_ConvGeneration)
     # Fully cover conventional generation and demand with hydro
     EN.set_Hydro(1, Conv_Generation+Demand_Curtailed)
     # Run again
-    mod = ConcreteModel()
-    mod = EN.run(mod)
+    m = ConcreteModel()
+    m = EN.run(m)
     # Get use of pumps
-    Final_Pump = EN.get_AllPumps(mod)
+    Final_Pump = EN.get_AllPumps(m)
     print('Energy used by pumps', Final_Pump)
     # Get new curtailment
-    Final_Curtailed = EN.get_AllDemandCurtailment(mod)
+    Final_Curtailed = EN.get_AllDemandCurtailment(m)
     print('New demand curtailment ', Final_Curtailed)
     # Get use of conventional generation
-    Final_ConvGeneration = EN.get_AllGeneration(mod, 'Conv')
+    Final_ConvGeneration = EN.get_AllGeneration(m, 'Conv')
     print('Conventional generation ', Final_ConvGeneration)
 
     # 4.25*5*50*1 = 1062.5
@@ -377,14 +377,14 @@ def test_pyene_SingleLP():
 
     def HyroActualUse_rule(m, xv):
         '''Constraint for actual hydropower used'''
-        return mod.vHydroUse[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
+        return m.vHydroUse[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
 
     def AdjustPyeneMod(m, EN):
         '''Final modifications for pyene to work with the integrated model'''
         # Set unused water inputs to zero
         m.sN0 = [x for x in range(EN.EM.LL['NosBal']+1)]
         m.sN0.pop(1)
-        m.ZeroHydroIn = Constraint(m.sN0, m.sVec, rule=ZeroHydroIn_rule)
+        m.ZeroHydroIn = Constraint(m.sN0, EN.EM.s['Vec'], rule=ZeroHydroIn_rule)
 
         # Variables used by pyene for claculating the objective function
         m = EN._AddPyeneCons(EN.EM, EN.NM, m)
@@ -415,7 +415,7 @@ def test_pyene_SingleLP():
     '''                         First step
     Assume an external engine creates the pyomo model
     '''
-    mod = ConcreteModel()
+    m = ConcreteModel()
 
     '''                         Second step
     The engine creates a pyene object
@@ -434,40 +434,39 @@ def test_pyene_SingleLP():
     '''                        Fourth step
     Initialise pyomo sets, parameters, and variables for pyene
     '''
-    mod = EN.build_Mod(EN.EM, EN.NM, mod)
+    m = EN.build_Mod(EN.EM, EN.NM, m)
 
     '''                         Fifth step
     Redefine hydropower inputs as variables
     '''
-    del mod.WInFull
+    del m.WInFull
     if conf.NM.hydropower['Number'] > 1:
-        mod.WInFull = Var(mod.sNodz, mod.sVec, domain=NonNegativeReals,
-                          initialize=0.0)
+        m.WInFull = Var(EN.EM.s['Nodz'], EN.EM.s['Vec'], domain=NonNegativeReals, initialize=0.0)
     else:
-        mod.WInFull = Var(mod.sNodz, domain=NonNegativeReals, initialize=0.0)
+        m.WInFull = Var(EN.EM.s['Nodz'], domain=NonNegativeReals, initialize=0.0)
 
     '''                         Sixth step
     Define hydropower allowance
     Assuming pywr were to have these values in a variable called
     vHydropowerAllowance
     '''
-    mod.vHydropowerAllowance = Var(mod.sVec, domain=NonNegativeReals,
+    m.vHydropowerAllowance = Var(EN.EM.s['Vec'], domain=NonNegativeReals,
                                    initialize=0.0)
-    mod.MaxHydro = np.zeros(conf.NM.hydropower['Number'], dtype=float)
+    m.MaxHydro = np.zeros(conf.NM.hydropower['Number'], dtype=float)
     for xh in range(conf.NM.hydropower['Number']):
-        mod.MaxHydro[xh] = 134000
+        m.MaxHydro[xh] = 134000
 
     # Add constraint to limit hydropower allowance
-    mod.MaxHydroAllowance = Constraint(mod.sVec, rule=MaxHydroAllowance_rule)
+    m.MaxHydroAllowance = Constraint(EN.EM.s['Vec'], rule=MaxHydroAllowance_rule)
 
     # Link hydropower constraint to pyene
-    mod.HydroAllowance = Constraint(mod.sVec, rule=HydroAllowance_rule)
+    m.HydroAllowance = Constraint(EN.EM.s['Vec'], rule=HydroAllowance_rule)
 
     '''                        Seventh step
     Make final modifications to pyene, so that the new constraints and
     objective function work correctly
     '''
-    mod = AdjustPyeneMod(mod, EN)
+    m = AdjustPyeneMod(m, EN)
 
     '''                        Eigth step
     Define a new objective function.
@@ -480,8 +479,9 @@ def test_pyene_SingleLP():
     '''
     # Collect water use
     # Assuming that total hydropower use is assigned to vHydroUse
-    mod.WaterValue = 10000
-    mod.OF = Objective(rule=OF_rule, sense=minimize)
+    m.WaterValue = 10000
+    m.sVec = EN.EM.s['Vec']
+    m.OF = Objective(rule=OF_rule, sense=minimize)
 
     '''                        Ninth step
     Running the model
@@ -489,35 +489,35 @@ def test_pyene_SingleLP():
     # Optimise
     opt = SolverFactory('glpk')
     # Print
-    opt.solve(mod)
+    opt.solve(m)
 
     '''                            Testing                                  '''
     tstResults = np.zeros(4, dtype=float)
-    tstResults[0] = mod.OF.expr()
+    tstResults[0] = m.OF.expr()
 
-    mod.WaterValue = 9999
-    del mod.OF
-    mod.OF = Objective(rule=OF_rule, sense=minimize)
+    m.WaterValue = 9999
+    del m.OF
+    m.OF = Objective(rule=OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
-    opt.solve(mod)
-    tstResults[1] = mod.OF.expr()
+    opt.solve(m)
+    tstResults[1] = m.OF.expr()
 
-    mod.WaterValue = 269
-    del mod.OF
-    mod.OF = Objective(rule=OF_rule, sense=minimize)
-    opt = SolverFactory('glpk')
-    # Print
-    opt.solve(mod)
-
-    tstResults[2] = mod.OF.expr()
-
-    mod.WaterValue = 103
-    del mod.OF
-    mod.OF = Objective(rule=OF_rule, sense=minimize)
+    m.WaterValue = 269
+    del m.OF
+    m.OF = Objective(rule=OF_rule, sense=minimize)
     opt = SolverFactory('glpk')
     # Print
-    opt.solve(mod)
-    tstResults[3] = mod.OF.expr()
+    opt.solve(m)
+
+    tstResults[2] = m.OF.expr()
+
+    m.WaterValue = 103
+    del m.OF
+    m.OF = Objective(rule=OF_rule, sense=minimize)
+    opt = SolverFactory('glpk')
+    # Print
+    opt.solve(m)
+    tstResults[3] = m.OF.expr()
 
     assert (0.001 >= abs(tstResults[0]-64918496.1787) and
             0.001 >= abs(tstResults[1]-64917775.4642) and

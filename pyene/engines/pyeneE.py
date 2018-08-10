@@ -82,6 +82,10 @@ class EnergyClass:
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
+        # sets and parameters used for the mathematical model
+        self.s = {}
+        self.p = {}
+
     def _Connect(self, Unc):
         ''' Produce connectivity matrices '''
         # Build main LL defining scenario tree connections
@@ -230,13 +234,13 @@ class EnergyClass:
 
         # Linked lists
         self.LL = {
-                'Balance': LL1,  # Linke list for energy balance
-                'Aggregation': LL2,  # Aggregation
-                'Uncertainty': LL3,  # Weighted sum
                 'NosBal': NosNod,  # Number of nodes for energy balance
                 'NosAgg': NosLL2,  # Number of rows for aggregation LL
                 'NosUnc': NosLL3  # Number of rows for Uncertainty LL
                 }
+        self.p['LLTS1'] = LL1  # Linke list for energy balance
+        self.p['LLTS2'] = LL2  # Aggregation
+        self.p['LLTS3'] = LL3  # Weighted sum
 
     def _Measure(self):
         ''' Measure the size of the data arrays '''
@@ -286,16 +290,6 @@ class EnergyClass:
         self.Weight = {
                 'In': [],  # Weight of an input
                 'Out': [],  # Weight of an output
-                'Node': [],  # Weight of each node
-                }
-        # Linked lists
-        self.LL = {
-                'Balance': [],  # Linke list for energy balance
-                'Aggregation': [],  # Aggregation
-                'Uncertainty': [],  # Weighted sum
-                'NosBal': [],  # Number of nodes for energy balance
-                'NosAgg': [],  # Number of rows for aggregation LL
-                'NosUnc': []  # Number of rows for Uncertainty LL
                 }
 
     def _Parameters(self, WIn, WOut, Wght):
@@ -315,9 +309,9 @@ class EnergyClass:
                 WOutFull[x1][xv] = WOut[self.tree['InOut'][x1]][xv]
         self.Weight = {
                 'In': WInFull,  # All inputs
-                'Out': WOutFull,  # All outputs
-                'Node': WghtFull,  # Weight of each node
+                'Out': WOutFull  # All outputs
                 }
+        self.p['WghtFull'] = WghtFull  # Weight of each node
 
     def _Process(self):
         ''' Process the data as inputs, outputs, weights and uncertainty '''
@@ -362,73 +356,73 @@ class EnergyClass:
     def addCon(self, m):
         ''' Adding pyomo constraints '''
         # Initialisation conditions
-        m.cZSoC = Constraint(range(2), m.sVec, rule=self.cZSoC_rule)
+        m.cZSoC = Constraint(range(2), self.s['Vec'], rule=self.cZSoC_rule)
         # Balance at different time levels
-        m.cSoCBalance = Constraint(m.sNodz, m.sVec, rule=self.cSoCBalance_rule)
+        m.cSoCBalance = Constraint(self.s['Nodz'], self.s['Vec'],
+                                   rule=self.cSoCBalance_rule)
         # Aggregating (deterministic case)
-        m.cSOCAggregate = Constraint(m.sLLTS2, m.sVec,
+        m.cSOCAggregate = Constraint(self.s['LLTS2'], self.s['Vec'],
                                      rule=self.cSoCAggregate_rule)
         # Aggregating (stochastic case)
-        if m.FUnc != 0:
-            m.cSoCStochastic = Constraint(m.sLLTS3, m.sVec,
+        if self.s['FUnc'] != 0:
+            m.cSoCStochastic = Constraint(self.s['LLTS3'], self.s['Vec'],
                                           rule=self.cSoCStochastic_rule)
 
         return m
 
     def addPar(self, m):
         ''' Adding pyomo parameters '''
-        m.LLTS1 = self.LL['Balance']
-        m.LLTS2 = self.LL['Aggregation']
-        m.LLTS3 = self.LL['Uncertainty']
+
+        # Nodal inputs and outputs (may be redefined as variables)
         m.WInFull = self.Weight['In']
         m.WOutFull = self.Weight['Out']
-        m.WghtFull = self.Weight['Node']
 
         return m
 
     def addSets(self, m):
         ''' Adding pyomo sets '''
-        m.sNod = range(1, self.LL['NosBal']+1)
-        m.sNodz = range(self.LL['NosBal']+1)
-        m.sLLTS2 = range(self.LL['NosAgg']+1)
-        m.sLLTS3 = range(self.LL['NosUnc']+1)
-        m.FUnc = self.LL['NosUnc']
-        m.sVec = range(self.size['Vectors'])
+        self.s['Nod'] = range(1, self.LL['NosBal']+1)
+        self.s['Nodz'] = range(self.LL['NosBal']+1)
+        self.s['LLTS2'] = range(self.LL['NosAgg']+1)
+        self.s['LLTS3'] = range(self.LL['NosUnc']+1)
+        self.s['FUnc'] = self.LL['NosUnc']
+        self.s['Vec'] = range(self.size['Vectors'])
 
         return m
 
     def addVars(self, m):
         ''' Adding pyomo varaibles '''
-        m.vSoC = Var(m.sNodz, range(2), m.sVec, domain=NonNegativeReals,
-                     initialize=0.0)
+        m.vSoC = Var(self.s['Nodz'], range(2), self.s['Vec'],
+                     domain=NonNegativeReals, initialize=0.0)
 
         return m
 
     def cSoCAggregate_rule(self, m, xL2, xv):
         ''' Aggregating (deterministic case) '''
-        return (m.vSoC[m.LLTS2[xL2, 0], 1, xv] ==
-                m.vSoC[m.LLTS2[xL2, 1], m.LLTS2[xL2, 2], xv] *
-                m.WghtFull[m.LLTS2[xL2, 0]] +
-                m.vSoC[m.LLTS1[m.LLTS2[xL2, 0], 0],
-                       m.LLTS1[m.LLTS2[xL2, 0], 1], xv] *
-                (1-m.WghtFull[m.LLTS2[xL2, 0]]))
+        return (m.vSoC[self.p['LLTS2'][xL2, 0], 1, xv] ==
+                m.vSoC[self.p['LLTS2'][xL2, 1], self.p['LLTS2'][xL2, 2], xv] *
+                self.p['WghtFull'][self.p['LLTS2'][xL2, 0]] +
+                m.vSoC[self.p['LLTS1'][self.p['LLTS2'][xL2, 0], 0],
+                       self.p['LLTS1'][self.p['LLTS2'][xL2, 0], 1], xv] *
+                (1-self.p['WghtFull'][self.p['LLTS2'][xL2, 0]]))
 
     def cSoCBalance_rule(self, m, xL1, xv):
         ''' Balance at different time levels '''
         return (m.vSoC[xL1, 0, xv] ==
-                m.vSoC[m.LLTS1[xL1, 0], m.LLTS1[xL1, 1], xv] +
+                m.vSoC[self.p['LLTS1'][xL1, 0], self.p['LLTS1'][xL1, 1], xv] +
                 m.WInFull[xL1, xv] - m.WOutFull[xL1, xv])
 
     def cSoCStochastic_rule(self, m, xL3, xv):
         ''' Aggregating (stochastic case) '''
-        return (m.vSoC[m.LLTS3[xL3, 0], 1, xv] ==
-                m.vSoC[m.LLTS1[m.LLTS3[xL3, 0], 0],
-                       m.LLTS1[m.LLTS3[xL3, 0], 1], xv] *
-                (1-m.WghtFull[m.LLTS3[xL3, 0]]) +
-                m.WghtFull[m.LLTS3[xL3, 0]] *
-                (m.vSoC[m.LLTS3[xL3, 0], 0, xv] * -m.LLTS3[xL3, 2] +
-                 sum(m.vSoC[m.LLTS3[xL3, 1]+x1, 1, xv]
-                     for x1 in range(m.LLTS3[xL3, 2]+1))))
+        return (m.vSoC[self.p['LLTS3'][xL3, 0], 1, xv] ==
+                m.vSoC[self.p['LLTS1'][self.p['LLTS3'][xL3, 0], 0],
+                       self.p['LLTS1'][self.p['LLTS3'][xL3, 0], 1], xv] *
+                (1-self.p['WghtFull'][self.p['LLTS3'][xL3, 0]]) +
+                self.p['WghtFull'][self.p['LLTS3'][xL3, 0]] *
+                (m.vSoC[self.p['LLTS3'][xL3, 0], 0, xv] *
+                 -self.p['LLTS3'][xL3, 2] +
+                 sum(m.vSoC[self.p['LLTS3'][xL3, 1]+x1, 1, xv]
+                     for x1 in range(self.p['LLTS3'][xL3, 2]+1))))
 
     def cZSoC_rule(self, m, x1, xv):
         ''' SoC initialisation conditiona '''
@@ -496,14 +490,14 @@ class EnergyClass:
 
         return LL_TimeNodeBeforeSequence, xbeforeNew
 
-    def print(self, mod):
+    def print(self, m):
         ''' Print results '''
-        for xv in mod.sVec:
+        for xv in self.s['Vec']:
             print('Vector No:', xv)
-            for x1 in mod.sNodz:
+            for x1 in self.s['Nodz']:
                 print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
-                      % mod.vSoC[x1, 0, xv].value, ", %10.2f"
-                      % mod.vSoC[x1, 1, xv].value, "]")
+                      % m.vSoC[x1, 0, xv].value, ", %10.2f"
+                      % m.vSoC[x1, 1, xv].value, "]")
 
     def Read(self, FileName, jsonPath):
         ''' Read input data '''
@@ -514,4 +508,4 @@ class EnergyClass:
 
     def OF_rule(self, m):
         ''' Objective function '''
-        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in m.sVec)
+        return sum(m.vSoC[1, 0, 0]-m.vSoC[3, 0, xv] for xv in self.s['Vec'])

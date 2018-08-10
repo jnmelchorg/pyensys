@@ -61,7 +61,7 @@ class HydrologyClass:
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
-        # Pyomo sets and parameters
+        # sets and parameters used for the mathematical model
         self.s = {}
         self.p = {
                 'ConInNode': None,  # Node inputs
@@ -407,13 +407,19 @@ class HydrologyClass:
         auxin = range(self.connections['Number']*self.nodes['InNumber'])
         auxout = range(self.connections['Number']*self.nodes['OutNumber'])
 
+        # Downstream flow
         m.vHdown = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
+        # Feasibility constraint
         m.vHFeas = Var(range(self.opt['FeasNo']*self.connections['Number']),
                        range(self.opt['FeasNoTime']), domain=NonNegativeReals,
                        initialize=0.0)
+        # Water inputs (Node)
         m.vHin = Var(auxin, self.s['Tim'], domain=NonNegativeReals)
+        # Water outputs (Node)
         m.vHout = Var(auxout, self.s['Tim'], domain=NonNegativeReals)
+        # State of charge of the river
         m.vHSoC = Var(auxr, self.s['TimP'], domain=NonNegativeReals)
+        # Upstream flow
         m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
 
         return m
