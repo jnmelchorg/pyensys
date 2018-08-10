@@ -481,6 +481,10 @@ def test_pyene_SingleLP():
     # Assuming that total hydropower use is assigned to vHydroUse
     m.WaterValue = 10000
     m.sVec = EN.EM.s['Vec']
+    m.sNGen = EN.NM.s['Gen']
+    m.sNFea = EN.NM.s['Fea']
+    m.sNTim = EN.NM.s['Tim']
+    m.sNDL = EN.NM.s['Pump']
     m.OF = Objective(rule=OF_rule, sense=minimize)
 
     '''                        Ninth step

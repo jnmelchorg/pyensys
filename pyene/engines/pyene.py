@@ -156,7 +156,7 @@ class pyeneClass():
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
                 sum(m.vNGen[m.LLENM[xL][1]+xv, xt] *
-                    self.NM.scenarios['Weights'][xt] for xt in m.sNTim))
+                    self.NM.scenarios['Weights'][xt] for xt in self.NM.s['Tim']))
 
     def ESim(self, conf):
         ''' Energy only optimisation '''
@@ -417,12 +417,13 @@ class pyeneClass():
                              self.NM.networkE.graph['baseMVA'] *
                              sum(m.vNDL[self.hDL[xh]+xdl+1, xt].value *
                                  self.NM.scenarios['Weights'][xt]
-                                 for xt in auxtime) for xdl in m.sNDL) *
+                                 for xt in auxtime)
+                             for xdl in self.NM.s['Pump']) *
                          auxOF[xh] for xh in auxscens)
 
         if auxFlags[4]:  # Curtailment
             value += sum(sum(sum(m.vNFea[self.hFea[xh]+xf, xt].value for xf
-                                 in m.sNFea)*self.Penalty for xt in auxtime) *
+                                 in self.NM.s['Fea'])*self.Penalty for xt in auxtime) *
                          auxOF[xh] for xh in auxscens)
 
         return value
@@ -465,11 +466,11 @@ class pyeneClass():
         if 'times' in kwarg:
             auxtime = kwarg.pop('times')
         else:
-            auxtime = m.sNTim
+            auxtime = self.NM.s['Tim']
 
         # Remove weights
         if 'snapshot' in varg:
-            auxweight = np.ones(len(m.sNTim), dtype=int)
+            auxweight = np.ones(len(self.NM.s['Tim']), dtype=int)
             auxOF = np.ones(len(self.h), dtype=int)
         else:
             auxweight = self.NM.scenarios['Weights']
@@ -617,14 +618,14 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networks model'''
-        return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt] for xg in m.sNGen) +
-                        sum(m.vNFea[self.hFea[xh]+xf, xt] for xf in m.sNFea) *
-                        self.Penalty for xt in m.sNTim) -
+        return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt] for xg in self.NM.s['Gen']) +
+                        sum(m.vNFea[self.hFea[xh]+xf, xt] for xf in self.NM.s['Fea']) *
+                        self.Penalty for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
                         sum(m.vNDL[self.hDL[xh]+xdl+1, xt] *
                             self.NM.scenarios['Weights'][xt]
-                            for xt in m.sNTim) for xdl in m.sNDL)) *
+                            for xt in self.NM.s['Tim']) for xdl in self.NM.s['Pump'])) *
                    self.OFaux[xh] for xh in self.h)
 
     def Print_ENSim(self, m, EM, NM):
@@ -765,15 +766,16 @@ class pyeneClass():
 
     def set_GenCoFlag(self, index, value):
         ''' Adjust maximum output of generators '''
+        print('Data\n',self.NM.p)
         if isinstance(value, bool):
             if value:
                 # Maximum capacity
-                self.NM.GenMax[index-1] = (self.NM.generationE['Data']['PMAX']
+                self.NM.p['GenMax'][index-1] = (self.NM.generationE['Data']['PMAX']
                                            [index-1]/self.NM.networkE.graph
                                            ['baseMVA'])
             else:
                 # Switch off
-                self.NM.GenMax[index-1] = 0
+                self.NM.p['GenMax'][index-1] = 0
         else:
             # Adjust capacity
             # TODO: Costs should be recalculated for higher capacities
@@ -783,7 +785,7 @@ class pyeneClass():
                 warnings.warn('Increasing generation capacity is not'
                               ' supported yet')
 
-            self.NM.GenMax[index-1] = value
+            self.NM.p['GenMax'][index-1] = value
 
     def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''
@@ -795,7 +797,7 @@ class pyeneClass():
     def set_HydroPrice(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''
         raise NotImplementedError('Water prices not yet enabled')
-        # Adjust self.NM.GenLCst
+        # Adjust self.NM.p['GenLCst']
 
     def set_LineCapacity(self, index, value, *argv):
         ''' Adjust maximum capacity of a line '''
@@ -809,12 +811,12 @@ class pyeneClass():
         else:
             aux1 = value/self.NM.networkE.graph['baseMVA']
             aux2 = 3
-        self.NM.branchData[self.NM.LLESec1[index-1][0]][aux2] = aux1
+        self.NM.p['branchData'][self.NM.p['LLESec1'][index-1][0]][aux2] = aux1
 
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''
         raise NotImplementedError('Pump prices not yet enabled')
-        # Adjust self.NM.GenLCst
+        # Adjust self.NM.p['GenLCst']
 
     def set_RES(self, index, value):
         '''

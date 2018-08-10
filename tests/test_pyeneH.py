@@ -9,7 +9,7 @@ def test_pyeneH_Time():
     conf = testConfig()
     EN = pe(conf.EN)
     (HM, HModel, results) = EN.HSim(conf)
-    HM.print(HModel)
+    HM.print_outputs(HModel)
 
     assert 0.0001 >= abs(HModel.OF.expr()-6766.6666) and \
         0.0001 >= abs(HModel.vHout[0, 0].value-66.6666) and \

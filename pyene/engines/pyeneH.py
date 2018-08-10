@@ -86,6 +86,15 @@ class HydrologyClass:
                 }
         # Optimisation
         self.opt = {}
+        # Print flags
+        self.printFlag = {
+                'WIn': True,
+                'WOut': True,
+                'Fup': True,
+                'Fdown': True,
+                'SoC': True,
+                'Feas': True
+                }
 
     def _BuildHNetwork(self):
         ''' Build network model '''
@@ -532,21 +541,13 @@ class HydrologyClass:
                    for xr in self.s['Bra'])*self.p['Penalty']
                    for xt in self.s['Tim'])
 
-    def print(self, m):
+    def print_outputs(self, m):
         ''' Print results '''
-        self.print = {
-                'WIn': True,
-                'WOut': True,
-                'Fup': True,
-                'Fdown': True,
-                'SoC': True,
-                'Feas': True
-                }
         # Nodal results
         for xh in self.s['Sce']:
             print('\nCASE:', xh)
 
-            if self.print['WIn']:
+            if self.printFlag['WIn']:
                 print("\nWater_In_Node=[")
                 for xn in self.s['Nod']:
                     for xt in self.s['Tim']:
@@ -559,7 +560,7 @@ class HydrologyClass:
                     print()
                 print("];")
 
-            if self.print['WOut']:
+            if self.printFlag['WOut']:
                 print("\nWater_Out_Node=[")
                 for xn in self.s['Nod']:
                     for xt in self.s['Tim']:
@@ -572,7 +573,7 @@ class HydrologyClass:
                     print()
                 print("];")
 
-            if self.print['Fup']:
+            if self.printFlag['Fup']:
                 print("\nFlow_Upstream=[")
                 for xr in self.s['Bra']:
                     for xt in self.s['Tim']:
@@ -581,7 +582,7 @@ class HydrologyClass:
                     print()
                 print("];")
 
-            if self.print['Fdown']:
+            if self.printFlag['Fdown']:
                 print("\nFlow_Downstream=[")
                 for xr in self.s['Bra']:
                     for xt in self.s['Tim']:
@@ -590,7 +591,7 @@ class HydrologyClass:
                     print()
                 print("];")
 
-            if self.print['SoC']:
+            if self.printFlag['SoC']:
                 print("\nRiver=[")
                 for xr in self.s['Bra']:
                     for xt in self.s['TimP']:
@@ -599,7 +600,7 @@ class HydrologyClass:
                     print()
                 print("];")
 
-            if self.print['Feas']:
+            if self.printFlag['Feas']:
                 print("\nFlow_Feasibility=[")
                 for xr in self.s['Bra']:
                     for xt in self.s['Tim']:
