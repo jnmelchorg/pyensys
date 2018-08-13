@@ -373,90 +373,96 @@ class HydrologyClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
-        # Constraint on maximum flow downstream
-        m.cHQmaxDown = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
-                                  rule=self.cHQmaxDown_rule)
-        # Constraint on maximum flow upstream
-        m.cHQmaxUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
-                                rule=self.cHQmaxUp_rule)
-        # Constraint on minimum flow downstream
-        m.cHQminDown = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
-                                  rule=self.cHQminDown_rule)
-        # Constraint on minimum flow upstream
-        m.cHQminUp = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
-                                rule=self.cHQminUp_rule)
-        # Nodal balance
-        m.cHNodeBalance = Constraint(self.s['Nod'], self.s['Tim'],
-                                     self.s['Sce'],
-                                     rule=self.cHNodeBalance_rule)
-        # River balance
-        m.cHRiverBalance = Constraint(self.s['Bra'], self.s['Tim'],
-                                      self.s['Sce'],
-                                      rule=self.cHRiverBalance_rule)
-        # Sharing water among connected rivers
-        if self.opt['NoShare'] > 0:
-            m.cHWeights = Constraint(self.s['Share'], self.s['Tim'],
-                                     self.s['Sce'],
-                                     rule=self.cHWeights_rule)
-        # Linking SoC in different scenarios
-        if self.opt['NoSoCLinks'] > 0:
-            m.cHSoCLink = Constraint(self.s['NoSoCLinks'], self.s['Bra'],
-                                     rule=self.cHSoCLink_rule)
-        # Time dependent constraints on downstream flows
-        m.cHQdownTime = Constraint(self.s['Bra'], self.s['Tim'], self.s['Sce'],
-                                   rule=self.cHQdownTime_rule)
-        # Fixed inputs
-        if self.opt['NoFxInput'] > 0:
-            m.cHFixedInput = Constraint(self.s['FXIn'],
-                                        rule=self.cHFixedInput_rule)
+        if self.settings['Flag']:
+            # Constraint on maximum flow downstream
+            m.cHQmaxDown = Constraint(self.s['Bra'], self.s['Tim'],
+                                      self.s['Sce'], rule=self.cHQmaxDown_rule)
+            # Constraint on maximum flow upstream
+            m.cHQmaxUp = Constraint(self.s['Bra'], self.s['Tim'],
+                                    self.s['Sce'], rule=self.cHQmaxUp_rule)
+            # Constraint on minimum flow downstream
+            m.cHQminDown = Constraint(self.s['Bra'], self.s['Tim'],
+                                      self.s['Sce'], rule=self.cHQminDown_rule)
+            # Constraint on minimum flow upstream
+            m.cHQminUp = Constraint(self.s['Bra'], self.s['Tim'],
+                                    self.s['Sce'], rule=self.cHQminUp_rule)
+            # Nodal balance
+            m.cHNodeBalance = Constraint(self.s['Nod'], self.s['Tim'],
+                                         self.s['Sce'],
+                                         rule=self.cHNodeBalance_rule)
+            # River balance
+            m.cHRiverBalance = Constraint(self.s['Bra'], self.s['Tim'],
+                                          self.s['Sce'],
+                                          rule=self.cHRiverBalance_rule)
+            # Sharing water among connected rivers
+            if self.opt['NoShare'] > 0:
+                m.cHWeights = Constraint(self.s['Share'], self.s['Tim'],
+                                         self.s['Sce'],
+                                         rule=self.cHWeights_rule)
+            # Linking SoC in different scenarios
+            if self.opt['NoSoCLinks'] > 0:
+                m.cHSoCLink = Constraint(self.s['NoSoCLinks'], self.s['Bra'],
+                                         rule=self.cHSoCLink_rule)
+            # Time dependent constraints on downstream flows
+            m.cHQdownTime = Constraint(self.s['Bra'], self.s['Tim'],
+                                       self.s['Sce'],
+                                       rule=self.cHQdownTime_rule)
+            # Fixed inputs
+            if self.opt['NoFxInput'] > 0:
+                m.cHFixedInput = Constraint(self.s['FXIn'],
+                                            rule=self.cHFixedInput_rule)
 
         return m
 
     def addPar(self, m):
         ''' Adding pyomo parameters '''
-        # Calculate delta t
-        self.p['DeltaT'] = self.settings['seconds']/self.settings['M']
-        # Fixed input constraints
-        self.p['FXInput'] = self.settings['In']
-        # Penalty for feasibility
-        self.p['Penalty'] = self.settings['Penalty']
+        if self.settings['Flag']:
+            # Calculate delta t
+            self.p['DeltaT'] = self.settings['seconds']/self.settings['M']
+            # Fixed input constraints
+            self.p['FXInput'] = self.settings['In']
+            # Penalty for feasibility
+            self.p['Penalty'] = self.settings['Penalty']
 
         return m
 
     def addSets(self, m):
         ''' Adding pyomo sets '''
-        self.s['Bra'] = range(self.rivers['Number'])
-        self.s['FXIn'] = range(self.opt['NoFxInput'])
-        self.s['InNod'] = range(self.nodes['OutNumber'])
-        self.s['Nod'] = range(self.nodes['Number'])
-        self.s['NoSoCLinks'] = range(self.opt['NoSoCLinks'])
-        self.s['Tim'] = range(self.settings['NoTime'])
-        self.s['TimP'] = range(self.settings['NoTime']+1)
-        self.s['Sce'] = range(self.connections['Number'])
-        self.s['Share'] = range(self.opt['NoShare'])
+        if self.settings['Flag']:
+            self.s['Bra'] = range(self.rivers['Number'])
+            self.s['FXIn'] = range(self.opt['NoFxInput'])
+            self.s['InNod'] = range(self.nodes['OutNumber'])
+            self.s['Nod'] = range(self.nodes['Number'])
+            self.s['NoSoCLinks'] = range(self.opt['NoSoCLinks'])
+            self.s['Tim'] = range(self.settings['NoTime'])
+            self.s['TimP'] = range(self.settings['NoTime']+1)
+            self.s['Sce'] = range(self.connections['Number'])
+            self.s['Share'] = range(self.opt['NoShare'])
 
         return m
 
     def addVars(self, m):
         ''' Adding pyomo varaibles '''
-        auxr = range(self.connections['Number']*self.rivers['Number'])
-        auxin = range(self.connections['Number']*self.nodes['InNumber'])
-        auxout = range(self.connections['Number']*self.nodes['OutNumber'])
+        if self.settings['Flag']:
+            auxr = range(self.connections['Number']*self.rivers['Number'])
+            auxin = range(self.connections['Number']*self.nodes['InNumber'])
+            auxout = range(self.connections['Number']*self.nodes['OutNumber'])
 
-        # Downstream flow
-        m.vHdown = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
-        # Feasibility constraint
-        m.vHFeas = Var(range(self.opt['FeasNo']*self.connections['Number']),
-                       range(self.opt['FeasNoTime']), domain=NonNegativeReals,
-                       initialize=0.0)
-        # Water inputs (Node)
-        m.vHin = Var(auxin, self.s['Tim'], domain=NonNegativeReals)
-        # Water outputs (Node)
-        m.vHout = Var(auxout, self.s['Tim'], domain=NonNegativeReals)
-        # State of charge of the river
-        m.vHSoC = Var(auxr, self.s['TimP'], domain=NonNegativeReals)
-        # Upstream flow
-        m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
+            # Downstream flow
+            m.vHdown = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
+            # Feasibility constraint
+            m.vHFeas = Var(range(self.opt['FeasNo'] *
+                                 self.connections['Number']),
+                           range(self.opt['FeasNoTime']),
+                           domain=NonNegativeReals, initialize=0.0)
+            # Water inputs (Node)
+            m.vHin = Var(auxin, self.s['Tim'], domain=NonNegativeReals)
+            # Water outputs (Node)
+            m.vHout = Var(auxout, self.s['Tim'], domain=NonNegativeReals)
+            # State of charge of the river
+            m.vHSoC = Var(auxr, self.s['TimP'], domain=NonNegativeReals)
+            # Upstream flow
+            m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
 
         return m
 
@@ -532,46 +538,47 @@ class HydrologyClass:
 
     def initialise(self):
         ''' Initialise engine '''
+        if self.settings['Flag']:
 
-        # Get number of branches (rivers) and their parts
-        self._BuildParts()
+            # Get number of branches (rivers) and their parts
+            self._BuildParts()
 
-        # Build LL to locate beginning of each scenario
-        self._BuildLLScenario()
+            # Build LL to locate beginning of each scenario
+            self._BuildLLScenario()
 
-        # Get settings for each branch (part)
-        self._Process()
+            # Get settings for each branch (part)
+            self._Process()
 
-        # Build network model
-        self._BuildHNetwork()
+            # Build network model
+            self._BuildHNetwork()
 
-        # List to connect the water available in the river at different times
-        # e.g., volume at the end and beginning of scenario are the same
-        if len(self.connections['LinksF']) > 0:
-            aux = np.shape(self.connections['LinksF'])
-            if len(aux) == 1:
-                NoSoCLinks = 1
-                val1 = np.zeros((1, 2), dtype=int)
-                val2 = np.zeros((1, 2), dtype=int)
-                val1[0][:] = self.connections['LinksF']
-                val2[0][:] = self.connections['LinksT']
-            else:
-                NoSoCLinks = aux[0]
-                val1 = self.connections['LinksF']
-                val2 = self.connections['LinksT']
+            # List to connect the water available in the river at different times
+            # e.g., volume at the end and beginning of scenario are the same
+            if len(self.connections['LinksF']) > 0:
+                aux = np.shape(self.connections['LinksF'])
+                if len(aux) == 1:
+                    NoSoCLinks = 1
+                    val1 = np.zeros((1, 2), dtype=int)
+                    val2 = np.zeros((1, 2), dtype=int)
+                    val1[0][:] = self.connections['LinksF']
+                    val2[0][:] = self.connections['LinksT']
+                else:
+                    NoSoCLinks = aux[0]
+                    val1 = self.connections['LinksF']
+                    val2 = self.connections['LinksT']
 
-            SoCLinks = np.zeros((NoSoCLinks, 4), dtype=int)
-            aux = [0, self.settings['NoTime']]
+                SoCLinks = np.zeros((NoSoCLinks, 4), dtype=int)
+                aux = [0, self.settings['NoTime']]
 
-            for xL in range(NoSoCLinks):
-                SoCLinks[xL][:] = [self.p['ConRiver'][val1[xL][0]],
-                                   aux[val1[xL][1]],
-                                   self.p['ConRiver'][val2[xL][0]],
-                                   aux[val2[xL][1]]]
+                for xL in range(NoSoCLinks):
+                    SoCLinks[xL][:] = [self.p['ConRiver'][val1[xL][0]],
+                                       aux[val1[xL][1]],
+                                       self.p['ConRiver'][val2[xL][0]],
+                                       aux[val2[xL][1]]]
 
-        self.p['SoCLinks'] = SoCLinks
-        self.opt['NoSoCLinks'] = NoSoCLinks
-        self.opt['NoFxInput'] = len(self.settings['In'])
+            self.p['SoCLinks'] = SoCLinks
+            self.opt['NoSoCLinks'] = NoSoCLinks
+            self.opt['NoFxInput'] = len(self.settings['In'])
 
     def OF_rule(self, m):
         ''' Objective function '''
