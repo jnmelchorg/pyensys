@@ -7,6 +7,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
 import networkx as nx
+import math
 from pyomo.core import Constraint, Var, NonNegativeReals
 
 
@@ -304,6 +305,7 @@ class HydrologyClass:
         V = np.zeros((self.rivers['Number'], 2), dtype=float)
         S = np.zeros((self.rivers['Number'], 2), dtype=float)
         D = np.zeros((self.rivers['Number'], 2), dtype=float)
+        dt = self.settings['seconds']/self.settings['M']
 
         # Calculate additional parameters
         txt1 = ['DepthMax', 'DepthMin']
@@ -321,15 +323,19 @@ class HydrologyClass:
         # Output flows as a function of input flows
         FLinear = np.zeros((self.rivers['Number'], 3), dtype=float)
         for xc in range(self.rivers['Number']):
-            # Assigning linear approximation
-            QLinear[xc][0] = (Q[xc][0]-Q[xc][1])/(V[xc][0]-V[xc][1])
-            QLinear[xc][1] = Q[xc][1]-QLinear[xc][0]*V[xc][1]
-
             # Time dependent constraints for downstream flows
-            aux1 = min(S[xc][0]*t, L[xc])
-            aux1 = (aux1-0.5*aux1**2/t/S[xc][0])/L[xc]
-            aux2 = min(S[xc][1]*t, L[xc])
-            aux2 = (aux2-0.5*aux2**2/t/S[xc][1])/L[xc]
+            auxd = S[xc][1]*t
+            if auxd == 0:  # Infinite number of buckets required
+                auxd = min(S[xc][0]*t, L[xc])
+                aux1 = (auxd-0.5*auxd**2/t/S[xc][0])/L[xc]
+                aux2 = 0
+            else:
+                B = math.ceil(L[xc]/auxd)  # Number of buckets required
+                dL = L[xc]/B  # Bucket length
+                aux1 = min(B, math.floor(S[xc][0]*t/dL))
+                aux1 = aux1/B - dL*aux1*(aux1+1)/2/S[xc][0]/t/B
+                aux2 = min(B, math.floor(S[xc][1]*t/dL))
+                aux2 = aux2/B - dL*aux2*(aux2+1)/2/S[xc][1]/t/B
 
             # Linear approximation
             FLinear[xc][0] = (Q[xc][0]*aux1+(1-aux1)*Q[xc][1]-Q[xc][1]*aux2 -
@@ -344,6 +350,20 @@ class HydrologyClass:
             FLinear[xc][2] = (aux3*Q[xc][0]+aux4 -
                               FLinear[xc][0]*Q[xc][0]-FLinear[xc][1]) / \
                 (Q[xc][0]-Q[xc][1])
+
+            # Assigning linear approximation
+            # Can the flow go from minimum to maximum?
+            if S[xc][0]*t >= L[xc]:
+                Vaux = 1
+            else:  # Several steps are needed
+                Vaux = L[xc]/S[xc][0]/t
+            Vaux = max((Q[xc][0]*FLinear[xc][0]-FLinear[xc][1] +
+                        FLinear[xc][2]*Q[xc][1])*dt,
+                       (-Q[xc][1]*FLinear[xc][0]+FLinear[xc][1] +
+                        FLinear[xc][2]*Q[xc][0])*dt)*Vaux
+
+            QLinear[xc][0] = (Q[xc][0]-Q[xc][1])/Vaux
+            QLinear[xc][1] = Q[xc][1]-QLinear[xc][0]*V[xc][1]
 
         self.p['Qmax'] = Q[:, 0]
         self.p['Qmin'] = Q[:, 1]

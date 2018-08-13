@@ -12,15 +12,15 @@ def test_pyeneH_Time():
     HM.print_outputs(HModel)
 
     assert 0.0001 >= abs(HModel.OF.expr()-6766.6666) and \
-        0.0001 >= abs(HModel.vHout[0, 0].value-66.6666) and \
-        0.0001 >= abs(HModel.vHout[0, 1].value-438.2045) and \
-        0.0001 >= abs(HModel.vHout[0, 2].value-155.0717) and \
-        0.0001 >= abs(HModel.vHout[1, 2].value-66.6666) and \
-        0.0001 >= abs(HModel.vHout[1, 3].value-278.1102) and \
-        0.0001 >= abs(HModel.vHout[1, 4].value-91.8225) and \
-        0.0001 >= abs(HModel.vHout[2, 2].value-100.0000) and \
-        0.0001 >= abs(HModel.vHout[2, 3].value-417.1653) and \
-        0.0001 >= abs(HModel.vHout[2, 4].value-137.7337)
+        0.0001 >= abs(HModel.vHout[0, 0].value-66.6680) and \
+        0.0001 >= abs(HModel.vHout[0, 1].value-305.5747) and \
+        0.0001 >= abs(HModel.vHout[0, 2].value-171.7524) and \
+        0.0001 >= abs(HModel.vHout[1, 2].value-66.6668) and \
+        0.0001 >= abs(HModel.vHout[1, 3].value-236.2205) and \
+        0.0001 >= abs(HModel.vHout[1, 4].value-103.9565) and \
+        0.0001 >= abs(HModel.vHout[2, 2].value-100.0001) and \
+        0.0001 >= abs(HModel.vHout[2, 3].value-354.3308) and \
+        0.0001 >= abs(HModel.vHout[2, 4].value-155.9348)
 
 
 def test_pyeneH_Scenarios():
@@ -40,10 +40,10 @@ def test_pyeneH_Scenarios():
     print('OF: ', HModel.OF.expr())
 
     assert 0.0001 >= abs(HModel.OF.expr()-3500) and \
-        0.0001 >= abs(HModel.vHout[0, 1].value-441.8511) and \
-        0.0001 >= abs(HModel.vHout[0, 2].value-156.6638) and \
-        0.0001 >= abs(HModel.vHout[4, 3].value-278.7574) and \
-        0.0001 >= abs(HModel.vHout[4, 4].value-92.0810)
+        0.0001 >= abs(HModel.vHout[0, 1].value-325.0060) and \
+        0.0001 >= abs(HModel.vHout[0, 2].value-183.6914) and \
+        0.0001 >= abs(HModel.vHout[4, 3].value-239.9525) and \
+        0.0001 >= abs(HModel.vHout[4, 4].value-106.0274)
 
 
 def test_pyeneH_ScenParts():
@@ -64,7 +64,7 @@ def test_pyeneH_ScenParts():
     print('OF: ', HModel.OF.expr())
 
     assert 0.0001 >= abs(HModel.OF.expr()-3500) and \
-        0.0001 >= abs(HModel.vHout[0, 1].value-452.0168) and \
-        0.0001 >= abs(HModel.vHout[0, 2].value-146.9597) and \
-        0.0001 >= abs(HModel.vHout[4, 3].value-281.6114) and \
-        0.0001 >= abs(HModel.vHout[4, 4].value-89.0123)
+        0.0001 >= abs(HModel.vHout[0, 1].value-383.7028) and \
+        0.0001 >= abs(HModel.vHout[0, 2].value-124.6046) and \
+        0.0001 >= abs(HModel.vHout[4, 3].value-259.6517) and \
+        0.0001 >= abs(HModel.vHout[4, 4].value-83.0653)
