@@ -384,7 +384,8 @@ def test_pyene_SingleLP():
         # Set unused water inputs to zero
         m.sN0 = [x for x in range(EN.EM.LL['NosBal']+1)]
         m.sN0.pop(1)
-        m.ZeroHydroIn = Constraint(m.sN0, EN.EM.s['Vec'], rule=ZeroHydroIn_rule)
+        m.ZeroHydroIn = Constraint(m.sN0, EN.EM.s['Vec'],
+                                   rule=ZeroHydroIn_rule)
 
         # Variables used by pyene for claculating the objective function
         m = EN._AddPyeneCons(EN.EM, EN.NM, m)
@@ -441,9 +442,11 @@ def test_pyene_SingleLP():
     '''
     del m.WInFull
     if conf.NM.hydropower['Number'] > 1:
-        m.WInFull = Var(EN.EM.s['Nodz'], EN.EM.s['Vec'], domain=NonNegativeReals, initialize=0.0)
+        m.WInFull = Var(EN.EM.s['Nodz'], EN.EM.s['Vec'],
+                        domain=NonNegativeReals, initialize=0.0)
     else:
-        m.WInFull = Var(EN.EM.s['Nodz'], domain=NonNegativeReals, initialize=0.0)
+        m.WInFull = Var(EN.EM.s['Nodz'], domain=NonNegativeReals,
+                        initialize=0.0)
 
     '''                         Sixth step
     Define hydropower allowance
@@ -451,7 +454,7 @@ def test_pyene_SingleLP():
     vHydropowerAllowance
     '''
     m.vHydropowerAllowance = Var(EN.EM.s['Vec'], domain=NonNegativeReals,
-                                   initialize=0.0)
+                                 initialize=0.0)
     m.MaxHydro = np.zeros(conf.NM.hydropower['Number'], dtype=float)
     for xh in range(conf.NM.hydropower['Number']):
         m.MaxHydro[xh] = 134000

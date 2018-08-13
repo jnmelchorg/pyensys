@@ -114,12 +114,12 @@ class pyeneHDF5Settings():
         aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
         if type(mod.WInFull) is np.ndarray:
             if EN.EM.settings['Vectors'] == 1:
-                aux[0] = mod.WInFull[1]
+                aux[0] = EN.EM.Weight['In'][1]
             else:
-                for xv in mod.sVec:
+                for xv in EN.EM.s['Vec']:
                     aux[xv] = mod.WInFull[1][xv]
         else:
-            for xv in mod.sVec:
+            for xv in EN.EM.s['Vec']:
                 aux[xv] = mod.WInFull[1, xv].value
 
         fileh.create_array(HDF5group, "Hydro_Allowance", aux)

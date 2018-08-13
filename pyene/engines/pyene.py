@@ -127,24 +127,24 @@ class pyeneClass():
         ''' Add pyomo variables '''
         # Converting some parameters to variables
         del m.WOutFull
-        m.WOutFull = Var(self.EM.s['Nodz'], self.EM.s['Vec'], domain=NonNegativeReals,
-                         initialize=0.0)
+        m.WOutFull = Var(self.EM.s['Nodz'], self.EM.s['Vec'],
+                         domain=NonNegativeReals, initialize=0.0)
         return m
 
     def build_Mod(self, EM, NM, m):
         ''' Build pyomo model '''
         # Declare pyomo model
 
-        #                                 Sets                                #
+        # Sets
         m = EM.addSets(m)
         m = NM.addSets(m)
         m = self.addSets(m)
 
-        #                           Model Variables                           #
+        # Model Variables
         m = EM.addVars(m)
         m = NM.addVars(m)
 
-        #                              Parameters                             #
+        # Parameters
         m = EM.addPar(m)
         m = NM.addPar(m)
         m = self.addPar(m)
@@ -156,7 +156,8 @@ class pyeneClass():
         return (m.WOutFull[m.LLENM[xL][0], xv] ==
                 self.NM.networkE.graph['baseMVA'] *
                 sum(m.vNGen[m.LLENM[xL][1]+xv, xt] *
-                    self.NM.scenarios['Weights'][xt] for xt in self.NM.s['Tim']))
+                    self.NM.scenarios['Weights'][xt]
+                    for xt in self.NM.s['Tim']))
 
     def ESim(self, conf):
         ''' Energy only optimisation '''
@@ -246,7 +247,7 @@ class pyeneClass():
         '''Get the total losses'''
         value = 0
         if self.NM.settings['Losses']:
-            for xb in m.sBra:
+            for xb in self.NM.s['Bra']:
                 value += self.get_Loss(m, xb+1, *varg, **kwarg)
 
         return value
@@ -403,14 +404,18 @@ class pyeneClass():
                                  in range(self.NM.settings['Generators']))
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
-            value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value for xg
-                                 in self.NM.RES['Link'])
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+            if self.NM.RES['Number'] > 0:
+                value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value
+                                     for xg in self.NM.RES['Link'])
+                                 for xt in auxtime)*auxOF[xh]
+                             for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
-            value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value for xg
-                                 in self.NM.hydropower['Link'])
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+            if self.NM.hydropower['Number'] > 0:
+                value += sum(sum(sum(m.vNGCost[self.hGC[xh]+xg, xt].value
+                                     for xg in self.NM.hydropower['Link'])
+                                 for xt in auxtime)*auxOF[xh]
+                             for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
@@ -422,8 +427,9 @@ class pyeneClass():
                          auxOF[xh] for xh in auxscens)
 
         if auxFlags[4]:  # Curtailment
-            value += sum(sum(sum(m.vNFea[self.hFea[xh]+xf, xt].value for xf
-                                 in self.NM.s['Fea'])*self.Penalty for xt in auxtime) *
+            value += sum(sum(sum(m.vNFea[self.hFea[xh]+xf, xt].value
+                                 for xf in self.NM.s['Fea'])*self.Penalty
+                             for xt in auxtime) *
                          auxOF[xh] for xh in auxscens)
 
         return value
@@ -618,14 +624,17 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networks model'''
-        return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt] for xg in self.NM.s['Gen']) +
-                        sum(m.vNFea[self.hFea[xh]+xf, xt] for xf in self.NM.s['Fea']) *
+        return sum((sum(sum(m.vNGCost[self.hGC[xh]+xg, xt]
+                            for xg in self.NM.s['Gen']) +
+                        sum(m.vNFea[self.hFea[xh]+xf, xt]
+                            for xf in self.NM.s['Fea']) *
                         self.Penalty for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
                         sum(m.vNDL[self.hDL[xh]+xdl+1, xt] *
                             self.NM.scenarios['Weights'][xt]
-                            for xt in self.NM.s['Tim']) for xdl in self.NM.s['Pump'])) *
+                            for xt in self.NM.s['Tim'])
+                        for xdl in self.NM.s['Pump'])) *
                    self.OFaux[xh] for xh in self.h)
 
     def Print_ENSim(self, m, EM, NM):
@@ -766,13 +775,12 @@ class pyeneClass():
 
     def set_GenCoFlag(self, index, value):
         ''' Adjust maximum output of generators '''
-        print('Data\n',self.NM.p)
         if isinstance(value, bool):
             if value:
                 # Maximum capacity
-                self.NM.p['GenMax'][index-1] = (self.NM.generationE['Data']['PMAX']
-                                           [index-1]/self.NM.networkE.graph
-                                           ['baseMVA'])
+                self.NM.p['GenMax'][index-1] = \
+                    self.NM.generationE['Data']['PMAX'][index-1] / \
+                    self.NM.networkE.graph['baseMVA']
             else:
                 # Switch off
                 self.NM.p['GenMax'][index-1] = 0

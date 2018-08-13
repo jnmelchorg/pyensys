@@ -16,37 +16,38 @@ class pyeneHConfig:
     def __init__(self):
         # Basic settings
         self.settings = {
-                'File': None,  # TODO create input json file
-                'NoTime': 24,  # Number of time steps
                 'Feas': True,  # Feasibility constraints
-                'Penalty': 10000,  # Penalty for feasibility constraints
-                'seconds': 3600,  # Time resolution
+                'File': None,  # TODO create input json file
+                'Flag': True,  # Add hydrology constraints
+                'In': [[0, 1, 600], [1, 3, 800]],  # Fixed water inputs
                 'M': 1000,  # Multiplier to  reduce magnitude of time/storage
-                'In': [[0, 1, 600], [1, 3, 800]]  # Fixed water inputs
+                'NoTime': 24,  # Number of time steps
+                'Penalty': 10000,  # Penalty for feasibility constraints
+                'seconds': 3600  # Time resolution
                 }
         # River models
         self.rivers = {
-                'From': [1, 2, 4, 4],  # Node - from
-                'To': [2, 3, 5, 6],  # Node -to
-                'Share': [1, 1, 0.4, 0.6],  # Links between water flows
-                'Parts': [],
-                'Length': [1000, 1000, 1000, 1000],  # length (m)
-                'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
-                'Width': [200, 200, 200, 200],  # width (m)
                 'DepthMax': [4, 4, 4, 4],  # Maximum depth
                 'DepthMin': [1, 1, 1, 1],  # MInimum depth
-                'Manning': [0.03, 0.03, 0.03, 0.03]  # Mannings 'n
+                'From': [1, 2, 4, 4],  # Node - from
+                'Length': [1000, 1000, 1000, 1000],  # length (m)
+                'Manning': [0.03, 0.03, 0.03, 0.03],  # Mannings 'n
+                'Parts': [],
+                'Share': [1, 1, 0.4, 0.6],  # Links between water flows
+                'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
+                'To': [2, 3, 5, 6],  # Node -to
+                'Width': [200, 200, 200, 200]  # width (m)
                 }
         # Connections between scenarios
         self.connections = {
-                'Number': 1,  # Number of scenarios
                 'LinksF': [[0, 0]],  # Connect scen 0:Begin1:End
-                'LinksT': [[0, 1]]  # To scen 0:Begin1:End
+                'LinksT': [[0, 1]],  # To scen 0:Begin1:End
+                'Number': 1  # Number of scenarios
                 }
         # Nodes
         self.nodes = {
-                'In': [1, 4],  # Nodes with water inflows
                 'Allowance': [1000, 1000],  # Water allowance
+                'In': [1, 4],  # Nodes with water inflows
                 'Out': [3, 5, 6]  # Nodes with water outflows
                 }
 
