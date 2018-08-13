@@ -552,7 +552,7 @@ class HydrologyClass:
             # Build network model
             self._BuildHNetwork()
 
-            # List to connect the water available in the river at different times
+            # Connect the water available in the river at different times
             # e.g., volume at the end and beginning of scenario are the same
             if len(self.connections['LinksF']) > 0:
                 aux = np.shape(self.connections['LinksF'])
@@ -590,72 +590,75 @@ class HydrologyClass:
 
     def print_outputs(self, m):
         ''' Print results '''
-        # Nodal results
-        for xh in self.s['Sce']:
-            print('\nCASE:', xh)
+        if pyene/engines/pyeneH.py:
+            # Nodal results
+            for xh in self.s['Sce']:
+                print('\nCASE:', xh)
 
-            if self.printFlag['WIn']:
-                print("\nWater_In_Node=[")
-                for xn in self.s['Nod']:
-                    for xt in self.s['Tim']:
-                        if self.p['LLInNode'][xn, 0] != 0:
-                            aux = m.vHin[self.p['ConInNode'][xh] +
-                                         self.p['LLInNode'][xn, 1], xt].value
-                        else:
-                            aux = 0
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['WIn']:
+                    print("\nWater_In_Node=[")
+                    for xn in self.s['Nod']:
+                        for xt in self.s['Tim']:
+                            if self.p['LLInNode'][xn, 0] != 0:
+                                aux = m.vHin[self.p['ConInNode'][xh] +
+                                             self.p['LLInNode'][xn, 1], xt].value
+                            else:
+                                aux = 0
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
 
-            if self.printFlag['WOut']:
-                print("\nWater_Out_Node=[")
-                for xn in self.s['Nod']:
-                    for xt in self.s['Tim']:
-                        if self.p['LLOutNode'][xn, 0] != 0:
-                            aux = m.vHout[self.p['ConOutNode'][xh] +
-                                          self.p['LLOutNode'][xn, 1], xt].value
-                        else:
-                            aux = 0
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['WOut']:
+                    print("\nWater_Out_Node=[")
+                    for xn in self.s['Nod']:
+                        for xt in self.s['Tim']:
+                            if self.p['LLOutNode'][xn, 0] != 0:
+                                aux = m.vHout[self.p['ConOutNode'][xh] +
+                                              self.p['LLOutNode'][xn, 1], xt].value
+                            else:
+                                aux = 0
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
 
-            if self.printFlag['Fup']:
-                print("\nFlow_Upstream=[")
-                for xr in self.s['Bra']:
-                    for xt in self.s['Tim']:
-                        aux = m.vHup[self.p['ConRiver'][xh]+xr, xt].value
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['Fup']:
+                    print("\nFlow_Upstream=[")
+                    for xr in self.s['Bra']:
+                        for xt in self.s['Tim']:
+                            aux = m.vHup[self.p['ConRiver'][xh]+xr, xt].value
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
 
-            if self.printFlag['Fdown']:
-                print("\nFlow_Downstream=[")
-                for xr in self.s['Bra']:
-                    for xt in self.s['Tim']:
-                        aux = m.vHdown[self.p['ConRiver'][xh]+xr, xt].value
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['Fdown']:
+                    print("\nFlow_Downstream=[")
+                    for xr in self.s['Bra']:
+                        for xt in self.s['Tim']:
+                            aux = m.vHdown[self.p['ConRiver'][xh]+xr, xt].value
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
 
-            if self.printFlag['SoC']:
-                print("\nRiver=[")
-                for xr in self.s['Bra']:
-                    for xt in self.s['TimP']:
-                        aux = m.vHSoC[self.p['ConRiver'][xh]+xr, xt].value
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['SoC']:
+                    print("\nRiver=[")
+                    for xr in self.s['Bra']:
+                        for xt in self.s['TimP']:
+                            aux = m.vHSoC[self.p['ConRiver'][xh]+xr, xt].value
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
 
-            if self.printFlag['Feas']:
-                print("\nFlow_Feasibility=[")
-                for xr in self.s['Bra']:
-                    for xt in self.s['Tim']:
-                        aux = m.vHFeas[self.p['Feas'][xr],
-                                       self.p['FeasTime'][xt]].value
-                        print("%8.4f " % aux, end='')
-                    print()
-                print("];")
+                if self.printFlag['Feas']:
+                    print("\nFlow_Feasibility=[")
+                    for xr in self.s['Bra']:
+                        for xt in self.s['Tim']:
+                            aux = m.vHFeas[self.p['Feas'][xr],
+                                           self.p['FeasTime'][xt]].value
+                            print("%8.4f " % aux, end='')
+                        print()
+                    print("];")
+        else:
+            print('No hydrology constraints considered')
 
     def print_settings(self, m):
         ''' Display input data and results in their original format '''
