@@ -45,4 +45,7 @@ def testConfig():
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
 
+    # Hydrology
+    conf.HM.settings['Flag'] = False  # Disable pyeneH
+
     return conf

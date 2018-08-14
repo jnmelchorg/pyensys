@@ -55,7 +55,7 @@ class pyeneNConfig:
         self.hydropower = {
                 'Number': 0,  # Number of hydropower plants
                 'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
+                'Max': [0],  # Capacity (MW)
                 'Cost': [0],  # Costs
                 'Link': None  # Position of hydropower plants
                 }
@@ -281,7 +281,9 @@ class ENetworkClass:
                     for xg in range(self.p['LLGen2'][xn, 0],
                                     self.p['LLGen2'][xn, 1]+1)) +
                 sum(m.vNFlow[self.connections['Flow'][xh] +
-                            self.p['LLESec2'][self.p['LLN2B1'][x2+self.p['LLN2B2'][xn, 1]], xs], xt] -
+                             self.p['LLESec2'][self.p['LLN2B1']
+                                               [x2+self.p['LLN2B2'][xn, 1]],
+                                               xs], xt] -
                     m.vNLoss[self.connections['Loss'][xh] +
                              self.p['LLN2B1'][x2 +
                                               self.p['LLN2B2'][xn, 1]], xt]/2
@@ -295,7 +297,8 @@ class ENetworkClass:
                         self.p['LLFea'][xn+1], xt] +
                 m.vNDL[self.connections['Pump'][xh]+self.p['LLPump'][xn], xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh] +
-                            self.p['LLESec2'][self.p['LLN2B1'][x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
+                             self.p['LLESec2'][self.p['LLN2B1']
+                             [x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
                     m.vNLoss[self.connections['Loss'][xh] +
                              self.p['LLN2B1'][x1 +
                                               self.p['LLN2B2'][xn, 3]], xt]/2
@@ -439,9 +442,12 @@ class ENetworkClass:
         self.Print['Curtailment'] = False
         self.Print['Feasibility'] = False
 
-    def print(self, m):
+    def print(self, m, sh=None):
         ''' Print results '''
-        for xh in self.s['Con']:
+        if sh is None:
+            sh = self.s['Con']
+
+        for xh in sh:
             print("\nCASE:", xh)
 
             if self.Print['Generation']:

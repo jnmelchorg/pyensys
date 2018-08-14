@@ -8,8 +8,9 @@ def test_pyeneH_Time():
     print('test_pyeneH_Time')
     conf = testConfig()
     EN = pe(conf.EN)
+    conf.HM.settings['Flag'] = True
     (HM, HModel, results) = EN.HSim(conf)
-    HM.print_outputs(HModel)
+    HM.print(HModel)
 
     assert 0.0001 >= abs(HModel.OF.expr()-6766.6666) and \
         0.0001 >= abs(HModel.vHout[0, 0].value-66.6680) and \
@@ -27,6 +28,7 @@ def test_pyeneH_Scenarios():
     ''' Check multiple scenario analysis '''
     print('test_pyeneH_Scenarios')
     conf = testConfig()
+    conf.HM.settings['Flag'] = True
     conf.HM.settings['NoTime'] = 5  # Five periods
     conf.HM.connections['Number'] = 2  # Two scenarios
     # Ading additional water in both scenarios
@@ -36,7 +38,7 @@ def test_pyeneH_Scenarios():
     conf.HM.connections['LinksT'] = [[0, 1], [1, 1]]
     EN = pe(conf.EN)
     (HM, HModel, results) = EN.HSim(conf)
-    HM.print_outputs(HModel)
+    HM.print(HModel)
     print('OF: ', HModel.OF.expr())
 
     assert 0.0001 >= abs(HModel.OF.expr()-3500) and \
@@ -50,6 +52,7 @@ def test_pyeneH_ScenParts():
     ''' Check multiple scenario analysis '''
     print('test_pyeneH_ScenParts')
     conf = testConfig()
+    conf.HM.settings['Flag'] = True
     conf.HM.settings['NoTime'] = 5  # Five periods
     conf.HM.connections['Number'] = 2  # Two scenarios
     # Ading additional water in both scenarios
@@ -60,7 +63,7 @@ def test_pyeneH_ScenParts():
     conf.HM.rivers['Parts'] = [5]  # Model each river using several parts
     EN = pe(conf.EN)
     (HM, HModel, results) = EN.HSim(conf)
-    HM.print_outputs(HModel)
+    HM.print(HModel)
     print('OF: ', HModel.OF.expr())
 
     assert 0.0001 >= abs(HModel.OF.expr()-3500) and \

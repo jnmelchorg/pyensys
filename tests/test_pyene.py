@@ -33,7 +33,7 @@ def test_pyene_Small():
     # Run integrated pyene
     m = ConcreteModel()
     m = EN.run(m)
-    EN.Print_ENSim(m, EN.EM, EN.NM)
+    EN.Print_ENSim(m)
     print(m.OF.expr())
 
     assert 0.0001 >= abs(m.OF.expr()-21952.5*7*4.25)
@@ -64,7 +64,7 @@ def test_pyene_SmallHydro():
     # Run integrated pyene
     m = ConcreteModel()
     m = EN.run(m)
-    EN.Print_ENSim(m, EN.EM, EN.NM)
+    EN.Print_ENSim(m)
     print('\n%f ' % m.OF.expr())
 
     assert 0.0001 >= abs(m.OF.expr()-527048.8750)
@@ -388,15 +388,15 @@ def test_pyene_SingleLP():
                                    rule=ZeroHydroIn_rule)
 
         # Variables used by pyene for claculating the objective function
-        m = EN._AddPyeneCons(EN.EM, EN.NM, m)
-        EN.OFaux = EN._Calculate_OFaux(EN.EM, EN.NM)
-        m.OFh = EN.h
-        m.OFhGC = EN.hGC
-        m.OFFea = EN.hFea
+        m = EN._AddPyeneCons(m)
+        EN.OFaux = EN._Calculate_OFaux()
+        m.OFh = EN.NM.connections['set']
+        m.OFhGC = EN.NM.connections['Cost']
+        m.OFFea = EN.NM.connections['Feasibility']
         m.OFpenalty = EN.Penalty
         m.OFpumps = EN.NM.pumps['Value']
         m.base = EN.NM.networkE.graph['baseMVA']
-        m.OFhDL = EN.hDL
+        m.OFhDL = EN.NM.connections['Pump']
         m.OFweights = EN.NM.scenarios['Weights']
         m.OFaux = EN.OFaux
 
@@ -435,7 +435,7 @@ def test_pyene_SingleLP():
     '''                        Fourth step
     Initialise pyomo sets, parameters, and variables for pyene
     '''
-    m = EN.build_Mod(EN.EM, EN.NM, m)
+    m = EN.build_Mod(m)
 
     '''                         Fifth step
     Redefine hydropower inputs as variables

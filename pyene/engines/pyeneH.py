@@ -46,9 +46,15 @@ class pyeneHConfig:
                 }
         # Nodes
         self.nodes = {
-                'Allowance': [1000, 1000],  # Water allowance
                 'In': [1, 4],  # Nodes with water inflows
                 'Out': [3, 5, 6]  # Nodes with water outflows
+                }
+        # Hydropower
+        self.hydropower = {
+                'Node': [0],  # Location (Bus) in the network
+                'Efficiency': [0],  # Efficiency (pu)
+                'Head': [0],  # Head (m)
+                'Storage': [0]  # Storage (MWh)
                 }
 
 
@@ -390,6 +396,8 @@ class HydrologyClass:
             m.cHNodeBalance = Constraint(self.s['Nod'], self.s['Tim'],
                                          self.s['Sce'],
                                          rule=self.cHNodeBalance_rule)
+            # Penalty
+            m.cHPenalty = Constraint(rule=self.cHPenalty_rule)
             # River balance
             m.cHRiverBalance = Constraint(self.s['Bra'], self.s['Tim'],
                                           self.s['Sce'],
@@ -411,6 +419,9 @@ class HydrologyClass:
             if self.opt['NoFxInput'] > 0:
                 m.cHFixedInput = Constraint(self.s['FXIn'],
                                             rule=self.cHFixedInput_rule)
+        else:
+            # No penalty
+            m.cHPenalty = Constraint(expr=m.vHpenalty == 0)
 
         return m
 
@@ -463,6 +474,9 @@ class HydrologyClass:
             m.vHSoC = Var(auxr, self.s['TimP'], domain=NonNegativeReals)
             # Upstream flow
             m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
+
+        # Penalty
+        m.vHpenalty = Var(domain=NonNegativeReals, initialize=0)
 
         return m
 
@@ -524,6 +538,14 @@ class HydrologyClass:
                         self.p['LLOutNode'][xn, 1], xt]
                 for xb in range(self.p['LLOutNode'][xn, 0]))
 
+    def cHPenalty_rule(self, m):
+        ''' No penalty '''
+        return m.vHpenalty == \
+            sum(sum(sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+                        for xr in self.s['Bra'])*self.p['Penalty']
+                    for xt in self.s['Tim'])
+                for xh in self.s['Sce'])
+
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
         aux = self.p['ConRiver'][xh]+xr
@@ -583,25 +605,28 @@ class HydrologyClass:
     def OF_rule(self, m):
         ''' Objective function '''
         return sum(sum(sum(m.vHout[self.p['ConOutNode'][xh]+xn, xt]
-                           for xn in self.s['InNod']) +
-                       sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
-                           for xr in self.s['Bra'])*self.p['Penalty']
-                       for xt in self.s['Tim']) for xh in self.s['Sce'])
+                           for xn in self.s['InNod'])
+                       for xt in self.s['Tim'])
+                   for xh in self.s['Sce'])+m.vHpenalty
 
-    def print_outputs(self, m):
+    def print(self, m, sh=None):
         ''' Print results '''
-        if pyene/engines/pyeneH.py:
+        if sh is None:
+            sh = self.s['Sce']
+
+        if self.settings['Flag']:
             # Nodal results
-            for xh in self.s['Sce']:
+            for xh in sh:
                 print('\nCASE:', xh)
 
                 if self.printFlag['WIn']:
-                    print("\nWater_In_Node=[")
+                    print("\nWater_In_Node%d=[" % xh)
                     for xn in self.s['Nod']:
                         for xt in self.s['Tim']:
                             if self.p['LLInNode'][xn, 0] != 0:
                                 aux = m.vHin[self.p['ConInNode'][xh] +
-                                             self.p['LLInNode'][xn, 1], xt].value
+                                             self.p['LLInNode'][xn, 1],
+                                             xt].value
                             else:
                                 aux = 0
                             print("%8.4f " % aux, end='')
@@ -609,12 +634,13 @@ class HydrologyClass:
                     print("];")
 
                 if self.printFlag['WOut']:
-                    print("\nWater_Out_Node=[")
+                    print("\nWater_Out_Node%d=[" % xh)
                     for xn in self.s['Nod']:
                         for xt in self.s['Tim']:
                             if self.p['LLOutNode'][xn, 0] != 0:
                                 aux = m.vHout[self.p['ConOutNode'][xh] +
-                                              self.p['LLOutNode'][xn, 1], xt].value
+                                              self.p['LLOutNode'][xn, 1],
+                                              xt].value
                             else:
                                 aux = 0
                             print("%8.4f " % aux, end='')
@@ -622,7 +648,7 @@ class HydrologyClass:
                     print("];")
 
                 if self.printFlag['Fup']:
-                    print("\nFlow_Upstream=[")
+                    print("\nFlow_Upstream%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['Tim']:
                             aux = m.vHup[self.p['ConRiver'][xh]+xr, xt].value
@@ -631,7 +657,7 @@ class HydrologyClass:
                     print("];")
 
                 if self.printFlag['Fdown']:
-                    print("\nFlow_Downstream=[")
+                    print("\nFlow_Downstream%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['Tim']:
                             aux = m.vHdown[self.p['ConRiver'][xh]+xr, xt].value
@@ -640,7 +666,7 @@ class HydrologyClass:
                     print("];")
 
                 if self.printFlag['SoC']:
-                    print("\nRiver=[")
+                    print("\nRiver%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['TimP']:
                             aux = m.vHSoC[self.p['ConRiver'][xh]+xr, xt].value
@@ -649,7 +675,7 @@ class HydrologyClass:
                     print("];")
 
                 if self.printFlag['Feas']:
-                    print("\nFlow_Feasibility=[")
+                    print("\nFlow_Feasibility%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['Tim']:
                             aux = m.vHFeas[self.p['Feas'][xr],
@@ -657,8 +683,6 @@ class HydrologyClass:
                             print("%8.4f " % aux, end='')
                         print()
                     print("];")
-        else:
-            print('No hydrology constraints considered')
 
     def print_settings(self, m):
         ''' Display input data and results in their original format '''
