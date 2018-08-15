@@ -21,3 +21,6 @@ data/
 
 # outputs folder
 outputs/
+
+# test cases
+pyeneT.py
