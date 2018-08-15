@@ -667,35 +667,21 @@ class pyeneClass():
                 conf.HM.connections['LinksF'][xh][0] = xh
                 conf.HM.connections['LinksT'][xh][0] = xh
 
-            # Add output nodes for hydropower generation if needed
-            NoHM = max(max(conf.HM.rivers['From']), max(conf.HM.rivers['To']))
-            auxf = np.zeros(NoHM, dtype=int)  # Flag
-            auxv = np.zeros(NoHM, dtype=int)  # Value
-            # Adding hydropower nodes
-            cou = 0
-            for xn in conf.HM.hydropower['Node']:
-                auxf[xn-1] = 1
-                auxv[cou] = xn
-                cou += 1
-            # Adding hydrology output nodes
-            for xn in conf.HM.nodes['Out']:
-                if auxf[xn-1] == 0:
-                    auxf[xn-1] = 1
-                    auxv[cou] = xn
-                    cou += 1
-            conf.HM.nodes['Out'] = auxv[0:cou]
-
-            # Adding connections to pyeneH
-            self.p['pyeneHin'] = np.zeros(self.p['Number'], dtype=int)
-            self.p['pyeneHout'] = np.zeros(self.p['Number'], dtype=int)
-            aux = len(conf.HM.nodes['In'])
-            for xc in self.s['LL']:
-                self.p['pyeneHin'][xc] = xc*aux
-                self.p['pyeneHout'][xc] = xc*cou
-
         # Create hydraulic model
         self.HM = hn(conf.HM)
+
+        # Initialise model
         self.HM.initialise()
+
+        # Create LL
+        if conf.HM.settings['Flag']:
+            self.p['pyeneHin'] = np.zeros(self.p['Number'], dtype=int)
+            self.p['pyeneHout'] = np.zeros(self.p['Number'], dtype=int)
+            aux1 = len(conf.HM.nodes['In'])
+            aux2 = len(conf.HM.nodes['Out'])
+            for xc in self.s['LL']:
+                self.p['pyeneHin'][xc] = xc*aux1
+                self.p['pyeneHout'][xc] = xc*aux2
 
     def NSim(self, conf):
         ''' Network only optimisation '''

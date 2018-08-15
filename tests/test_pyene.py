@@ -575,7 +575,55 @@ def test_pyene_ENH():
     m = EN.run(m)
     EN.Print_ENSim(m)
     print(m.OF.expr())
-    
+
     assert 0.0001 >= abs(m.OF.expr()-5993235.52384) and \
         0.0001 >= abs(m.vHin[1, 17].value-102.1684) and \
         0.0001 >= abs(m.vHin[3, 18].value-58.9768)
+
+
+# Combined use of pyeneE, pyeneN and pyeneH + Storage
+def test_pyene_ENHStor():
+    print('test_pyene_ENHStor')
+    conf = testConfig()
+    # Hydropower
+    conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01,  0.01]  # Costs
+    conf.HM.hydropower['Node'] = [6, 3, 5]  # Location (node)  of hydro
+    conf.HM.hydropower['Efficiency'] = [0.85, 0.85, 0.85]  # pu
+    conf.HM.hydropower['Head'] = [200, 200, 200]  # (m)
+    conf.HM.hydropower['Storage'] = [0, 100, 50]  # local storage
+
+    # Study settings
+    conf.NM.settings['NoTime'] = 24  # Number of time steps
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+    conf.NM.settings['Pieces'] = [10]  # 10 MW pieces
+
+    # Enable pyeneH
+    conf.HM.settings['Flag'] = True
+    conf.HM.rivers['DepthMin'] = [0.3, 0.3, 0.3, 0.3]  # MInimum depth
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Profiles and water allowance
+    fileName = os.path.join(json_directory(), 'UKElectricityProfiles.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Winter']['Weekday'])
+    EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
+    EN.set_Hydro(1, 12000)
+    EN.set_Hydro(2, 35000)
+
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print(m.OF.expr())
+
+    assert 0.0001 >= abs(m.OF.expr()-5946534.84017) and \
+        0.0001 >= abs(m.vHin[1, 17].value-113.9128) and \
+        0.0001 >= abs(m.vHin[3, 17].value-51.7954)
