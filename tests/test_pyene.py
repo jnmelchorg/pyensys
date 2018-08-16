@@ -370,15 +370,15 @@ def test_pyene_SingleLP():
 
     def HydroAllowance_rule(m, xv):
         '''Constraint to link hydropower allowance'''
-        return m.vHydropowerAllowance[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
+        return m.vHydropowerAllowance[xv] == m.vEIn[1, xv]-m.vEOut[1, xv]
 
     def ZeroHydroIn_rule(m, xn, xv):
         '''Constraint to link hydropower allowance'''
-        return m.WInFull[xn, xv] == 0
+        return m.vEIn[xn, xv] == 0
 
     def HyroActualUse_rule(m, xv):
         '''Constraint for actual hydropower used'''
-        return m.vHydroUse[xv] == m.WInFull[1, xv]-m.WOutFull[1, xv]
+        return m.vHydroUse[xv] == m.vEIn[1, xv]-m.vEOut[1, xv]
 
     def AdjustPyeneMod(m, EN):
         '''Final modifications for pyene to work with the integrated model'''
@@ -405,12 +405,12 @@ def test_pyene_SingleLP():
 
     def OF_rule(m):
         ''' Combined objective function '''
-        return (m.WaterValue*sum(m.WInFull[1, xv] for xv in m.sVec) +
+        return (m.WaterValue*sum(m.vEIn[1, xv] for xv in m.sVec) +
                 sum((sum(sum(m.vNGCost[m.OFhGC[xh]+xg, xt] for xg in m.sNGen) +
                          sum(m.vNFea[m.OFFea[xh]+xf, xt] for xf in m.sNFea) *
                          m.OFpenalty for xt in m.sNTim) -
                      sum(m.OFpumps[xdl]*m.base *
-                         sum(m.vNDL[m.OFhDL[xh]+xdl+1, xt] *
+                         sum(m.vNPump[m.OFhDL[xh]+xdl+1, xt] *
                              m.OFweights[xt]
                              for xt in m.sNTim) for xdl in m.sNDL)) *
                     m.OFaux[xh] for xh in m.OFh))
@@ -441,13 +441,13 @@ def test_pyene_SingleLP():
     '''                         Fifth step
     Redefine hydropower inputs as variables
     '''
-    del m.WInFull
+    del m.vEIn
     if conf.NM.hydropower['Number'] > 1:
-        m.WInFull = Var(EN.EM.s['Nodz'], EN.EM.s['Vec'],
-                        domain=NonNegativeReals, initialize=0.0)
+        m.vEIn = Var(EN.EM.s['Nodz'], EN.EM.s['Vec'],
+                     domain=NonNegativeReals, initialize=0.0)
     else:
-        m.WInFull = Var(EN.EM.s['Nodz'], domain=NonNegativeReals,
-                        initialize=0.0)
+        m.vEIn = Var(EN.EM.s['Nodz'], domain=NonNegativeReals,
+                     initialize=0.0)
 
     '''                         Sixth step
     Define hydropower allowance

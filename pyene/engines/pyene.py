@@ -111,27 +111,45 @@ class pyeneClass():
         ''' Adding pyomo constraints'''
         # Link water consumption throughout different models
         if self.HM.settings['Flag']:
-            # Link pyeneE and pyeneH
-            m.cEMHM = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                 rule=self.cEMHM_rule)
-            # Link pyeneH and pyeneN
-            m.cHMNM = Constraint(self.s['LL'], self.s['Hydro'],
-                                 self.NM.s['Tim'], rule=self.cHMNM_rule)
+            # Collect inputs for pyeneH from pyeneE and pyeneN
+            m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                   rule=self.cAHMIn1_rule)
+            if self.p['Number'] < self.p['NoHMin']:
+                m.cAHMIn2 = Constraint(self.s['LL'], range(self.p['Number'],
+                                       self.p['NoHMin']), self.NM.s['Tim'],
+                                       rule=self.cAHMIn2_rule)
+            # Connect pyeneH and pyeneN
+            if self.p['NoHydDown'] > 0:
+                m.cAHMOut1 = \
+                    Constraint(self.s['LL'], range(self.p['NoHydDown']),
+                               self.NM.s['Tim'], rule=self.cAHMOut1_rule)
+            m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
+                                    self.NM.s['Tim'], rule=self.cAHMOut2_rule)
         else:
             # Link pyeneE and pyeneN
-            m.cEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                 rule=self.cEMNM_rule)
+            m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                  rule=self.cAEMNM_rule)
 
         # Allow collection of ual values
         m.dual = Suffix(direction=Suffix.IMPORT)
-
-#        m.ctest1 =  Constraint(expr=m.vHin[2, 23] == 9)
-#        m.ctest2 =  Constraint(expr=m.vHin[3, 23] == 23)
 
         return m
 
     def addPar(self, m):
         ''' Add pyomo parameters'''
+        if self.HM.settings['Flag']:
+            # The head may change per iteration
+            # Hydro
+            self.p['EffHydro'] = np.zeros(self.NM.hydropower['Number'],
+                                          dtype=float)
+            for xn in range(self.NM.hydropower['Number']):
+                self.p['EffHydro'][xn] = self.HM.hydropower['Head'][xn] * \
+                    self.HM.hydropower['Efficiency'][xn]*9.81/1000
+            # Pumps
+            self.p['EffPump'] = np.zeros(self.NM.pumps['Number'], dtype=float)
+            for xn in range(self.NM.pumps['Number']):
+                self.p['EffPump'][xn] = self.HM.pumps['Head'][xn] * \
+                    self.HM.pumps['Efficiency'][xn]*9.81/1000
 
         return m
 
@@ -143,9 +161,9 @@ class pyeneClass():
     def addVars(self, m):
         ''' Add pyomo variables '''
         # Converting some parameters to variables
-        del m.WOutFull
-        m.WOutFull = Var(self.EM.s['Nodz'], self.EM.s['Vec'],
-                         domain=NonNegativeReals, initialize=0.0)
+        del m.vEOut
+        m.vEOut = Var(self.EM.s['Nodz'], self.EM.s['Vec'],
+                      domain=NonNegativeReals, initialize=0.0)
         return m
 
     def build_Mod(self, m):
@@ -170,31 +188,69 @@ class pyeneClass():
 
         return m
 
-    def cEMNM_rule(self, m, xL, xv):
+    def cAEMNM_rule(self, m, xL, xv):
         ''' Connecting  pyeneE and pyeneN (MW --> MW)'''
-        return m.WOutFull[self.p['pyeneE'][xL], xv] == \
+        return m.vEOut[self.p['pyeneE'][xL], xv] == \
             sum(m.vNGen[self.p['pyeneN'][xL]+xv, xt] *
                 self.NM.scenarios['Weights'][xt]
                 for xt in self.NM.s['Tim'])*self.NM.networkE.graph['baseMVA']
 
-    def cEMHM_rule(self, m, xL, xv):
-        ''' Connecting  pyeneE and pyeneHin (MW --> m^3/s)'''
-        aux = 9.81*self.HM.hydropower['Efficiency'][xv] * \
-            self.HM.hydropower['Head'][xv]/1000
-
-        return m.WOutFull[self.p['pyeneE'][xL], xv] == \
-            sum(m.vHin[self.p['pyeneHin'][xL]+xv, xt] *
+    def cAHMIn1_rule(self, m, xL, xv):
+        ''' Flows from pyeneE and pyeneHin (MW --> m^3/s)'''
+        # Location of pump
+        xp = self.p['pyeneHin'][xv][1]+xL*(self.NM.pumps['Number']+1)
+        return m.vEOut[self.p['pyeneE'][xL], xv] == \
+            sum((m.vHin[self.p['NoHMin']*xL+xv, xt] -
+                 sum(m.vNPump[xp, xt] *
+                     self.NM.networkE.graph['baseMVA'] /
+                     self.p['EffPump'][self.p['pyeneHin'][xv][1]]
+                     for x in range(self.p['pyeneHin'][xv][0]))) *
                 self.NM.scenarios['Weights'][xt]
-                for xt in self.NM.s['Tim'])*aux
+                for xt in self.NM.s['Tim'])*self.p['EffHydro'][xv]
 
-    def cHMNM_rule(self, m, xL, xv, xt):
-        ''' Connecting  pyeneHout and pyeneN (m^3/s --> kW)'''
-        aux = 9.81*self.HM.hydropower['Efficiency'][xv] * \
-            self.HM.hydropower['Head'][xv]/1000
+    def cAHMIn2_rule(self, m, xL, xv, xt):
+        ''' Connecting  pyeneE and pyeneHin (MW --> m^3/s)'''
+        return m.vHin[self.p['NoHMin']*xL+xv, xt] == \
+            sum(m.vNPump[self.p['pyeneHin'][xv][1]+xL *
+                         (self.NM.pumps['Number']+1), xt] *
+                self.NM.networkE.graph['baseMVA'] /
+                self.p['EffPump'][self.p['pyeneHin'][xv][1]]
+                for x in range(self.p['pyeneHin'][xv][0]))
 
-        return m.vHout[self.p['pyeneHout'][xL]+xv, xt]*aux >= \
-            m.vNGen[self.p['pyeneN'][xL]+xv, xt] * \
-            self.NM.networkE.graph['baseMVA']
+    def cAHMOut1_rule(self, m, xh, xv, xt):
+        ''' pyeneH outputs taken from the aggregated downstream flows '''
+        # Position of the hydropower plant
+        xb = self.p['LLHydDown'][xv]
+        # Node to be addressed
+        xn = self.HM.hydropower['Node'][xb]-1
+        # Position of hydro in pyeneN
+        xg = xb+self.NM.generationE['NoConv']+xh *\
+            (1+self.NM.generationE['Number'])+1
+        # From MW to m^3/s
+        aux = self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
+
+        return m.vNGen[xg, xt]*aux <= \
+            sum(m.vHup[self.HM.p['ConRiver'][xh] +
+                       self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd], xt]
+                for xd in range(self.HM.p['LLN2B2'][xn, 2]))
+
+    def cAHMOut2_rule(self, m, xh, xn, xt):
+        ''' pyeneH outputs taken from nodal outputs '''
+        # Position of hydro in pyeneH
+        xb = self.p['LLHydOut'][xn][1]
+        # Position of the pump
+        xp = self.p['LLHPumpOut'][xn][1]
+        # Position of hydro in pyeneN
+        xg = xb+self.NM.generationE['NoConv']+xh *\
+            (1+self.NM.generationE['Number'])+1
+
+        return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
+            sum(m.vNGen[xg, xt] *
+                self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
+                for x in range(self.p['LLHydOut'][xn][0])) + \
+            sum(m.vNPump[xp+xh*(1+self.NM.pumps['Number']+1), xt] *
+                self.NM.networkE.graph['baseMVA']/self.p['EffPump'][xp]
+                for x in range(self.p['LLHPumpOut'][xn][0]))
 
     def ESim(self, conf):
         ''' Energy only optimisation '''
@@ -276,7 +332,7 @@ class pyeneClass():
         ''' Get surplus kWh from all hydropower plants '''
         value = 0
         for xi in range(self.EM.settings['Vectors']):
-            value += m.WOutFull[1, xi].value
+            value += m.vEOut[1, xi].value
 
         return value
 
@@ -358,7 +414,7 @@ class pyeneClass():
 
     def get_Hydro(self, m, index):
         ''' Get surplus kWh from specific site '''
-        HydroValue = m.WOutFull[1, index-1].value
+        HydroValue = m.vEOut[1, index-1].value
 
         return HydroValue
 
@@ -461,8 +517,8 @@ class pyeneClass():
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
                              self.NM.networkE.graph['baseMVA'] *
-                             sum(m.vNDL[self.NM.connections['Pump'][xh]+xdl+1,
-                                        xt].value *
+                             sum(m.vNPump[self.NM.connections['Pump'][xh] +
+                                          xdl+1, xt].value *
                                  self.NM.scenarios['Weights'][xt]
                                  for xt in auxtime)
                              for xdl in self.NM.s['Pump']) *
@@ -486,7 +542,7 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += auxweight[xt] * \
-                    m.vNDL[self.NM.connections['Pump'][xh]+index, xt].value
+                    m.vNPump[self.NM.connections['Pump'][xh]+index, xt].value
             value += acu*auxOF[xh]
         value *= self.NM.networkE.graph['baseMVA']
 
@@ -674,14 +730,54 @@ class pyeneClass():
         self.HM.initialise()
 
         # Create LL
-        if conf.HM.settings['Flag']:
-            self.p['pyeneHin'] = np.zeros(self.p['Number'], dtype=int)
-            self.p['pyeneHout'] = np.zeros(self.p['Number'], dtype=int)
-            aux1 = len(conf.HM.nodes['In'])
-            aux2 = len(conf.HM.nodes['Out'])
-            for xc in self.s['LL']:
-                self.p['pyeneHin'][xc] = xc*aux1
-                self.p['pyeneHout'][xc] = xc*aux2
+        if self.HM.settings['Flag']:
+            # Inputs to pyeneH
+            self.p['NoHMin'] = len(self.HM.nodes['In'])
+            self.p['pyeneHin'] = np.zeros((self.p['NoHMin'], 2), dtype=int)
+            # Adding pump inputs
+            for x in range(self.NM.pumps['Number']):
+                xp = self.HM.pumps['To'][x]
+                if xp != 0:
+                    xn = self.EM.settings['Vectors']-1
+
+                    while self.HM.nodes['In'][xn] != xp:
+                        xn -= 1
+                    self.p['pyeneHin'][xn][0:2] = [1, x]
+
+            # Outputs from pyeneH
+            # Hydropower units with rivers connected downstream - The info
+            # is calculated based on the summation of the flows
+            self.p['NoHydDown'] = 0
+            self.p['LLHydDown'] = np.zeros(self.NM.hydropower['Number'],
+                                           dtype=int)
+            for x in range(self.NM.hydropower['Number']):
+                xn = self.HM.hydropower['Node'][x]
+                if self.HM.p['LLN2B2'][xn-1, 2] > 0:
+                    self.p['LLHydDown'][self.p['NoHydDown']] = x
+                    self.p['NoHydDown'] += 1
+            self.p['LLHydDown'] = self.p['LLHydDown'][0:self.p['NoHydDown']]
+
+            # Hydropower units without downstream rivers or other devices that
+            # require comparison with water outpouts
+            self.p['NoHMout'] = len(self.HM.nodes['Out'])
+            self.p['LLHydOut'] = np.zeros((self.p['NoHMout'], 2), dtype=int)
+            for x in range(self.NM.hydropower['Number']):
+                xn1 = self.HM.hydropower['Node'][x]-1
+                xn2 = self.HM.connections['NodeSeqOut'][xn1]
+                if xn2 != 0:
+                    self.p['LLHydOut'][xn2-1][:] = [1, x]
+            # Avoid double counting
+            for x in self.p['LLHydDown']:
+                xn = self.HM.hydropower['Node'][x]-1
+                xn = self.HM.connections['NodeSeqOut'][xn]
+                self.p['LLHydOut'][xn-1][:] = [0, 0]
+            # Pumps
+            self.p['LLHPumpOut'] = np.zeros((self.p['NoHMout'], 2), dtype=int)
+            for x in range(self.NM.pumps['Number']):
+                xn1 = self.HM.pumps['From'][x]-1
+                xn2 = self.HM.connections['NodeSeqOut'][xn1]
+                if xn2 != 0:
+                    self.p['LLHPumpOut'][xn2-1][:] = [1, x]
 
     def NSim(self, conf):
         ''' Network only optimisation '''
@@ -714,8 +810,8 @@ class pyeneClass():
                         self.Penalty for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
-                        sum(m.vNDL[self.NM.connections['Pump'][xh]+xdl+1, xt] *
-                            self.NM.scenarios['Weights'][xt]
+                        sum(m.vNPump[self.NM.connections['Pump'][xh]+xdl+1,
+                                     xt]*self.NM.scenarios['Weights'][xt]
                             for xt in self.NM.s['Tim'])
                         for xdl in self.NM.s['Pump'])) *
                    self.OFaux[xh] for xh in self.NM.connections['set']) + \
@@ -732,16 +828,16 @@ class pyeneClass():
         print('Water outputs:')
         for xn in self.EM.s['Nodz']:
             for xv in self.EM.s['Vec']:
-                aux = m.WOutFull[xn, xv].value
+                aux = m.vEOut[xn, xv].value
                 print("%8.4f " % aux, end='')
             print('')
         print('Water inputs:')
-        if type(m.WInFull) is np.ndarray:
-            print(m.WInFull)
+        if type(m.vEIn) is np.ndarray:
+            print(m.vEIn)
         else:
             for xn in self.EM.s['Nodz']:
                 for xv in self.EM.s['Vec']:
-                    aux = m.WInFull[xn, xv].value
+                    aux = m.vEIn[xn, xv].value
                     print("%8.4f " % aux, end='')
                 print('')
 

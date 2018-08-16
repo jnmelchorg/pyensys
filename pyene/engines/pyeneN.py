@@ -229,8 +229,8 @@ class ENetworkClass:
     def addVars(self, m):
         ''' Add pyomo variables '''
         Noh = len(self.s['Con'])
-        m.vNDL = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
-                     domain=NonNegativeReals, initialize=0.0)
+        m.vNPump = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
+                       domain=NonNegativeReals, initialize=0.0)
         m.vNFea = Var(range(Noh*self.NoFea), self.s['Tim'],
                       domain=NonNegativeReals, initialize=0.0)
         m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
@@ -295,7 +295,8 @@ class ENetworkClass:
                 self.scenarios['Weights'][xt] -
                 m.vNFea[self.connections['Feasibility'][xh] +
                         self.p['LLFea'][xn+1], xt] +
-                m.vNDL[self.connections['Pump'][xh]+self.p['LLPump'][xn], xt] +
+                m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
+                         xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh] +
                              self.p['LLESec2'][self.p['LLN2B1']
                              [x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
@@ -352,11 +353,11 @@ class ENetworkClass:
 
     def cNLDIni_rule(self, m, xt, xh):
         ''' Initialising dynamic loads '''
-        return m.vNDL[self.connections['Pump'][xh], xt] == 0
+        return m.vNPump[self.connections['Pump'][xh], xt] == 0
 
     def cNLDMax_rule(self, m, xdl, xt, xh):
         ''' Maximum capacity of dynamic loads'''
-        return (m.vNDL[self.connections['Pump'][xh]+xdl+1, xt] <=
+        return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
                 self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
 
     def cNRESMax_rule(self, m, xt, xg, xh):
@@ -429,8 +430,8 @@ class ENetworkClass:
                         for xf in self.s['Fea']) *
                     1000000 for xt in self.s['Tim']) -
                 sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
-                    sum(m.vNDL[self.connections['Pump'][xh] +
-                               xdl+1, xt]*self.scenarios['Weights'][xt]
+                    sum(m.vNPump[self.connections['Pump'][xh] +
+                                 xdl+1, xt]*self.scenarios['Weights'][xt]
                         for xt in self.s['Tim']) for xdl in self.s['Pump']))
 
     def offPrint(self):
@@ -497,8 +498,8 @@ class ENetworkClass:
                 print("\nPumps=[")
                 for xdl in self.s['Pump']:
                     for xt in self.s['Tim']:
-                        aux = m.vNDL[self.connections['Pump'][xh]+xdl+1,
-                                     xt].value*self.networkE.graph['baseMVA']
+                        aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
+                                       xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -960,5 +961,6 @@ class ENetworkClass:
         self.generationE = {
                 'Data': ENetGen,
                 'Costs': ENetCost,
-                'Number': NoGen
+                'Number': NoGen,
+                'NoConv': NoOGen
                 }

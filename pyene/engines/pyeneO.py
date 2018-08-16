@@ -89,7 +89,7 @@ class pyeneHDF5Settings():
             HDF5row.append()
         HDF5table.flush()
 
-    def saveResults(self, fileh, EN, mod, root, SimNo):
+    def saveResults(self, fileh, EN, m, root, SimNo):
         HDF5group = fileh.create_group(root, 'Simulation_{:05d}'.format(SimNo))
         HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
                             EN.NM.settings['NoTime']), dtype=float)
@@ -112,21 +112,21 @@ class pyeneHDF5Settings():
 
         # Hydropower allowance
         aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
-        if type(mod.WInFull) is np.ndarray:
+        if type(m.vEIn) is np.ndarray:
             if EN.EM.settings['Vectors'] == 1:
                 aux[0] = EN.EM.Weight['In'][1]
             else:
                 for xv in EN.EM.s['Vec']:
-                    aux[xv] = mod.WInFull[1][xv]
+                    aux[xv] = m.vEIn[1][xv]
         else:
             for xv in EN.EM.s['Vec']:
-                aux[xv] = mod.WInFull[1, xv].value
+                aux[xv] = m.vEIn[1, xv].value
 
         fileh.create_array(HDF5group, "Hydro_Allowance", aux)
 
         hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
         for xi in range(EN.EM.settings['Vectors']):
-            hp_marginal[xi] = EN.get_HydroMarginal(mod, xi+1)
+            hp_marginal[xi] = EN.get_HydroMarginal(m, xi+1)
         fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         for xs in range(EN.NM.scenarios['Number']):
@@ -137,23 +137,23 @@ class pyeneHDF5Settings():
             for xt in range(EN.NM.settings['NoTime']):
                 HDF5row['time'] = xt
                 HDF5row['generation'] = \
-                    EN.get_AllGeneration(mod, 'Conv', 'snapshot', times=[xt],
+                    EN.get_AllGeneration(m, 'Conv', 'snapshot', times=[xt],
                                          scens=[xs])
                 HDF5row['hydropower'] = \
-                    EN.get_AllGeneration(mod, 'Hydro', 'snapshot', times=[xt],
+                    EN.get_AllGeneration(m, 'Hydro', 'snapshot', times=[xt],
                                          scens=[xs])
-                HDF5row['RES'] = EN.get_AllGeneration(mod, 'RES', 'snapshot',
+                HDF5row['RES'] = EN.get_AllGeneration(m, 'RES', 'snapshot',
                                                       times=[xt], scens=[xs])
-                HDF5row['spill'] = EN.get_AllRES(mod, 'snapshot', times=[xt],
+                HDF5row['spill'] = EN.get_AllRES(m, 'snapshot', times=[xt],
                                                  scens=[xs])
-                HDF5row['demand'] = EN.get_AllDemand(mod, 'snapshot',
+                HDF5row['demand'] = EN.get_AllDemand(m, 'snapshot',
                                                      times=[xt], scens=[xs])
-                HDF5row['pump'] = EN.get_AllPumps(mod, 'snapshot', times=[xt],
+                HDF5row['pump'] = EN.get_AllPumps(m, 'snapshot', times=[xt],
                                                   scens=[xs])
-                HDF5row['loss'] = EN.get_AllLoss(mod, 'snapshot', times=[xt],
+                HDF5row['loss'] = EN.get_AllLoss(m, 'snapshot', times=[xt],
                                                  scens=[xs])
                 HDF5row['curtailment'] = \
-                    EN.get_AllDemandCurtailment(mod, 'snapshot', times=[xt],
+                    EN.get_AllDemandCurtailment(m, 'snapshot', times=[xt],
                                                 scens=[xs])
                 HDF5row.append()
             HDF5table.flush()

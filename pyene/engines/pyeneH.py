@@ -2,6 +2,9 @@
 """
 Created on Fri Jun 22 18:44:55 2018
 
+Pyene Hydrology provides methods for mapping the short-term movement of water
+throughout specific sections of the system
+
 @author: Dr Eduardo Alejandro Martínez Ceseña
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
@@ -56,6 +59,13 @@ class pyeneHConfig:
                 'Head': [],  # Head (m)
                 'Storage': []  # Storage (MWh)
                 }
+        # Pumps
+        self.pumps = {
+                'From': [],  # Location in water network
+                'To': [],  # Location in (or out of) the water network
+                'Efficiency': [],  # pu
+                'Head': []  # (m)
+                }
 
 
 class HydrologyClass:
@@ -75,7 +85,6 @@ class HydrologyClass:
                 'CapStor': None,  # Capacity of the hydro storage
                 'ConInNode': None,  # Node inputs
                 'ConOutNode': None,  # Node outputs
-                'ConStor': None,  # Storage used by hydropower
                 'DeltaT': None,  # Time differential
                 'Feas': None,  # Feasibility constraint
                 'FeasTime': None,  # Feasibility constraint
@@ -85,6 +94,8 @@ class HydrologyClass:
                 'LLN2B1': None,  # Conection node2Branch
                 'LLN2B2': None,  # Conection node2Branch
                 'LLOutNode': None,  # Connection Node Output
+                'LLpumpFrom': None,  # Connection 1st node of pump
+                'LLpumpTo': None,  # Connection 2nd node of pump
                 'LLShare1': None,  # From node to several rivers
                 'LLShare2': None,  # From node to several rivers
                 'LLStor': None,  # Link node-hydro storage units
@@ -201,23 +212,28 @@ class HydrologyClass:
 
     def _BuildLLScenario(self):
         ''' Build LL to locate beginning of each scenario '''
-        # Add output nodes for hydropower generation if needed
-        NoHM = max(max(self.rivers['From']), max(self.rivers['To']))
-        auxf = np.zeros(NoHM, dtype=int)  # Flag
-        auxv = np.zeros(NoHM, dtype=int)  # Value
-        # Adding hydropower nodes
-        cou = 0
-        for xn in self.hydropower['Node']:
-            auxf[xn-1] = 1
-            auxv[cou] = xn
-            cou += 1
-        # Adding hydrology output nodes
-        for xn in self.nodes['Out']:
-            if auxf[xn-1] == 0:
-                auxf[xn-1] = 1
-                auxv[cou] = xn
-                cou += 1
-        self.nodes['Out'] = auxv[0:cou]
+        # Create additional input/output nodes if needed
+        if len(self.pumps['From']) > 0:
+            NoHM = max(max(self.rivers['From']), max(self.rivers['To']))
+            aux1 = ['Out', 'In']
+            aux2 = ['From', 'To']
+            for x in range(2):
+                auxf = np.zeros(NoHM, dtype=int)  # Flag
+                auxv = np.zeros(NoHM, dtype=int)  # Value
+                # Adding hydrology output nodes
+                cou = 0
+                for xn in self.nodes[aux1[x]]:
+                    auxf[xn-1] = 1
+                    auxv[cou] = xn
+                    cou += 1
+                # Adding pumps
+                for xn in self.pumps[aux2[x]]:
+                    if xn != 0:
+                        if auxf[xn-1] == 0:
+                            auxf[xn-1] = 1
+                            auxv[cou] = xn
+                            cou += 1
+                self.nodes[aux1[x]] = auxv[0:cou]
 
         self.nodes['InNumber'] = len(self.nodes['In'])
         self.nodes['OutNumber'] = len(self.nodes['Out'])
@@ -443,16 +459,10 @@ class HydrologyClass:
             if self.opt['NoFxInput'] > 0:
                 m.cHFixedInput = Constraint(self.s['FXIn'],
                                             rule=self.cHFixedInput_rule)
-            if self.p['NoStor'] == 0:
-                m.cHStorMax = Constraint(expr=m.vHStor[0, 0] == 0)
-            else:
-                m.cHStorMax0 = Constraint(self.s['Tim'],
-                                           rule=self.cHStorMax0_rule)
-                m.cHStorMax = Constraint(range(self.p['NoStor']),
-                                          self.s['Tim'], self.s['Sce'],
-                                          rule=self.cHStorMax_rule)
-                m.cHStorLink = Constraint(self.s['Stor'],
-                                           rule=self.cHStorLink_rule)
+            m.cHStorMax = Constraint(range(self.p['NoStor']), self.s['Tim'],
+                                     self.s['Sce'], rule=self.cHStorMax_rule)
+            m.cHStorLink = Constraint(self.s['Stor'],
+                                      rule=self.cHStorLink_rule)
         else:
             # No penalty
             m.cHPenalty = Constraint(expr=m.vHpenalty == 0)
@@ -483,8 +493,10 @@ class HydrologyClass:
             self.s['TimP'] = range(self.settings['NoTime']+1)
             self.s['Sce'] = range(self.connections['Number'])
             self.s['Share'] = range(self.opt['NoShare'])
-            self.s['Stor'] = range(1+self.connections['Number'] *
-                                    self.p['NoStor'])
+            self.s['Stor'] = range(self.connections['Number'] *
+                                   self.p['NoStor'])
+            self.s['Pump'] = range(self.connections['Number'] *
+                                   self.p['NoPump'])
 
         return m
 
@@ -512,7 +524,7 @@ class HydrologyClass:
             m.vHup = Var(auxr, self.s['Tim'], domain=NonNegativeReals)
             # Storage for hydropower units
             if self.p['NoStor'] == 0:
-                m.vHStor = Var([0], [0], domain=NonNegativeReals)
+                m.vHStor = Var(domain=NonNegativeReals)
             else:
                 m.vHStor = Var(self.s['Stor'], self.s['Tim'],
                                domain=NonNegativeReals)
@@ -543,13 +555,9 @@ class HydrologyClass:
                        self.p['SoCLinks'][xs, 1]] == \
             m.vHSoC[self.p['SoCLinks'][xs, 2]+xr, self.p['SoCLinks'][xs, 3]]
 
-    def cHStorMax0_rule(self, m, xt):
-        ''' Reference storage '''
-        return m.vHStor[0, xt] == 0
-
     def cHStorMax_rule(self, m, xn, xt, xh):
         ''' Limits for the storage used by hydropower plants '''
-        x = 1+xh*self.p['NoStor']+xn
+        x = xh*self.p['NoStor']+xn
         return m.vHStor[x, xt] <= self.p['CapStor'][xn+1]
 
     def cHStorLink_rule(self, m, xn):
@@ -580,8 +588,8 @@ class HydrologyClass:
 
     def cHNodeBalance_rule(self, m, xn, xt, xh):
         ''' Nodal balance '''
-        x = self.p['ConStor'][xh][self.p['LLStor'][xn][0]] + \
-            self.p['LLStor'][xn][1]
+        aux1 = xh*self.p['NoStor']+self.p['LLStor'][xn][1]
+        aux2 = range(self.p['LLStor'][xn][0])
 
         return sum(m.vHin[self.p['ConInNode'][xh] +
                           self.p['LLInNode'][xn, 1], xt]
@@ -595,8 +603,8 @@ class HydrologyClass:
             sum(m.vHout[self.p['ConOutNode'][xh] +
                         self.p['LLOutNode'][xn, 1], xt]
                 for xb in range(self.p['LLOutNode'][xn, 0])) + \
-            m.vHStor[x, self.p['TimeStor'][xt][0]] - \
-            m.vHStor[x, self.p['TimeStor'][xt][1]]
+            sum(m.vHStor[aux1+xs, self.p['TimeStor'][xt][0]]for xs in aux2) - \
+            sum(m.vHStor[aux1+xs, self.p['TimeStor'][xt][1]]for xs in aux2)
 
     def cHPenalty_rule(self, m):
         ''' No penalty '''
@@ -664,21 +672,18 @@ class HydrologyClass:
 
             # Check for storage requirements
             self.p['NoStor'] = len(self.hydropower['Storage'])
-            self.p['LLStor'] = np.zeros((self.nodes['Number'], 2), dtype=int)
             self.p['CapStor'] = np.zeros(self.nodes['Number']+1, dtype=int)
             self.p['TimeStor'] = np.zeros((self.settings['NoTime'], 2),
-                                           dtype=int)
-            self.p['ConStor'] = np.zeros((self.connections['Number'], 2),
-                                         dtype=int)
+                                          dtype=int)
+            self.p['LLStor'] = np.zeros((self.nodes['Number'], 2), dtype=int)
             if self.p['NoStor'] > 0:
                 cou = 0
                 for xn in range(self.p['NoStor']):
                     if self.hydropower['Storage'][xn] == 0:
                         self.p['NoStor'] -= 1
                     else:
-                        self.p['LLStor'][self.hydropower['Node'][xn]-1][0] = 1
-                        self.p['LLStor'][self.hydropower['Node'][xn] -
-                                          1][1] = cou
+                        self.p['LLStor'][self.hydropower['Node'][xn]-1][:] = \
+                            [1, cou]
                         cou += 1
                         self.p['CapStor'][cou] = \
                             self.hydropower['Storage'][xn]*1000/9.81 / \
@@ -690,8 +695,30 @@ class HydrologyClass:
                     self.p['TimeStor'][xt][0] = xt
                     self.p['TimeStor'][xt][1] = xt-1
                 self.p['TimeStor'][0][1] = self.settings['NoTime']-1
-                for xh in range(self.connections['Number']):
-                    self.p['ConStor'][xh][1] = 1+xh*self.p['NoStor']
+
+            # Adding pumps
+            self.p['NoPump'] = len(self.pumps['From'])
+            self.p['LLpumpFrom'] = np.zeros((self.nodes['Number'], 2),
+                                            dtype=int)
+            self.p['LLpumpTo'] = np.zeros((self.nodes['Number'], 2), dtype=int)
+            if self.p['NoPump'] > 0:
+                # Get node connections
+                for x in range(self.p['NoPump']):
+                    self.p['LLpumpFrom'][self.pumps['From'][x]-1][:] = [1, x]
+                    if self.pumps['To'][x] > 0:
+                        self.p['LLpumpTo'][self.pumps['From'][x]-1][:] = [1, x]
+
+            # Node sequence
+            self.connections['NodeSeqIn'] = np.zeros(self.nodes['Number'],
+                                                     dtype=int)
+            for x in range(self.nodes['InNumber']):
+                xn = self.nodes['In'][x]-1
+                self.connections['NodeSeqIn'][xn] = x+1
+            self.connections['NodeSeqOut'] = np.zeros(self.nodes['Number'],
+                                                      dtype=int)
+            for x in range(self.nodes['OutNumber']):
+                xn = self.nodes['Out'][x]-1
+                self.connections['NodeSeqOut'][xn] = x+1
 
     def OF_rule(self, m):
         ''' Objective function '''
@@ -772,8 +799,7 @@ class HydrologyClass:
                             if self.p['LLStor'][xn][0] == 0:
                                 aux = 0
                             else:
-                                aux = m.vHStor[self.p['ConStor'][xh]
-                                               [self.p['LLStor'][xn][0]] +
+                                aux = m.vHStor[xh*self.p['NoStor'] +
                                                self.p['LLStor'][xn][1],
                                                self.p['TimeStor']
                                                [xt][0]].value
@@ -831,7 +857,7 @@ class HydrologyClass:
                 print('%f ' % m.vHout[xn, xt].value, end='')
             print()
         print('];')
-        
+
         print('vHStor = [')
         for xn in self.s['Stor']:
             for xt in self.s['Tim']:

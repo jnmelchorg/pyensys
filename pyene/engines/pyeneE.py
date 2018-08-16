@@ -374,8 +374,8 @@ class EnergyClass:
         ''' Adding pyomo parameters '''
 
         # Nodal inputs and outputs (may be redefined as variables)
-        m.WInFull = self.Weight['In']
-        m.WOutFull = self.Weight['Out']
+        m.vEIn = self.Weight['In']
+        m.vEOut = self.Weight['Out']
 
         return m
 
@@ -410,7 +410,7 @@ class EnergyClass:
         ''' Balance at different time levels '''
         return (m.vSoC[xL1, 0, xv] ==
                 m.vSoC[self.p['LLTS1'][xL1, 0], self.p['LLTS1'][xL1, 1], xv] +
-                m.WInFull[xL1, xv] - m.WOutFull[xL1, xv])
+                m.vEIn[xL1, xv] - m.vEOut[xL1, xv])
 
     def cSoCStochastic_rule(self, m, xL3, xv):
         ''' Aggregating (stochastic case) '''
