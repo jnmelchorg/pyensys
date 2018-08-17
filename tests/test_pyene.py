@@ -682,6 +682,7 @@ def test_pyene_ENHStorPump():
             }
     conf.HM.nodes['Out'] = [7, 5, 6]  # Nodes with water outflows
     conf.HM.settings['Flag'] = True
+    conf.NM.settings['Pieces'] = [10]
 
     # Create object
     EN = pe(conf.EN)
@@ -707,11 +708,17 @@ def test_pyene_ENHStorPump():
     m = EN.run(m)
     EN.Print_ENSim(m)
     print(m.OF.expr())
+    print(m.vHin[1, 8].value)
+    print(m.vHin[4, 9].value)
+    print(m.vHStor[1, 6].value)
+    print(m.vHStor[2, 12].value)
+    print(m.vNPump[2, 5].value*100)
+    print(m.vNPump[6, 5].value*100)
 
-    assert 0.0001 >= abs(m.OF.expr()-1847177.7031) and \
-        0.0001 >= abs(m.vHin[1, 8].value-129.9356) and \
-        0.0001 >= abs(m.vHin[4, 9].value-85.0162) and \
+    assert 0.0001 >= abs(m.OF.expr()-1306400.90327) and \
+        0.0001 >= abs(m.vHin[1, 8].value-44.4162) and \
+        0.0001 >= abs(m.vHin[4, 9].value-22.4070) and \
         0.0001 >= abs(m.vHStor[1, 6].value-29.0000) and \
-        0.0001 >= abs(m.vHStor[2, 12].value-51.3677) and \
-        0.0001 >= abs(m.vNPump[2, 5].value*100-11.6367) and \
-        0.0001 >= abs(m.vNPump[6, 5].value*100-17.2129)
+        0.0001 >= abs(m.vHStor[2, 12].value-20.0795) and \
+        0.0001 >= abs(m.vNPump[2, 5].value*100-11.7158) and \
+        0.0001 >= abs(m.vNPump[6, 5].value*100-17.2354)
