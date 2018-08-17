@@ -118,7 +118,7 @@ class HydrologyClass:
                 'Fdown': True,
                 'SoC': True,
                 'Feas': True,
-                'Stor': True
+                'Stor': True,
                 }
 
     def _BuildHNetwork(self):

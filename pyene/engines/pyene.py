@@ -130,7 +130,6 @@ class pyeneClass():
             m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
                                   rule=self.cAEMNM_rule)
 
-        # Allow collection of ual values
         m.dual = Suffix(direction=Suffix.IMPORT)
 
         return m
@@ -248,7 +247,7 @@ class pyeneClass():
             sum(m.vNGen[xg, xt] *
                 self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
                 for x in range(self.p['LLHydOut'][xn][0])) + \
-            sum(m.vNPump[xp+xh*(1+self.NM.pumps['Number']+1), xt] *
+            sum(m.vNPump[1+xp+xh*(1+self.NM.pumps['Number']), xt] *
                 self.NM.networkE.graph['baseMVA']/self.p['EffPump'][xp]
                 for x in range(self.p['LLHPumpOut'][xn][0]))
 

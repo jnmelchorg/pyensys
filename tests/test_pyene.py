@@ -286,6 +286,7 @@ def test_pyene_RESPump():
     EN.set_GenCoFlag(2, 200)
     m = ConcreteModel()
     m = EN.run(m)
+    EN.Print_ENSim(m)
     # Get RES spilled
     RES_Spilled = EN.get_AllRES(m)
     print('RES spilled ', RES_Spilled)
@@ -627,3 +628,90 @@ def test_pyene_ENHStor():
     assert 0.0001 >= abs(m.OF.expr()-5946534.84017) and \
         0.0001 >= abs(m.vHin[1, 17].value-113.9128) and \
         0.0001 >= abs(m.vHin[3, 17].value-51.7954)
+
+
+# Combined use of pyeneE, pyeneN and pyeneH + Storage
+def test_pyene_ENHStorPump():
+    print('test_pyene_ENHStorPump')
+    conf = testConfig()
+    # Scenarios
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+    conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
+
+    # Hydropower
+    conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01,  0.01]  # Costs
+    conf.HM.hydropower['Node'] = [6, 3, 5]  # Location (node)  of hydro
+    conf.HM.hydropower['Efficiency'] = [0.85, 0.85, 0.85]  # pu
+    conf.HM.hydropower['Head'] = [200, 200, 200]  # m
+    conf.HM.hydropower['Storage'] = [0, 100, 50]  # local storage
+
+    # Pumps
+    conf.NM.pumps['Number'] = 3  # Number of pumps
+    conf.NM.pumps['Bus'] = [1, 2, 3]  # Location (bus) of pumps
+    conf.NM.pumps['Max'] = [100, 100, 100]  # Capacity
+    conf.NM.pumps['Value'] = [0.1, 0.1, 0.1]  # Value/Profit
+    conf.HM.pumps['From'] = [2, 6, 3]  # Location in water network
+    conf.HM.pumps['To'] = [5, 0, 4]  # Location in (or out) the water network
+    conf.HM.pumps['Efficiency'] = [0.85, 0.85, 0.85]  # pu
+    conf.HM.pumps['Head'] = [200, 200, 200]  # m
+
+    # RES generators
+    conf.NM.RES['Number'] = 2  # Number of RES generators
+    conf.NM.RES['Bus'] = [1, 3]  # Location (bus) of pumps
+    conf.NM.RES['Max'] = [100, 100]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.0001, 0.0001]  # Costs
+
+    # Enable curtailment
+    conf.NM.settings['Feasibility'] = False
+    conf.NM.settings['NoTime'] = 24  # Number of time steps
+
+    conf.HM.rivers = {
+            'DepthMax': [4, 4, 4, 4, 4],  # Maximum depth
+            'DepthMin': [0.3, 0.3, 0.3, 0.3, 0.3],  # MInimum depth
+            'From': [1, 2, 4, 4, 3],  # Node - from
+            'Length': [1000, 1000, 1000, 1000, 1000],  # length (m)
+            'Manning': [0.03, 0.03, 0.03, 0.03, 0.03],  # Mannings 'n
+            'Parts': [],
+            'Share': [1, 1, 0.4, 0.6, 1],  # Links between water flows
+            'Slope': [0.0001, 0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
+            'To': [2, 3, 5, 6, 7],  # Node -to
+            'Width': [200, 200, 200, 200, 200]  # width (m)
+            }
+    conf.HM.nodes['Out'] = [7, 5, 6]  # Nodes with water outflows
+    conf.HM.settings['Flag'] = True
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Profiles and water allowance
+    fileName = os.path.join(json_directory(), 'UKElectricityProfiles.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Winter']['Weekday'])
+    EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
+    EN.set_Hydro(1, 12000)
+    EN.set_Hydro(2, 35000)
+
+    # RES profile (first scenario)
+    aux = np.ones(conf.NM.settings['NoTime'], dtype=int)
+    for xr in range(conf.NM.RES['Number']):
+        EN.set_RES(xr+1, aux)
+
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print(m.OF.expr())
+
+    assert 0.0001 >= abs(m.OF.expr()-1847177.7031) and \
+        0.0001 >= abs(m.vHin[1, 8].value-129.9356) and \
+        0.0001 >= abs(m.vHin[4, 9].value-85.0162) and \
+        0.0001 >= abs(m.vHStor[1, 6].value-29.0000) and \
+        0.0001 >= abs(m.vHStor[2, 12].value-51.3677) and \
+        0.0001 >= abs(m.vNPump[2, 5].value*100-11.6367) and \
+        0.0001 >= abs(m.vNPump[6, 5].value*100-17.2129)
