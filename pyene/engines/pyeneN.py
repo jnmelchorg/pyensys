@@ -55,7 +55,7 @@ class pyeneNConfig:
         self.hydropower = {
                 'Number': 0,  # Number of hydropower plants
                 'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
+                'Max': [0],  # Capacity (MW)
                 'Cost': [0],  # Costs
                 'Link': None  # Position of hydropower plants
                 }
@@ -101,6 +101,10 @@ class ENetworkClass:
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
+        # sets and parameters used for the mathematical model
+        self.s = {}
+        self.p = {}
+
     def _getLL(self, NoLL, NoDt, DtLL):
         ''' Produce LL while removing the 'next' '''
         # Produce LL and 'next'
@@ -137,74 +141,133 @@ class ENetworkClass:
     def addCon(self, m):
         ''' Add pyomo constraints '''
         # Reference line flow
-        m.cEPow0 = Constraint(m.sTim, m.sCon, rule=self.cEPow0_rule)
+        m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
+                               rule=self.cNEPow0_rule)
         # Reference generation
-        m.cEGen0 = Constraint(m.sTim, m.sCon, rule=self.cEGen0_rule)
+        m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
+                               rule=self.cNEGen0_rule)
         # Maximum generation
-        m.cEGMax = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMax_rule)
+        m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                               rule=self.cNEGMax_rule)
         # Minimum generation
-        m.cEGMin = Constraint(m.sGen, m.sTim, m.sCon, rule=self.cEGMin_rule)
+        m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                               rule=self.cNEGMin_rule)
         # Piece-wise generation costs approximation
-        m.cEGenC = Constraint(m.sGenCM, m.sTim, m.sCon, rule=self.cEGenC_rule)
+        m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
+                               rule=self.cNEGenC_rule)
         # Branch flows
-        m.cEFlow = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFlow_rule)
+        m.cNEFlow = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
+                               rule=self.cNEFlow_rule)
         # Branch capacity constraint (positive)
-        m.cEFMax = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMax_rule)
+        m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
+                               rule=self.cNEFMax_rule)
         # Branch capacity constraint (negative)
-        m.cEFMin = Constraint(m.sTim, m.sSec1, m.sCon, rule=self.cEFMin_rule)
+        m.cNEFMin = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
+                               rule=self.cNEFMin_rule)
         # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
-        m.cEBalance = Constraint(m.sBus, m.sTim, m.sSec2, m.sCon,
-                                 rule=self.cEBalance_rule)
+        m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'], self.s['Sec2'],
+                                  self.s['Con'], rule=self.cNEBalance_rule)
         # Dinamic load maximum capacity
-        m.cDLMax = Constraint(m.sDL, m.sTim, m.sCon, rule=self.cLDMax_rule)
+        m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
+                               rule=self.cNLDMax_rule)
         # Dinamic load initialisation
-        m.cDLIni = Constraint(m.sTim, m.sCon, rule=self.cLDIni_rule)
+        m.cNDLIni = Constraint(self.s['Tim'], self.s['Con'],
+                               rule=self.cNLDIni_rule)
         # Feasibility constraints
-        m.csetFea = Constraint(m.sTim, m.sCon, rule=self.csetFea_rule)
+        m.cNsetFea = Constraint(self.s['Tim'], self.s['Con'],
+                                rule=self.cNsetFea_rule)
         # Adding piece wise estimation of losses
         if self.settings['Losses']:
-            m.cDCLossA = Constraint(m.sBra, m.sLoss,
-                                    m.sTim, m.sCon, rule=self.cDCLossA_rule)
-            m.cDCLossB = Constraint(m.sBra, m.sLoss,
-                                    m.sTim, m.sCon, rule=self.cDCLossB_rule)
+            m.cNDCLossA = Constraint(self.s['Bra'], self.s['Loss'],
+                                     self.s['Tim'], self.s['Con'],
+                                     rule=self.cNDCLossA_rule)
+            m.cNDCLossB = Constraint(self.s['Bra'], self.s['Loss'],
+                                     self.s['Tim'], self.s['Con'],
+                                     rule=self.cNDCLossB_rule)
         else:
-            m.cDCLossNo = Constraint(m.sBra, m.sTim, m.sCon,
-                                     rule=self.cDCLossN_rule)
+            m.cNDCLossNo = Constraint(self.s['Bra'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNDCLossN_rule)
         # Adding RES limits
         if self.RES['Number'] > 0:
-            m.cRESMax = Constraint(m.sTim, range(self.RES['Number']),
-                                   m.sCon,
-                                   rule=self.cRESMax_rule)
+            m.cNRESMax = Constraint(self.s['Tim'], range(self.RES['Number']),
+                                    self.s['Con'], rule=self.cNRESMax_rule)
 
         # Storage
         if self.Storage['Number'] > 0:
-            m.cStoreMax = Constraint(m.sSto, m.sTim, m.sCon,
-                                     rule=self.cStoreMax_rule)
-            m.cStoreMin = Constraint(m.sSto, m.sTim, m.sCon,
-                                     rule=self.cStoreMin_rule)
-        m.cStore0 = Constraint(m.sTim, rule=self.cStore0_rule)
+            m.cNStoreMax = Constraint(m.sNSto, self.s['Tim'], self.s['Con'],
+                                      rule=self.cNStoreMax_rule)
+            m.cNStoreMin = Constraint(m.sNSto, self.s['Tim'], self.s['Con'],
+                                      rule=self.cNStoreMin_rule)
+        m.cNStore0 = Constraint(self.s['Tim'], rule=self.cNStore0_rule)
 
         return m
 
-    def cDCLossA_rule(self, m, xb, xb2, xt, xh):
+    def addPar(self, m):
+        ''' Add pyomo parameters '''
+        self.p['MaxPump'] = self.pumps['Max']
+
+        return m
+
+    def addSets(self, m):
+        ''' Add pyomo sets '''
+        self.s['Con'] = self.connections['set']
+        self.s['Bra'] = range(self.networkE.number_of_edges())
+        self.s['Bus'] = range(self.networkE.number_of_nodes())
+        self.s['Buses'] = range(self.NoBuses+1)
+        self.s['Pump'] = range(self.pumps['Number'])
+        self.s['Fea'] = range(self.NoFea)
+        self.s['Gen'] = range(self.generationE['Number'])
+        self.s['GenCM'] = range(self.NoGenC)
+        self.s['Tim'] = range(self.settings['NoTime'])
+        self.s['Loss'] = range(self.Number_LossCon)
+        self.s['Sec1'] = range(self.NoSec1)
+        self.s['Sec2'] = range(self.NoSec2+1)
+        self.s['Sto'] = range(self.Storage['Number'])
+
+        return m
+
+    def addVars(self, m):
+        ''' Add pyomo variables '''
+        Noh = len(self.s['Con'])
+        m.vNPump = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
+                       domain=NonNegativeReals, initialize=0.0)
+        m.vNFea = Var(range(Noh*self.NoFea), self.s['Tim'],
+                      domain=NonNegativeReals, initialize=0.0)
+        m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
+                       domain=Reals, initialize=0.0)
+        m.vNGCost = Var(range(Noh*self.generationE['Number']), self.s['Tim'],
+                        domain=NonNegativeReals, initialize=0.0)
+        m.vNGen = Var(range(Noh*(self.generationE['Number']+1)), self.s['Tim'],
+                      domain=NonNegativeReals, initialize=0.0)
+        m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
+                       self.s['Tim'], domain=NonNegativeReals, initialize=0.0)
+        m.vNStore = Var(range(Noh*(self.Storage['Number'])+1), self.s['Tim'],
+                        domain=NonNegativeReals, initialize=0.0)
+        m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
+                       domain=Reals, initialize=0.0)
+
+        return m
+
+    def cNDCLossA_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Positive) '''
-        return (m.vLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (m.Loss_Con1[xb2]+m.vFlow[self.connections['Flow'][xh] +
-                                          xb+1, xt]*m.Loss_Con2[xb2]) *
-                m.branchData[xb, 0])
+        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
+                (self.p['Loss_Con1'][xb2] +
+                 m.vNFlow[self.connections['Flow'][xh] +
+                          xb+1, xt]*self.p['Loss_Con2'][xb2]) *
+                self.p['branchData'][xb, 0])
 
-    def cDCLossB_rule(self, m, xb, xb2, xt, xh):
+    def cNDCLossB_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Negative) '''
-        return (m.vLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (m.Loss_Con1[xb2] -
-                 m.vFlow[self.connections['Flow'][xh]+xb+1, xt] *
-                 m.Loss_Con2[xb2])*m.branchData[xb, 0])
+        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
+                (self.p['Loss_Con1'][xb2] -
+                 m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
+                 self.p['Loss_Con2'][xb2])*self.p['branchData'][xb, 0])
 
-    def cDCLossN_rule(self, m, xb, xt, xh):
+    def cNDCLossN_rule(self, m, xb, xt, xh):
         ''' No losses '''
-        return m.vLoss[self.connections['Loss'][xh]+xb+1, xt] == 0
+        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] == 0
 
-    def cEBalance_rule(self, m, xn, xt, xs, xh):
+    def cNEBalance_rule(self, m, xn, xt, xs, xh):
         ''' Nodal balance:
         Generation + Flow in - loss/2 = Demand + flow out + loss/2
         '''
@@ -213,166 +276,113 @@ class ENetworkClass:
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
-        return (sum(m.vGen[self.connections['Generation'][xh]+m.LLGen1[xg], xt]
-                    for xg in range(m.LLGen2[xn, 0], m.LLGen2[xn, 1]+1)) +
-                sum(m.vFlow[self.connections['Flow'][xh] +
-                            m.LLESec2[m.LLN2B1[x2+m.LLN2B2[xn, 1]], xs], xt] -
-                    m.vLoss[self.connections['Loss'][xh] +
-                            m.LLN2B1[x2+m.LLN2B2[xn, 1]], xt]/2
-                    for x2 in range(1+m.LLN2B2[xn, 0])) ==
+        return (sum(m.vNGen[self.connections['Generation'][xh] +
+                            self.p['LLGen1'][xg], xt]
+                    for xg in range(self.p['LLGen2'][xn, 0],
+                                    self.p['LLGen2'][xn, 1]+1)) +
+                sum(m.vNFlow[self.connections['Flow'][xh] +
+                             self.p['LLESec2'][self.p['LLN2B1']
+                                               [x2+self.p['LLN2B2'][xn, 1]],
+                                               xs], xt] -
+                    m.vNLoss[self.connections['Loss'][xh] +
+                             self.p['LLN2B1'][x2 +
+                                              self.p['LLN2B2'][xn, 1]], xt]/2
+                    for x2 in range(1+self.p['LLN2B2'][xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt+self.busScenario[xn][xh]] -
-                (m.vStore[self.LLStor[xn, xh], xt] -
-                 m.vStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
+                (m.vNStore[self.LLStor[xn, xh], xt] -
+                 m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
-                m.vFea[self.connections['Feasibility'][xh]+m.LLFea[xn+1], xt] +
-                m.vDL[self.connections['Pump'][xh]+m.LLDL[xn], xt] +
-                sum(m.vFlow[self.connections['Flow'][xh] +
-                            m.LLESec2[m.LLN2B1[x1+m.LLN2B2[xn, 3]], xs], xt] +
-                    m.vLoss[self.connections['Loss'][xh] +
-                            m.LLN2B1[x1+m.LLN2B2[xn, 3]], xt]/2
-                    for x1 in range(1+m.LLN2B2[xn, 2])))
+                m.vNFea[self.connections['Feasibility'][xh] +
+                        self.p['LLFea'][xn+1], xt] +
+                m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
+                         xt] +
+                sum(m.vNFlow[self.connections['Flow'][xh] +
+                             self.p['LLESec2'][self.p['LLN2B1']
+                             [x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
+                    m.vNLoss[self.connections['Loss'][xh] +
+                             self.p['LLN2B1'][x1 +
+                                              self.p['LLN2B2'][xn, 3]], xt]/2
+                    for x1 in range(1+self.p['LLN2B2'][xn, 2])))
 
-    def cEFlow_rule(self, m, xt, xb, xh):
+    def cNEFlow_rule(self, m, xt, xb, xh):
         ''' Branch flows '''
-        aux = self.connections['Voltage'][xh]+m.LLESec1[xb, 1]
-        xaux1 = aux+m.branchNo[m.LLESec1[xb, 0], 0]
-        xaux2 = aux+m.branchNo[m.LLESec1[xb, 0], 1]
-        return (m.vFlow[self.connections['Flow'][xh]+xb+1, xt] ==
-                (m.vVolt[xaux1, xt]-m.vVolt[xaux2, xt]) /
-                m.branchData[m.LLESec1[xb, 0], 1])
+        aux = self.connections['Voltage'][xh]+self.p['LLESec1'][xb, 1]
+        xaux1 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 0]
+        xaux2 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 1]
+        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] ==
+                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) /
+                self.p['branchData'][self.p['LLESec1'][xb, 0], 1])
 
-    def cEFMax_rule(self, m, xt, xb, xh):
+    def cNEFMax_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (positive) '''
-        return (m.vFlow[self.connections['Flow'][xh]+xb+1, xt] >=
-                -m.branchData[m.LLESec1[xb, 0], 3])
+        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] >=
+                -self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
 
-    def cEFMin_rule(self, m, xt, xb, xh):
+    def cNEFMin_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (negative) '''
-        return (m.vFlow[self.connections['Flow'][xh]+xb+1, xt] <=
-                m.branchData[m.LLESec1[xb, 0], 3])
+        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <=
+                self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
 
-    def cEGen0_rule(self, m, xt, xh):
+    def cNEGen0_rule(self, m, xt, xh):
         ''' Reference generation '''
-        return m.vGen[self.connections['Generation'][xh], xt] == 0
+        return m.vNGen[self.connections['Generation'][xh], xt] == 0
 
-    def cEGenC_rule(self, m, xc, xt, xh):
+    def cNEGenC_rule(self, m, xc, xt, xh):
         ''' Piece-wise generation costs approximation '''
-        return (m.vGCost[self.connections['Cost'][xh]+m.LLGenC[xc], xt] /
+        return (m.vNGCost[self.connections['Cost'][xh] +
+                          self.p['LLGenC'][xc], xt] /
                 self.scenarios['Weights'][xt] >=
-                m.vGen[self.connections['Generation'][xh]+m.LLGenC[xc]+1, xt] *
-                m.GenLCst[xc, 0]+m.GenLCst[xc, 1])
+                m.vNGen[self.connections['Generation'][xh] +
+                        self.p['LLGenC'][xc]+1, xt] *
+                self.p['GenLCst'][xc, 0]+self.p['GenLCst'][xc, 1])
 
-    def cEGMax_rule(self, m, xg, xt, xh):
+    def cNEGMax_rule(self, m, xg, xt, xh):
         ''' Maximum generation '''
-        return (m.vGen[self.connections['Generation'][xh]+xg+1, xt] <=
-                m.GenMax[xg])
+        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] <=
+                self.p['GenMax'][xg])
 
-    def cEGMin_rule(self, m, xg, xt, xh):
+    def cNEGMin_rule(self, m, xg, xt, xh):
         ''' Minimum generation '''
-        return (m.vGen[self.connections['Generation'][xh]+xg+1, xt] >=
-                m.GenMin[xg])
+        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
+                self.p['GenMin'][xg])
 
-    def cEPow0_rule(self, m, xt, xh):
+    def cNEPow0_rule(self, m, xt, xh):
         ''' Reference line flow '''
-        return m.vFlow[self.connections['Flow'][xh], xt] == 0
+        return m.vNFlow[self.connections['Flow'][xh], xt] == 0
 
-    def cLDIni_rule(self, m, xt, xh):
+    def cNLDIni_rule(self, m, xt, xh):
         ''' Initialising dynamic loads '''
-        return m.vDL[self.connections['Pump'][xh], xt] == 0
+        return m.vNPump[self.connections['Pump'][xh], xt] == 0
 
-    def cLDMax_rule(self, m, xdl, xt, xh):
+    def cNLDMax_rule(self, m, xdl, xt, xh):
         ''' Maximum capacity of dynamic loads'''
-        return (m.vDL[self.connections['Pump'][xh]+xdl+1, xt] <=
-                m.MaxDL[xdl]/self.networkE.graph['baseMVA'])
+        return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
+                self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
 
-    def cRESMax_rule(self, m, xt, xg, xh):
+    def cNRESMax_rule(self, m, xt, xg, xh):
         ''' Maximum RES generation '''
-        return (m.vGen[self.resScenario[xg][xh][0], xt] <=
+        return (m.vNGen[self.resScenario[xg][xh][0], xt] <=
                 self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg])
 
-    def csetFea_rule(self, m, xt, xh):
+    def cNsetFea_rule(self, m, xt, xh):
         ''' Positions without feasibility constraints '''
-        return m.vFea[self.connections['Feasibility'][xh], xt] == 0
+        return m.vNFea[self.connections['Feasibility'][xh], xt] == 0
 
-    def cStore0_rule(self, m, xt):
+    def cNStore0_rule(self, m, xt):
         ''' Reference storage '''
-        return m.vStore[0, xt] == 0
+        return m.vNStore[0, xt] == 0
 
-    def cStoreMax_rule(self, m, xst, xt, xh):
+    def cNStoreMax_rule(self, m, xst, xt, xh):
         ''' Maximum storage '''
         aux = xh*self.Storage['Number']+xst+1
-        return m.vStore[aux, xt] <= self.Storage['Max'][xst]
+        return m.vNStore[aux, xt] <= self.Storage['Max'][xst]
 
-    def cStoreMin_rule(self, m, xst, xt, xh):
+    def cNStoreMin_rule(self, m, xst, xt, xh):
         ''' Minimum storage '''
         aux = xh*self.Storage['Number']+xst+1
-        return m.vStore[aux, xt] >= 0.2*self.Storage['Max'][xst]
-
-    def getPar(self, m):
-        ''' Add pyomo parameters '''
-        m.branchNo = self.branchNo
-        m.branchData = self.branchData
-        m.Loss_Con1 = self.Loss_Con1
-        m.Loss_Con2 = self.Loss_Con2
-        m.LLN2B1 = self.LLN2B1
-        m.LLN2B2 = self.LLN2B2
-        m.LLESec1 = self.LLESec1
-        m.LLESec2 = self.LLESec2
-        m.GenMax = self.GenMax
-        m.GenMin = self.GenMin
-        m.LLGen1 = self.LLGen1
-        m.LLGen2 = self.LLGen2
-        m.LLGenC = self.LLGenC
-        m.GenLCst = self.GenLCst
-        m.MaxDL = self.pumps['Max']
-        m.LLDL = self.LLDL
-        m.LLFea = self.LLFea
-
-        return m
-
-    def getSets(self, m):
-        ''' Add pyomo sets '''
-        m.sBra = range(self.networkE.number_of_edges())
-        m.sBus = range(self.networkE.number_of_nodes())
-        m.sTim = range(self.settings['NoTime'])
-        m.sLoss = range(self.Number_LossCon)
-        m.sBranch = range(self.NoBranch+1)
-        m.sBuses = range(self.NoBuses+1)
-        m.sN2B = range(self.NoN2B)
-        m.sSec1 = range(self.NoSec1)
-        m.sSec2 = range(self.NoSec2+1)
-        m.sGen = range(self.generationE['Number'])
-        m.sGenCM = range(self.NoGenC)
-        m.sDL = range(self.pumps['Number'])
-        m.sFea = range(self.NoFea)
-        m.sSto = range(self.Storage['Number'])
-        m.sCon = self.connections['set']
-
-        return m
-
-    def getVars(self, m):
-        ''' Add pyomo variables '''
-        Noh = len(m.sCon)
-        m.vFlow = Var(range(Noh*(self.NoBranch+1)), m.sTim,
-                      domain=Reals, initialize=0.0)
-        m.vVolt = Var(range(Noh*(self.NoBuses+1)), m.sTim,
-                      domain=Reals, initialize=0.0)
-        m.vLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                      m.sTim, domain=NonNegativeReals, initialize=0.0)
-        m.vFea = Var(range(Noh*self.NoFea), m.sTim, domain=NonNegativeReals,
-                     initialize=0.0)
-        m.vGen = Var(range(Noh*(self.generationE['Number']+1)), m.sTim,
-                     domain=NonNegativeReals, initialize=0.0)
-        m.vGCost = Var(range(Noh*self.generationE['Number']), m.sTim,
-                       domain=NonNegativeReals, initialize=0.0)
-        m.vDL = Var(range(Noh*(self.pumps['Number']+1)), m.sTim,
-                    domain=NonNegativeReals, initialize=0.0)
-        m.vStore = Var(range(Noh*(self.Storage['Number'])+1), m.sTim,
-                       domain=NonNegativeReals, initialize=0.0)
-
-        return m
+        return m.vNStore[aux, xt] >= 0.2*self.Storage['Max'][xst]
 
     def initialise(self):
         ''' Initialize externally '''
@@ -381,16 +391,12 @@ class ENetworkClass:
         # Read network data
         self.Read()
 
-        (self.Number_LossCon, self.branchNo, self.branchData, self.NoN2B,
-         self.LLN2B1, self.LLN2B2, self.LLESec1, self.LLESec2,
-         self.NoSec1, self.NoSec2, self.Loss_Con1, self.Loss_Con2, self.LLDL,
-         self.NoFea, self.LLFea) = self.ProcessENet()
+        self.ProcessENet()
 
         (self.busData, self.busScenario,
          self.resScenario) = self.ProcessEDem(self.demandE)
 
-        (self.GenMax, self.GenMin, self.LLGen1, self.LLGen2, self.LLGenC,
-         self.NoGenC, self.GenLCst) = self.ProcessEGen()
+        self.ProcessEGen()
 
         self.NoBuses = self.networkE.number_of_nodes()*(1+self.NoSec2)-1
         self.NoBranch = (self.networkE.number_of_edges() +
@@ -398,6 +404,7 @@ class ENetworkClass:
 
         self.LLStor = np.zeros((self.networkE.number_of_nodes(),
                                 self.scenarios['Number']), dtype=int)
+
         acu = 0
         for xh in range(self.scenarios['Number']):
             for x in range(self.Storage['Number']):
@@ -417,15 +424,15 @@ class ENetworkClass:
     def OF_rule(self, m):
         ''' Objective function '''
         xh = self.connections['set'][0]
-        return (sum(sum(m.vGCost[self.connections['Cost'][xh]+xg, xt]
-                        for xg in m.sGen) +
-                    sum(m.vFea[self.connections['Feasibility'][xh]+xf, xt]
-                        for xf in m.sFea) *
-                    1000000 for xt in m.sTim) -
+        return (sum(sum(m.vNGCost[self.connections['Cost'][xh]+xg, xt]
+                        for xg in self.s['Gen']) +
+                    sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
+                        for xf in self.s['Fea']) *
+                    1000000 for xt in self.s['Tim']) -
                 sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
-                    sum(m.vDL[self.connections['Pump'][xh] +
-                              xdl+1, xt]*self.scenarios['Weights'][xt]
-                        for xt in m.sTim) for xdl in m.sDL))
+                    sum(m.vNPump[self.connections['Pump'][xh] +
+                                 xdl+1, xt]*self.scenarios['Weights'][xt]
+                        for xt in self.s['Tim']) for xdl in self.s['Pump']))
 
     def offPrint(self):
         ''' Switch off print flags '''
@@ -436,17 +443,20 @@ class ENetworkClass:
         self.Print['Curtailment'] = False
         self.Print['Feasibility'] = False
 
-    def print(self, mod):
+    def print(self, m, sh=None):
         ''' Print results '''
-        for xh in mod.sCon:
+        if sh is None:
+            sh = self.s['Con']
+
+        for xh in sh:
             print("\nCASE:", xh)
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
                 for xn in range(1, self.generationE['Number']+1):
-                    for x2 in mod.sTim:
-                        aux = (mod.vGen[self.connections['Generation'][xh]+xn,
-                                        x2].value *
+                    for x2 in self.s['Tim']:
+                        aux = (m.vNGen[self.connections['Generation'][xh]+xn,
+                                       x2].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -455,9 +465,9 @@ class ENetworkClass:
             if self.Print['Flows']:
                 print("\nFlow_EPower=[")
                 for x1 in range(1, self.networkE.number_of_edges()+1):
-                    for x2 in mod.sTim:
-                        aux = (mod.vFlow[self.connections['Flow'][xh] +
-                                         x1, x2].value *
+                    for x2 in self.s['Tim']:
+                        aux = (m.vNFlow[self.connections['Flow'][xh] +
+                                        x1, x2].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -465,10 +475,10 @@ class ENetworkClass:
 
             if self.Print['Voltages']:
                 print("\nVoltage_Angle=[")
-                for xn in mod.sBuses:
-                    for xt in mod.sTim:
+                for xn in self.s['Buses']:
+                    for xt in self.s['Tim']:
                         aux = self.connections['Voltage'][xh]
-                        aux = mod.vVolt[aux+xn, xt].value
+                        aux = m.vNVolt[aux+xn, xt].value
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -476,9 +486,9 @@ class ENetworkClass:
             if self.Print['Losses']:
                 print("\nEPower_Loss=[")
                 for xb in range(1, self.networkE.number_of_edges()+1):
-                    for xt in mod.sTim:
-                        aux = (mod.vLoss[self.connections['Loss'][xh]+xb,
-                                         xt].value *
+                    for xt in self.s['Tim']:
+                        aux = (m.vNLoss[self.connections['Loss'][xh]+xb,
+                                        xt].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -486,20 +496,20 @@ class ENetworkClass:
 
             if self.Print['Curtailment']:
                 print("\nPumps=[")
-                for xdl in mod.sDL:
-                    for xt in mod.sTim:
-                        aux = mod.vDL[self.connections['Pump'][xh]+xdl+1,
-                                      xt].value*self.networkE.graph['baseMVA']
+                for xdl in self.s['Pump']:
+                    for xt in self.s['Tim']:
+                        aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
+                                       xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.Print['Feasibility']:
                 print("\nFeas=[")
-                for xf in mod.sFea:
-                    for xt in mod.sTim:
-                        aux = mod.vFea[self.connections['Feasibility'][xh]+xf,
-                                       xt].value*self.networkE.graph['baseMVA']
+                for xf in self.s['Fea']:
+                    for xt in self.s['Tim']:
+                        aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
+                                      xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -544,6 +554,8 @@ class ENetworkClass:
         (LLGen1, LLGen2) = self._getLL(self.networkE.number_of_nodes(),
                                        self.generationE['Number'],
                                        self.generationE['Data']['GEN_BUS'])
+        self.p['LLGen1'] = LLGen1
+        self.p['LLGen2'] = LLGen2
 
         # Get size of the required pieces
         laux = len(self.settings['Pieces'])
@@ -624,6 +636,7 @@ class ENetworkClass:
                                       yval[xv]) / (xval[xv+1]-xval[xv])
                 GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
             acu += pwNo[xg]
+        self.p['LLGenC'] = LLGenC
 
         # Changing to pu
         for xg in range(self.generationE['Number']):
@@ -631,8 +644,10 @@ class ENetworkClass:
             GenMin[xg] /= self.networkE.graph['baseMVA']
         for xc in range(NoGenC):
             GenLCst[xc][0] *= self.networkE.graph['baseMVA']
-
-        return (GenMax, GenMin, LLGen1, LLGen2, LLGenC, NoGenC, GenLCst)
+        self.p['GenMax'] = GenMax
+        self.p['GenMin'] = GenMin
+        self.p['GenLCst'] = GenLCst
+        self.NoGenC = NoGenC
 
     def ProcessENet(self):
         ''' Process information for optimisation purposes '''
@@ -641,7 +656,7 @@ class ENetworkClass:
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
         LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
         LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
-        # Position of first connection and number of cinnections
+        # Position of first connection and number of connections
         LLN2B2 = np.zeros((self.networkE.number_of_nodes(), 4), dtype=int)
 
         x0 = 0  # Initial position (LLaux)
@@ -683,6 +698,9 @@ class ENetworkClass:
                         x0 = x0+1
                         LLN2B1[x0] = LLaux[xpos]
                         xpos = LLnext[xpos]
+        self.NoN2B = NoN2B
+        self.p['LLN2B1'] = LLN2B1
+        self.p['LLN2B2'] = LLN2B2
 
         # Set line limits
         branchNo = np.zeros((self.networkE.number_of_edges(), 2), dtype=int)
@@ -697,6 +715,8 @@ class ENetworkClass:
                                   self.networkE[xf][xt]['RATE_A'] /
                                   self.networkE.graph['baseMVA']]
             xb += 1
+        self.p['branchNo'] = branchNo
+        self.p['branchData'] = branchData
 
         # Add security considerations
         NoSec2 = len(self.settings['Security'])
@@ -724,6 +744,10 @@ class ENetworkClass:
                     LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
                     x0 += 1
+        self.NoSec1 = NoSec1
+        self.NoSec2 = NoSec2
+        self.p['LLESec1'] = LLESec1
+        self.p['LLESec2'] = LLESec2
 
         # Add power losses estimation
         if self.settings['Losses']:
@@ -747,11 +771,15 @@ class ENetworkClass:
             Number_LossCon = 1
             Loss_Con1 = 0
             Loss_Con2 = 0
+        self.Number_LossCon = Number_LossCon
+        self.p['Loss_Con1'] = Loss_Con1
+        self.p['Loss_Con2'] = Loss_Con2
 
         # Add LL for dynamic loads
         LLDL = np.zeros(self.networkE.number_of_nodes(), dtype=int)
         for xdl in range(self.pumps['Number']):
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
+        self.p['LLPump'] = LLDL
 
         # Add LL for feasibility constraints (Nodes)
         LLFea = np.zeros(self.networkE.number_of_nodes()+1, dtype=int)
@@ -764,10 +792,8 @@ class ENetworkClass:
         self.LL = {}
         self.NoLL = {}
         self.iLL = {}
-
-        return (Number_LossCon, branchNo, branchData, NoN2B, LLN2B1,
-                LLN2B2, LLESec1, LLESec2, NoSec1, NoSec2, Loss_Con1,
-                Loss_Con2, LLDL, NoFea, LLFea)
+        self.p['LLFea'] = LLFea
+        self.NoFea = NoFea
 
     def Read(self):
         ''' Read input data '''
@@ -935,5 +961,6 @@ class ENetworkClass:
         self.generationE = {
                 'Data': ENetGen,
                 'Costs': ENetCost,
-                'Number': NoGen
+                'Number': NoGen,
+                'NoConv': NoOGen
                 }
