@@ -432,7 +432,6 @@ class EnergyClass:
         ''' Initialise externally '''
         # Should a file be loaded?
         if self.settings['File'] is not None:
-            print(self.settings['File'])
             self.data = json.load(open(self.settings['File']))
 
         # Measure the size of the data arrays

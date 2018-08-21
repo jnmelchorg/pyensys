@@ -835,6 +835,39 @@ class ENetworkClass:
         NoCst = len(GenNCost[0])
         NoGen = NoOGen+self.hydropower['Number']+self.RES['Number']
 
+        # Creating conventional generator objects
+        from .pyeneD import ConvClass
+        DM_GenC = [ConvClass() for x in range(NoOGen)]
+        for xc in range(NoOGen):
+            # Connection to the electricity network
+            DM_GenC[xc].name = 'Conventional generator No. ' + str(xc)
+            DM_GenC[xc].node['NM'] = mpc['gen']['GEN_BUS'][xc]
+            DM_GenC[xc].gen['PG'] = mpc['gen']['PG'][xc]
+            DM_GenC[xc].gen['QG'] = mpc['gen']['QG'][xc]
+            DM_GenC[xc].gen['QMAX'] = mpc['gen']['QMAX'][xc]
+            DM_GenC[xc].gen['QMIN'] = mpc['gen']['QMIN'][xc]
+            DM_GenC[xc].gen['VG'] = mpc['gen']['VG'][xc]
+            DM_GenC[xc].gen['MBASE'] = mpc['gen']['MBASE'][xc]
+            DM_GenC[xc].gen['GEN'] = mpc['gen']['GEN'][xc]
+            DM_GenC[xc].gen['PMAX'] = mpc['gen']['PMAX'][xc]
+            DM_GenC[xc].gen['PMIN'] = mpc['gen']['PMIN'][xc]
+            DM_GenC[xc].gen['PC1'] = mpc['gen']['PC1'][xc]
+            DM_GenC[xc].gen['PC2'] = mpc['gen']['PC2'][xc]
+            DM_GenC[xc].gen['QC1MIN'] = mpc['gen']['QC1MIN'][xc]
+            DM_GenC[xc].gen['QC1MAX'] = mpc['gen']['QC1MAX'][xc]
+            DM_GenC[xc].gen['QC2MIN'] = mpc['gen']['QC2MIN'][xc]
+            DM_GenC[xc].gen['QC2MAX'] = mpc['gen']['QC2MAX'][xc]
+            DM_GenC[xc].gen['RAMP_AGC'] = mpc['gen']['RAMP_AGC'][xc]
+            DM_GenC[xc].gen['RAMP_10'] = mpc['gen']['RAMP_10'][xc]
+            DM_GenC[xc].gen['RAMP_30'] = mpc['gen']['RAMP_30'][xc]
+            DM_GenC[xc].gen['RAMP_Q'] = mpc['gen']['RAMP_Q'][xc]
+            DM_GenC[xc].gen['APF'] = mpc['gen']['APF'][xc]
+            DM_GenC[xc].gen['MODEL'] = mpc['gencost']['MODEL'][xc]
+            DM_GenC[xc].gen['STARTUP'] = mpc['gencost']['STARTUP'][xc]
+            DM_GenC[xc].gen['SHUTDOWN'] = mpc['gencost']['SHUTDOWN'][xc]
+            DM_GenC[xc].gen['NCOST'] = mpc['gencost']['NCOST'][xc]
+            DM_GenC[xc].gen['COST'] = mpc['gencost']['COST'][xc][:]
+
         # Defime generation data
         ENetGen = {
                 'GEN_BUS': np.zeros(NoGen, dtype=int),
@@ -964,3 +997,46 @@ class ENetworkClass:
                 'Number': NoGen,
                 'NoConv': NoOGen
                 }
+        
+        # Creating RES generator objects
+        from .pyeneD import ConvClass
+        DM_GenC = [ConvClass() for x in range(NoOGen)]
+        for xc in range(NoOGen):
+            # Connection to the electricity network
+            DM_GenC[xc].name = 'Conventional generator No. ' + str(xc)
+            DM_GenC[xc].node['NM'] = mpc['gen']['GEN_BUS'][xc]
+            DM_GenC[xc].gen['PG'] = mpc['gen']['PG'][xc]
+            DM_GenC[xc].gen['QG'] = mpc['gen']['QG'][xc]
+            DM_GenC[xc].gen['QMAX'] = mpc['gen']['QMAX'][xc]
+            DM_GenC[xc].gen['QMIN'] = mpc['gen']['QMIN'][xc]
+            DM_GenC[xc].gen['VG'] = mpc['gen']['VG'][xc]
+            DM_GenC[xc].gen['MBASE'] = mpc['gen']['MBASE'][xc]
+            DM_GenC[xc].gen['GEN'] = mpc['gen']['GEN'][xc]
+            DM_GenC[xc].gen['PMAX'] = mpc['gen']['PMAX'][xc]
+            DM_GenC[xc].gen['PMIN'] = mpc['gen']['PMIN'][xc]
+            DM_GenC[xc].gen['PC1'] = mpc['gen']['PC1'][xc]
+            DM_GenC[xc].gen['PC2'] = mpc['gen']['PC2'][xc]
+            DM_GenC[xc].gen['QC1MIN'] = mpc['gen']['QC1MIN'][xc]
+            DM_GenC[xc].gen['QC1MAX'] = mpc['gen']['QC1MAX'][xc]
+            DM_GenC[xc].gen['QC2MIN'] = mpc['gen']['QC2MIN'][xc]
+            DM_GenC[xc].gen['QC2MAX'] = mpc['gen']['QC2MAX'][xc]
+            DM_GenC[xc].gen['RAMP_AGC'] = mpc['gen']['RAMP_AGC'][xc]
+            DM_GenC[xc].gen['RAMP_10'] = mpc['gen']['RAMP_10'][xc]
+            DM_GenC[xc].gen['RAMP_30'] = mpc['gen']['RAMP_30'][xc]
+            DM_GenC[xc].gen['RAMP_Q'] = mpc['gen']['RAMP_Q'][xc]
+            DM_GenC[xc].gen['APF'] = mpc['gen']['APF'][xc]
+            DM_GenC[xc].gen['MODEL'] = mpc['gencost']['MODEL'][xc]
+            DM_GenC[xc].gen['STARTUP'] = mpc['gencost']['STARTUP'][xc]
+            DM_GenC[xc].gen['SHUTDOWN'] = mpc['gencost']['SHUTDOWN'][xc]
+            DM_GenC[xc].gen['NCOST'] = mpc['gencost']['NCOST'][xc]
+            DM_GenC[xc].gen['COST'] = mpc['gencost']['COST'][xc][:]
+
+#        # Creating generator objects
+#        from pyeneD import ConvClass, RESClass, HydroClass
+#        DM_GenC =[ConvClass() for x in range(NoOGen)]
+#        DM_GenR =[RESClass() for x in range(self.RES['Number'])]
+#        DM_GenH =[HydroClass() for x in range(self.hydropower['Number'])]
+#        for xc in range(NoOGen):
+#            # Connection to the electricity network
+#            DM_GenC[xc].node['NM'] =  ENetGen['GEN_BUS'][xc]
+        
