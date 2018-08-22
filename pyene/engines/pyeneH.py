@@ -259,13 +259,17 @@ class HydrologyClass:
             self.p['LLOutNode'][self.nodes['Out'][xn]-1][:] = [1, xn]
 
         # Add feasibility constraints
-        self.p['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
+        self.p['Feas'] = np.zeros((self.rivers['Number'],
+                                   self.connections['Number']), dtype=int)
         self.p['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
         if self.settings['Feas']:
             self.opt['FeasNo'] = self.rivers['Number']
             self.opt['FeasNoTime'] = self.settings['NoTime']
-            for xr in range(self.opt['FeasNo']):
-                self.p['Feas'][xr] = xr
+            cou = 0
+            for xs in range(self.connections['Number']):
+                for xr in range(self.opt['FeasNo']):
+                    self.p['Feas'][xr][xs] = cou
+                    cou += 1
             for xt in range(self.opt['FeasNoTime']):
                 self.p['FeasTime'][xt] = xt
         else:
@@ -544,7 +548,7 @@ class HydrologyClass:
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] == \
             self.p['FLinear'][xr][0]*m.vHup[self.p['ConRiver'][xh]+xr, xt] + \
             self.p['FLinear'][xr][1] - \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]] + \
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]] + \
             (m.vHSoC[self.p['ConRiver'][xh]+xr, xt]*self.p['QLinear'][xr, 0] +
              self.p['QLinear'][xr, 1]-self.p['Qmin'][xr]) * \
             self.p['FLinear'][xr][2]
@@ -567,24 +571,24 @@ class HydrologyClass:
     def cHQmaxDown_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] <= \
-            self.p['Qmax'][xr]+m.vHFeas[self.p['Feas'][xr],
+            self.p['Qmax'][xr]+m.vHFeas[self.p['Feas'][xr][xh],
                                         self.p['FeasTime'][xt]]
 
     def cHQmaxUp_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] <= self.p['Qmax'][xr] + \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]]
 
     def cHQminDown_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] >= \
-            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr],
+            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr][xh],
                                         self.p['FeasTime'][xt]]
 
     def cHQminUp_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] >= self.p['Qmin'][xr] - \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]]
 
     def cHNodeBalance_rule(self, m, xn, xt, xh):
         ''' Nodal balance '''
@@ -609,10 +613,11 @@ class HydrologyClass:
     def cHPenalty_rule(self, m):
         ''' No penalty '''
         return m.vHpenalty == \
-            sum(sum(sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            sum(sum(sum(m.vHFeas[self.p['Feas'][xr][xh],
+                                 self.p['FeasTime'][xt]]
                         for xr in self.s['Bra'])*self.p['Penalty']
                     for xt in self.s['Tim'])
-                for xh in self.s['Sce'])
+                for xh in self.s['Sce'])*1000
 
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
@@ -811,7 +816,7 @@ class HydrologyClass:
                     print("\nFlow_Feasibility%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['Tim']:
-                            aux = m.vHFeas[self.p['Feas'][xr],
+                            aux = m.vHFeas[self.p['Feas'][xr][xh],
                                            self.p['FeasTime'][xt]].value
                             print("%8.4f " % aux, end='')
                         print()

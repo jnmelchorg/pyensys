@@ -114,8 +114,9 @@ class pyeneClass():
             # Collect inputs for pyeneH from pyeneE and pyeneN
             m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
                                    rule=self.cAHMIn1_rule)
-            if self.p['Number'] < self.p['NoHMin']:
-                m.cAHMIn2 = Constraint(self.s['LL'], range(self.p['Number'],
+            if self.EM.settings['Vectors'] < self.p['NoHMin']:
+                m.cAHMIn2 = Constraint(self.s['LL'],
+                                       range(self.EM.settings['Vectors'],
                                        self.p['NoHMin']), self.NM.s['Tim'],
                                        rule=self.cAHMIn2_rule)
             # Connect pyeneH and pyeneN
@@ -196,7 +197,6 @@ class pyeneClass():
 
     def cAHMIn1_rule(self, m, xL, xv):
         ''' Flows from pyeneE and pyeneHin (MW --> m^3/s)'''
-        # Location of pump
         xp = self.p['pyeneHin'][xv][1]+xL*(self.NM.pumps['Number']+1)
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
             sum((m.vHin[self.p['NoHMin']*xL+xv, xt] -

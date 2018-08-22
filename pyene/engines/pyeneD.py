@@ -61,9 +61,9 @@ class pyeneGeneratorConfig:
                 'NCOST': None,
                 'COST': None
                 }
-#        # Location of variables in pyomo
-#        self.no['vNGen'] = None
-#        self.no['vNGCost'] = None
+        # Location of variables in pyomo
+        self.no['vNGen'] = None
+        self.no['vNGCost'] = None
 #        # Location of variables in a matrix
 #        self.var['vNGen'] = None
 #        self.var['vNGCost'] = None
@@ -148,13 +148,11 @@ class ConvClass(pyeneDConfig, pyeneGeneratorConfig, DeviceClass):
         pyeneGeneratorConfig.__init__(self)
 
 
-
 class RESClass(ConvClass):
     ''' RES generator '''
     def __init__(self):
         ''' Get general and generator configurations '''
         ConvClass.__init__(self)
-
 
 
 class HydroClass(ConvClass):
