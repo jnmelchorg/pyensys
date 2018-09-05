@@ -668,18 +668,17 @@ def test_pyene_ENHStorPump():
     conf.NM.settings['Feasibility'] = False
     conf.NM.settings['NoTime'] = 24  # Number of time steps
 
-    conf.HM.rivers = {
-            'DepthMax': [4, 4, 4, 4, 4],  # Maximum depth
-            'DepthMin': [0.3, 0.3, 0.3, 0.3, 0.3],  # MInimum depth
-            'From': [1, 2, 4, 4, 3],  # Node - from
-            'Length': [1000, 1000, 1000, 1000, 1000],  # length (m)
-            'Manning': [0.03, 0.03, 0.03, 0.03, 0.03],  # Mannings 'n
-            'Parts': [],
-            'Share': [1, 1, 0.4, 0.6, 1],  # Links between water flows
-            'Slope': [0.0001, 0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
-            'To': [2, 3, 5, 6, 7],  # Node -to
-            'Width': [200, 200, 200, 200, 200]  # width (m)
-            }
+    conf.HM.rivers['DepthMax'] = [4, 4, 4, 4, 4]  # Maximum depth
+    conf.HM.rivers['DepthMin'] = [0.3, 0.3, 0.3, 0.3, 0.3]  # MInimum depth
+    conf.HM.rivers['From'] = [1, 2, 4, 4, 3]
+    conf.HM.rivers['Length'] = [1000, 1000, 1000, 1000, 1000]
+    conf.HM.rivers['Manning'] = [0.03, 0.03, 0.03, 0.03, 0.03]
+    conf.HM.rivers['Parts'] = []
+    conf.HM.rivers['Share'] = [1, 1, 0.4, 0.6, 1]
+    conf.HM.rivers['Slope'] = [0.0001, 0.0001, 0.0001, 0.0001, 0.0001]
+    conf.HM.rivers['To'] = [2, 3, 5, 6, 7]
+    conf.HM.rivers['Width'] = [200, 200, 200, 200, 200]
+
     conf.HM.nodes['Out'] = [7, 5, 6]  # Nodes with water outflows
     conf.HM.settings['Flag'] = True
     conf.NM.settings['Pieces'] = [10]
