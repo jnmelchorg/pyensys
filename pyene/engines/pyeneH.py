@@ -301,16 +301,14 @@ class HydrologyClass:
         # Add ramp constraints to each part
         Noaux = sum(self.rivers['Parts'])
         aux = len(self.rivers['Ramp'])
-        if aux == 0:
-            # Default ramp constraint
-            self.rivers['Ramp'] = np.ones(Noaux, dtype=int)
-        elif aux == 1:
+        self.rivers['Ramp'] = np.ones(Noaux, dtype=int)
+        if aux == 1:
             # Fixed value for all ramps
             aux = self.rivers['Ramp']
             self.rivers['Ramp'] = np.ones(Noaux, dtype=int)
             for xp in range(Noaux):
                 self.rivers['Ramp'][xp] = aux
-        else:
+        elif aux > 0:
             # Set of values for ech river section
             aux = self.rivers['Ramp']
             xr = 0
@@ -459,16 +457,16 @@ class HydrologyClass:
         mhc = json.load(open(self.settings['File']))
 
         # River models
-        self.rivers['DepthMax'] = mhc['DepthMax']
-        self.rivers['DepthMin'] = mhc['DepthMin']
-        self.rivers['From'] = mhc['From']
-        self.rivers['Length'] = mhc['Length']
-        self.rivers['Manning'] = mhc['Manning']
-        self.rivers['Ramp'] = mhc['Ramp']
-        self.rivers['Share'] = mhc['Share']
-        self.rivers['Slope'] = mhc['Slope']
-        self.rivers['To'] = mhc['To']
-        self.rivers['Width'] = mhc['Width']
+        self.rivers['DepthMax'] = mhc['rivers']['DepthMax']
+        self.rivers['DepthMin'] = mhc['rivers']['DepthMin']
+        self.rivers['From'] = mhc['rivers']['From']
+        self.rivers['Length'] = mhc['rivers']['Length']
+        self.rivers['Manning'] = mhc['rivers']['Manning']
+        self.rivers['Ramp'] = mhc['rivers']['Ramp']
+        self.rivers['Share'] = mhc['rivers']['Share']
+        self.rivers['Slope'] = mhc['rivers']['Slope']
+        self.rivers['To'] = mhc['rivers']['To']
+        self.rivers['Width'] = mhc['rivers']['Width']
 
     def addCon(self, m):
         ''' Add pyomo constraints '''

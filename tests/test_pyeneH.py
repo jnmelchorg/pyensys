@@ -1,12 +1,15 @@
 """ Test the pyeneE engine. """
-from fixtures import testConfig
+from fixtures import testConfig, json_directory
 from pyene.engines.pyene import pyeneClass as pe
+import os
 
 
 def test_pyeneH_Time():
     ''' Check time dependence in default network '''
     print('test_pyeneH_Time')
+    # Load default configuration and add 4 nodes network
     conf = testConfig()
+    conf.HM.settings['File'] = os.path.join(json_directory(), 'caseH4.json')
     EN = pe(conf.EN)
     conf.HM.settings['Flag'] = True
     (HM, HModel, results) = EN.HSim(conf)
@@ -28,6 +31,7 @@ def test_pyeneH_Scenarios():
     ''' Check multiple scenario analysis '''
     print('test_pyeneH_Scenarios')
     conf = testConfig()
+    conf.HM.settings['File'] = os.path.join(json_directory(), 'caseH4.json')
     conf.HM.settings['Flag'] = True
     conf.HM.settings['NoTime'] = 5  # Five periods
     conf.HM.connections['Number'] = 2  # Two scenarios
@@ -52,6 +56,7 @@ def test_pyeneH_ScenParts():
     ''' Check multiple scenario analysis '''
     print('test_pyeneH_ScenParts')
     conf = testConfig()
+    conf.HM.settings['File'] = os.path.join(json_directory(), 'caseH4.json')
     conf.HM.settings['Flag'] = True
     conf.HM.settings['NoTime'] = 5  # Five periods
     conf.HM.connections['Number'] = 2  # Two scenarios
@@ -61,6 +66,9 @@ def test_pyeneH_ScenParts():
     conf.HM.connections['LinksF'] = [[0, 0], [1, 0]]
     conf.HM.connections['LinksT'] = [[0, 1], [1, 1]]
     conf.HM.rivers['Parts'] = [5]  # Model each river using several parts
+    print()
+    print(conf.HM.rivers)
+    print()
     EN = pe(conf.EN)
     (HM, HModel, results) = EN.HSim(conf)
     HM.print(HModel)

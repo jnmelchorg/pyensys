@@ -668,6 +668,7 @@ def test_pyene_ENHStorPump():
     conf.NM.settings['Feasibility'] = False
     conf.NM.settings['NoTime'] = 24  # Number of time steps
 
+    # Build customised reiver basin
     conf.HM.rivers['DepthMax'] = [4, 4, 4, 4, 4]  # Maximum depth
     conf.HM.rivers['DepthMin'] = [0.3, 0.3, 0.3, 0.3, 0.3]  # MInimum depth
     conf.HM.rivers['From'] = [1, 2, 4, 4, 3]
