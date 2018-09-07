@@ -11,6 +11,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 import numpy as np
 import networkx as nx
 import math
+import json
 from pyomo.core import Constraint, Var, NonNegativeReals
 
 
@@ -79,6 +80,10 @@ class HydrologyClass:
         # Copy attributes
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
+
+        # Read input file
+        if self.settings['File'] is not None:
+            self._Read()
 
         # sets and parameters used for the mathematical model
         self.s = {}
@@ -447,6 +452,23 @@ class HydrologyClass:
         self.p['Qmin'] = Q[:, 1]
         self.p['QLinear'] = QLinear
         self.p['FLinear'] = FLinear
+
+    def _Read(self):
+        ''' Read input data '''
+        # Load file
+        mhc = json.load(open(self.settings['File']))
+
+        # River models
+        self.rivers['DepthMax'] = mhc['DepthMax']
+        self.rivers['DepthMin'] = mhc['DepthMin']
+        self.rivers['From'] = mhc['From']
+        self.rivers['Length'] = mhc['Length']
+        self.rivers['Manning'] = mhc['Manning']
+        self.rivers['Ramp'] = mhc['Ramp']
+        self.rivers['Share'] = mhc['Share']
+        self.rivers['Slope'] = mhc['Slope']
+        self.rivers['To'] = mhc['To']
+        self.rivers['Width'] = mhc['Width']
 
     def addCon(self, m):
         ''' Add pyomo constraints '''

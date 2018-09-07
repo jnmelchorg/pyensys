@@ -271,6 +271,7 @@ class ENetworkClass:
         ''' Nodal balance:
         Generation + Flow in - loss/2 = Demand + flow out + loss/2
         '''
+
         if self.LLStor[xn, xh] == 0:
             aux = 0
         else:
@@ -523,12 +524,14 @@ class ENetworkClass:
         # Auxiliar to find demand profiles
         busScenario = np.zeros((self.networkE.number_of_nodes(),
                                 self.scenarios['Number']), dtype=int)
-        acu = 0
-        for xs in range(self.scenarios['Number']):
-            for xn in range(self.networkE.number_of_nodes()):
-                busScenario[xn][xs] = ((self.scenarios['Links'][acu]-1) *
-                                       self.settings['NoTime'])
-                acu += 1
+
+        if self.scenarios['NoDem'] > 0:
+            acu = 0
+            for xs in range(self.scenarios['Number']):
+                for xn in range(self.networkE.number_of_nodes()):
+                    busScenario[xn][xs] = ((self.scenarios['Links'][acu]-1) *
+                                           self.settings['NoTime'])
+                    acu += 1
 
         # Auxiliar to find RES profiles
         resScenario = np.zeros((self.RES['Number'], self.scenarios['Number'],

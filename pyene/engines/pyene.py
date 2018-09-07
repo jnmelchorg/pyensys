@@ -110,26 +110,28 @@ class pyeneClass():
     def addCon(self, m):
         ''' Adding pyomo constraints'''
         # Link water consumption throughout different models
-        if self.HM.settings['Flag']:
-            # Collect inputs for pyeneH from pyeneE and pyeneN
-            m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                   rule=self.cAHMIn1_rule)
-            if self.EM.settings['Vectors'] < self.p['NoHMin']:
-                m.cAHMIn2 = Constraint(self.s['LL'],
-                                       range(self.EM.settings['Vectors'],
-                                       self.p['NoHMin']), self.NM.s['Tim'],
-                                       rule=self.cAHMIn2_rule)
-            # Connect pyeneH and pyeneN
-            if self.p['NoHydDown'] > 0:
-                m.cAHMOut1 = \
-                    Constraint(self.s['LL'], range(self.p['NoHydDown']),
-                               self.NM.s['Tim'], rule=self.cAHMOut1_rule)
-            m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
-                                    self.NM.s['Tim'], rule=self.cAHMOut2_rule)
-        else:
-            # Link pyeneE and pyeneN
-            m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                  rule=self.cAEMNM_rule)
+        if self.NM.hydropower['Number'] > 0:
+            if self.HM.settings['Flag']:
+                # Collect inputs for pyeneH from pyeneE and pyeneN
+                m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                       rule=self.cAHMIn1_rule)
+                if self.EM.settings['Vectors'] < self.p['NoHMin']:
+                    m.cAHMIn2 = Constraint(self.s['LL'],
+                                           range(self.EM.settings['Vectors'],
+                                           self.p['NoHMin']), self.NM.s['Tim'],
+                                           rule=self.cAHMIn2_rule)
+                # Connect pyeneH and pyeneN
+                if self.p['NoHydDown'] > 0:
+                    m.cAHMOut1 = \
+                        Constraint(self.s['LL'], range(self.p['NoHydDown']),
+                                   self.NM.s['Tim'], rule=self.cAHMOut1_rule)
+                m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
+                                        self.NM.s['Tim'],
+                                        rule=self.cAHMOut2_rule)
+            else:
+                # Link pyeneE and pyeneN
+                m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                      rule=self.cAEMNM_rule)
 
         m.dual = Suffix(direction=Suffix.IMPORT)
 
@@ -655,9 +657,10 @@ class pyeneClass():
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
 
-        self.NM.scenarios['Demand'] = \
-            np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
-                    dtype=float)
+        if self.NM.scenarios['NoDem'] > 0:
+            self.NM.scenarios['Demand'] = \
+                np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
+                        dtype=float)
 
         # Initialise RES
         if self.NM.RES['Number'] > 0:

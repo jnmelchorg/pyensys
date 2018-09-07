@@ -1,0 +1,18 @@
+{
+    "metadata": {
+        "title": "caseH4",
+        "description": "Illustrative 4 nodes hydraulic system",
+    },
+    "rivers": {
+        "DepthMax": [4, 4, 4, 4],
+        "DepthMin": [1, 1, 1, 1],
+        "From": [1, 2, 4, 4],
+        "Length": [1000, 1000, 1000, 1000],
+        "Manning": [0.03, 0.03, 0.03, 0.03],
+        "Ramp": [1, 1, 1, 1],
+        "Share": [1, 1, 0.4, 0.6],
+        "Slope": [0.0001, 0.0001, 0.0001, 0.0001],
+        "To": [2, 3, 5, 6],
+        "Width": [200, 200, 200, 200]
+    }
+}
