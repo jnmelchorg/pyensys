@@ -27,6 +27,7 @@ class pyeneNConfig:
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
+                'Constraint': [],  # Set line capacity constrints
                 'Generators': None  # Number of conventional generators
                 }
         # Connections
@@ -718,6 +719,7 @@ class ENetworkClass:
                                   self.networkE[xf][xt]['RATE_A'] /
                                   self.networkE.graph['baseMVA']]
             xb += 1
+
         self.p['branchNo'] = branchNo
         self.p['branchData'] = branchData
 
@@ -751,6 +753,18 @@ class ENetworkClass:
         self.NoSec2 = NoSec2
         self.p['LLESec1'] = LLESec1
         self.p['LLESec2'] = LLESec2
+
+        # Adjust branch data if there are predefined constraints
+        aux = len(self.settings['Constraint'])
+        if aux > 0:
+            if aux == 1:
+                aux = self.settings['Constraint'] / \
+                    self.networkE.graph['baseMVA']
+                self.settings['Constraint'] = np.zeros(branchNo, dtype=float)
+                for xb in range(branchNo):
+                    self.settings['Constraint'][xb] = aux
+            for xb in range(branchNo):
+                branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
 
         # Add power losses estimation
         if self.settings['Losses']:

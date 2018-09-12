@@ -13,7 +13,7 @@ pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 @click.option('--init', is_flag=False, type=bool,
               help='Take the settings from __init__')
 @click.option('--hydro', default=3, help='Number of hydropower plants')
-@click.option('--profile/--no-porfile', default=False)
+@click.option('--profile/--no-profile', default=False)
 @pass_conf
 def cli(conf, **kwargs):
     """Prepare pyene simulation"""

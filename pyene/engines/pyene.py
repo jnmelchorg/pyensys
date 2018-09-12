@@ -38,7 +38,7 @@ class pyeneConfig():
 
 
 class ENEConfig():
-    ''' Default consifuration for the integrated model '''
+    ''' Default configuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
         self.Penalty = 1000000
