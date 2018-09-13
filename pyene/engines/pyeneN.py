@@ -142,9 +142,43 @@ class ENetworkClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
-        # Reference line flow
-        m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
-                               rule=self.cNEPow0_rule)
+
+        # Is the network enabled
+        if self.settings['Flag']:
+            # Reference line flow
+            m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEPow0_rule)
+            # Branch flows
+            m.cNEFlow = Constraint(self.s['Tim'], self.s['Sec1'],
+                                   self.s['Con'], rule=self.cNEFlow_rule)
+            # Branch capacity constraint (positive)
+            m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'],
+                                   self.s['Con'], rule=self.cNEFMax_rule)
+            # Branch capacity constraint (negative)
+            m.cNEFMin = Constraint(self.s['Tim'], self.s['Sec1'],
+                                   self.s['Con'], rule=self.cNEFMin_rule)
+            # Adding piece wise estimation of losses
+            if self.settings['Losses']:
+                m.cNDCLossA = Constraint(self.s['Bra'], self.s['Loss'],
+                                         self.s['Tim'], self.s['Con'],
+                                         rule=self.cNDCLossA_rule)
+                m.cNDCLossB = Constraint(self.s['Bra'], self.s['Loss'],
+                                         self.s['Tim'], self.s['Con'],
+                                         rule=self.cNDCLossB_rule)
+            else:
+                m.cNDCLossNo = Constraint(self.s['Bra'], self.s['Tim'],
+                                          self.s['Con'],
+                                          rule=self.cNDCLossN_rule)
+            # Balance: Gen + Flow in - loss/2 = Demand + flow out + loss/2
+            m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'],
+                                      self.s['Sec2'], self.s['Con'],
+                                      rule=self.cNEBalance_rule)
+        else:
+            # Balance: Gen = Demand
+            m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
+                                      self.s['Con'],
+                                      rule=self.cNEBalance0_rule)
+
         # Reference generation
         m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNEGen0_rule)
@@ -157,18 +191,6 @@ class ENetworkClass:
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
                                rule=self.cNEGenC_rule)
-        # Branch flows
-        m.cNEFlow = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
-                               rule=self.cNEFlow_rule)
-        # Branch capacity constraint (positive)
-        m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
-                               rule=self.cNEFMax_rule)
-        # Branch capacity constraint (negative)
-        m.cNEFMin = Constraint(self.s['Tim'], self.s['Sec1'], self.s['Con'],
-                               rule=self.cNEFMin_rule)
-        # Balance: Generation + Flow in - loss/2 = Demand + flow out + loss/2
-        m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'], self.s['Sec2'],
-                                  self.s['Con'], rule=self.cNEBalance_rule)
         # Dinamic load maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)
@@ -178,22 +200,10 @@ class ENetworkClass:
         # Feasibility constraints
         m.cNsetFea = Constraint(self.s['Tim'], self.s['Con'],
                                 rule=self.cNsetFea_rule)
-        # Adding piece wise estimation of losses
-        if self.settings['Losses']:
-            m.cNDCLossA = Constraint(self.s['Bra'], self.s['Loss'],
-                                     self.s['Tim'], self.s['Con'],
-                                     rule=self.cNDCLossA_rule)
-            m.cNDCLossB = Constraint(self.s['Bra'], self.s['Loss'],
-                                     self.s['Tim'], self.s['Con'],
-                                     rule=self.cNDCLossB_rule)
-        else:
-            m.cNDCLossNo = Constraint(self.s['Bra'], self.s['Tim'],
-                                      self.s['Con'], rule=self.cNDCLossN_rule)
         # Adding RES limits
         if self.RES['Number'] > 0:
             m.cNRESMax = Constraint(self.s['Tim'], range(self.RES['Number']),
                                     self.s['Con'], rule=self.cNRESMax_rule)
-
         # Storage
         if self.Storage['Number'] > 0:
             m.cNStoreMax = Constraint(m.sNSto, self.s['Tim'], self.s['Con'],
@@ -231,22 +241,26 @@ class ENetworkClass:
     def addVars(self, m):
         ''' Add pyomo variables '''
         Noh = len(self.s['Con'])
+        # Is the network enabled
+        if self.settings['Flag']:
+            m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
+                           domain=Reals, initialize=0.0)
+            m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
+                           self.s['Tim'], domain=NonNegativeReals,
+                           initialize=0.0)
+            m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
+                           domain=Reals, initialize=0.0)
+
         m.vNPump = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
                        domain=NonNegativeReals, initialize=0.0)
         m.vNFea = Var(range(Noh*self.NoFea), self.s['Tim'],
                       domain=NonNegativeReals, initialize=0.0)
-        m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
-                       domain=Reals, initialize=0.0)
         m.vNGCost = Var(range(Noh*self.generationE['Number']), self.s['Tim'],
                         domain=NonNegativeReals, initialize=0.0)
         m.vNGen = Var(range(Noh*(self.generationE['Number']+1)), self.s['Tim'],
                       domain=NonNegativeReals, initialize=0.0)
-        m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                       self.s['Tim'], domain=NonNegativeReals, initialize=0.0)
         m.vNStore = Var(range(Noh*(self.Storage['Number'])+1), self.s['Tim'],
                         domain=NonNegativeReals, initialize=0.0)
-        m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
-                       domain=Reals, initialize=0.0)
 
         return m
 
@@ -315,17 +329,30 @@ class ENetworkClass:
                                               self.p['LLN2B2'][xn, 3]], xt]/2
                     for x1 in range(1+self.p['LLN2B2'][xn, 2])))
 
-
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
+        # Check for case without demand profiles
+        if self.scenarios['NoDem'] == 0:
+            daux = 0
+        else:
+            daux = 1
+        if self.settings['Feasibility']:
+            faux = 1
+        else:
+            faux = 0
 
         return sum(self.busData[xn]*self.scenarios['Demand']
-                   [xt+self.busScenario[xn][xh]] for xn in self.s['Bus']) + \
-            sum(m.vNPump[self.connections['Pump'][xh]+xp, xt]
-                for xp in self.s['Pump']) == m.vNFea[0, xt] + \
-            sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
-            for xg in self.s['Gen'])
-
+                   [xt*daux+self.busScenario[xn][xh]]
+                   for xn in self.s['Bus']) + \
+            + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
+                  for xp in self.s['Pump']) == \
+            m.vNFea[xh*faux, xt] + \
+            sum(m.vNGen[xh*(self.generationE['Number']+1)+xg+1, xt]
+                for xg in self.s['Gen']) - \
+            sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
+                 m.vNStore[xh*(self.Storage['Number']+1)+xn+1,
+                           self.LLTime[xt]])*self.Storage['Efficiency'][xn] /
+                self.scenarios['Weights'][xt] for xn in self.s['Sto'])
 
     def cNEFlow_rule(self, m, xt, xb, xh):
         ''' Branch flows '''
@@ -484,7 +511,7 @@ class ENetworkClass:
                     print()
                 print("];")
 
-            if self.Print['Flows']:
+            if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
                 for x1 in range(1, self.networkE.number_of_edges()+1):
                     for x2 in self.s['Tim']:
@@ -495,7 +522,7 @@ class ENetworkClass:
                     print()
                 print("];")
 
-            if self.Print['Voltages']:
+            if self.Print['Voltages'] and self.settings['Flag']:
                 print("\nVoltage_Angle=[")
                 for xn in self.s['Buses']:
                     for xt in self.s['Tim']:
@@ -505,7 +532,7 @@ class ENetworkClass:
                     print()
                 print("];")
 
-            if self.Print['Losses']:
+            if self.Print['Losses'] and self.settings['Flag']:
                 print("\nEPower_Loss=[")
                 for xb in range(1, self.networkE.number_of_edges()+1):
                     for xt in self.s['Tim']:
