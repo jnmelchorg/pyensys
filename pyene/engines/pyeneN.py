@@ -22,6 +22,7 @@ class pyeneNConfig:
         # Basic settings
         self.settings = {
                 'File': None,  # File to be loaded
+                'Flag': True,  # Add electricity network
                 'NoTime': 1,  # Number of time steps
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
@@ -273,6 +274,12 @@ class ENetworkClass:
         Generation + Flow in - loss/2 = Demand + flow out + loss/2
         '''
 
+        # Check for case without demand profiles
+        if self.scenarios['NoDem'] == 0:
+            daux = 0
+        else:
+            daux = 1
+
         if self.LLStor[xn, xh] == 0:
             aux = 0
         else:
@@ -291,7 +298,8 @@ class ENetworkClass:
                                               self.p['LLN2B2'][xn, 1]], xt]/2
                     for x2 in range(1+self.p['LLN2B2'][xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
-                                               [xt+self.busScenario[xn][xh]] -
+                                               [xt*daux +
+                                                self.busScenario[xn][xh]] -
                 (m.vNStore[self.LLStor[xn, xh], xt] -
                  m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
@@ -306,6 +314,18 @@ class ENetworkClass:
                              self.p['LLN2B1'][x1 +
                                               self.p['LLN2B2'][xn, 3]], xt]/2
                     for x1 in range(1+self.p['LLN2B2'][xn, 2])))
+
+
+    def cNEBalance0_rule(self, m, xt, xs, xh):
+        ''' Nodal balance without networks '''
+
+        return sum(self.busData[xn]*self.scenarios['Demand']
+                   [xt+self.busScenario[xn][xh]] for xn in self.s['Bus']) + \
+            sum(m.vNPump[self.connections['Pump'][xh]+xp, xt]
+                for xp in self.s['Pump']) == m.vNFea[0, xt] + \
+            sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+            for xg in self.s['Gen'])
+
 
     def cNEFlow_rule(self, m, xt, xb, xh):
         ''' Branch flows '''
@@ -816,6 +836,7 @@ class ENetworkClass:
         ''' Read input data '''
         # Load file
         mpc = json.load(open(self.settings['File']))
+
         self.networkE = nx.Graph()
 
         # Adding network attributes
