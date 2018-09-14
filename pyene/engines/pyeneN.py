@@ -29,7 +29,10 @@ class pyeneNConfig:
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Constraint': [],  # Set line capacity constrints
-                'Generators': None  # Number of conventional generators
+                'Generators': None,  # Number of conventional generators
+                'GRamp': None,  # Set ramps for conventional generators
+                'Loss': None,  # Factor for losses
+                'Ancillary': None  # Need for uncillary services
                 }
         # Connections
         self.connections = {
@@ -59,6 +62,7 @@ class pyeneNConfig:
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (MW)
                 'Cost': [0],  # Costs
+                'Ramp': [0],  # Ramp
                 'Link': None  # Position of hydropower plants
                 }
         # Pumps
@@ -74,7 +78,8 @@ class pyeneNConfig:
                 'Bus': [0],  # Location (Bus) in the network
                 'Max': [0],  # Capacity (kW)
                 'Cost': [0],  # Cost (OF)
-                'Link': None  # Position of RES generators
+                'Link': None,  # Position of RES generators
+                'Uncertainty': None  # Introduce reserve needs
                 }
         self.Storage = {
                 'Number': 0,  # Number of storage units
@@ -143,6 +148,11 @@ class ENetworkClass:
     def addCon(self, m):
         ''' Add pyomo constraints '''
 
+        if self.scenarios['NoDem'] == 0:
+            self.p['daux'] = 0
+        else:
+            self.p['daux'] = 1
+
         # Is the network enabled
         if self.settings['Flag']:
             # Reference line flow
@@ -174,6 +184,17 @@ class ENetworkClass:
                                       self.s['Sec2'], self.s['Con'],
                                       rule=self.cNEBalance_rule)
         else:
+            # Create additional paremeters
+            # Addition of power losses
+            if self.settings['Loss'] is None:
+                self.p['LossM'] = 1
+            else:
+                self.p['LossM'] = 1+self.settings['Loss']
+            if self.settings['Feasibility']:
+                self.p['faux'] = 1
+            else:
+                self.p['faux'] = 0
+
             # Balance: Gen = Demand
             m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
                                       self.s['Con'],
@@ -289,11 +310,6 @@ class ENetworkClass:
         '''
 
         # Check for case without demand profiles
-        if self.scenarios['NoDem'] == 0:
-            daux = 0
-        else:
-            daux = 1
-
         if self.LLStor[xn, xh] == 0:
             aux = 0
         else:
@@ -312,7 +328,7 @@ class ENetworkClass:
                                               self.p['LLN2B2'][xn, 1]], xt]/2
                     for x2 in range(1+self.p['LLN2B2'][xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
-                                               [xt*daux +
+                                               [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
                 (m.vNStore[self.LLStor[xn, xh], xt] -
                  m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
@@ -332,21 +348,14 @@ class ENetworkClass:
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
         # Check for case without demand profiles
-        if self.scenarios['NoDem'] == 0:
-            daux = 0
-        else:
-            daux = 1
-        if self.settings['Feasibility']:
-            faux = 1
-        else:
-            faux = 0
-
+        self.p['faux']
+        self.p['daux']
         return sum(self.busData[xn]*self.scenarios['Demand']
-                   [xt*daux+self.busScenario[xn][xh]]
-                   for xn in self.s['Bus']) + \
+                   [xt*self.p['daux']+self.busScenario[xn][xh]]
+                   for xn in self.s['Bus'])*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
-            m.vNFea[xh*faux, xt] + \
+            m.vNFea[xh*self.p['faux'], xt] + \
             sum(m.vNGen[xh*(self.generationE['Number']+1)+xg+1, xt]
                 for xg in self.s['Gen']) - \
             sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
@@ -469,6 +478,29 @@ class ENetworkClass:
         if self.scenarios['Weights'] is None:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
+        # Sets and parameters for modelling ramp constraints
+        if self.settings['GRamp'] is None:
+            if len(self.hydropower['Ramp']) > 0:
+                # Only for hydropower
+                self.s['GRamp'] = range(self.generationE['NoConv'])
+                self.p['GRamp'] = np.zeros(self.generationE['NoConv'],
+                                           dtype=float)
+            else:
+                self.s['GRamp'] = []
+        else:
+            if len(self.hydropower['Ramp']) == 0:
+                # Only for conventional generators
+                self.s['GRamp'] = range(self.generationE['NoConv']+1,
+                                        self.generationE['Number'])
+                self.p['GRamp'] = np.zeros(self.hydropower['Number'],
+                                           dtype=float)
+            else:
+                # For all generators
+                self.s['GRamp'] = range(self.generationE['Number'])
+                self.p['GRamp'] = np.zeros(self.generationE['Number'],
+                                           dtype=float)
+        # Sets and parameters for modelling Ancilarry service requirements
+        # Sets and parameters for modelling RES support requirements
 
     def OF_rule(self, m):
         ''' Objective function '''
