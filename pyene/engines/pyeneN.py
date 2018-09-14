@@ -43,7 +43,7 @@ class pyeneNConfig:
                 'Feasibility': [0],  # Lines to trip for security consideration
                 'Generation': [0],  # Location (bus) of generators
                 'Cost': [0],  # Generator consts
-                'Pump': [0]
+                'Pump': [0]  # Pumps
                 }
         # Scenarios
         self.scenarios = {
@@ -53,39 +53,39 @@ class pyeneNConfig:
                 'Demand': [1],  # Demand profiles
                 'NoRES': 0,  # Number of RES profiles
                 'LinksRes': 'Default',  # Links RES generators and profiles
-                'RES': [0],  # Location of the RES profiles
+                'RES': [],  # Location of the RES profiles
                 'Weights': None  # Weight of the time period
                 }
         # Hydropower
         self.hydropower = {
                 'Number': 0,  # Number of hydropower plants
-                'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (MW)
-                'Cost': [0],  # Costs
-                'Ramp': [0],  # Ramp
+                'Bus': [],  # Location (Bus) in the network
+                'Max': [],  # Capacity (MW)
+                'Cost': [],  # Costs
+                'Ramp': [],  # Ramp
                 'Link': None  # Position of hydropower plants
                 }
         # Pumps
         self.pumps = {
                 'Number': 0,  # Number of pumps
-                'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
-                'Value': [0]  # Value (OF)
+                'Bus': [],  # Location (Bus) in the network
+                'Max': [],  # Capacity (kW)
+                'Value': []  # Value (OF)
                 }
         # RES
         self.RES = {
                 'Number': 0,  # Number of RES generators
-                'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
-                'Cost': [0],  # Cost (OF)
+                'Bus': [],  # Location (Bus) in the network
+                'Max': [],  # Capacity (kW)
+                'Cost': [],  # Cost (OF)
                 'Link': None,  # Position of RES generators
                 'Uncertainty': None  # Introduce reserve needs
                 }
         self.Storage = {
                 'Number': 0,  # Number of storage units
-                'Bus': [0],  # Location (Bus) in the network
-                'Max': [0],  # Capacity (kW)
-                'Efficiency': [0]  # Round trip efficiency
+                'Bus': [],  # Location (Bus) in the network
+                'Max': [],  # Capacity (kW)
+                'Efficiency': []  # Round trip efficiency
                 }
         self.Print = {
                 'Generation': True,
@@ -233,6 +233,16 @@ class ENetworkClass:
                                       rule=self.cNStoreMin_rule)
         m.cNStore0 = Constraint(self.s['Tim'], rule=self.cNStore0_rule)
 
+        # Adding generation ramps
+        aux = len(self.s['GRamp'])
+        if aux > 0:
+            m.cNGenRampUp = \
+                Constraint(range(aux), self.s['Tim'], self.s['Con'],
+                           rule=self.cNGenRampUp_rule)
+            m.cNGenRampDown = \
+                Constraint(range(aux), self.s['Tim'], self.s['Con'],
+                           rule=self.cNGenRampDown_rule)
+
         return m
 
     def addPar(self, m):
@@ -348,8 +358,6 @@ class ENetworkClass:
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
         # Check for case without demand profiles
-        self.p['faux']
-        self.p['daux']
         return sum(self.busData[xn]*self.scenarios['Demand']
                    [xt*self.p['daux']+self.busScenario[xn][xh]]
                    for xn in self.s['Bus'])*self.p['LossM'] + \
@@ -408,6 +416,18 @@ class ENetworkClass:
     def cNEPow0_rule(self, m, xt, xh):
         ''' Reference line flow '''
         return m.vNFlow[self.connections['Flow'][xh], xt] == 0
+
+    def cNGenRampDown_rule(self, m, xg, xt, xh):
+        ''' Generation ramps (down)'''
+        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
+        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] >= \
+            -self.p['GRamp'][xg]
+
+    def cNGenRampUp_rule(self, m, xg, xt, xh):
+        ''' Generation ramps (up)'''
+        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
+        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] <= \
+            self.p['GRamp'][xg]
 
     def cNLDIni_rule(self, m, xt, xh):
         ''' Initialising dynamic loads '''
@@ -479,26 +499,39 @@ class ENetworkClass:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
         # Sets and parameters for modelling ramp constraints
-        if self.settings['GRamp'] is None:
+        if self.settings['GRamp'] is not None:
             if len(self.hydropower['Ramp']) > 0:
-                # Only for hydropower
-                self.s['GRamp'] = range(self.generationE['NoConv'])
-                self.p['GRamp'] = np.zeros(self.generationE['NoConv'],
-                                           dtype=float)
+                # Conventional and hydropower
+                aux = self.generationE['NoConv']+self.hydropower['Number']
+                xh = self.generationE['NoConv']
+            else:
+                # Only conventional
+                aux = self.generationE['NoConv']
+
+            self.s['GRamp'] = np.zeros(aux, dtype=int)
+            self.p['GRamp'] = np.zeros(aux, dtype=float)
+            for xg in range(self.generationE['NoConv']):
+                self.s['GRamp'][xg] = xg
+                self.p['GRamp'][xg] = \
+                    self.settings['GRamp']*self.p['GenMax'][xg]
+        else:
+            if len(self.hydropower['Ramp']) > 0:
+                # Only hydropower
+                aux = self.hydropower['Number']
+                xh = 0
+                self.s['GRamp'] = np.zeros(aux, dtype=int)
+                self.p['GRamp'] = np.zeros(aux, dtype=float)
             else:
                 self.s['GRamp'] = []
-        else:
-            if len(self.hydropower['Ramp']) == 0:
-                # Only for conventional generators
-                self.s['GRamp'] = range(self.generationE['NoConv']+1,
-                                        self.generationE['Number'])
-                self.p['GRamp'] = np.zeros(self.hydropower['Number'],
-                                           dtype=float)
-            else:
-                # For all generators
-                self.s['GRamp'] = range(self.generationE['Number'])
-                self.p['GRamp'] = np.zeros(self.generationE['Number'],
-                                           dtype=float)
+                self.p['GRamp'] = []
+
+        if len(self.hydropower['Ramp']) > 0:
+            for xg in range(self.hydropower['Number']):
+                self.s['GRamp'][xh] = self.generationE['NoConv']+xg
+                self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
+                    self.hydropower['Max'][xg]/self.networkE.graph['baseMVA']
+                xh += 1
+
         # Sets and parameters for modelling Ancilarry service requirements
         # Sets and parameters for modelling RES support requirements
 
