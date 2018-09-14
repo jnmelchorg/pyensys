@@ -14,6 +14,7 @@ import math
 import numpy as np
 import networkx as nx
 import json
+import warnings
 
 
 class pyeneNConfig:
@@ -28,8 +29,7 @@ class pyeneNConfig:
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
-                'Constraint': [],  # Set line capacity constrints
-                'Generators': None,  # Number of conventional generators
+                'Constraint': [],  # Set line capacity constraints
                 'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
                 'Ancillary': None  # Need for uncillary services
@@ -56,6 +56,13 @@ class pyeneNConfig:
                 'RES': [],  # Location of the RES profiles
                 'Weights': None  # Weight of the time period
                 }
+        # Conventional generators
+        self.conventional = {
+                'Number': None,  # Number of conventional generators
+                'Ancillary': True,  # Can it provide ancillary services?
+                'Ramp': None,  # Set ramps for conventional generators
+                'RES': True  # Can it support RES integration?
+                }
         # Hydropower
         self.hydropower = {
                 'Number': 0,  # Number of hydropower plants
@@ -63,6 +70,8 @@ class pyeneNConfig:
                 'Max': [],  # Capacity (MW)
                 'Cost': [],  # Costs
                 'Ramp': [],  # Ramp
+                'Ancillary': True,  # Can it provide ancillary services?
+                'RES': True,  # Can it support RES integration?
                 'Link': None  # Position of hydropower plants
                 }
         # Pumps
@@ -243,6 +252,11 @@ class ENetworkClass:
                 Constraint(range(aux), self.s['Tim'], self.s['Con'],
                            rule=self.cNGenRampDown_rule)
 
+        # Adding ancillary service constraints
+        if self.settings['Ancillary'] is not None:
+            m.cNAncillary = Constraint(self.s['Tim'], self.s['Con'],
+                                       rule=self.cNAncillary_rule)
+
         return m
 
     def addPar(self, m):
@@ -294,6 +308,13 @@ class ENetworkClass:
                         domain=NonNegativeReals, initialize=0.0)
 
         return m
+
+    def cNAncillary_rule(self, m, xt, xh):
+        ''' Ancillary services constraint '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GCAncillary']) >= \
+            self.settings['Ancillary'] * \
+            sum(m.vNGen[aux+x, xt] for x in self.s['Gen'])
 
     def cNDCLossA_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Positive) '''
@@ -499,21 +520,21 @@ class ENetworkClass:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
         # Sets and parameters for modelling ramp constraints
-        if self.settings['GRamp'] is not None:
+        if self.conventional['Ramp'] is not None:
             if len(self.hydropower['Ramp']) > 0:
                 # Conventional and hydropower
-                aux = self.generationE['NoConv']+self.hydropower['Number']
-                xh = self.generationE['NoConv']
+                aux = self.conventional['Number']+self.hydropower['Number']
+                xh = self.conventional['Number']
             else:
                 # Only conventional
-                aux = self.generationE['NoConv']
+                aux = self.conventional['Number']
 
             self.s['GRamp'] = np.zeros(aux, dtype=int)
             self.p['GRamp'] = np.zeros(aux, dtype=float)
-            for xg in range(self.generationE['NoConv']):
+            for xg in range(self.conventional['Number']):
                 self.s['GRamp'][xg] = xg
                 self.p['GRamp'][xg] = \
-                    self.settings['GRamp']*self.p['GenMax'][xg]
+                    self.conventional['Ramp']*self.p['GenMax'][xg]
         else:
             if len(self.hydropower['Ramp']) > 0:
                 # Only hydropower
@@ -527,12 +548,44 @@ class ENetworkClass:
 
         if len(self.hydropower['Ramp']) > 0:
             for xg in range(self.hydropower['Number']):
-                self.s['GRamp'][xh] = self.generationE['NoConv']+xg
+                self.s['GRamp'][xh] = self.conventional['Number']+xg
                 self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
                     self.hydropower['Max'][xg]/self.networkE.graph['baseMVA']
                 xh += 1
 
         # Sets and parameters for modelling Ancilarry service requirements
+        if self.settings['Ancillary'] is not None:
+            # Check for units that can provide ancillary services
+            if self.conventional['Ancillary']:
+                if self.hydropower['Ancillary']:
+                    ''' Conv and hydro can provide ancillary services '''
+                    aux = self.conventional['Number']+self.hydropower['Number']
+                    xh = self.conventional['Number']
+                else:
+                    # Only conventional
+                    aux = self.conventional['Number']
+
+                self.s['GCAncillary'] = np.zeros(aux, dtype=int)
+                for xg in range(self.conventional['Number']):
+                    self.s['GCAncillary'][xg] = xg
+            else:
+                if self.hydropower['Ancillary']:
+                    # Only hydro can provide ancillary services
+                    self.s['GCAncillary'] = np.zeros(self.hydropower['Number'],
+                                                     dtype=int)
+                    xh = 0
+                else:
+                    # There are no means to provide ancillary services
+                    warnings.warn('Warning: Unable to provide'
+                                  ' ancillary services')
+                    self.settings['Ancillary'] = None
+
+        if self.settings['Ancillary'] is not None and \
+                self.hydropower['Ancillary']:
+            for xg in range(self.hydropower['Number']):
+                self.s['GCAncillary'][xh] = self.conventional['Number']+xg
+                xh += 1
+
         # Sets and parameters for modelling RES support requirements
 
     def OF_rule(self, m):
@@ -680,7 +733,7 @@ class ENetworkClass:
                                            dtype=int)
         # Set selected value for conventional generators
         if laux == 1:
-            for xg in range(self.settings['Generators']):
+            for xg in range(self.conventional['Number']):
                 self.settings['Pieces'][xg] = vaux[0]
         # Set selected values for the first set of generators
         elif laux < self.generationE['Number']:
@@ -1055,7 +1108,7 @@ class ENetworkClass:
                     acu += 1
 
         # Add renewable generation
-        self.settings['Generators'] = NoOGen
+        self.conventional['Number'] = NoOGen
         if self.hydropower['Number'] > 0:
             # Adding hydro
             self.hydropower['Link'] = range(NoOGen,
@@ -1091,8 +1144,7 @@ class ENetworkClass:
         self.generationE = {
                 'Data': ENetGen,
                 'Costs': ENetCost,
-                'Number': NoGen,
-                'NoConv': NoOGen
+                'Number': NoGen
                 }
 
 #        # Creating conventional generator objects

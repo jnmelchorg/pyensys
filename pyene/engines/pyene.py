@@ -225,7 +225,7 @@ class pyeneClass():
         # Node to be addressed
         xn = self.HM.hydropower['Node'][xb]-1
         # Position of hydro in pyeneN
-        xg = xb+self.NM.generationE['NoConv']+xh *\
+        xg = xb+self.NM.conventional['Number']+xh *\
             (1+self.NM.generationE['Number'])+1
         # From MW to m^3/s
         aux = self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
@@ -242,7 +242,7 @@ class pyeneClass():
         # Position of the pump
         xp = self.p['LLHPumpOut'][xn][1]
         # Position of hydro in pyeneN
-        xg = xb+self.NM.generationE['NoConv']+xh *\
+        xg = xb+self.NM.conventional['Number']+xh *\
             (1+self.NM.generationE['Number'])+1
 
         return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
@@ -309,16 +309,16 @@ class pyeneClass():
         if 'All' in varg:
             aux = range(1, self.NM.generationE['Number']+1)
         elif 'Conv' in varg:
-            aux = range(1, self.NM.settings['Generators']+1)
+            aux = range(1, self.NM.conventional['Number']+1)
         elif 'RES' in varg:
-            aux = range(self.NM.settings['Generators'] +
+            aux = range(self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1,
-                        self.NM.settings['Generators'] +
+                        self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1 +
                         self.NM.RES['Number'])
         elif 'Hydro' in varg:
-            aux = range(self.NM.settings['Generators']+1,
-                        self.NM.settings['Generators'] +
+            aux = range(self.NM.conventional['Number']+1,
+                        self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1)
         else:
             aux = range(1, self.NM.generationE['Number']+1)
@@ -497,7 +497,7 @@ class pyeneClass():
         if auxFlags[0]:  # Conventional generation
             value += sum(sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg,
                                            xt].value for xg
-                                 in range(self.NM.settings['Generators']))
+                                 in range(self.NM.conventional['Number']))
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
             if self.NM.RES['Number'] > 0:
