@@ -161,6 +161,10 @@ class ENetworkClass:
             self.p['daux'] = 0
         else:
             self.p['daux'] = 1
+        if self.settings['Feasibility']:
+            self.p['faux'] = 1
+        else:
+            self.p['faux'] = 0
 
         # Is the network enabled
         if self.settings['Flag']:
@@ -199,10 +203,6 @@ class ENetworkClass:
                 self.p['LossM'] = 1
             else:
                 self.p['LossM'] = 1+self.settings['Loss']
-            if self.settings['Feasibility']:
-                self.p['faux'] = 1
-            else:
-                self.p['faux'] = 0
 
             # Balance: Gen = Demand
             m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
@@ -232,7 +232,7 @@ class ENetworkClass:
                                 rule=self.cNsetFea_rule)
         # Adding RES limits
         if self.RES['Number'] > 0:
-            m.cNRESMax = Constraint(self.s['Tim'], range(self.RES['Number']),
+            m.cNRESMax = Constraint(self.s['Tim'], self.s['RES'],
                                     self.s['Con'], rule=self.cNRESMax_rule)
         # Storage
         if self.Storage['Number'] > 0:
@@ -252,10 +252,20 @@ class ENetworkClass:
                 Constraint(range(aux), self.s['Tim'], self.s['Con'],
                            rule=self.cNGenRampDown_rule)
 
-        # Adding ancillary service constraints
-        if self.settings['Ancillary'] is not None:
-            m.cNAncillary = Constraint(self.s['Tim'], self.s['Con'],
-                                       rule=self.cNAncillary_rule)
+        # Adding service constraints
+        if len(self.s['GServices']) > 0:
+            m.cNServices = Constraint(self.s['Tim'], self.s['Con'],
+                                      rule=self.cNServices_rule)
+            if len(self.s['GAncillary']):
+                m.cNServicesA = Constraint(self.s['Tim'], self.s['Con'],
+                                           rule=self.cNServicesA_rule)
+                m.cNAncillary = Constraint(self.s['Tim'], self.s['Con'],
+                                           rule=self.cNAncillary_rule)
+            if len(self.s['GRES']):
+                m.cNServicesR = Constraint(self.s['Tim'], self.s['Con'],
+                                           rule=self.cNServicesR_rule)
+                m.cNUncRES = Constraint(self.s['Tim'], self.s['Con'],
+                                        rule=self.cNUncRES_rule)
 
         return m
 
@@ -280,6 +290,7 @@ class ENetworkClass:
         self.s['Sec1'] = range(self.NoSec1)
         self.s['Sec2'] = range(self.NoSec2+1)
         self.s['Sto'] = range(self.Storage['Number'])
+        self.s['RES'] = range(self.RES['Number'])
 
         return m
 
@@ -306,15 +317,47 @@ class ENetworkClass:
                       domain=NonNegativeReals, initialize=0.0)
         m.vNStore = Var(range(Noh*(self.Storage['Number'])+1), self.s['Tim'],
                         domain=NonNegativeReals, initialize=0.0)
+        if len(self.s['GServices']) > 0:
+            m.vNServ = Var(range(Noh*self.p['GServices']), self.s['Tim'],
+                           domain=NonNegativeReals, initialize=0.0)
 
         return m
+
+    def cNServices_rule(self, m, xt, xh):
+        ''' Provision of all services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GServices']) >= \
+            sum(m.vNServ[xh*self.p['GServices']+xs, xt]
+                for xs in range(self.p['GServices']))
+
+    def cNServicesA_rule(self, m, xt, xh):
+        ''' Provision of ancillary services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GAncillary']) >= \
+            m.vNServ[xh*self.p['GServices'], xt]
+
+    def cNServicesR_rule(self, m, xt, xh):
+        ''' Provision of RES support services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GRES']) >= \
+            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
+
+    def cNUncRES_rule(self, m, xt, xh):
+        ''' Corrected maximum RES generation '''
+        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
+                   for xg in self.s['RES']) <= \
+            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
+                self.RES['Max'][xg] for xg in self.s['RES']) * \
+            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNAncillary_rule(self, m, xt, xh):
         ''' Ancillary services constraint '''
         aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GCAncillary']) >= \
+        return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
-            sum(m.vNGen[aux+x, xt] for x in self.s['Gen'])
+            sum(m.vNGen[aux+x, xt] for x in self.s['Gen']) - \
+            m.vNFea[xh*self.p['faux'], xt]
 
     def cNDCLossA_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Positive) '''
@@ -554,9 +597,12 @@ class ENetworkClass:
                 xh += 1
 
         # Sets and parameters for modelling Ancilarry service requirements
+        NoSer = 0
+        self.s['GAncillary'] = []
         if self.settings['Ancillary'] is not None:
             # Check for units that can provide ancillary services
             if self.conventional['Ancillary']:
+                NoSer += 1
                 if self.hydropower['Ancillary']:
                     ''' Conv and hydro can provide ancillary services '''
                     aux = self.conventional['Number']+self.hydropower['Number']
@@ -565,28 +611,61 @@ class ENetworkClass:
                     # Only conventional
                     aux = self.conventional['Number']
 
-                self.s['GCAncillary'] = np.zeros(aux, dtype=int)
+                self.s['GAncillary'] = np.zeros(aux, dtype=int)
                 for xg in range(self.conventional['Number']):
-                    self.s['GCAncillary'][xg] = xg
+                    self.s['GAncillary'][xg] = xg
             else:
                 if self.hydropower['Ancillary']:
                     # Only hydro can provide ancillary services
-                    self.s['GCAncillary'] = np.zeros(self.hydropower['Number'],
-                                                     dtype=int)
+                    NoSer += 1
+                    self.s['GAncillary'] = np.zeros(self.hydropower['Number'],
+                                                    dtype=int)
                     xh = 0
                 else:
                     # There are no means to provide ancillary services
                     warnings.warn('Warning: Unable to provide'
                                   ' ancillary services')
-                    self.settings['Ancillary'] = None
 
         if self.settings['Ancillary'] is not None and \
                 self.hydropower['Ancillary']:
             for xg in range(self.hydropower['Number']):
-                self.s['GCAncillary'][xh] = self.conventional['Number']+xg
+                self.s['GAncillary'][xh] = self.conventional['Number']+xg
                 xh += 1
 
-        # Sets and parameters for modelling RES support requirements
+        # Sets and parameters for modelling RES support
+        self.s['GRES'] = []
+        if self.RES['Number'] > 0 and self.RES['Uncertainty'] is not None:
+            # Check for units that can provide RES support
+            if self.conventional['RES']:
+                NoSer += 1
+                if self.hydropower['RES']:
+                    ''' Conv and hydro can provide ancillary services '''
+                    aux = self.conventional['Number']+self.hydropower['Number']
+                    xh = self.conventional['Number']
+                else:
+                    # Only conventional
+                    aux = self.conventional['Number']
+
+                self.s['GRES'] = np.zeros(aux, dtype=int)
+                for xg in range(self.conventional['Number']):
+                    self.s['GRES'][xg] = xg
+            else:
+                if self.hydropower['RES']:
+                    NoSer += 1
+                    # Only hydro can provide RES services
+                    self.s['GRES'] = np.zeros(self.hydropower['Number'],
+                                              dtype=int)
+                    xh = 0
+
+            if self.hydropower['RES']:
+                for xg in range(self.hydropower['Number']):
+                    self.s['GRES'][xh] = self.conventional['Number']+xg
+                    xh += 1
+
+        # Generators providing services
+        self.s['GServices'] = np.unique(np.concatenate((self.s['GAncillary'],
+                                                        self.s['GRES']), 0))
+        self.p['GServices'] = NoSer
 
     def OF_rule(self, m):
         ''' Objective function '''
