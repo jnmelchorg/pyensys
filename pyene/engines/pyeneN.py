@@ -323,34 +323,6 @@ class ENetworkClass:
 
         return m
 
-    def cNServices_rule(self, m, xt, xh):
-        ''' Provision of all services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GServices']) >= \
-            sum(m.vNServ[xh*self.p['GServices']+xs, xt]
-                for xs in range(self.p['GServices']))
-
-    def cNServicesA_rule(self, m, xt, xh):
-        ''' Provision of ancillary services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GAncillary']) >= \
-            m.vNServ[xh*self.p['GServices'], xt]
-
-    def cNServicesR_rule(self, m, xt, xh):
-        ''' Provision of RES support services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GRES']) >= \
-            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
-
-    def cNUncRES_rule(self, m, xt, xh):
-        ''' Corrected maximum RES generation '''
-        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
-                   for xg in self.s['RES']) <= \
-            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
-                self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
-            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
-
     def cNAncillary_rule(self, m, xt, xh):
         ''' Ancillary services constraint '''
         aux = xh*(self.generationE['Number']+1)+1
@@ -508,6 +480,25 @@ class ENetworkClass:
                 self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg])
 
+    def cNServices_rule(self, m, xt, xh):
+        ''' Provision of all services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GServices']) >= \
+            sum(m.vNServ[xh*self.p['GServices']+xs, xt]
+                for xs in range(self.p['GServices']))
+
+    def cNServicesA_rule(self, m, xt, xh):
+        ''' Provision of ancillary services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GAncillary']) >= \
+            m.vNServ[xh*self.p['GServices'], xt]
+
+    def cNServicesR_rule(self, m, xt, xh):
+        ''' Provision of RES support services '''
+        aux = xh*(self.generationE['Number']+1)+1
+        return sum(m.vNGen[aux+x, xt] for x in self.s['GRES']) >= \
+            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
+
     def cNsetFea_rule(self, m, xt, xh):
         ''' Positions without feasibility constraints '''
         return m.vNFea[self.connections['Feasibility'][xh], xt] == 0
@@ -525,6 +516,15 @@ class ENetworkClass:
         ''' Minimum storage '''
         aux = xh*self.Storage['Number']+xst+1
         return m.vNStore[aux, xt] >= 0.2*self.Storage['Max'][xst]
+
+    def cNUncRES_rule(self, m, xt, xh):
+        ''' Corrected maximum RES generation '''
+        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
+                   for xg in self.s['RES']) <= \
+            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
+                self.RES['Max'][xg] for xg in self.s['RES']) * \
+            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def initialise(self):
         ''' Initialize externally '''
