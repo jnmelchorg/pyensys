@@ -25,6 +25,7 @@ class pyeneNConfig:
                 'File': None,  # File to be loaded
                 'Flag': True,  # Add electricity network
                 'NoTime': 1,  # Number of time steps
+                'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
@@ -967,8 +968,15 @@ class ENetworkClass:
         self.p['branchNo'] = branchNo
         self.p['branchData'] = branchData
 
+        # Add security constraints
+        if len(self.settings['Security']) == 0 and \
+                self.settings['SecurityFlag']:
+            self.settings['Security'] = \
+                [x+1 for x in range(self.networkE.number_of_edges())]
+
         # Add security considerations
         NoSec2 = len(self.settings['Security'])
+
         # Number of parameters required for simulating security
         aux = self.networkE.number_of_edges()
         NoSec1 = self.networkE.number_of_edges()*(1+NoSec2)-NoSec2
@@ -1002,12 +1010,13 @@ class ENetworkClass:
         aux = len(self.settings['Constraint'])
         if aux > 0:
             if aux == 1:
-                aux = self.settings['Constraint'] / \
+                aux = self.settings['Constraint'][0] / \
                     self.networkE.graph['baseMVA']
-                self.settings['Constraint'] = np.zeros(branchNo, dtype=float)
-                for xb in range(branchNo):
+                self.settings['Constraint'] = \
+                    np.zeros(self.networkE.number_of_edges(), dtype=float)
+                for xb in range(self.networkE.number_of_edges()):
                     self.settings['Constraint'][xb] = aux
-            for xb in range(branchNo):
+            for xb in range(self.networkE.number_of_edges()):
                 branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
 
         # Add power losses estimation

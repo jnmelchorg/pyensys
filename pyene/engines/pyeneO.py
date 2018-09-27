@@ -8,12 +8,69 @@ Pyene Outputs provides methods for saving simualtion outputs in HDF5 files
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
-from tables import Int16Col, Float32Col, StringCol
-from tables import IsDescription
+from tables import Int16Col, Float32Col, StringCol, IsDescription, open_file
+import os
+
+
+class pyeneOConfig:
+    ''' Default settings used for this class '''
+    def __init__(self):
+        # Default time-step and map
+        self.settings = {}
+        self.settings['Directory1'] = None  # Location of main folder
+        self.settings['Directory2'] = None  # Location of main folder
+        self.settings['Name1'] = 'pyeneOutputs.h5'  # Name
+        self.settings['Name2'] = 'pyeneSensitivity.h5'  # Name
+
+        self.data = {}
+        self.data['name'] = None
+        self.data['cost'] = [0, 0, 0, 0, 0]
+        self.data['curtailment'] = 0
+        self.data['spill'] = 0
+        self.data['OF'] = 0
+
+        self.time = {}
+        self.time['All'] = 0
+        self.time['glpk'] = 0
 
 
 class pyeneHDF5Settings():
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = pyeneOConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
+
+        # No outputs if there is no output directory
+        if self.settings['Directory1'] is not None:
+            self.settings['Name1'] = os.path.join(self.settings['Directory1'],
+                                                  self.settings['Name1'])
+            self.fileh = open_file(self.settings['Name1'], mode='w')
+
+        if self.settings['Directory2'] is not None:
+            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
+                                                  self.settings['Name2'])
+            self.file2 = open_file(self.settings['Name2'], mode='a')
+
     '''pytables auxiliary'''
+    class PyeneHDF5Flags:
+        def __init__(self):
+            self.settings = {}
+            self.settings['treefile'] = True
+            self.settings['networkfile'] = True
+            self.settings['time'] = True
+            self.settings['scenarios'] = True
+            self.settings['NoHydro'] = True
+            self.settings['NoPump'] = True
+            self.settings['NoRES'] = True
+
+            self.devices = {}
+            self.results = {}
+
     class PyeneHDF5Settings(IsDescription):
         '''Simulation settings'''
         treefile = StringCol(itemsize=30, dflt=" ", pos=0)  # File name (tree)
@@ -42,10 +99,28 @@ class pyeneHDF5Settings():
         curtailment = Float32Col(dflt=1, pos=7)  # short integer
         spill = Float32Col(dflt=1, pos=8)  # short integer
 
-    def SaveSettings(self, fileh, EN, root):
-        HDF5group = fileh.create_group(root, 'Core')
-        HDF5table = fileh.create_table(HDF5group, "table",
-                                       self.PyeneHDF5Settings)
+    def Accumulate(self, EN, m):
+        ''' Accumulate results '''
+        if self.settings['Directory2'] is None:
+            return
+
+        for x in range(5):
+            aux = [False for x in range(5)]
+            aux[x] = True
+            self.data['cost'][x] += EN.get_OFparts(m, aux)
+
+        self.data['curtailment'] += EN.get_AllDemandCurtailment(m)
+        self.data['spill'] += EN.get_AllRES(m)
+        self.data['OF'] += EN.get_OFparts(m, [True for x in range(5)])
+
+    def SaveSettings(self, EN):
+        ''' Save simulation settings '''
+        if self.settings['Directory1'] is None:
+            return
+
+        HDF5group = self.fileh.create_group(self.fileh.root, 'Core')
+        HDF5table = self.fileh.create_table(HDF5group, "table",
+                                            self.PyeneHDF5Settings)
         HDF5row = HDF5table.row
         HDF5row['treefile'] = EN.EM.settings['File']
         HDF5row['networkfile'] = EN.NM.settings['File']
@@ -57,8 +132,8 @@ class pyeneHDF5Settings():
         HDF5row.append()
         HDF5table.flush()
 
-        HDF5table = fileh.create_table(HDF5group, "Hydpopower_plants",
-                                       self.PyeneHDF5Devices)
+        HDF5table = self.fileh.create_table(HDF5group, "Hydpopower_plants",
+                                            self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
         for xh in range(EN.NM.hydropower['Number']):
             HDF5row['location'] = EN.NM.hydropower['Bus'][xh]
@@ -68,8 +143,8 @@ class pyeneHDF5Settings():
             HDF5row.append()
         HDF5table.flush()
 
-        HDF5table = fileh.create_table(HDF5group, "Pumps",
-                                       self.PyeneHDF5Devices)
+        HDF5table = self.fileh.create_table(HDF5group, "Pumps",
+                                            self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
         for xh in range(EN.NM.pumps['Number']):
             HDF5row['location'] = EN.NM.pumps['Bus'][xh]
@@ -78,8 +153,8 @@ class pyeneHDF5Settings():
             HDF5row.append()
         HDF5table.flush()
 
-        HDF5table = fileh.create_table(HDF5group, "RES_generators",
-                                       self.PyeneHDF5Devices)
+        HDF5table = self.fileh.create_table(HDF5group, "RES_generators",
+                                            self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
         for xh in range(EN.NM.RES['Number']):
             HDF5row['location'] = EN.NM.RES['Bus'][xh]
@@ -89,16 +164,43 @@ class pyeneHDF5Settings():
             HDF5row.append()
         HDF5table.flush()
 
-    def saveResults(self, fileh, EN, m, root, SimNo):
-        HDF5group = fileh.create_group(root, 'Simulation_{:05d}'.format(SimNo))
+    def saveSummary(self):
+        if self.settings['Directory2'] is None:
+            return
+        HDF5group = \
+            self.file2.create_group(self.file2.root, self.data['name'])
+        self.file2.create_array(HDF5group, "OF", self.data['OF'])
+        self.file2.create_array(HDF5group, "curtailment",
+                                self.data['curtailment'])
+        self.file2.create_array(HDF5group, "spill", self.data['spill'])
+        self.file2.create_array(HDF5group, "Cost_Component", self.data['cost'])
+        self.file2.create_array(HDF5group, "time", [self.time['All'],
+                                                    self.time['glpk']])
+
+        self.file2.close()
+
+    def saveResults(self, EN, m, SimNo):
+        ''' Save results of each iteration '''
+
+        # Accumulate data
+        self.Accumulate(EN, m)
+
+        if self.settings['Directory1'] is None:
+            return
+
+        HDF5group = \
+            self.fileh.create_group(self.fileh.root,
+                                    'Simulation_{:05d}'.format(SimNo))
         HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
                             EN.NM.settings['NoTime']), dtype=float)
+
         xp = 0
         for xs in range(EN.NM.scenarios['NoDem']):
             for xt in range(EN.NM.settings['NoTime']):
                 HDF5aux[xs][xt] = EN.NM.scenarios['Demand'][xp]
                 xp += 1
-        fileh.create_array(HDF5group, "Demand_profiles", HDF5aux)
+
+        self.fileh.create_array(HDF5group, "Demand_profiles", HDF5aux)
 
         HDF5aux = np.zeros((EN.NM.scenarios['NoRES'],
                             EN.NM.settings['NoTime']), dtype=float)
@@ -108,7 +210,7 @@ class pyeneHDF5Settings():
                 HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
                     EN.NM.networkE.graph['baseMVA']
                 xp += 1
-        fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
+        self.fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 
         # Hydropower allowance
         aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
@@ -122,17 +224,18 @@ class pyeneHDF5Settings():
             for xv in EN.EM.s['Vec']:
                 aux[xv] = m.vEIn[1, xv].value
 
-        fileh.create_array(HDF5group, "Hydro_Allowance", aux)
+        self.fileh.create_array(HDF5group, "Hydro_Allowance", aux)
 
         hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
         for xi in range(EN.EM.settings['Vectors']):
             hp_marginal[xi] = EN.get_HydroMarginal(m, xi+1)
-        fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
+        self.fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         for xs in range(EN.NM.scenarios['Number']):
-            HDF5table = fileh.create_table(HDF5group,
-                                           "Scenario_{:02d}".format(xs),
-                                           self.PyeneHDF5Results)
+            HDF5table = \
+                self.fileh.create_table(HDF5group,
+                                        "Scenario_{:02d}".format(xs),
+                                        self.PyeneHDF5Results)
             HDF5row = HDF5table.row
             for xt in range(EN.NM.settings['NoTime']):
                 HDF5row['time'] = xt
@@ -157,3 +260,9 @@ class pyeneHDF5Settings():
                                                 scens=[xs])
                 HDF5row.append()
             HDF5table.flush()
+
+    def terminate(self):
+
+        if self.settings['Directory1'] is None:
+            return
+        self.fileh.close()

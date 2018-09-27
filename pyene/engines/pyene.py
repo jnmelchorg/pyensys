@@ -29,12 +29,14 @@ class pyeneConfig():
         from .pyeneN import pyeneNConfig
         from .pyeneR import pyeneRConfig
         from .pyeneH import pyeneHConfig
+        from .pyeneO import pyeneOConfig
 
         self.EN = ENEConfig()  # pyene
         self.EM = pyeneEConfig()  # pyeneE - Energy
         self.NM = pyeneNConfig()  # pyeneN - Networks
         self.RM = pyeneRConfig()  # pyeneR - Renewables
-        self.HM = pyeneHConfig()  # pyeneH - Didrology
+        self.HM = pyeneHConfig()  # pyeneH - Hidrology
+        self.OM = pyeneOConfig()  # pyeneO - Outputs
 
 
 class ENEConfig():
@@ -253,6 +255,19 @@ class pyeneClass():
                 self.NM.networkE.graph['baseMVA']/self.p['EffPump'][xp]
                 for x in range(self.p['LLHPumpOut'][xn][0]))
 
+    def CheckProfile(self, value):
+        ''' Verify that the size of the profile makes sense'''
+        if len(value) != self.NM.settings['NoTime']:
+            if self.NM.settings['NoTime'] == 1:
+                value = [np.mean(value)]
+            elif self.NM.settings['NoTime'] == 2:
+                value = [(sum(value[0:15])+sum(value[20:24]))/19,
+                         np.mean(value[15:20])]
+            else:
+                raise RuntimeError('Incompatible demand profiles')
+
+        return value
+
     def ESim(self, conf):
         ''' Energy only optimisation '''
         # Get energy object
@@ -451,14 +466,24 @@ class pyeneClass():
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (m.vNLoss[self.NM.connections['Loss']
-                                 [xh]+xb, xt].value)*auxweight[xt]
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        if self.NM.settings['Flag']:
+            # If the electricity network has been modelled
+            value = 0
+            for xh in auxscens:
+                acu = 0
+                for xt in auxtime:
+                    acu += (m.vNLoss[self.NM.connections['Loss']
+                                     [xh]+xb, xt].value)*auxweight[xt]
+                value += acu*auxOF[xh]
+            value *= self.NM.networkE.graph['baseMVA']
+
+        elif self.NM.settings['Loss'] is not None:
+            # If losses have been estimated
+            aux = self.NM.settings['Loss']/(1+self.NM.settings['Loss'])
+            value = self.get_AllGeneration(m, *varg, **kwarg)*aux
+        else:
+            # If losses have been neglected
+            value = 0
 
         return value
 
@@ -594,16 +619,19 @@ class pyeneClass():
     def getClassInterfaces(self):
         ''' Return calss to interface with pypsa and pypower'''
         from .pyeneI import EInterfaceClass
+
         return EInterfaceClass()
 
-    def getClassOutputs(self):
+    def getClassOutputs(self, obj=None):
         ''' Return calss to produce outputs in H5 files'''
         from .pyeneO import pyeneHDF5Settings
-        return pyeneHDF5Settings()
+
+        return pyeneHDF5Settings(obj)
 
     def getClassRenewables(self, obj=None):
         ''' Return calss to produce RES time series'''
         from .pyeneR import RESprofiles
+
         return RESprofiles(obj)
 
     def HSim(self, conf):
@@ -954,10 +982,14 @@ class pyeneClass():
 
     def set_Demand(self, index, value):
         ''' Set a demand profile '''
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
+        if index <= self.NM.scenarios['Number']:
+            # Do the profiles match?
+            value = self.CheckProfile(value)
 
-        self.NM.scenarios['Demand'][aux1:aux2] = value
+            aux1 = (index-1)*self.NM.settings['NoTime']
+            aux2 = index*self.NM.settings['NoTime']
+
+            self.NM.scenarios['Demand'][aux1:aux2] = value
 
     def set_GenCoFlag(self, index, value):
         ''' Adjust maximum output of generators '''
@@ -1017,16 +1049,18 @@ class pyeneClass():
         Set PV/Wind profile  - more than one device can be connected to
         each profile
         '''
+        if index <= self.NM.scenarios['NoRES']:
+            value = self.CheckProfile(value)
 
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
+            aux1 = (index-1)*self.NM.settings['NoTime']
+            aux2 = index*self.NM.settings['NoTime']
 
-        self.NM.scenarios['RES'][aux1:aux2] = value
-        xi = 0
-        for xs in range(aux1, aux2):
-            self.NM.scenarios['RES'][xs] = (value[xi] /
-                                            self.NM.networkE.graph['baseMVA'])
-            xi += 1
+            self.NM.scenarios['RES'][aux1:aux2] = value
+            xi = 0
+            for xs in range(aux1, aux2):
+                self.NM.scenarios['RES'][xs] = \
+                    (value[xi]/self.NM.networkE.graph['baseMVA'])
+                xi += 1
 
     def SingleLP(self, ENM):
         ''' Get mathematical model '''
