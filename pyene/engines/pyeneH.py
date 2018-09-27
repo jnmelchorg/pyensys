@@ -11,6 +11,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 import numpy as np
 import networkx as nx
 import math
+import json
 from pyomo.core import Constraint, Var, NonNegativeReals
 
 
@@ -35,7 +36,8 @@ class pyeneHConfig:
                 'From': [1, 2, 4, 4],  # Node - from
                 'Length': [1000, 1000, 1000, 1000],  # length (m)
                 'Manning': [0.03, 0.03, 0.03, 0.03],  # Mannings 'n
-                'Parts': [],
+                'Parts': [],  # Divide river into several buckets
+                'Ramp': [],  # Add flow variation constraints
                 'Share': [1, 1, 0.4, 0.6],  # Links between water flows
                 'Slope': [0.0001, 0.0001, 0.0001, 0.0001],  # Slope (m)
                 'To': [2, 3, 5, 6],  # Node -to
@@ -78,6 +80,10 @@ class HydrologyClass:
         # Copy attributes
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
+
+        # Read input file
+        if self.settings['File'] is not None:
+            self._Read()
 
         # sets and parameters used for the mathematical model
         self.s = {}
@@ -259,13 +265,17 @@ class HydrologyClass:
             self.p['LLOutNode'][self.nodes['Out'][xn]-1][:] = [1, xn]
 
         # Add feasibility constraints
-        self.p['Feas'] = np.zeros(self.rivers['Number'], dtype=int)
+        self.p['Feas'] = np.zeros((self.rivers['Number'],
+                                   self.connections['Number']), dtype=int)
         self.p['FeasTime'] = np.zeros(self.settings['NoTime'], dtype=int)
         if self.settings['Feas']:
             self.opt['FeasNo'] = self.rivers['Number']
             self.opt['FeasNoTime'] = self.settings['NoTime']
-            for xr in range(self.opt['FeasNo']):
-                self.p['Feas'][xr] = xr
+            cou = 0
+            for xs in range(self.connections['Number']):
+                for xr in range(self.opt['FeasNo']):
+                    self.p['Feas'][xr][xs] = cou
+                    cou += 1
             for xt in range(self.opt['FeasNoTime']):
                 self.p['FeasTime'][xt] = xt
         else:
@@ -277,6 +287,7 @@ class HydrologyClass:
         self.rivers['Number'] = len(self.rivers['From'])
         self.nodes['Number'] = max([max(self.rivers['From']),
                                     max(self.rivers['To'])])
+
         if len(self.rivers['Parts']) == 0:
             # Default value of one
             self.rivers['Parts'] = np.ones(self.rivers['Number'], dtype=int)
@@ -287,8 +298,26 @@ class HydrologyClass:
             for xp in range(self.rivers['Number']):
                 self.rivers['Parts'][xp] = aux
 
-        # Create new river buckets
+        # Add ramp constraints to each part
         Noaux = sum(self.rivers['Parts'])
+        aux = len(self.rivers['Ramp'])
+        self.rivers['Ramp'] = np.ones(Noaux, dtype=int)
+        if aux == 1:
+            # Fixed value for all ramps
+            aux = self.rivers['Ramp']
+            self.rivers['Ramp'] = np.ones(Noaux, dtype=int)
+            for xp in range(Noaux):
+                self.rivers['Ramp'][xp] = aux
+        elif aux > 0:
+            # Set of values for ech river section
+            aux = self.rivers['Ramp']
+            xr = 0
+            for xp in range(self.rivers['Number']):
+                for xv in range(self.rivers['Parts'][xp]):
+                    self.rivers['Ramp'][xr] = aux[xp]
+                    xr += 1
+
+        # Create new river buckets
         if Noaux > self.rivers['Number']:
             RiverFrom = np.zeros(Noaux, dtype=int)
             RiverTo = np.zeros(Noaux, dtype=int)
@@ -364,6 +393,11 @@ class HydrologyClass:
                 S[xc][xm] = d[xc]**(2/3)*s[xc]**(1/2)/n[xc]  # Water speed
                 D[xc][xm] = min([t*V[xc][xm], L[xc]])  # Distance
 
+        # Adding parameters for ramp constraints
+        self.p['Ramp'] = np.zeros(self.rivers['Number'], dtype=float)
+        for xc in range(self.rivers['Number']):
+            self.p['Ramp'] = (Q[xc][0]-Q[xc][1])*self.rivers['Ramp'][xc]
+
         # Get linear functios for estimating flows
         # Flows as a function of volume
         QLinear = np.zeros((self.rivers['Number'], 2), dtype=float)
@@ -417,6 +451,23 @@ class HydrologyClass:
         self.p['QLinear'] = QLinear
         self.p['FLinear'] = FLinear
 
+    def _Read(self):
+        ''' Read input data '''
+        # Load file
+        mhc = json.load(open(self.settings['File']))
+
+        # River models
+        self.rivers['DepthMax'] = mhc['rivers']['DepthMax']
+        self.rivers['DepthMin'] = mhc['rivers']['DepthMin']
+        self.rivers['From'] = mhc['rivers']['From']
+        self.rivers['Length'] = mhc['rivers']['Length']
+        self.rivers['Manning'] = mhc['rivers']['Manning']
+        self.rivers['Ramp'] = mhc['rivers']['Ramp']
+        self.rivers['Share'] = mhc['rivers']['Share']
+        self.rivers['Slope'] = mhc['rivers']['Slope']
+        self.rivers['To'] = mhc['rivers']['To']
+        self.rivers['Width'] = mhc['rivers']['Width']
+
     def addCon(self, m):
         ''' Add pyomo constraints '''
         if self.settings['Flag']:
@@ -463,6 +514,13 @@ class HydrologyClass:
                                      self.s['Sce'], rule=self.cHStorMax_rule)
             m.cHStorLink = Constraint(self.s['Stor'],
                                       rule=self.cHStorLink_rule)
+
+            # Ramp constraints (Down)
+            m.cHRampDown = Constraint(self.s['Bra'], self.s['Tim'],
+                                      self.s['Sce'], rule=self.cHRampDown_rule)
+            # Ramp constraints (Up)
+            m.cHRampUp = Constraint(self.s['Bra'], self.s['Tim'],
+                                    self.s['Sce'], rule=self.cHRampUp_rule)
         else:
             # No penalty
             m.cHPenalty = Constraint(expr=m.vHpenalty == 0)
@@ -544,7 +602,7 @@ class HydrologyClass:
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] == \
             self.p['FLinear'][xr][0]*m.vHup[self.p['ConRiver'][xh]+xr, xt] + \
             self.p['FLinear'][xr][1] - \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]] + \
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]] + \
             (m.vHSoC[self.p['ConRiver'][xh]+xr, xt]*self.p['QLinear'][xr, 0] +
              self.p['QLinear'][xr, 1]-self.p['Qmin'][xr]) * \
             self.p['FLinear'][xr][2]
@@ -567,24 +625,24 @@ class HydrologyClass:
     def cHQmaxDown_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] <= \
-            self.p['Qmax'][xr]+m.vHFeas[self.p['Feas'][xr],
+            self.p['Qmax'][xr]+m.vHFeas[self.p['Feas'][xr][xh],
                                         self.p['FeasTime'][xt]]
 
     def cHQmaxUp_rule(self, m, xr, xt, xh):
         ''' Constraint on maximum flow upstream'''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] <= self.p['Qmax'][xr] + \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]]
 
     def cHQminDown_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] >= \
-            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr],
+            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr][xh],
                                         self.p['FeasTime'][xt]]
 
     def cHQminUp_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] >= self.p['Qmin'][xr] - \
-            m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            m.vHFeas[self.p['Feas'][xr][xh], self.p['FeasTime'][xt]]
 
     def cHNodeBalance_rule(self, m, xn, xt, xh):
         ''' Nodal balance '''
@@ -609,10 +667,23 @@ class HydrologyClass:
     def cHPenalty_rule(self, m):
         ''' No penalty '''
         return m.vHpenalty == \
-            sum(sum(sum(m.vHFeas[self.p['Feas'][xr], self.p['FeasTime'][xt]]
+            sum(sum(sum(m.vHFeas[self.p['Feas'][xr][xh],
+                                 self.p['FeasTime'][xt]]
                         for xr in self.s['Bra'])*self.p['Penalty']
                     for xt in self.s['Tim'])
-                for xh in self.s['Sce'])
+                for xh in self.s['Sce'])*1000
+
+    def cHRampDown_rule(self, m, xr, xt, xh):
+        ''' Constraint on maximum flow variaiton _UP'''
+        return m.vHup[self.p['ConRiver'][xh]+xr, xt] - \
+            m.vHup[self.p['ConRiver'][xh]+xr, self.p['FeasTime'][xt]] >= \
+            -self.p['Ramp']
+
+    def cHRampUp_rule(self, m, xr, xt, xh):
+        ''' Constraint on maximum flow variaiton _UP'''
+        return m.vHup[self.p['ConRiver'][xh]+xr, xt] - \
+            m.vHup[self.p['ConRiver'][xh]+xr, self.p['FeasTime'][xt]] <= \
+            self.p['Ramp']
 
     def cHRiverBalance_rule(self, m, xr, xt, xh):
         ''' River balance '''
@@ -811,7 +882,7 @@ class HydrologyClass:
                     print("\nFlow_Feasibility%d=[" % xh)
                     for xr in self.s['Bra']:
                         for xt in self.s['Tim']:
-                            aux = m.vHFeas[self.p['Feas'][xr],
+                            aux = m.vHFeas[self.p['Feas'][xr][xh],
                                            self.p['FeasTime'][xt]].value
                             print("%8.4f " % aux, end='')
                         print()

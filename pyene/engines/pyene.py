@@ -29,16 +29,18 @@ class pyeneConfig():
         from .pyeneN import pyeneNConfig
         from .pyeneR import pyeneRConfig
         from .pyeneH import pyeneHConfig
+        from .pyeneO import pyeneOConfig
 
         self.EN = ENEConfig()  # pyene
         self.EM = pyeneEConfig()  # pyeneE - Energy
         self.NM = pyeneNConfig()  # pyeneN - Networks
         self.RM = pyeneRConfig()  # pyeneR - Renewables
-        self.HM = pyeneHConfig()  # pyeneH - Didrology
+        self.HM = pyeneHConfig()  # pyeneH - Hidrology
+        self.OM = pyeneOConfig()  # pyeneO - Outputs
 
 
 class ENEConfig():
-    ''' Default consifuration for the integrated model '''
+    ''' Default configuration for the integrated model '''
     def __init__(self):
         # Chose to load data from file
         self.Penalty = 1000000
@@ -110,25 +112,28 @@ class pyeneClass():
     def addCon(self, m):
         ''' Adding pyomo constraints'''
         # Link water consumption throughout different models
-        if self.HM.settings['Flag']:
-            # Collect inputs for pyeneH from pyeneE and pyeneN
-            m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                   rule=self.cAHMIn1_rule)
-            if self.p['Number'] < self.p['NoHMin']:
-                m.cAHMIn2 = Constraint(self.s['LL'], range(self.p['Number'],
-                                       self.p['NoHMin']), self.NM.s['Tim'],
-                                       rule=self.cAHMIn2_rule)
-            # Connect pyeneH and pyeneN
-            if self.p['NoHydDown'] > 0:
-                m.cAHMOut1 = \
-                    Constraint(self.s['LL'], range(self.p['NoHydDown']),
-                               self.NM.s['Tim'], rule=self.cAHMOut1_rule)
-            m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
-                                    self.NM.s['Tim'], rule=self.cAHMOut2_rule)
-        else:
-            # Link pyeneE and pyeneN
-            m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
-                                  rule=self.cAEMNM_rule)
+        if self.NM.hydropower['Number'] > 0:
+            if self.HM.settings['Flag']:
+                # Collect inputs for pyeneH from pyeneE and pyeneN
+                m.cAHMIn1 = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                       rule=self.cAHMIn1_rule)
+                if self.EM.settings['Vectors'] < self.p['NoHMin']:
+                    m.cAHMIn2 = Constraint(self.s['LL'],
+                                           range(self.EM.settings['Vectors'],
+                                           self.p['NoHMin']), self.NM.s['Tim'],
+                                           rule=self.cAHMIn2_rule)
+                # Connect pyeneH and pyeneN
+                if self.p['NoHydDown'] > 0:
+                    m.cAHMOut1 = \
+                        Constraint(self.s['LL'], range(self.p['NoHydDown']),
+                                   self.NM.s['Tim'], rule=self.cAHMOut1_rule)
+                m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
+                                        self.NM.s['Tim'],
+                                        rule=self.cAHMOut2_rule)
+            else:
+                # Link pyeneE and pyeneN
+                m.cAEMNM = Constraint(self.s['LL'], self.EM.s['Vec'],
+                                      rule=self.cAEMNM_rule)
 
         m.dual = Suffix(direction=Suffix.IMPORT)
 
@@ -196,7 +201,6 @@ class pyeneClass():
 
     def cAHMIn1_rule(self, m, xL, xv):
         ''' Flows from pyeneE and pyeneHin (MW --> m^3/s)'''
-        # Location of pump
         xp = self.p['pyeneHin'][xv][1]+xL*(self.NM.pumps['Number']+1)
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
             sum((m.vHin[self.p['NoHMin']*xL+xv, xt] -
@@ -223,7 +227,7 @@ class pyeneClass():
         # Node to be addressed
         xn = self.HM.hydropower['Node'][xb]-1
         # Position of hydro in pyeneN
-        xg = xb+self.NM.generationE['NoConv']+xh *\
+        xg = xb+self.NM.conventional['Number']+xh *\
             (1+self.NM.generationE['Number'])+1
         # From MW to m^3/s
         aux = self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
@@ -240,7 +244,7 @@ class pyeneClass():
         # Position of the pump
         xp = self.p['LLHPumpOut'][xn][1]
         # Position of hydro in pyeneN
-        xg = xb+self.NM.generationE['NoConv']+xh *\
+        xg = xb+self.NM.conventional['Number']+xh *\
             (1+self.NM.generationE['Number'])+1
 
         return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
@@ -250,6 +254,19 @@ class pyeneClass():
             sum(m.vNPump[1+xp+xh*(1+self.NM.pumps['Number']), xt] *
                 self.NM.networkE.graph['baseMVA']/self.p['EffPump'][xp]
                 for x in range(self.p['LLHPumpOut'][xn][0]))
+
+    def CheckProfile(self, value):
+        ''' Verify that the size of the profile makes sense'''
+        if len(value) != self.NM.settings['NoTime']:
+            if self.NM.settings['NoTime'] == 1:
+                value = [np.mean(value)]
+            elif self.NM.settings['NoTime'] == 2:
+                value = [(sum(value[0:15])+sum(value[20:24]))/19,
+                         np.mean(value[15:20])]
+            else:
+                raise RuntimeError('Incompatible demand profiles')
+
+        return value
 
     def ESim(self, conf):
         ''' Energy only optimisation '''
@@ -307,16 +324,16 @@ class pyeneClass():
         if 'All' in varg:
             aux = range(1, self.NM.generationE['Number']+1)
         elif 'Conv' in varg:
-            aux = range(1, self.NM.settings['Generators']+1)
+            aux = range(1, self.NM.conventional['Number']+1)
         elif 'RES' in varg:
-            aux = range(self.NM.settings['Generators'] +
+            aux = range(self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1,
-                        self.NM.settings['Generators'] +
+                        self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1 +
                         self.NM.RES['Number'])
         elif 'Hydro' in varg:
-            aux = range(self.NM.settings['Generators']+1,
-                        self.NM.settings['Generators'] +
+            aux = range(self.NM.conventional['Number']+1,
+                        self.NM.conventional['Number'] +
                         self.NM.hydropower['Number']+1)
         else:
             aux = range(1, self.NM.generationE['Number']+1)
@@ -449,14 +466,24 @@ class pyeneClass():
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
-        value = 0
-        for xh in auxscens:
-            acu = 0
-            for xt in auxtime:
-                acu += (m.vNLoss[self.NM.connections['Loss']
-                                 [xh]+xb, xt].value)*auxweight[xt]
-            value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        if self.NM.settings['Flag']:
+            # If the electricity network has been modelled
+            value = 0
+            for xh in auxscens:
+                acu = 0
+                for xt in auxtime:
+                    acu += (m.vNLoss[self.NM.connections['Loss']
+                                     [xh]+xb, xt].value)*auxweight[xt]
+                value += acu*auxOF[xh]
+            value *= self.NM.networkE.graph['baseMVA']
+
+        elif self.NM.settings['Loss'] is not None:
+            # If losses have been estimated
+            aux = self.NM.settings['Loss']/(1+self.NM.settings['Loss'])
+            value = self.get_AllGeneration(m, *varg, **kwarg)*aux
+        else:
+            # If losses have been neglected
+            value = 0
 
         return value
 
@@ -495,7 +522,7 @@ class pyeneClass():
         if auxFlags[0]:  # Conventional generation
             value += sum(sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg,
                                            xt].value for xg
-                                 in range(self.NM.settings['Generators']))
+                                 in range(self.NM.conventional['Number']))
                              for xt in auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
             if self.NM.RES['Number'] > 0:
@@ -592,16 +619,19 @@ class pyeneClass():
     def getClassInterfaces(self):
         ''' Return calss to interface with pypsa and pypower'''
         from .pyeneI import EInterfaceClass
+
         return EInterfaceClass()
 
-    def getClassOutputs(self):
+    def getClassOutputs(self, obj=None):
         ''' Return calss to produce outputs in H5 files'''
         from .pyeneO import pyeneHDF5Settings
-        return pyeneHDF5Settings()
+
+        return pyeneHDF5Settings(obj)
 
     def getClassRenewables(self, obj=None):
         ''' Return calss to produce RES time series'''
         from .pyeneR import RESprofiles
+
         return RESprofiles(obj)
 
     def HSim(self, conf):
@@ -655,9 +685,10 @@ class pyeneClass():
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
 
-        self.NM.scenarios['Demand'] = \
-            np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
-                    dtype=float)
+        if self.NM.scenarios['NoDem'] > 0:
+            self.NM.scenarios['Demand'] = \
+                np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
+                        dtype=float)
 
         # Initialise RES
         if self.NM.RES['Number'] > 0:
@@ -951,10 +982,14 @@ class pyeneClass():
 
     def set_Demand(self, index, value):
         ''' Set a demand profile '''
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
+        if index <= self.NM.scenarios['Number']:
+            # Do the profiles match?
+            value = self.CheckProfile(value)
 
-        self.NM.scenarios['Demand'][aux1:aux2] = value
+            aux1 = (index-1)*self.NM.settings['NoTime']
+            aux2 = index*self.NM.settings['NoTime']
+
+            self.NM.scenarios['Demand'][aux1:aux2] = value
 
     def set_GenCoFlag(self, index, value):
         ''' Adjust maximum output of generators '''
@@ -1014,16 +1049,18 @@ class pyeneClass():
         Set PV/Wind profile  - more than one device can be connected to
         each profile
         '''
+        if index <= self.NM.scenarios['NoRES']:
+            value = self.CheckProfile(value)
 
-        aux1 = (index-1)*self.NM.settings['NoTime']
-        aux2 = index*self.NM.settings['NoTime']
+            aux1 = (index-1)*self.NM.settings['NoTime']
+            aux2 = index*self.NM.settings['NoTime']
 
-        self.NM.scenarios['RES'][aux1:aux2] = value
-        xi = 0
-        for xs in range(aux1, aux2):
-            self.NM.scenarios['RES'][xs] = (value[xi] /
-                                            self.NM.networkE.graph['baseMVA'])
-            xi += 1
+            self.NM.scenarios['RES'][aux1:aux2] = value
+            xi = 0
+            for xs in range(aux1, aux2):
+                self.NM.scenarios['RES'][xs] = \
+                    (value[xi]/self.NM.networkE.graph['baseMVA'])
+                xi += 1
 
     def SingleLP(self, ENM):
         ''' Get mathematical model '''
