@@ -21,6 +21,7 @@ class pyeneOConfig:
         self.settings['Directory2'] = None  # Location of main folder
         self.settings['Name1'] = 'pyeneOutputs.h5'  # Name
         self.settings['Name2'] = 'pyeneSensitivity.h5'  # Name
+        self.settings['Case'] = 2  # 0: None, 1: Single, 2: Sensitivity study
 
         self.data = {}
         self.data['name'] = None

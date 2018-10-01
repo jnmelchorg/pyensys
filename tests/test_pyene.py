@@ -624,10 +624,12 @@ def test_pyene_ENHStor():
     m = EN.run(m)
     EN.Print_ENSim(m)
     print(m.OF.expr())
+    print(m.vHin[1, 17].value)
+    print(m.vHin[3, 17].value)
 
-    assert 0.0001 >= abs(m.OF.expr()-5946534.84017) and \
-        0.0001 >= abs(m.vHin[1, 17].value-113.9128) and \
-        0.0001 >= abs(m.vHin[3, 17].value-51.7954)
+    assert 0.0001 >= abs(m.OF.expr()-5990055.8516) and \
+        0.0001 >= abs(m.vHin[1, 17].value-99.77453) and \
+        0.0001 >= abs(m.vHin[3, 17].value-78.4039)
 
 
 # Combined use of pyeneE, pyeneN and pyeneH + Storage
@@ -710,15 +712,15 @@ def test_pyene_ENHStorPump():
     print(m.OF.expr())
     print(m.vHin[1, 8].value)
     print(m.vHin[4, 9].value)
-    print(m.vHStor[1, 6].value)
-    print(m.vHStor[2, 12].value)
+    print(m.vHStor[0, 17].value)
+    print(m.vHStor[3, 12].value)
     print(m.vNPump[2, 5].value*100)
     print(m.vNPump[6, 5].value*100)
 
-    assert 0.0001 >= abs(m.OF.expr()-1306400.90327) and \
-        0.0001 >= abs(m.vHin[1, 8].value-44.4162) and \
+    assert 0.0001 >= abs(m.OF.expr()-1328347.4780) and \
+        0.0001 >= abs(m.vHin[1, 8].value-59.1400) and \
         0.0001 >= abs(m.vHin[4, 9].value-22.4070) and \
-        0.0001 >= abs(m.vHStor[1, 6].value-29.0000) and \
-        0.0001 >= abs(m.vHStor[2, 12].value-20.0795) and \
-        0.0001 >= abs(m.vNPump[2, 5].value*100-11.7158) and \
-        0.0001 >= abs(m.vNPump[6, 5].value*100-17.2354)
+        0.0001 >= abs(m.vHStor[0, 17].value-37.4195) and \
+        0.0001 >= abs(m.vHStor[3, 12].value-4.7323) and \
+        0.0001 >= abs(m.vNPump[2, 5].value*100-19.1815) and \
+        0.0001 >= abs(m.vNPump[6, 5].value*100-22.5405)

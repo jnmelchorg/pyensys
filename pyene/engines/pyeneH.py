@@ -483,6 +483,9 @@ class HydrologyClass:
             # Constraint on minimum flow upstream
             m.cHQminUp = Constraint(self.s['Bra'], self.s['Tim'],
                                     self.s['Sce'], rule=self.cHQminUp_rule)
+            # Constraint on minimum flow in output nodes
+            m.cHQminOut = Constraint(self.s['OutConstraint'], self.s['Tim'],
+                                     self.s['Sce'], rule=self.cHQminOut_rule)
             # Nodal balance
             m.cHNodeBalance = Constraint(self.s['Nod'], self.s['Tim'],
                                          self.s['Sce'],
@@ -639,6 +642,14 @@ class HydrologyClass:
             self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr][xh],
                                         self.p['FeasTime'][xt]]
 
+    def cHQminOut_rule(self, m, xs, xt, xh):
+        ''' Constraint on minimum flow for given output nodes '''
+        xn = self.p['OutConstraint'][0][xs]
+        xr = self.p['OutConstraint'][1][xs]
+        return m.vHout[self.p['ConOutNode'][xh]+xn, xt] >= \
+            self.p['Qmin'][xr]-m.vHFeas[self.p['Feas'][xr][xh],
+                                        self.p['FeasTime'][xt]]
+
     def cHQminUp_rule(self, m, xr, xt, xh):
         ''' Constraint on minimum flow upstream '''
         return m.vHup[self.p['ConRiver'][xh]+xr, xt] >= self.p['Qmin'][xr] - \
@@ -790,6 +801,22 @@ class HydrologyClass:
             for x in range(self.nodes['OutNumber']):
                 xn = self.nodes['Out'][x]-1
                 self.connections['NodeSeqOut'][xn] = x+1
+
+            # Output node constraints
+            self.p['OutConstraint'] = np.zeros((2, self.nodes['OutNumber']),
+                                               dtype=int)
+            aux = 0
+            for xn in range(self.nodes['OutNumber']):
+                node = self.nodes['Out'][xn]
+                if node not in self.rivers['From']:
+                    xr = 0
+                    while self.rivers['To'][xr] != node:
+                        xr += 1
+                    self.p['OutConstraint'][0][aux] = xn
+                    self.p['OutConstraint'][1][aux] = xr
+                    aux += 1
+            self.s['OutConstraint'] = range(aux)
+            self.p['OutConstraint'] = self.p['OutConstraint'][:, 0:aux]
 
     def OF_rule(self, m):
         ''' Objective function '''
