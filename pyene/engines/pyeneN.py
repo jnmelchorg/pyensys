@@ -71,6 +71,7 @@ class pyeneNConfig:
                 'Max': [],  # Capacity (MW)
                 'Cost': [],  # Costs
                 'Ramp': [],  # Ramp
+                'Baseload': 0,  # 0-1 for the use of water for baseload
                 'Ancillary': True,  # Can it provide ancillary services?
                 'RES': True,  # Can it support RES integration?
                 'Link': None  # Position of hydropower plants
