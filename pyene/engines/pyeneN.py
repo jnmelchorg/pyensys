@@ -71,6 +71,7 @@ class pyeneNConfig:
                 'Max': [],  # Capacity (MW)
                 'Cost': [],  # Costs
                 'Ramp': [],  # Ramp
+                'Baseload': 0,  # 0-1 for the use of water for baseload
                 'Ancillary': True,  # Can it provide ancillary services?
                 'RES': True,  # Can it support RES integration?
                 'Link': None  # Position of hydropower plants
@@ -104,6 +105,7 @@ class pyeneNConfig:
                 'Losses': True,
                 'Curtailment': True,
                 'Feasibility': True,
+                'Services': True,
                 }
 
 
@@ -257,16 +259,22 @@ class ENetworkClass:
         if len(self.s['GServices']) > 0:
             m.cNServices = Constraint(self.s['Tim'], self.s['Con'],
                                       rule=self.cNServices_rule)
-            if len(self.s['GAncillary']):
+            if len(self.s['GAncillary']) > 0:
                 m.cNServicesA = Constraint(self.s['Tim'], self.s['Con'],
                                            rule=self.cNServicesA_rule)
                 m.cNAncillary = Constraint(self.s['Tim'], self.s['Con'],
                                            rule=self.cNAncillary_rule)
-            if len(self.s['GRES']):
+
+            if len(self.s['GRES']) > 0:
                 m.cNServicesR = Constraint(self.s['Tim'], self.s['Con'],
                                            rule=self.cNServicesR_rule)
                 m.cNUncRES = Constraint(self.s['Tim'], self.s['Con'],
                                         rule=self.cNUncRES_rule)
+
+        if len(self.s['GRES']) == 0 and self.RES['Number'] > 0 and \
+                self.RES['Uncertainty'] is not None:
+            m.cNUncRES0 = Constraint(self.s['Tim'], self.s['Con'],
+                                     rule=self.cNUncRES0_rule)
 
         return m
 
@@ -527,6 +535,14 @@ class ENetworkClass:
             (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
+    def cNUncRES0_rule(self, m, xt, xh):
+        ''' Corrected maximum RES generation without support '''
+        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
+                   for xg in self.s['RES']) <= \
+            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
+                self.RES['Max'][xg] for xg in self.s['RES']) * \
+            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt]
+
     def initialise(self):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
@@ -682,13 +698,9 @@ class ENetworkClass:
                         for xt in self.s['Tim']) for xdl in self.s['Pump']))
 
     def offPrint(self):
-        ''' Switch off print flags '''
-        self.Print['Generation'] = False
-        self.Print['Flows'] = False
-        self.Print['Voltages'] = False
-        self.Print['Losses'] = False
-        self.Print['Curtailment'] = False
-        self.Print['Feasibility'] = False
+        ''' Switch off the print flags '''
+        for pars in self.Print.keys():
+            self.Print[pars] = False
 
     def print(self, m, sh=None):
         ''' Print results '''
@@ -757,6 +769,16 @@ class ENetworkClass:
                     for xt in self.s['Tim']:
                         aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
                                       xt].value*self.networkE.graph['baseMVA']
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.Print['Feasibility'] and len(self.s['GServices']) > 0:
+                print("\nServ=[")
+                for xs in range(self.p['GServices']):
+                    for xt in self.s['Tim']:
+                        aux = m.vNServ[self.p['GServices']*xh+xs,
+                                       xt].value*self.networkE.graph['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
