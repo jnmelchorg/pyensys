@@ -52,6 +52,9 @@ class pyeneHConfig:
         # Nodes
         self.nodes = {
                 'In': [1, 4],  # Nodes with water inflows
+                'InCN': [],  # Controlled inputs (Nodes)
+                'InCS': [],  # Controlled inputs (Scenarios)
+                'Inseries': [],  # Controlled inputs (data)
                 'Out': [3, 5, 6]  # Nodes with water outflows
                 }
         # Hydropower
@@ -157,7 +160,7 @@ class HydrologyClass:
                 # Get next position
                 xpos = LLN2B2[auxNode[x2]][auxX[x2]]
                 # Initialize if the position is available
-                if xpos == 0:
+                if xpos == 0 and LLN2B2[auxNode[x2]][auxX[x2]-1] == 0:
                     LLN2B2[auxNode[x2]][auxX[x2]] = x0
                     LLN2B2[auxNode[x2]][auxX[x2]-1] = 1
                 else:  # Search for next available position
@@ -180,7 +183,7 @@ class HydrologyClass:
                 # Get first branch position for this node
                 xpos = LLN2B2[xn][x2+1]
                 if LLN2B2[xn][x2] != 0:
-                    # Get other positions is available
+                    # Get other positions if available
                     LLN2B2[xn][x2+1] = xacu
                     xacu += LLN2B2[xn][x2]
                     for x3 in range(LLN2B2[xn][x2]):
@@ -198,6 +201,7 @@ class HydrologyClass:
                 LLNodWeight[acu1] = xn
                 acu1 += 1
                 self.opt['NoShare'] += LLN2B2[xn][2]-1
+
         if acu1 == 0:
             self.p['LLShare1'] = []
             self.p['LLShare2'] = []
@@ -212,7 +216,9 @@ class HydrologyClass:
                     self.p['LLShare2'][xr] = \
                         self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb+1]] / \
                         self.rivers['Share'][LLN2B1[LLN2B2[xn][3]+xb]]
+                    xr += 1
 
+        # LLN2B2 Number of connected branches (Before), position of the first
         self.p['LLN2B1'] = LLN2B1
         self.p['LLN2B2'] = LLN2B2
 
@@ -524,6 +530,15 @@ class HydrologyClass:
             # Ramp constraints (Up)
             m.cHRampUp = Constraint(self.s['Bra'], self.s['Tim'],
                                     self.s['Sce'], rule=self.cHRampUp_rule)
+
+            # Fixed water inputs
+            aux = len(self.nodes['InCN'])
+            if aux == 1:  # Add as vector
+                m.cHFixedInputV = Constraint(self.s['Tim'],
+                                             rule=self.cHFixedInputV_rule)
+            elif aux > 1:  # Add as matrix
+                m.cHFixedInputM = Constraint(self.s['Tim'], range(aux),
+                                             rule=self.cHFixedInputM_rule)
         else:
             # No penalty
             m.cHPenalty = Constraint(expr=m.vHpenalty == 0)
@@ -599,6 +614,16 @@ class HydrologyClass:
         ''' Fix some water inputs'''
         return m.vHin[self.p['FXInput'][xf][0], self.p['FXInput'][xf][1]] == \
             self.p['FXInput'][xf][2]
+
+    def cHFixedInputV_rule(self, m, xt):
+        ''' Fixed inputs from single node (data in a vector)'''
+        return m.vHin[self.nodes['InCN'][0], xt] == self.nodes['Inseries'][xt]
+
+    def cHFixedInputM_rule(self, m, xt, x):
+        ''' Fixed inputs from multiple nodes (data in a matrix)'''
+        return m.vHin[self.p['ConInNode'][self.nodes['InCS'][x]] +
+                      self.nodes['InCN'][x], xt] \
+            == self.nodes['Inseries'][x][xt]
 
     def cHQdownTime_rule(self, m, xr, xt, xh):
         ''' Time dependent constraint on minimum downstream flows '''
