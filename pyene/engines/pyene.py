@@ -894,11 +894,12 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networks model'''
-        return sum((sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt]
-                            for xg in self.NM.s['Gen']) +
-                        sum(m.vNFea[self.NM.connections['Feasibility'][xh]+xf,
-                                    xt] for xf in self.NM.s['Fea']) *
-                        self.Penalty for xt in self.NM.s['Tim']) -
+        return sum((sum((sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt]
+                             for xg in self.NM.s['Gen']) +
+                         sum(m.vNFea[self.NM.connections['Feasibility'][xh]+xf,
+                                     xt] for xf in self.NM.s['Fea']) *
+                         self.Penalty)*self.NM.scenarios['Weights'][xt]
+                        for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
                         sum(m.vNPump[self.NM.connections['Pump'][xh]+xdl+1,
