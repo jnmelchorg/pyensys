@@ -265,7 +265,7 @@ class pyeneClass():
         ''' Connecting  pyeneE and pyeneHin (MW --> m^3/s)'''
         return m.vHin[self.p['NoHMin']*xL+xv, xt] == \
             sum(m.vNPump[self.p['pyeneHin'][xv][1]+xL *
-                         (self.NM.pumps['Number']+1), xt] *
+                         (self.NM.pumps['Number']+1)+1, xt] *
                 self.NM.networkE.graph['baseMVA'] /
                 self.p['EffPump'][self.p['pyeneHin'][xv][1]]
                 for x in range(self.p['pyeneHin'][xv][0]))
@@ -894,11 +894,12 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networks model'''
-        return sum((sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt]
-                            for xg in self.NM.s['Gen']) +
-                        sum(m.vNFea[self.NM.connections['Feasibility'][xh]+xf,
-                                    xt] for xf in self.NM.s['Fea']) *
-                        self.Penalty for xt in self.NM.s['Tim']) -
+        return sum((sum((sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt]
+                             for xg in self.NM.s['Gen']) +
+                         sum(m.vNFea[self.NM.connections['Feasibility'][xh]+xf,
+                                     xt] for xf in self.NM.s['Fea']) *
+                         self.Penalty)*self.NM.scenarios['Weights'][xt]
+                        for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
                         self.NM.networkE.graph['baseMVA'] *
                         sum(m.vNPump[self.NM.connections['Pump'][xh]+xdl+1,

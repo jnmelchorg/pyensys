@@ -145,6 +145,8 @@ def network_simulation_pyeneEN(conf, **kwargs):
 
 
 @cli.command('run-test')
-def network_simulation_pyenetst():
+@click.option('--example', default=0, help='Exemple to be executed')
+def network_simulation_pyenetst(**kwargs):
     """Test specific functionalities"""
-    test_pyenetest()
+    mthd = kwargs.pop('example')
+    test_pyenetest(mthd)

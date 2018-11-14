@@ -147,9 +147,10 @@ def test_pyene(conf):
     print('Total curtailment:', curAll.value)
 
 
-def test_pyenetest():
+def test_pyenetest(mthd):
     '''Test specific functionalities'''
     from .engines.pyeneT import TestClass
 
-    # Execute test
-    TestClass()
+    txt = 'example' + str(mthd)
+    method_to_call = getattr(TestClass, txt)
+    method_to_call(TestClass)

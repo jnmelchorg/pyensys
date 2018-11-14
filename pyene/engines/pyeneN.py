@@ -687,11 +687,11 @@ class ENetworkClass:
     def OF_rule(self, m):
         ''' Objective function '''
         xh = self.connections['set'][0]
-        return (sum(sum(m.vNGCost[self.connections['Cost'][xh]+xg, xt]
-                        for xg in self.s['Gen']) +
-                    sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
-                        for xf in self.s['Fea']) *
-                    1000000 for xt in self.s['Tim']) -
+        return (sum((sum(m.vNGCost[self.connections['Cost'][xh]+xg, xt]
+                         for xg in self.s['Gen']) +
+                     sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
+                         for xf in self.s['Fea'])*1000000) *
+                    self.scenarios['Weights'][xt] for xt in self.s['Tim']) -
                 sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
                     sum(m.vNPump[self.connections['Pump'][xh] +
                                  xdl+1, xt]*self.scenarios['Weights'][xt]
@@ -773,7 +773,7 @@ class ENetworkClass:
                     print()
                 print("];")
 
-            if self.Print['Feasibility'] and len(self.s['GServices']) > 0:
+            if self.Print['Services'] and len(self.s['GServices']) > 0:
                 print("\nServ=[")
                 for xs in range(self.p['GServices']):
                     for xt in self.s['Tim']:
