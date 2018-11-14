@@ -29,10 +29,12 @@ class pyeneOConfig:
         self.data['curtailment'] = 0
         self.data['spill'] = 0
         self.data['OF'] = 0
+        self.data['pyomodel'] = None
 
         self.time = {}
         self.time['All'] = 0
         self.time['glpk'] = 0
+        self.time['step'] = 0
 
 
 class pyeneHDF5Settings():
