@@ -34,7 +34,7 @@ class pyeneOConfig:
         self.time = {}
         self.time['All'] = 0
         self.time['glpk'] = 0
-        self.time['step'] = None
+        self.time['step'] = 0
 
 
 class pyeneHDF5Settings():
