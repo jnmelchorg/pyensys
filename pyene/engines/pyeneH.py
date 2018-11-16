@@ -627,7 +627,8 @@ class HydrologyClass:
             == self.nodes['Inseries'][x][xt]
 
     def cHQdownTime_rule(self, m, xr, xt, xh):
-        ''' Time dependent constraint on minimum downstream flows '''
+        '''
+        Downstream flows as a function of upstream flows and water volume'''
         return m.vHdown[self.p['ConRiver'][xh]+xr, xt] == \
             self.p['FLinear'][xr][0]*m.vHup[self.p['ConRiver'][xh]+xr, xt] + \
             self.p['FLinear'][xr][1] - \
