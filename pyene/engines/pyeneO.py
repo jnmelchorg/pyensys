@@ -99,8 +99,8 @@ class pyeneHDF5Settings():
         demand = Float32Col(dflt=1, pos=4)  # total demand
         pump = Float32Col(dflt=1, pos=5)  # use of pumps
         loss = Float32Col(dflt=1, pos=6)  # losses
-        curtailment = Float32Col(dflt=1, pos=7)  # short integer
-        spill = Float32Col(dflt=1, pos=8)  # short integer
+        curtailment = Float32Col(dflt=1, pos=7)  # sCurtailment
+        spill = Float32Col(dflt=1, pos=8)  # spilling
 
     def Accumulate(self, EN, m):
         ''' Accumulate results '''

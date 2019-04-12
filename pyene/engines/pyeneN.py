@@ -106,6 +106,7 @@ class pyeneNConfig:
                 'Curtailment': True,
                 'Feasibility': True,
                 'Services': True,
+                'GenBus': True
                 }
 
 
@@ -709,6 +710,9 @@ class ENetworkClass:
 
         for xh in sh:
             print("\nCASE:", xh)
+
+            if self.Print['GenBus']:
+                print('\nFlow_EGen_Bus=', self.generationE['Data']['GEN_BUS'], ';')                                     
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")

@@ -104,6 +104,8 @@ def test_pyene(conf):
     EN.NM.offPrint()
     EN.NM.Print['Generation'] = True
     EN.NM.Print['Losses'] = True
+    EN.NM.Print['Flows'] = True
+    EN.NM.Print['GenBus'] = True
     EN.Print_ENSim(mod)
 
     # Collect unused hydro:
