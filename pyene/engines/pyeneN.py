@@ -906,10 +906,15 @@ class ENetworkClass:
             # Convert parameters to LP constraints
             for x1 in range(acu, acu+pwNo[xg]):
                 LLGenC[x1] = xg
-            for xv in range(pwNo[xg]):
-                GenLCst[acu+xv][0] = (yval[xv+1] -
-                                      yval[xv]) / (xval[xv+1]-xval[xv])
-                GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
+            if xval[pwNo[xg]-1] == 0:
+                for xv in range(pwNo[xg]):
+                    GenLCst[acu+xv][0] = 0
+                    GenLCst[acu+xv][1] = 0
+            else:
+                for xv in range(pwNo[xg]):
+                    GenLCst[acu+xv][0] = (yval[xv+1] -
+                                          yval[xv]) / (xval[xv+1]-xval[xv])
+                    GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
             acu += pwNo[xg]
         self.p['LLGenC'] = LLGenC
 
@@ -1094,6 +1099,9 @@ class ENetworkClass:
     def Read(self):
         ''' Read input data '''
         # Load file
+        print ()
+        print (self.settings['File'])
+        print ()
         mpc = json.load(open(self.settings['File']))
 
         self.networkE = nx.Graph()

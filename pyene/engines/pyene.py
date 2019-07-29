@@ -137,6 +137,7 @@ class pyeneClass():
                 m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
                                         self.NM.s['Tim'],
                                         rule=self.cAHMOut2_rule)
+                
                 if self.NM.hydropower['Baseload'] > 0:
                     m.cABaseload2 = \
                         Constraint(self.s['LL'], self.s['LLHydOut'],
@@ -560,6 +561,16 @@ class pyeneClass():
 
         if auxFlags[4]:  # Spill
             value += self.get_AllRES(m, *varg, **kwarg)
+
+        return value
+
+    def get_OFpart(self, m, xg, *varg, **kwarg):
+        ''' Get components of the objective function '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+
+        value = sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt].value
+                        for xt in auxtime)*auxOF[xh] for xh in auxscens)
 
         return value
 
