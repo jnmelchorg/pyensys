@@ -43,8 +43,6 @@ class EInterfaceClass:
         '''                               BUS
         Missing attributes:
             type - placeholder (not yet implemented in pypsa)
-            x - coordinates
-            y - coordinates
             carrier - 'AC' or 'DC'
 
         Implemented attributes:
@@ -71,11 +69,17 @@ class EInterfaceClass:
                 aux2 = NM.networkE.node[xn]['VM']
             else:
                 aux2 = PVBus[xn-1]
-            nu.add('Bus', auxtxtN+str(xn),
-                   v_nom=aux1,
-                   v_mag_pu_set=aux2,
-                   v_mag_pu_min=NM.networkE.node[xn]['VMIN'],
-                   v_mag_pu_max=NM.networkE.node[xn]['VMAX'])
+            if 'BUS_X' in NM.networkE.node[xn]:
+                nu.add('Bus', auxtxtN+str(xn),
+                       v_nom=aux1, v_mag_pu_set=aux2,
+                       v_mag_pu_min=NM.networkE.node[xn]['VMIN'],
+                       v_mag_pu_max=NM.networkE.node[xn]['VMAX'],
+                       x=NM.networkE.node[xn]['BUS_X'],
+                       y=NM.networkE.node[xn]['BUS_Y'])
+            else:
+                nu.add('Bus', auxtxtN+str(xn), v_nom=aux1, v_mag_pu_set=aux2,
+                       v_mag_pu_min=NM.networkE.node[xn]['VMIN'],
+                       v_mag_pu_max=NM.networkE.node[xn]['VMAX'])
 
         '''                            GENERATOR
         Missing attributes:
