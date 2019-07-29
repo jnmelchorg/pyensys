@@ -1099,9 +1099,6 @@ class ENetworkClass:
     def Read(self):
         ''' Read input data '''
         # Load file
-        print ()
-        print (self.settings['File'])
-        print ()
         mpc = json.load(open(self.settings['File']))
 
         self.networkE = nx.Graph()
@@ -1118,6 +1115,11 @@ class ENetworkClass:
             self.networkE.add_node(mpc['bus']['BUS_I'][xen])
             for x1 in range(10):
                 self.networkE.node[xen+1][aux[x1]] = mpc["bus"][aux[x1]][xen]
+
+        if 'BUS_X' in mpc['bus']:
+            for xen in range(mpc["NoBus"]):
+                self.networkE.node[xen+1]['BUS_X'] = mpc['bus']['BUS_X'][xen]
+                self.networkE.node[xen+1]['BUS_Y'] = mpc['bus']['BUS_Y'][xen]
 
         # Adding branches (edges) and attributes
         aux = ['BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP',
