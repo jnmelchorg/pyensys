@@ -1098,8 +1098,8 @@ class pyeneClass():
         raise NotImplementedError('Water prices not yet enabled')
         # Adjust self.NM.p['GenLCst']
 
-    def set_LineCapacity(self, index, value, *argv):
-        ''' Adjust maximum capacity of a line '''
+    def _set_LineCapacityAux(self, value, *argv):
+        ''' Auxiliary for selecting line parameters '''
         aux1 = value
         if 'BR_R' in argv:
             aux2 = 0
@@ -1110,7 +1110,19 @@ class pyeneClass():
         else:
             aux1 = value/self.NM.networkE.graph['baseMVA']
             aux2 = 3
+        return aux1, aux2
+
+    def set_LineCapacity(self, index, value, *argv):
+        ''' Adjust maximum capacity of a line - pass BR_R for R/X/B'''
+        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
         self.NM.p['branchData'][self.NM.p['LLESec1'][index-1][0]][aux2] = aux1
+
+    def set_LineCapacityAll(self, value, *argv):
+        ''' Adjust capacity all lines - pass BR_R for R/X/B'''
+        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
+        for xi in self.NM.p['LLESec1']:
+            self.NM.p['branchData'][self.NM.p['LLESec1']
+                                    [xi[0]][0]][aux2] = aux1
 
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''

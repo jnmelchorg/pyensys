@@ -52,6 +52,8 @@ class EInterfaceClass:
             v_mag_pu_min - per unit minimum voltage
             v_mag_pu_max - per unit maximum voltage
             auxtxtN = 'Bus'  # Generic name for the nodes
+            x - coordinates
+            y - coordinates
         '''
         PVBus = np.zeros(NM.networkE.number_of_nodes(), dtype=float)
         aux = (NM.generationE['Number']-NM.hydropower['Number'] -

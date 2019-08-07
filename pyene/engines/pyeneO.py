@@ -54,10 +54,10 @@ class pyeneHDF5Settings():
                                                   self.settings['Name1'])
             self.fileh = open_file(self.settings['Name1'], mode='w')
 
-        if self.settings['Directory2'] is not None:
-            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
-                                                  self.settings['Name2'])
-            self.file2 = open_file(self.settings['Name2'], mode='a')
+#        if self.settings['Directory2'] is not None:
+#            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
+#                                                  self.settings['Name2'])
+#            self.file2 = open_file(self.settings['Name2'], mode='a')
 
     '''pytables auxiliary'''
     class PyeneHDF5Flags:
@@ -168,33 +168,31 @@ class pyeneHDF5Settings():
         HDF5table.flush()
 
     def saveSummary(self, simulation_name):
-        if self.settings['Directory2'] is None:
-            return
-        
-        HDF5group = \
-            self.file2.create_group(self.file2.root, self.data['name'])
-        self.file2.create_array(HDF5group, "OF", self.data['OF'])
-        self.file2.create_array(HDF5group, "curtailment",
-                                self.data['curtailment'])
-        self.file2.create_array(HDF5group, "spill", self.data['spill'])
-        self.file2.create_array(HDF5group, "Cost_Component", self.data['cost'])
-        self.file2.create_array(HDF5group, "time", [self.time['All'],
-                                                    self.time['glpk']])
-
-        self.file2.close()
+#        if self.settings['Directory2'] is not None:
+#            HDF5group = \
+#                self.file2.create_group(self.file2.root, self.data['name'])
+#            self.file2.create_array(HDF5group, "OF", self.data['OF'])
+#            self.file2.create_array(HDF5group, "curtailment",
+#                                    self.data['curtailment'])
+#            self.file2.create_array(HDF5group, "spill", self.data['spill'])
+#            self.file2.create_array(HDF5group, "Cost_Component",
+#                                    self.data['cost'])
+#            self.file2.create_array(HDF5group, "time", [self.time['All'],
+#                                                        self.time['glpk']])
+#            self.file2.close()
 
         # Independent files
-        aux = os.path.join(self.settings['Directory2'], 'pySummary',
-                           simulation_name)
-
-        fileh = open_file(aux, mode='w')
-        fileh.create_array(fileh.root, "OF", self.data['OF'])
-        fileh.create_array(fileh.root, "curtailment", self.data['curtailment'])
-        fileh.create_array(fileh.root, "spill", self.data['spill'])
-        fileh.create_array(fileh.root, "Cost_Component", self.data['cost'])
-        fileh.create_array(fileh.root, "time", [self.time['All'],
+        if self.settings['Directory1'] is not None:
+            aux = os.path.join(self.settings['Directory2'], simulation_name)
+            fileh = open_file(aux, mode='w')
+            fileh.create_array(fileh.root, "OF", self.data['OF'])
+            fileh.create_array(fileh.root, "curtailment",
+                               self.data['curtailment'])
+            fileh.create_array(fileh.root, "spill", self.data['spill'])
+            fileh.create_array(fileh.root, "Cost_Component", self.data['cost'])
+            fileh.create_array(fileh.root, "time", [self.time['All'],
                                                     self.time['glpk']])
-        fileh.close()                
+            fileh.close()
 
     def saveResults(self, EN, m, SimNo):
         ''' Save results of each iteration '''

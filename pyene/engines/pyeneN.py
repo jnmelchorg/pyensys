@@ -38,6 +38,7 @@ class pyeneNConfig:
         # Connections
         self.connections = {
                 'set': range(1),  # Connections between nodes
+                'Branches': 0,  # Real number of branches (including parallel)
                 'Flow': [0],  # Power flow through the lines
                 'Voltage': [0],  # Voltages in each node
                 'Loss': [0],  # Power losses
@@ -561,6 +562,8 @@ class ENetworkClass:
         self.NoBuses = self.networkE.number_of_nodes()*(1+self.NoSec2)-1
         self.NoBranch = (self.networkE.number_of_edges() +
                          (self.networkE.number_of_edges()-1)*self.NoSec2)
+        print (self.NoBranch)
+        aux[1000]
 
         self.LLStor = np.zeros((self.networkE.number_of_nodes(),
                                 self.scenarios['Number']), dtype=int)
@@ -709,10 +712,11 @@ class ENetworkClass:
             sh = self.s['Con']
 
         for xh in sh:
-            print("\nCASE:", xh)
+            print("\n%% CASE:", xh)
 
             if self.Print['GenBus']:
-                print('\nFlow_EGen_Bus=', self.generationE['Data']['GEN_BUS'], ';')                                     
+                print('\nFlow_EGen_Bus=',
+                      self.generationE['Data']['GEN_BUS'], ';')
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
@@ -734,7 +738,12 @@ class ENetworkClass:
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
-                print("];")
+                print ("];")
+                print ()
+                print (self.networkE.number_of_edges()+1)
+                print ()
+                print ()
+                aux [1000]
 
             if self.Print['Voltages'] and self.settings['Flag']:
                 print("\nVoltage_Angle=[")
@@ -1127,9 +1136,19 @@ class ENetworkClass:
         for xeb in range(mpc["NoBranch"]):
             xaux = [mpc["branch"]["F_BUS"][xeb], mpc["branch"]["T_BUS"][xeb]]
             self.networkE.add_edge(xaux[0], xaux[1])
-            for x1 in range(11):
-                (self.networkE[xaux[0]][xaux[1]]
-                 [aux[x1]]) = mpc["branch"][aux[x1]][xeb]
+
+            # Option to save branches in parallel
+            if aux[x1] in self.networkE[xaux[0]][xaux[1]]:
+                self.networkE[xaux[0]][xaux[1]]['Parallel'] += 1
+                aux2 = str(self.networkE[xaux[0]][xaux[1]]['Parallel'])
+                for x1 in range(11):
+                    self.networkE[xaux[0]][xaux[1]][aux[x1]+aux2] = \
+                        mpc["branch"][aux[x1]][xeb]
+            else:
+                self.networkE[xaux[0]][xaux[1]]['Parallel'] = 1
+                for x1 in range(11):
+                    self.networkE[xaux[0]][xaux[1]][aux[x1]] = \
+                        mpc["branch"][aux[x1]][xeb]
 
         self.demandE = {
                 'PD': np.array(mpc['bus']['PD'], dtype=float),
