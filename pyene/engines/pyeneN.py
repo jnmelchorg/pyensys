@@ -107,7 +107,8 @@ class pyeneNConfig:
                 'Curtailment': True,
                 'Feasibility': True,
                 'Services': True,
-                'GenBus': True
+                'GenBus': True,
+                'sequence': None  # Sequence for branches
                 }
 
 
@@ -289,7 +290,7 @@ class ENetworkClass:
     def addSets(self, m):
         ''' Add pyomo sets '''
         self.s['Con'] = self.connections['set']
-        self.s['Bra'] = range(self.networkE.number_of_edges())
+        self.s['Bra'] = range(self.connections['Branches'])
         self.s['Bus'] = range(self.networkE.number_of_nodes())
         self.s['Buses'] = range(self.NoBuses+1)
         self.s['Pump'] = range(self.pumps['Number'])
@@ -312,7 +313,7 @@ class ENetworkClass:
         if self.settings['Flag']:
             m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
-            m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
+            m.vNLoss = Var(range(Noh*(self.connections['Branches']+1)),
                            self.s['Tim'], domain=NonNegativeReals,
                            initialize=0.0)
             m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
@@ -371,7 +372,6 @@ class ENetworkClass:
             aux = 0
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
-
         return (sum(m.vNGen[self.connections['Generation'][xh] +
                             self.p['LLGen1'][xg], xt]
                     for xg in range(self.p['LLGen2'][xn, 0],
@@ -383,7 +383,7 @@ class ENetworkClass:
                     m.vNLoss[self.connections['Loss'][xh] +
                              self.p['LLN2B1'][x2 +
                                               self.p['LLN2B2'][xn, 1]], xt]/2
-                    for x2 in range(1+self.p['LLN2B2'][xn, 0])) ==
+                    for x2 in range(self.p['LLN2B2'][xn, 0])) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
@@ -400,7 +400,7 @@ class ENetworkClass:
                     m.vNLoss[self.connections['Loss'][xh] +
                              self.p['LLN2B1'][x1 +
                                               self.p['LLN2B2'][xn, 3]], xt]/2
-                    for x1 in range(1+self.p['LLN2B2'][xn, 2])))
+                    for x1 in range(self.p['LLN2B2'][xn, 2])))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
@@ -434,8 +434,8 @@ class ENetworkClass:
 
     def cNEFMin_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (negative) '''
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <=
-                self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
+        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <= \
+            self.p['branchData'][self.p['LLESec1'][xb, 0], 3]
 
     def cNEGen0_rule(self, m, xt, xh):
         ''' Reference generation '''
@@ -560,10 +560,8 @@ class ENetworkClass:
         self.ProcessEGen()
 
         self.NoBuses = self.networkE.number_of_nodes()*(1+self.NoSec2)-1
-        self.NoBranch = (self.networkE.number_of_edges() +
-                         (self.networkE.number_of_edges()-1)*self.NoSec2)
-        print (self.NoBranch)
-        aux[1000]
+        self.NoBranch = self.connections['Branches'] + \
+            (self.connections['Branches']-1)*self.NoSec2
 
         self.LLStor = np.zeros((self.networkE.number_of_nodes(),
                                 self.scenarios['Number']), dtype=int)
@@ -712,7 +710,7 @@ class ENetworkClass:
             sh = self.s['Con']
 
         for xh in sh:
-            print("\n%% CASE:", xh)
+            print("\n% CASE:", xh)
 
             if self.Print['GenBus']:
                 print('\nFlow_EGen_Bus=',
@@ -731,19 +729,14 @@ class ENetworkClass:
 
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
-                for x1 in range(1, self.networkE.number_of_edges()+1):
+                for xb in self.Print['sequence']:
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
-                                        x1, x2].value *
+                                        xb+1, x2].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
-                print ("];")
-                print ()
-                print (self.networkE.number_of_edges()+1)
-                print ()
-                print ()
-                aux [1000]
+                print("];")
 
             if self.Print['Voltages'] and self.settings['Flag']:
                 print("\nVoltage_Angle=[")
@@ -757,9 +750,9 @@ class ENetworkClass:
 
             if self.Print['Losses'] and self.settings['Flag']:
                 print("\nEPower_Loss=[")
-                for xb in range(1, self.networkE.number_of_edges()+1):
+                for xb in self.Print['sequence']:
                     for xt in self.s['Tim']:
-                        aux = (m.vNLoss[self.connections['Loss'][xh]+xb,
+                        aux = (m.vNLoss[self.connections['Loss'][xh]+xb+1,
                                         xt].value *
                                self.networkE.graph['baseMVA'])
                         print("%8.4f " % aux, end='')
@@ -941,7 +934,7 @@ class ENetworkClass:
     def ProcessENet(self):
         ''' Process information for optimisation purposes '''
         # Map connections between nodes and branches (non-sequential search)
-        NoN2B = self.networkE.number_of_edges()*2+1  # Number of data points
+        NoN2B = self.connections['Branches']*2+1  # Number of data points
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
         LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
         LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
@@ -951,25 +944,26 @@ class ENetworkClass:
         x0 = 0  # Initial position (LLaux)
         x1 = 0  # Initial position (branches)
         for (xf, xt) in self.networkE.edges:
-            x1 += 1
-            auxNode = [xf-1, xt-1]
-            auxX = [3, 1]
-            for x2 in range(2):
-                x0 += 1
-                # Get next position
-                xpos = LLN2B2[auxNode[x2]][auxX[x2]]
-                # Initialize if the position is available
-                if xpos == 0:
-                    LLN2B2[auxNode[x2]][auxX[x2]] = x0
-                else:  # Search for next available position
-                    while LLnext[xpos] != 0:
-                        xpos = LLnext[xpos]
-                    # Storing data position
-                    LLnext[xpos] = x0
-                    (LLN2B2[auxNode[x2]]
-                           [auxX[x2]-1]) = LLN2B2[auxNode[x2]][auxX[x2]-1]+1
-                # Storing data point
-                LLaux[x0] = x1
+            for xp in range(self.networkE[xf][xt]['Parallel']):
+                x1 += 1
+                auxNode = [xf-1, xt-1]
+                auxX = [3, 1]
+                for x2 in range(2):
+                    x0 += 1
+                    # Get next position
+                    xpos = LLN2B2[auxNode[x2]][auxX[x2]]
+                    # Initialize if the position is available
+                    if xpos == 0:
+                        LLN2B2[auxNode[x2]][auxX[x2]] = x0
+                    else:  # Search for next available position
+                        while LLnext[xpos] != 0:
+                            xpos = LLnext[xpos]
+                        # Storing data position
+                        LLnext[xpos] = x0
+                        LLN2B2[auxNode[x2]][auxX[x2]-1] = \
+                            LLN2B2[auxNode[x2]][auxX[x2]-1]+1
+                    # Storing data point
+                    LLaux[x0] = x1
 
         # Remove the 'next' by arranging the data sequentially
         x0 = 0  # Position LLN2B1
@@ -981,8 +975,9 @@ class ENetworkClass:
                 if xpos != 0:
                     # Get other positions is available
                     LLN2B2[xn][x2+1] = xacu
-                    xacu += LLN2B2[xn][x2]+1
-                    for x3 in range(LLN2B2[xn][x2]+1):
+                    LLN2B2[xn][x2] += 1
+                    xacu += LLN2B2[xn][x2]
+                    for x3 in range(LLN2B2[xn][x2]):
                         # Store data sequentially
                         x0 = x0+1
                         LLN2B1[x0] = LLaux[xpos]
@@ -992,9 +987,8 @@ class ENetworkClass:
         self.p['LLN2B2'] = LLN2B2
 
         # Set line limits
-        branchNo = np.zeros((self.networkE.number_of_edges(), 2), dtype=int)
-        branchData = np.zeros((self.networkE.number_of_edges(), 4),
-                              dtype=float)
+        branchNo = np.zeros((self.connections['Branches'], 2), dtype=int)
+        branchData = np.zeros((self.connections['Branches'], 4), dtype=float)
         xb = 0
         for (xf, xt) in self.networkE.edges:
             branchNo[xb, :] = [xf-1, xt-1]
@@ -1004,6 +998,17 @@ class ENetworkClass:
                                   self.networkE[xf][xt]['RATE_A'] /
                                   self.networkE.graph['baseMVA']]
             xb += 1
+            #  Adding branches in parallel
+            if self.networkE[xf][xt]['Parallel'] > 1:
+                for xp in range(self.networkE[xf][xt]['Parallel']-1):
+                    branchNo[xb, :] = [xf-1, xt-1]
+                    branchData[xb, :4] = \
+                        [self.networkE[xf][xt]['BR_R'+str(xp+2)],
+                         self.networkE[xf][xt]['BR_X'+str(xp+2)],
+                         self.networkE[xf][xt]['BR_B'+str(xp+2)],
+                         self.networkE[xf][xt]['RATE_A'+str(xp+2)] /
+                         self.networkE.graph['baseMVA']]
+                    xb += 1
 
         self.p['branchNo'] = branchNo
         self.p['branchData'] = branchData
@@ -1012,31 +1017,31 @@ class ENetworkClass:
         if len(self.settings['Security']) == 0 and \
                 self.settings['SecurityFlag']:
             self.settings['Security'] = \
-                [x+1 for x in range(self.networkE.number_of_edges())]
+                [x+1 for x in range(self.connections['Branches'])]
 
         # Add security considerations
         NoSec2 = len(self.settings['Security'])
 
         # Number of parameters required for simulating security
-        aux = self.networkE.number_of_edges()
-        NoSec1 = self.networkE.number_of_edges()*(1+NoSec2)-NoSec2
+        aux = self.connections['Branches']
+        NoSec1 = self.connections['Branches']*(1+NoSec2)-NoSec2
         # Auxiliaries for modelling security considerations
         # Position of the variables
         LLESec1 = np.zeros((NoSec1, 2), dtype=int)
         # Connection between the branch number and the position of the data
-        LLESec2 = np.zeros((self.networkE.number_of_edges()+1, NoSec2+1),
+        LLESec2 = np.zeros((self.connections['Branches']+1, NoSec2+1),
                            dtype=int)
 
-        for xb in range(self.networkE.number_of_edges()):
+        for xb in range(self.connections['Branches']):
             LLESec1[xb][0] = xb
             LLESec2[xb][0] = xb
-        aux = self.networkE.number_of_edges()
+        aux = self.connections['Branches']
         LLESec2[aux][0] = aux
         x0 = aux
         xacu = 0
         for xs in range(NoSec2):
             xacu += self.networkE.number_of_nodes()
-            for xb in range(self.networkE.number_of_edges()):
+            for xb in range(self.connections['Branches']):
                 if xb+1 != self.settings['Security'][xs]:
                     LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
@@ -1053,10 +1058,10 @@ class ENetworkClass:
                 aux = self.settings['Constraint'][0] / \
                     self.networkE.graph['baseMVA']
                 self.settings['Constraint'] = \
-                    np.zeros(self.networkE.number_of_edges(), dtype=float)
-                for xb in range(self.networkE.number_of_edges()):
+                    np.zeros(self.connections['Branches'], dtype=float)
+                for xb in range(self.connections['Branches']):
                     self.settings['Constraint'][xb] = aux
-            for xb in range(self.networkE.number_of_edges()):
+            for xb in range(self.connections['Branches']):
                 branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
 
         # Add power losses estimation
@@ -1133,12 +1138,16 @@ class ENetworkClass:
         # Adding branches (edges) and attributes
         aux = ['BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP',
                'SHIFT', 'BR_STATUS', 'ANGMIN', 'ANGMAX']
+        self.connections['Branches'] = mpc['NoBranch']
+        xLL = 0
         for xeb in range(mpc["NoBranch"]):
             xaux = [mpc["branch"]["F_BUS"][xeb], mpc["branch"]["T_BUS"][xeb]]
             self.networkE.add_edge(xaux[0], xaux[1])
 
             # Option to save branches in parallel
             if aux[x1] in self.networkE[xaux[0]][xaux[1]]:
+                (self.networkE[xaux[0]][xaux[1]]['LL']
+                 [self.networkE[xaux[0]][xaux[1]]['Parallel']]) = xLL
                 self.networkE[xaux[0]][xaux[1]]['Parallel'] += 1
                 aux2 = str(self.networkE[xaux[0]][xaux[1]]['Parallel'])
                 for x1 in range(11):
@@ -1146,9 +1155,23 @@ class ENetworkClass:
                         mpc["branch"][aux[x1]][xeb]
             else:
                 self.networkE[xaux[0]][xaux[1]]['Parallel'] = 1
+                self.networkE[xaux[0]][xaux[1]]['LL'] = {}
+                self.networkE[xaux[0]][xaux[1]]['LL'][0] = xLL
                 for x1 in range(11):
                     self.networkE[xaux[0]][xaux[1]][aux[x1]] = \
                         mpc["branch"][aux[x1]][xeb]
+            xLL += 1
+
+        self.Print['sequence'] = np.zeros(xLL, dtype=int)
+        aux = np.zeros((xLL, 2), dtype=int)
+        x1 = 0
+        for (xf, xt) in self.networkE.edges:
+            for xp in range(self.networkE[xf][xt]['Parallel']):
+                self.Print['sequence'][self.networkE[xf][xt]['LL'][xp]] = x1
+                aux[x1][0] = xf
+                aux[x1][1] = xt
+                x1 += 1
+            del self.networkE[xf][xt]['LL']
 
         self.demandE = {
                 'PD': np.array(mpc['bus']['PD'], dtype=float),

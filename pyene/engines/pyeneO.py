@@ -168,19 +168,6 @@ class pyeneHDF5Settings():
         HDF5table.flush()
 
     def saveSummary(self, simulation_name):
-#        if self.settings['Directory2'] is not None:
-#            HDF5group = \
-#                self.file2.create_group(self.file2.root, self.data['name'])
-#            self.file2.create_array(HDF5group, "OF", self.data['OF'])
-#            self.file2.create_array(HDF5group, "curtailment",
-#                                    self.data['curtailment'])
-#            self.file2.create_array(HDF5group, "spill", self.data['spill'])
-#            self.file2.create_array(HDF5group, "Cost_Component",
-#                                    self.data['cost'])
-#            self.file2.create_array(HDF5group, "time", [self.time['All'],
-#                                                        self.time['glpk']])
-#            self.file2.close()
-
         # Independent files
         if self.settings['Directory1'] is not None:
             aux = os.path.join(self.settings['Directory2'], simulation_name)

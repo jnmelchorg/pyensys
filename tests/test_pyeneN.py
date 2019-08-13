@@ -13,8 +13,9 @@ def test_pyeneN_4Bus():
     # Initialise model
     (NM, NModel, results) = EN.NSim(conf)
     NM.print(NModel)
+    print(NModel.OF.expr())
 
-    assert NModel.OF.expr() == 21952.5
+    assert 0.0001 >= abs(NModel.OF.expr()-21952.5)
 
 
 # Medium network

@@ -44,6 +44,18 @@ class ENEConfig():
     def __init__(self):
         # Chose to load data from file
         self.Penalty = 1000000
+        # Option to overwrite parameters
+        self.Overwrite = {
+                'DemandX': [],  # Position of demand profiles to overwrite
+                'DemandL': [],  # Link position-->profile
+                'Demand': [],  # New demand time-series
+                'RESX': [],  # Position of RES profiles to overwrite
+                'RESL': [],  # Link position-->profile
+                'RES': [],  # New RES time-series
+                'HydroX': [],  # Position of Hydropower values to overwrite
+                'HydroL': [],  # Link position-->profile
+                'Hydro': []  # New hydropower time-series
+                }
 
 
 class pyeneClass():
@@ -770,7 +782,7 @@ class pyeneClass():
         self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
         self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
         # Location of each instance
-        aux = self.NM.networkE.number_of_edges()
+        aux = self.NM.connections['Branches']
         for xc in self.NM.connections['set']:
             self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
             self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
@@ -1115,7 +1127,8 @@ class pyeneClass():
     def set_LineCapacity(self, index, value, *argv):
         ''' Adjust maximum capacity of a line - pass BR_R for R/X/B'''
         (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        self.NM.p['branchData'][self.NM.p['LLESec1'][index-1][0]][aux2] = aux1
+        aux3 = self.NM.Print['sequence'][index]
+        self.NM.p['branchData'][self.NM.p['LLESec1'][aux3][0]][aux2] = aux1
 
     def set_LineCapacityAll(self, value, *argv):
         ''' Adjust capacity all lines - pass BR_R for R/X/B'''
@@ -1124,6 +1137,15 @@ class pyeneClass():
             self.NM.p['branchData'][self.NM.p['LLESec1']
                                     [xi[0]][0]][aux2] = aux1
 
+    def set_LineCapacityMin(self, value, *argv):
+        ''' Adjust capacity all lines (Min) - pass BR_R for R/X/B'''
+        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
+        for xi in self.NM.p['LLESec1']:
+            if aux1 < self.NM.p['branchData'][self.NM.p['LLESec1']
+                                              [xi[0]][0]][aux2]:
+                self.NM.p['branchData'][self.NM.p['LLESec1']
+                                        [xi[0]][0]][aux2] = aux1
+
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''
         raise NotImplementedError('Pump prices not yet enabled')
@@ -1131,9 +1153,21 @@ class pyeneClass():
 
     def set_RES(self, index, value):
         '''
-        Set PV/Wind profile  - more than one device can be connected to
-        each profile
+        Set PV/Wind profile  
+        
+        index - beginning from 1
+        value - time series
+        
+        if the index is in self.Overwrite['RESX'], the time series in 'RES'
+        will overwrite value
         '''
+
+        # Overwrite value?
+        if index in self.Overwrite['RESX']:
+            value = self.Overwrite['RES'][self.Overwrite['RESL']
+                                          [self.Overwrite['RESX'].index(index)
+                                           ]]
+
         if index <= self.NM.scenarios['NoRES']:
             value = self.CheckProfile(value)
 

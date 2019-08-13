@@ -62,7 +62,8 @@ class pyeneHConfig:
                 'Node': [],  # Location (Bus) in the network
                 'Efficiency': [],  # Efficiency (pu)
                 'Head': [],  # Head (m)
-                'Storage': []  # Storage (MWh)
+                'Storage': [],  # Storage (MWh)
+                'Predefined': [], # Predefined values
                 }
         # Pumps
         self.pumps = {
@@ -129,7 +130,6 @@ class HydrologyClass:
                 }
         # Optimisation
         self.opt = {}
-
 
     def _BuildHNetwork(self):
         ''' Build network model '''
@@ -860,7 +860,7 @@ class HydrologyClass:
         if self.settings['Flag']:
             # Nodal results
             for xh in sh:
-                print('\nCASE:', xh)
+                print('\n% CASE:', xh)
 
                 if self.Print['WIn']:
                     print("\nWater_In_Node%d=[" % xh)
