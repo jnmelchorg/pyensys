@@ -24,9 +24,11 @@ class BusConfig:
                 'BUS_TYPE': None,
                 'BUS_X': None,  # Coordinates X
                 'BUS_Y': None,  # Coordinates Y
-                'Demand': [],  # Demand time series
+                'Demand': None,  # Demand time series
                 'GS': None,
-                'Peak': None,  # Peak demand (MW)
+                'PeakP': None,  # Peak demand (MW)
+                'PeakQ': None,  # Peak demand (MVAr)
+                'Position': None,  # Position of the data in mpc
                 'Name': None,  # Bus name
                 'Number': None,  # Bus number
                 'VM': None,
@@ -43,18 +45,24 @@ class BusConfig:
         self.settings['BS'] = mpc['BS'][No]
         self.settings['BUS_AREA'] = mpc['BUS_AREA'][No]
         self.settings['BUS_TYPE'] = mpc['BUS_TYPE'][No]
-        self.settings['BUS_X'] = mpc['BUS_X'][No]
-        self.settings['BUS_Y'] = mpc['BUS_Y'][No]
         # TODO: Demand
         self.settings['GS'] = mpc['GS'][No]
-        # TODO: Peak
+        self.settings['PeakP'] = mpc['PD'][No]
+        self.settings['PeakP'] = mpc['QD'][No]
+        self.settings['Position'] = No
         # TODO: Name
-        self.settings['Number'] = No
+        self.settings['Number'] = mpc['BUS_I'][No]
         self.settings['VM'] = mpc['VM'][No]
         self.settings['VA'] = mpc['VA'][No]
         self.settings['VMAX'] = mpc['VMAX'][No]
         self.settings['VMIN'] = mpc['VMIN'][No]
         self.settings['ZONE'] = mpc['ZONE'][No]
+
+        #  Optional data - not included in all files
+        if 'BUS_NAME' in mpc.keys():
+            self.settings['NameX'] = mpc['BUS_NAME'][No]
+            self.settings['BUS_X'] = mpc['BUS_X'][No]
+            self.settings['BUS_Y'] = mpc['BUS_Y'][No]
 
 
 class BranchConfig:
@@ -78,9 +86,6 @@ class BranchConfig:
 
     def MPCconfigure(self, mpc, No=0):
         ''' Configure using mat power data '''
-        print()
-        print(mpc)
-        print()
 
         self.settings['ANGMAX'] = mpc['ANGMAX'][No]
         self.settings['ANGMIN'] = mpc['ANGMIN'][No]
@@ -94,10 +99,138 @@ class BranchConfig:
         self.settings['RATE_B'] = mpc['RATE_B'][No]
         self.settings['RATE_C'] = mpc['RATE_C'][No]
         self.settings['T_BUS'] = mpc['T_BUS'][No]
-        
-        
+
+
+class ConventionalConfig:
+    ''' Conventnional generator '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'Ancillary': None,  # Can it provide ancillary services?
+                'APF': None,
+                'GEN': None,
+                'GEN_BUS': None,
+                'MBASE': None,
+                'PC1': None,
+                'PC2': None,
+                'PG': None,
+                'PMAX': None,
+                'PMIN': None,
+                'QC1MIN': None,
+                'QC1MAX': None,
+                'QC2MIN': None,
+                'QC2MAX': None,
+                'QG': None,
+                'QMAX': None,
+                'QMIN': None,
+                'Ramp': None,  # Set ramps for conventional generators
+                'RAMP_AGC': None,
+                'RAMP_10': None,
+                'RAMP_30': None,
+                'RAMP_Q': None,
+                'RES': True,  # Can it support RES integration?
+                'VG': None
+                }
+
+        # Cost data
+        self.costs = {
+                'COST': None,
+                'MODEL': None,
+                'NCOST': None,
+                'SHUTDOWN': None,
+                'STARTUP': None
+                }
+
+    def MPCconfigure(self, mpc, conv, No=0):
+        ''' Configure using mat power data '''
+
+        # Generator settings - from mat power file
+        self.settings['APF'] = mpc['gen']['APF'][No]
+        self.settings['GEN'] = mpc['gen']['GEN'][No]
+        self.settings['GEN_BUS'] = mpc['gen']['GEN_BUS'][No]
+        self.settings['MBASE'] = mpc['gen']['MBASE'][No]
+        self.settings['PC1'] = mpc['gen']['PC1'][No]
+        self.settings['PC2'] = mpc['gen']['PC2'][No]
+        self.settings['PG'] = mpc['gen']['PG'][No]
+        self.settings['PMAX'] = mpc['gen']['PMAX'][No]
+        self.settings['PMIN'] = mpc['gen']['PMIN'][No]
+        self.settings['QC1MIN'] = mpc['gen']['QC1MIN'][No]
+        self.settings['QC1MAX'] = mpc['gen']['QC1MAX'][No]
+        self.settings['QC2MIN'] = mpc['gen']['QC2MIN'][No]
+        self.settings['QC2MAX'] = mpc['gen']['QC2MAX'][No]
+        self.settings['QG'] = mpc['gen']['QG'][No]
+        self.settings['QMAX'] = mpc['gen']['QMAX'][No]
+        self.settings['QMIN'] = mpc['gen']['QMIN'][No]
+        self.settings['RAMP_AGC'] = mpc['gen']['RAMP_AGC'][No]
+        self.settings['RAMP_10'] = mpc['gen']['RAMP_10'][No]
+        self.settings['RAMP_30'] = mpc['gen']['RAMP_30'][No]
+        self.settings['RAMP_Q'] = mpc['gen']['RAMP_Q'][No]
+        self.settings['VG'] = mpc['gen']['VG'][No]
+
+        # Generator costs - from mat power file
+        self.costs['COST'] = mpc['gencost']['COST'][No]
+        self.costs['MODEL'] = mpc['gencost']['MODEL'][No]
+        self.costs['NCOST'] = mpc['gencost']['NCOST'][No]
+        self.costs['SHUTDOWN'] = mpc['gencost']['SHUTDOWN'][No]
+        self.costs['STARTUP'] = mpc['gencost']['STARTUP'][No]
+
+        # Generator data - from configuration file
+        self.settings['Ancillary'] = conv['Ancillary']
+        self.settings['Ramp'] = conv['Ramp']
+        self.settings['RES'] = conv['RES']
+
+
+class HydropowerConfig:
+    ''' Hydropower generator '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'Ancillary': None,  # Can it provide ancillary services?
+                'Baseload': None,  # 0-1 for the use of water for baseload
+                'Bus': None,  # Location (Bus) in the network
+                'Cost': None,  # Costs
+                'Link': None,  # Position of hydropower plants
+                'Max': None,  # Capacity (MW)
+                'Ramp': None,  # Ramp
+                'RES': None  # Can it support RES integration?
+            }
+
+    def MPCconfigure(self, hydro, No=0):
+        ''' Configure using hydropower settings '''
+        self.settings['Ancillary'] = hydro['Ancillary']
+        self.settings['Baseload'] = hydro['Baseload']
+        self.settings['Bus'] = hydro['Bus'][No]
+        self.settings['Cost'] = hydro['Cost'][No]
+        self.settings['Link'] = hydro['Link']
+        self.settings['Max'] = hydro['Max'][No]
+        self.settings['Ramp'] = hydro['Ramp']
+        self.settings['RES'] = hydro['RES']
+
+
+class RESConfig:
+    ''' RES generator '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'Bus': None,  # Location (Bus) in the network
+                'Cost': None,  # Costs
+                'Link': None,  # Position of hydropower plants
+                'Max': None,  # Capacity (MW)
+                'Uncertainty': None  # Introduce reserve needs
+            }
+
+    def MPCconfigure(self, RES, No=0):
+        ''' Configure using hydropower settings '''
+        self.settings['Bus'] = RES['Bus'][No]
+        self.settings['Cost'] = RES['Cost'][No]
+        self.settings['Link'] = RES['Link']
+        self.settings['Max'] = RES['Max'][No]
+        self.settings['Uncertainty'] = RES['Uncertainty']
+
 
 '''                               DEVICE CLASSES                            '''
+
+
 class Bus:
     ''' Electricity bus '''
     def __init__(self, obj=None):
@@ -111,7 +244,7 @@ class Bus:
             setattr(self, pars, getattr(obj, pars))
 
 
-class ENet:
+class ElectricityNetwork:
     ''' Electricity network '''
     def __init__(self, NoBus=1, NoBranch=1):
         ''' General electricity network settings '''
@@ -120,8 +253,8 @@ class ENet:
                 'baseMVA': None,
                 'NoGen': None,
                 'Slack': None,
-                'Buses': None,  # Number of buses
-                'Branches': None  # Number of buses
+                'Buses': NoBus,  # Number of buses
+                'Branches': NoBranch  # Number of buses
                 }
 
         # Define bus objects - configuration class
@@ -134,21 +267,51 @@ class ENet:
         ''' Initialize using mat power data '''
 
         # General electricity network settings
-        self.settings['Buses'] = mpc['NoBus']
-        self.settings['Branches'] = mpc["NoBranch"]
         for xa in ['version', 'baseMVA', 'NoGen', 'Slack']:
             self.settings[xa] = mpc[xa]
 
-#        # Bus data
-#        for x in range(mpc['NoBus']):
-#            self.BusConfig[x].MPCconfigure(mpc['bus'], x)
-#
+        # Bus data
+        for x in range(mpc['NoBus']):
+            self.BusConfig[x].MPCconfigure(mpc['bus'], x)
+
         # Branch data
         for x in range(mpc['NoBranch']):
             self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
 
-    
 
+class Generators:
+    ''' Electricity generators '''
+    def __init__(self, NoConv=0, NoHydro=0, NoRES=0):
+        ''' General generator settings '''
+        self.settings = {
+                'Conventional': NoConv,
+                'Hydropower': NoHydro,
+                'RES': NoRES
+                }
+
+        # Conventional generators
+        self.ConvConf = [ConventionalConfig() for x in range(NoConv)]
+
+        # Hydropower generators
+        self.HydroConf = [HydropowerConfig() for x in range(NoHydro)]
+
+        # RES generators
+        self.RESConf = [RESConfig() for x in range(NoRES)]
+
+    def MPCconfigure(self, mpc, conv, hydro, RES):
+        ''' Initialize using mat power data '''
+
+        # Conventional generators
+        for x in range(self.settings['Conventional']):
+            self.ConvConf[x].MPCconfigure(mpc, conv, x)
+
+        for x in range(self.settings['Hydropower']):
+            self.HydroConf[x].MPCconfigure(hydro, x)
+
+        for x in range(self.settings['RES']):
+            self.RESConf[x].MPCconfigure(RES, x)
+
+            
 class ELineConfig:
     ''' Default settings for an electricity bus '''
     def __init__(self):
