@@ -1161,7 +1161,7 @@ class ENetworkClass:
                     self.networkE[xaux[0]][xaux[1]][aux[x1]] = \
                         mpc["branch"][aux[x1]][xeb]
             xLL += 1
-
+        
         self.Print['sequence'] = np.zeros(xLL, dtype=int)
         aux = np.zeros((xLL, 2), dtype=int)
         x1 = 0
@@ -1177,6 +1177,11 @@ class ENetworkClass:
                 'PD': np.array(mpc['bus']['PD'], dtype=float),
                 'QD': np.array(mpc['bus']['QD'], dtype=float),
                 }
+
+        # Defining network using devices class
+        from pyene.engines.pyeneD import ENet
+        self.Enet = ENet(mpc['NoBus'], mpc["NoBranch"])
+        self.Enet.MPCconfigure(mpc)
 
         # Gen generation nodes (to mesure it)
         GenNCost = np.array(mpc['gencost']['COST'], dtype=int)

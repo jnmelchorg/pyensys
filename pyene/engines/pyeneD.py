@@ -10,6 +10,165 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import math
 
+'''                          CONFIGURATION CLASSES                          '''
+
+
+class BusConfig:
+    ''' Default settings for an electricity bus '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'BASE_KV': None,
+                'BS': None,
+                'BUS_AREA': None,
+                'BUS_TYPE': None,
+                'BUS_X': None,  # Coordinates X
+                'BUS_Y': None,  # Coordinates Y
+                'Demand': [],  # Demand time series
+                'GS': None,
+                'Peak': None,  # Peak demand (MW)
+                'Name': None,  # Bus name
+                'Number': None,  # Bus number
+                'VM': None,
+                'VA': None,
+                'VMAX': None,
+                'VMIN': None,
+                'ZONE': None
+                }
+
+    def MPCconfigure(self, mpc, No=0):
+        ''' Configure using mat power data '''
+
+        self.settings['BASE_KV'] = mpc['BASE_KV'][No]
+        self.settings['BS'] = mpc['BS'][No]
+        self.settings['BUS_AREA'] = mpc['BUS_AREA'][No]
+        self.settings['BUS_TYPE'] = mpc['BUS_TYPE'][No]
+        self.settings['BUS_X'] = mpc['BUS_X'][No]
+        self.settings['BUS_Y'] = mpc['BUS_Y'][No]
+        # TODO: Demand
+        self.settings['GS'] = mpc['GS'][No]
+        # TODO: Peak
+        # TODO: Name
+        self.settings['Number'] = No
+        self.settings['VM'] = mpc['VM'][No]
+        self.settings['VA'] = mpc['VA'][No]
+        self.settings['VMAX'] = mpc['VMAX'][No]
+        self.settings['VMIN'] = mpc['VMIN'][No]
+        self.settings['ZONE'] = mpc['ZONE'][No]
+
+
+class BranchConfig:
+    ''' Electricity Branch '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'ANGMAX': None,
+                'ANGMIN': None,
+                'BR_B': None,
+                'BR_R': None,
+                'BR_STATUS': None,
+                'BR_X': None,
+                'Number': None,  # Branch number
+                'F_BUS': None,  # Bus (from)
+                'RATE_A': None,
+                'RATE_A': None,
+                'RATE_C': None,
+                'T_BUS': None  # Bus (to)
+                }
+
+    def MPCconfigure(self, mpc, No=0):
+        ''' Configure using mat power data '''
+        print()
+        print(mpc)
+        print()
+
+        self.settings['ANGMAX'] = mpc['ANGMAX'][No]
+        self.settings['ANGMIN'] = mpc['ANGMIN'][No]
+        self.settings['BR_B'] = mpc['BR_B'][No]
+        self.settings['BR_R'] = mpc['BR_R'][No]
+        self.settings['BR_STATUS'] = mpc['BR_STATUS'][No]
+        self.settings['BR_X'] = mpc['BR_X'][No]
+        self.settings['Number'] = No
+        self.settings['F_BUS'] = mpc['F_BUS'][No]
+        self.settings['RATE_A'] = mpc['RATE_A'][No]
+        self.settings['RATE_B'] = mpc['RATE_B'][No]
+        self.settings['RATE_C'] = mpc['RATE_C'][No]
+        self.settings['T_BUS'] = mpc['T_BUS'][No]
+        
+        
+
+'''                               DEVICE CLASSES                            '''
+class Bus:
+    ''' Electricity bus '''
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = BusConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
+
+
+class ENet:
+    ''' Electricity network '''
+    def __init__(self, NoBus=1, NoBranch=1):
+        ''' General electricity network settings '''
+        self.settings = {
+                'version': None,
+                'baseMVA': None,
+                'NoGen': None,
+                'Slack': None,
+                'Buses': None,  # Number of buses
+                'Branches': None  # Number of buses
+                }
+
+        # Define bus objects - configuration class
+        self.BusConfig = [BusConfig() for x in range(NoBus)]
+
+        # Define branch objects - configuration class
+        self.BranchConfig = [BranchConfig() for x in range(NoBranch)]
+
+    def MPCconfigure(self, mpc):
+        ''' Initialize using mat power data '''
+
+        # General electricity network settings
+        self.settings['Buses'] = mpc['NoBus']
+        self.settings['Branches'] = mpc["NoBranch"]
+        for xa in ['version', 'baseMVA', 'NoGen', 'Slack']:
+            self.settings[xa] = mpc[xa]
+
+#        # Bus data
+#        for x in range(mpc['NoBus']):
+#            self.BusConfig[x].MPCconfigure(mpc['bus'], x)
+#
+        # Branch data
+        for x in range(mpc['NoBranch']):
+            self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
+
+    
+
+class ELineConfig:
+    ''' Default settings for an electricity bus '''
+    def __init__(self):
+        # Basic settings
+        self.settings = {
+                'Number': None  # Bus number
+                }
+
+class ELine:
+    ''' Electricity bus '''
+    def __init__(self, obj=None):
+        ''' Initialise network class '''
+        # Get default values
+        if obj is None:
+            obj = BusConfig()
+
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
+
 
 class pyeneDConfig:
     ''' Default settings used for this class '''
