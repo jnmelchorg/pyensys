@@ -9,6 +9,7 @@ devices considered in pyene
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import math
+import numpy as np
 
 '''                          CONFIGURATION CLASSES                          '''
 
@@ -60,7 +61,7 @@ class BusConfig:
 
         #  Optional data - not included in all files
         if 'BUS_NAME' in mpc.keys():
-            self.settings['NameX'] = mpc['BUS_NAME'][No]
+            self.settings['Name'] = mpc['BUS_NAME'][No]
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
 
@@ -93,8 +94,9 @@ class BranchConfig:
         self.settings['BR_R'] = mpc['BR_R'][No]
         self.settings['BR_STATUS'] = mpc['BR_STATUS'][No]
         self.settings['BR_X'] = mpc['BR_X'][No]
-        self.settings['Number'] = No
+        self.settings['Number'] = No+1
         self.settings['F_BUS'] = mpc['F_BUS'][No]
+        self.settings['Position'] = No
         self.settings['RATE_A'] = mpc['RATE_A'][No]
         self.settings['RATE_B'] = mpc['RATE_B'][No]
         self.settings['RATE_C'] = mpc['RATE_C'][No]
@@ -231,17 +233,48 @@ class RESConfig:
 '''                               DEVICE CLASSES                            '''
 
 
+class Branch:
+    ''' Electricity branch '''
+    def __init__(self, obj):
+        ''' Initialise network class '''
+        # Get settings
+        self.data = obj.settings
+
+        self.data['F_Position'] = None
+        self.data['T_Position'] = None
+
+    def get_BusF(self):
+        ''' Get bus at beginning (from) of the branch '''
+        return self.settings['F_BUS']
+
+    def get_BusT(self):
+        ''' Get bus at end (to) of the branch '''
+        return self.settings['T_BUS']
+
+
 class Bus:
     ''' Electricity bus '''
-    def __init__(self, obj=None):
-        ''' Initialise network class '''
-        # Get default values
-        if obj is None:
-            obj = BusConfig()
+    def __init__(self, obj):
+        ''' Initialise bus class
 
-        # Copy attributes
-        for pars in obj.__dict__.keys():
-            setattr(self, pars, getattr(obj, pars))
+        The class can use the following parameters:
+        ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'BUS_X','BUS_Y','Demand',
+        'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number', 'VM', 'VA',
+        'VMAX', 'VMIN', 'ZONE']
+        However, only the ones that are currently used are passed
+        '''
+        # Parameters currently in use
+        aux = ['BUS_X', 'BUS_Y', 'Demand', 'PeakP', 'PeakQ', 'Position',
+               'Name', 'Number']
+
+        # Get settings
+        self.data = {}
+        for xa in aux:
+            self.data[xa] = obj.settings[xa]
+
+        # New data
+        self.data['F_Branches'] = []  # Branches connected from the bus
+        self.data['T_Branches'] = []  # Branches connected to the bus
 
 
 class ElectricityNetwork:
@@ -277,6 +310,46 @@ class ElectricityNetwork:
         # Branch data
         for x in range(mpc['NoBranch']):
             self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
+
+    def initialise(self):
+        ''' Prepare objects and remove configuration versions '''
+
+        # Initialise bus object
+        self.Bus = [Bus(self.BusConfig[x]) for x in
+                    range(self.settings['Buses'])]
+        del self.BusConfig
+
+        # Initialise branch object
+        self.Branch = [Branch(self.BranchConfig[x]) for x in
+                       range(self.settings['Branches'])]
+        del self.BranchConfig
+
+        # Match buses and nodes
+        for ob in self.Branch:
+            # Find position of the bus (may be different from the number)
+            xf = self.findBusPosition(ob.data['F_BUS'])
+            xt = self.findBusPosition(ob.data['T_BUS'])
+
+            # The branch now includes the position of the buses
+            ob.data['F_Position'] = xf
+            ob.data['T_Position'] = xt
+
+            # Tbe bus now includes the position of the relevant branches
+            self.Bus[xf].data['F_Branches'].append(ob.data['Position'])
+            self.Bus[xt].data['T_Branches'].append(ob.data['Position'])
+
+    def findBusPosition(self, bus):
+        ''' Find the position of a bus
+
+        This is required as the bus numbers may not begin from zero, or some
+        positions may be missing
+        '''
+        xn = 0
+        while self.Bus[xn].data['Number'] != bus:
+            xn += 1
+
+        return xn
+            
 
 
 class Generators:

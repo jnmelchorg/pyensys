@@ -933,6 +933,11 @@ class ENetworkClass:
 
     def ProcessENet(self):
         ''' Process information for optimisation purposes '''
+        
+        # Initialise electricity network object
+        self.ENetwork.initialise()
+        
+        
         # Map connections between nodes and branches (non-sequential search)
         NoN2B = self.connections['Branches']*2+1  # Number of data points
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
