@@ -30,7 +30,7 @@ class pyeneNConfig:
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
-                'Constraint': [],  # Set line capacity constraints
+#                'Constraint': [],  # Set line capacity constraints
                 'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
                 'Ancillary': None  # Need for uncillary services
@@ -1056,18 +1056,18 @@ class ENetworkClass:
         self.p['LLESec2'] = LLESec2
 
         # TODO: Is this needed?
-        # Adjust branch data if there are predefined constraints
-        aux = len(self.settings['Constraint'])
-        if aux > 0:
-            if aux == 1:
-                aux = self.settings['Constraint'][0] / \
-                    self.networkE.graph['baseMVA']
-                self.settings['Constraint'] = \
-                    np.zeros(self.connections['Branches'], dtype=float)
-                for xb in range(self.connections['Branches']):
-                    self.settings['Constraint'][xb] = aux
-            for xb in range(self.connections['Branches']):
-                branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
+#        # Adjust branch data if there are predefined constraints
+#        aux = len(self.settings['Constraint'])
+#        if aux > 0:
+#            if aux == 1:
+#                aux = self.settings['Constraint'][0] / \
+#                    self.networkE.graph['baseMVA']
+#                self.settings['Constraint'] = \
+#                    np.zeros(self.connections['Branches'], dtype=float)
+#                for xb in range(self.connections['Branches']):
+#                    self.settings['Constraint'][xb] = aux
+#            for xb in range(self.connections['Branches']):
+#                branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
 
         # Add power losses estimation
         if self.settings['Losses']:
