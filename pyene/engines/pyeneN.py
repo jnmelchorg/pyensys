@@ -615,7 +615,7 @@ class ENetworkClass:
                     self.hydropower['Max'][xg]/self.networkE.graph['baseMVA']
                 xh += 1
 
-        # Sets and parameters for modelling Ancilarry service requirements
+        # Sets and parameters for modelling Ancillary service requirements
         NoSer = 0
         self.s['GAncillary'] = []
         if self.settings['Ancillary'] is not None:
@@ -933,11 +933,10 @@ class ENetworkClass:
 
     def ProcessENet(self):
         ''' Process information for optimisation purposes '''
-        
+
         # Initialise electricity network object
-        self.ENetwork.initialise()
-        
-        
+        self.ENetwork.initialise(self.settings)
+
         # Map connections between nodes and branches (non-sequential search)
         NoN2B = self.connections['Branches']*2+1  # Number of data points
         LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
@@ -1056,6 +1055,7 @@ class ENetworkClass:
         self.p['LLESec1'] = LLESec1
         self.p['LLESec2'] = LLESec2
 
+        # TODO: Is this needed?
         # Adjust branch data if there are predefined constraints
         aux = len(self.settings['Constraint'])
         if aux > 0:

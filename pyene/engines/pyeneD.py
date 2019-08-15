@@ -236,9 +236,20 @@ class RESConfig:
 class Branch:
     ''' Electricity branch '''
     def __init__(self, obj):
-        ''' Initialise network class '''
+        ''' Initialise bus class
+
+        The class can use the following parameters:
+        ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X', 'Number',
+        'F_BUS', 'Position', 'RATE_A', 'RATE_B', 'RATE_C', 'T_BUS']
+        However, only the ones that are currently used are passed
+        '''
+
+        aux = ['BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS']
+
         # Get settings
-        self.data = obj.settings
+        self.data = {}
+        for xa in aux:
+            self.data[xa] = obj.settings[xa]
 
         self.data['F_Position'] = None
         self.data['T_Position'] = None
@@ -281,13 +292,15 @@ class ElectricityNetwork:
     ''' Electricity network '''
     def __init__(self, NoBus=1, NoBranch=1):
         ''' General electricity network settings '''
-        self.settings = {
+        self.data = {
                 'version': None,
                 'baseMVA': None,
                 'NoGen': None,
                 'Slack': None,
                 'Buses': NoBus,  # Number of buses
-                'Branches': NoBranch  # Number of buses
+                'Branches': NoBranch,  # Number of buses
+                'Security': None,  # N-1 cases to consider
+                'SecurityNo': None  # Number of N-1 cases
                 }
 
         # Define bus objects - configuration class
@@ -301,7 +314,7 @@ class ElectricityNetwork:
 
         # General electricity network settings
         for xa in ['version', 'baseMVA', 'NoGen', 'Slack']:
-            self.settings[xa] = mpc[xa]
+            self.data[xa] = mpc[xa]
 
         # Bus data
         for x in range(mpc['NoBus']):
@@ -311,17 +324,17 @@ class ElectricityNetwork:
         for x in range(mpc['NoBranch']):
             self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
 
-    def initialise(self):
+    def initialise(self, sett):
         ''' Prepare objects and remove configuration versions '''
 
         # Initialise bus object
         self.Bus = [Bus(self.BusConfig[x]) for x in
-                    range(self.settings['Buses'])]
+                    range(self.data['Buses'])]
         del self.BusConfig
 
         # Initialise branch object
         self.Branch = [Branch(self.BranchConfig[x]) for x in
-                       range(self.settings['Branches'])]
+                       range(self.data['Branches'])]
         del self.BranchConfig
 
         # Match buses and nodes
@@ -337,6 +350,35 @@ class ElectricityNetwork:
             # Tbe bus now includes the position of the relevant branches
             self.Bus[xf].data['F_Branches'].append(ob.data['Position'])
             self.Bus[xt].data['T_Branches'].append(ob.data['Position'])
+
+            # Adjust line capacity
+            ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
+
+        # Security constraints
+        print(sett)
+        if sett['SecurityFlag']:  # Consider all N-1 constraints
+            self.data['SecurityNo'] = self.data['Branches']
+            self.data['N-1'] = range(self.data['Branches'])
+        else:
+            self.data['SecurityNo'] = len(sett['Security'])
+            self.data['N-1'] = sett['Security']
+
+    def get_Security(self, No):
+        ''' Define time series to model security constraints '''
+        return (x for x in range(self.data['Branches']) if x != No)
+        
+        
+        # Losses
+        # Pumps
+        # Feasibility
+#        print('\nLL bus branch')
+#        xn = 1;
+#        for ob in self.Bus:
+#            print('Bus: ', xn)
+#            xn += 1
+#            print(ob.data['F_Branches'])
+#            print(ob.data['T_Branches'])
+#        print()
 
     def findBusPosition(self, bus):
         ''' Find the position of a bus
