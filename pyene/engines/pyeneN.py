@@ -42,6 +42,8 @@ class pyeneNConfig:
                 'Flow': [0],  # Power flow through the lines
                 'Voltage': [0],  # Voltages in each node
                 'Loss': [0],  # Power losses
+                'Loss_Param': [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2,
+                               1.6, 2, 2.5, 3],  # To model power losses
                 'Feasibility': [0],  # Lines to trip for security consideration
                 'Generation': [0],  # Location (bus) of generators
                 'Cost': [0],  # Generator consts
@@ -1055,26 +1057,11 @@ class ENetworkClass:
         self.p['LLESec1'] = LLESec1
         self.p['LLESec2'] = LLESec2
 
-        # TODO: Is this needed?
-#        # Adjust branch data if there are predefined constraints
-#        aux = len(self.settings['Constraint'])
-#        if aux > 0:
-#            if aux == 1:
-#                aux = self.settings['Constraint'][0] / \
-#                    self.networkE.graph['baseMVA']
-#                self.settings['Constraint'] = \
-#                    np.zeros(self.connections['Branches'], dtype=float)
-#                for xb in range(self.connections['Branches']):
-#                    self.settings['Constraint'][xb] = aux
-#            for xb in range(self.connections['Branches']):
-#                branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
-
-        # Add power losses estimation
+        # Add piece-wise power losses estimation
         if self.settings['Losses']:
             # Auxiliar for the cuadratic function to model losses
             # Choosing points for the lines
-            aux = [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2, 1.6,
-                   2, 2.5, 3]
+            aux = self.connections['Loss_Param']
 
             # Number of points to model
             Number_LossCon = len(aux)-1
