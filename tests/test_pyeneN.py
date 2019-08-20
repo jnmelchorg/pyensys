@@ -29,3 +29,34 @@ def test_pyeneN_14Bus():
     NM.print(NModel)
 
     assert 0.0001 >= abs(NModel.OF.expr()-7704.910967)
+
+
+# Small network - Security and losses
+def test_pyeneN_4BusSec():
+    print('test_pyeneN_4BusSec: case4.json')
+    conf = testConfig()
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'case4.json')
+    conf.NM.settings['Security'] = [2, 3]
+    conf.NM.settings['Losses'] = True
+    conf.NM.settings['NoTime'] = 2
+    conf.NM.scenarios['Demand'] = [1, 1.1]
+
+    EN = pe(conf.EN)
+
+    # Initialise model
+    (NM, NModel, results) = EN.NSim(conf)
+    NM.print(NModel)
+    print('Losses')
+    Lss01 = NModel.vNLoss[1, 0].value*NM.ENetwork.data['baseMVA']
+    Lss02 = NModel.vNLoss[4, 1].value*NM.ENetwork.data['baseMVA']
+    Vol01 = NModel.vNVolt[2, 0].value
+    Vol02 = NModel.vNVolt[10, 1].value
+    print(Lss01, Lss02, Vol01, Vol02)
+    print(NModel.OF.expr())
+
+    assert (0.0001 >= abs(NModel.OF.expr()-63215.0917360614) and
+            0.0001 >= abs(Lss01 - 0.10718868) and
+            0.0001 >= abs(Lss02 - 1.56890072) and
+            0.0001 >= abs(Vol01 + 0.03379594) and
+            0.0001 >= abs(Vol02 + 0.15900000)
+            )
