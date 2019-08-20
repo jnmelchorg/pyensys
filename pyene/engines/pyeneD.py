@@ -286,6 +286,8 @@ class Bus:
         # New data
         self.data['F_Branches'] = []  # Branches connected from the bus
         self.data['T_Branches'] = []  # Branches connected to the bus
+        self.data['NoFB'] = 0  # Number of branches connected from the bus
+        self.data['NoTB'] = 0  # Number of branches connected to the bus
 
 
 class ElectricityNetwork:
@@ -298,7 +300,7 @@ class ElectricityNetwork:
                 'NoGen': None,
                 'Slack': None,
                 'Buses': NoBus,  # Number of buses
-                'Branches': NoBranch,  # Number of buses
+                'Branches': NoBranch,  # Number of branches
                 'Security': None,  # N-1 cases to consider
                 'SecurityNo': None  # Number of N-1 cases
                 }
@@ -350,6 +352,8 @@ class ElectricityNetwork:
             # Tbe bus now includes the position of the relevant branches
             self.Bus[xf].data['F_Branches'].append(ob.data['Position'])
             self.Bus[xt].data['T_Branches'].append(ob.data['Position'])
+            self.Bus[xf].data['NoFB'] += 1
+            self.Bus[xt].data['NoTB'] += 1
 
             # Adjust line capacity
             ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']

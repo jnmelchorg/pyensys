@@ -485,7 +485,10 @@ class ENetworkClass:
     def cNLDMax_rule(self, m, xdl, xt, xh):
         ''' Maximum capacity of dynamic loads'''
         return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
-                self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
+                self.p['MaxPump'][xdl]/self.ENetwork.data['baseMVA'])
+        # TODO: Remove
+#        return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
+#                self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
 
     def cNRESMax_rule(self, m, xt, xg, xh):
         ''' Maximum RES generation '''
@@ -561,11 +564,10 @@ class ENetworkClass:
 
         self.ProcessEGen()
 
-        self.NoBuses = self.networkE.number_of_nodes()*(1+self.NoSec2)-1
-        self.NoBranch = self.connections['Branches'] + \
-            (self.connections['Branches']-1)*self.NoSec2
-
-        self.LLStor = np.zeros((self.networkE.number_of_nodes(),
+        self.NoBuses = self.ENetwork.data['Buses']*(1+self.NoSec2)-1
+        self.NoBranch = self.ENetwork.data['Branches'] + \
+            (self.ENetwork.data['Branches']-1)*self.NoSec2
+        self.LLStor = np.zeros((self.ENetwork.data['Buses'],
                                 self.scenarios['Number']), dtype=int)
 
         acu = 0
@@ -614,7 +616,7 @@ class ENetworkClass:
             for xg in range(self.hydropower['Number']):
                 self.s['GRamp'][xh] = self.conventional['Number']+xg
                 self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
-                    self.hydropower['Max'][xg]/self.networkE.graph['baseMVA']
+                    self.hydropower['Max'][xg]/self.ENetwork.data['baseMVA']
                 xh += 1
 
         # Sets and parameters for modelling Ancillary service requirements
@@ -696,7 +698,7 @@ class ENetworkClass:
                      sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
                          for xf in self.s['Fea'])*1000000) *
                     self.scenarios['Weights'][xt] for xt in self.s['Tim']) -
-                sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
+                sum(self.pumps['Value'][xdl]*self.ENetwork.data['baseMVA'] *
                     sum(m.vNPump[self.connections['Pump'][xh] +
                                  xdl+1, xt]*self.scenarios['Weights'][xt]
                         for xt in self.s['Tim']) for xdl in self.s['Pump']))
@@ -724,7 +726,7 @@ class ENetworkClass:
                     for x2 in self.s['Tim']:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
-                               self.networkE.graph['baseMVA'])
+                               self.ENetwork.data['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -735,7 +737,7 @@ class ENetworkClass:
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
                                         xb+1, x2].value *
-                               self.networkE.graph['baseMVA'])
+                               self.ENetwork.data['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -756,7 +758,7 @@ class ENetworkClass:
                     for xt in self.s['Tim']:
                         aux = (m.vNLoss[self.connections['Loss'][xh]+xb+1,
                                         xt].value *
-                               self.networkE.graph['baseMVA'])
+                               self.ENetwork.data['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -766,7 +768,7 @@ class ENetworkClass:
                 for xdl in self.s['Pump']:
                     for xt in self.s['Tim']:
                         aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
-                                       xt].value*self.networkE.graph['baseMVA']
+                                       xt].value*self.ENetwork.data['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -776,7 +778,7 @@ class ENetworkClass:
                 for xf in self.s['Fea']:
                     for xt in self.s['Tim']:
                         aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
-                                      xt].value*self.networkE.graph['baseMVA']
+                                      xt].value*self.ENetwork.data['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -786,7 +788,7 @@ class ENetworkClass:
                 for xs in range(self.p['GServices']):
                     for xt in self.s['Tim']:
                         aux = m.vNServ[self.p['GServices']*xh+xs,
-                                       xt].value*self.networkE.graph['baseMVA']
+                                       xt].value*self.ENetwork.data['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -794,17 +796,17 @@ class ENetworkClass:
     def ProcessEDem(self, ENetDem):
         ''' Process demand and generation parameters '''
         # Adjust demand profiles
-        busData = np.zeros(self.networkE.number_of_nodes(), dtype=float)
-        for xn in range(self.networkE.number_of_nodes()):
-            busData[xn] = self.demandE['PD'][xn]/self.networkE.graph['baseMVA']
+        busData = np.zeros(self.ENetwork.data['Buses'], dtype=float)
+        for xn in range(self.ENetwork.data['Buses']):
+            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.data['baseMVA']
         # Auxiliar to find demand profiles
-        busScenario = np.zeros((self.networkE.number_of_nodes(),
+        busScenario = np.zeros((self.ENetwork.data['Buses'],
                                 self.scenarios['Number']), dtype=int)
 
         if self.scenarios['NoDem'] > 0:
             acu = 0
             for xs in range(self.scenarios['Number']):
-                for xn in range(self.networkE.number_of_nodes()):
+                for xn in range(self.ENetwork.data['Buses']):
                     busScenario[xn][xs] = ((self.scenarios['Links'][acu]-1) *
                                            self.settings['NoTime'])
                     acu += 1
@@ -830,7 +832,7 @@ class ENetworkClass:
         GenMin = self.generationE['Data']['PMIN']
 
         # Get LL for generators
-        (LLGen1, LLGen2) = self._getLL(self.networkE.number_of_nodes(),
+        (LLGen1, LLGen2) = self._getLL(self.ENetwork.data['Buses'],
                                        self.generationE['Number'],
                                        self.generationE['Data']['GEN_BUS'])
         self.p['LLGen1'] = LLGen1
@@ -924,10 +926,10 @@ class ENetworkClass:
 
         # Changing to pu
         for xg in range(self.generationE['Number']):
-            GenMax[xg] /= self.networkE.graph['baseMVA']
-            GenMin[xg] /= self.networkE.graph['baseMVA']
+            GenMax[xg] /= self.ENetwork.data['baseMVA']
+            GenMin[xg] /= self.ENetwork.data['baseMVA']
         for xc in range(NoGenC):
-            GenLCst[xc][0] *= self.networkE.graph['baseMVA']
+            GenLCst[xc][0] *= self.ENetwork.data['baseMVA']
         self.p['GenMax'] = GenMax
         self.p['GenMin'] = GenMin
         self.p['GenLCst'] = GenLCst
@@ -945,7 +947,7 @@ class ENetworkClass:
         LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
         LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
         # Position of first connection and number of connections
-        LLN2B2 = np.zeros((self.networkE.number_of_nodes(), 4), dtype=int)
+        LLN2B2 = np.zeros((self.ENetwork.data['Buses'], 4), dtype=int)
 
         x0 = 0  # Initial position (LLaux)
         x1 = 0  # Initial position (branches)
@@ -975,7 +977,7 @@ class ENetworkClass:
         x0 = 0  # Position LLN2B1
         xacu = 1  # Total number of positions addressed so far
         for x2 in [2, 0]:
-            for xn in range(self.networkE.number_of_nodes()):
+            for xn in range(self.ENetwork.data['Buses']):
                 # Get first branch position for this node
                 xpos = LLN2B2[xn][x2+1]
                 if xpos != 0:
@@ -990,7 +992,7 @@ class ENetworkClass:
                         xpos = LLnext[xpos]
         self.NoN2B = NoN2B
         self.p['LLN2B1'] = LLN2B1
-        self.p['LLN2B2'] = LLN2B2
+        self.p['LLN2B2'] = LLN2B2        
 
         # Set line limits
         branchNo = np.zeros((self.connections['Branches'], 2), dtype=int)
@@ -998,23 +1000,22 @@ class ENetworkClass:
         xb = 0
         for (xf, xt) in self.networkE.edges:
             branchNo[xb, :] = [xf-1, xt-1]
-            branchData[xb, :4] = [self.networkE[xf][xt]['BR_R'],
-                                  self.networkE[xf][xt]['BR_X'],
-                                  self.networkE[xf][xt]['BR_B'],
-                                  self.networkE[xf][xt]['RATE_A'] /
-                                  self.networkE.graph['baseMVA']]
             xb += 1
             #  Adding branches in parallel
             if self.networkE[xf][xt]['Parallel'] > 1:
                 for xp in range(self.networkE[xf][xt]['Parallel']-1):
                     branchNo[xb, :] = [xf-1, xt-1]
-                    branchData[xb, :4] = \
-                        [self.networkE[xf][xt]['BR_R'+str(xp+2)],
-                         self.networkE[xf][xt]['BR_X'+str(xp+2)],
-                         self.networkE[xf][xt]['BR_B'+str(xp+2)],
-                         self.networkE[xf][xt]['RATE_A'+str(xp+2)] /
-                         self.networkE.graph['baseMVA']]
                     xb += 1
+
+        # TODO: To be removed
+        for xb in range(self.ENetwork.data['Branches']):
+#            print('Buses: ',branchNo[xb, :], ' vs ',
+#                  [self.ENetwork.Branch[xb].data['F_Position'],
+#                  self.ENetwork.Branch[xb].data['T_Position']])
+#            branchNo[xb, :] = [self.ENetwork.Branch[xb].data['F_BUS'],
+#                               self.ENetwork.Branch[xb].data['T_BUS']]
+            branchData[xb, :4] = [0, self.ENetwork.Branch[xb].data['BR_X'],
+                                  0, self.ENetwork.Branch[xb].data['RATE_A']]
 
         self.p['branchNo'] = branchNo
         self.p['branchData'] = branchData
@@ -1305,12 +1306,24 @@ class ENetworkClass:
                 'Number': NoGen
                 }
 
+        # TODO: Remove this
+        import copy
+        mpc2=copy.deepcopy(mpc)
+        
+        aux = ['F_BUS', 'T_BUS', 'BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B',
+               'RATE_C', 'TAP', 'SHIFT', 'BR_STATUS', 'ANGMIN', 'ANGMAX']
+        for x1 in aux:
+            xb = 0
+            for x2 in self.Print['sequence']:
+                mpc2['branch'][x1][x2] = mpc['branch'][x1][xb]
+                xb += 1
+
         # Defining device class
         from pyene.engines.pyeneD import ElectricityNetwork, Generators
 
         # Define network model
         self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
-        self.ENetwork.MPCconfigure(mpc)
+        self.ENetwork.MPCconfigure(mpc2)
 
         # Define generator model
         self.Generators = Generators(NoOGen, self.hydropower['Number'],

@@ -8,8 +8,7 @@ def json_directory():
     return os.path.join(os.path.dirname(__file__), 'json')
 
 
-@pytest.fixture()
-def testConfig():
+def fixed_config():
     '''Dedicated configuration for the tests '''
     conf = pyeneConfig()
     conf.EM.settings['File'] = os.path.join(json_directory(),
@@ -49,3 +48,6 @@ def testConfig():
     conf.HM.settings['Flag'] = False  # Disable pyeneH
 
     return conf
+
+def testConfig():
+    return fixed_config()
