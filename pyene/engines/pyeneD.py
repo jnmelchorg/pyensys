@@ -244,7 +244,7 @@ class Branch:
         However, only the ones that are currently used are passed
         '''
 
-        aux = ['BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS']
+        aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS']
 
         # Get settings
         self.data = {}

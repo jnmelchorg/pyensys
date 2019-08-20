@@ -351,14 +351,15 @@ class ENetworkClass:
                 (self.p['Loss_Con1'][xb2] +
                  m.vNFlow[self.connections['Flow'][xh] +
                           xb+1, xt]*self.p['Loss_Con2'][xb2]) *
-                self.p['branchData'][xb, 0])
+                self.ENetwork.Branch[xb].data['BR_R'])
 
     def cNDCLossB_rule(self, m, xb, xb2, xt, xh):
         ''' Power losses (Negative) '''
-        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (self.p['Loss_Con1'][xb2] -
-                 m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
-                 self.p['Loss_Con2'][xb2])*self.p['branchData'][xb, 0])
+        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >= \
+            (self.p['Loss_Con1'][xb2] -
+             m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
+             self.p['Loss_Con2'][xb2]) * \
+            self.ENetwork.Branch[xb].data['BR_R']
 
     def cNDCLossN_rule(self, m, xb, xt, xh):
         ''' No losses '''
@@ -425,19 +426,19 @@ class ENetworkClass:
         aux = self.connections['Voltage'][xh]+self.p['LLESec1'][xb, 1]
         xaux1 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 0]
         xaux2 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 1]
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] ==
-                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) /
-                self.p['branchData'][self.p['LLESec1'][xb, 0], 1])
+        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] == \
+            (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) / \
+            self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['BR_X']
 
     def cNEFMax_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (positive) '''
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] >=
-                -self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
+        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] >= \
+            -self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['RATE_A']
 
     def cNEFMin_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (negative) '''
         return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <= \
-            self.p['branchData'][self.p['LLESec1'][xb, 0], 3]
+            self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['RATE_A']
 
     def cNEGen0_rule(self, m, xt, xh):
         ''' Reference generation '''
@@ -1008,17 +1009,14 @@ class ENetworkClass:
                     xb += 1
 
         # TODO: To be removed
-        for xb in range(self.ENetwork.data['Branches']):
+#        for xb in range(self.ENetwork.data['Branches']):
 #            print('Buses: ',branchNo[xb, :], ' vs ',
 #                  [self.ENetwork.Branch[xb].data['F_Position'],
 #                  self.ENetwork.Branch[xb].data['T_Position']])
 #            branchNo[xb, :] = [self.ENetwork.Branch[xb].data['F_BUS'],
 #                               self.ENetwork.Branch[xb].data['T_BUS']]
-            branchData[xb, :4] = [0, self.ENetwork.Branch[xb].data['BR_X'],
-                                  0, self.ENetwork.Branch[xb].data['RATE_A']]
 
         self.p['branchNo'] = branchNo
-        self.p['branchData'] = branchData
 
         # Add security constraints
         if len(self.settings['Security']) == 0 and \
