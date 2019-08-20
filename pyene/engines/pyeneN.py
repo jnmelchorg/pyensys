@@ -424,8 +424,10 @@ class ENetworkClass:
     def cNEFlow_rule(self, m, xt, xb, xh):
         ''' Branch flows '''
         aux = self.connections['Voltage'][xh]+self.p['LLESec1'][xb, 1]
-        xaux1 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 0]
-        xaux2 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 1]
+        xaux1 = aux+self.ENetwork.Branch[self.p['LLESec1']
+                                         [xb, 0]].data['F_Position']
+        xaux2 = aux+self.ENetwork.Branch[self.p['LLESec1']
+                                         [xb, 0]].data['T_Position']
         return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] == \
             (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) / \
             self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['BR_X']
@@ -993,30 +995,7 @@ class ENetworkClass:
                         xpos = LLnext[xpos]
         self.NoN2B = NoN2B
         self.p['LLN2B1'] = LLN2B1
-        self.p['LLN2B2'] = LLN2B2        
-
-        # Set line limits
-        branchNo = np.zeros((self.connections['Branches'], 2), dtype=int)
-        branchData = np.zeros((self.connections['Branches'], 4), dtype=float)
-        xb = 0
-        for (xf, xt) in self.networkE.edges:
-            branchNo[xb, :] = [xf-1, xt-1]
-            xb += 1
-            #  Adding branches in parallel
-            if self.networkE[xf][xt]['Parallel'] > 1:
-                for xp in range(self.networkE[xf][xt]['Parallel']-1):
-                    branchNo[xb, :] = [xf-1, xt-1]
-                    xb += 1
-
-        # TODO: To be removed
-#        for xb in range(self.ENetwork.data['Branches']):
-#            print('Buses: ',branchNo[xb, :], ' vs ',
-#                  [self.ENetwork.Branch[xb].data['F_Position'],
-#                  self.ENetwork.Branch[xb].data['T_Position']])
-#            branchNo[xb, :] = [self.ENetwork.Branch[xb].data['F_BUS'],
-#                               self.ENetwork.Branch[xb].data['T_BUS']]
-
-        self.p['branchNo'] = branchNo
+        self.p['LLN2B2'] = LLN2B2
 
         # Add security constraints
         if len(self.settings['Security']) == 0 and \
