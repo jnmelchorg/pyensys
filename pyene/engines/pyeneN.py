@@ -30,7 +30,6 @@ class pyeneNConfig:
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
-#                'Constraint': [],  # Set line capacity constraints
                 'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
                 'Ancillary': None  # Need for uncillary services
@@ -293,7 +292,7 @@ class ENetworkClass:
         ''' Add pyomo sets '''
         self.s['Con'] = self.connections['set']
         self.s['Bra'] = range(self.connections['Branches'])
-        self.s['Bus'] = range(self.networkE.number_of_nodes())
+        self.s['Bus'] = range(self.ENetwork.data['Buses'])
         self.s['Buses'] = range(self.NoBuses+1)
         self.s['Pump'] = range(self.pumps['Number'])
         self.s['Fea'] = range(self.NoFea)
@@ -375,18 +374,15 @@ class ENetworkClass:
             aux = 0
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
+
         return (sum(m.vNGen[self.connections['Generation'][xh] +
                             self.p['LLGen1'][xg], xt]
                     for xg in range(self.p['LLGen2'][xn, 0],
                                     self.p['LLGen2'][xn, 1]+1)) +
                 sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][self.p['LLN2B1']
-                                               [x2+self.p['LLN2B2'][xn, 1]],
-                                               xs], xt] -
-                    m.vNLoss[self.connections['Loss'][xh] +
-                             self.p['LLN2B1'][x2 +
-                                              self.p['LLN2B2'][xn, 1]], xt]/2
-                    for x2 in range(self.p['LLN2B2'][xn, 0])) ==
+                             self.p['LLESec2'][x2+1, xs], xt] -
+                    m.vNLoss[self.connections['Loss'][xh]+x2+1, xt]/2
+                    for x2 in self.ENetwork.Bus[xn].data['T_Branches']) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
@@ -398,12 +394,9 @@ class ENetworkClass:
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][self.p['LLN2B1']
-                             [x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
-                    m.vNLoss[self.connections['Loss'][xh] +
-                             self.p['LLN2B1'][x1 +
-                                              self.p['LLN2B2'][xn, 3]], xt]/2
-                    for x1 in range(self.p['LLN2B2'][xn, 2])))
+                             self.p['LLESec2'][x1+1, xs], xt] +
+                    m.vNLoss[self.connections['Loss'][xh]+x1+1, xt]/2
+                    for x1 in self.ENetwork.Bus[xn].data['F_Branches']))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
@@ -489,9 +482,6 @@ class ENetworkClass:
         ''' Maximum capacity of dynamic loads'''
         return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
                 self.p['MaxPump'][xdl]/self.ENetwork.data['baseMVA'])
-        # TODO: Remove
-#        return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
-#                self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
 
     def cNRESMax_rule(self, m, xt, xg, xh):
         ''' Maximum RES generation '''
@@ -944,59 +934,6 @@ class ENetworkClass:
         # Initialise electricity network object
         self.ENetwork.initialise(self.settings)
 
-        # Map connections between nodes and branches (non-sequential search)
-        NoN2B = self.connections['Branches']*2+1  # Number of data points
-        LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
-        LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
-        LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
-        # Position of first connection and number of connections
-        LLN2B2 = np.zeros((self.ENetwork.data['Buses'], 4), dtype=int)
-
-        x0 = 0  # Initial position (LLaux)
-        x1 = 0  # Initial position (branches)
-        for (xf, xt) in self.networkE.edges:
-            for xp in range(self.networkE[xf][xt]['Parallel']):
-                x1 += 1
-                auxNode = [xf-1, xt-1]
-                auxX = [3, 1]
-                for x2 in range(2):
-                    x0 += 1
-                    # Get next position
-                    xpos = LLN2B2[auxNode[x2]][auxX[x2]]
-                    # Initialize if the position is available
-                    if xpos == 0:
-                        LLN2B2[auxNode[x2]][auxX[x2]] = x0
-                    else:  # Search for next available position
-                        while LLnext[xpos] != 0:
-                            xpos = LLnext[xpos]
-                        # Storing data position
-                        LLnext[xpos] = x0
-                        LLN2B2[auxNode[x2]][auxX[x2]-1] = \
-                            LLN2B2[auxNode[x2]][auxX[x2]-1]+1
-                    # Storing data point
-                    LLaux[x0] = x1
-
-        # Remove the 'next' by arranging the data sequentially
-        x0 = 0  # Position LLN2B1
-        xacu = 1  # Total number of positions addressed so far
-        for x2 in [2, 0]:
-            for xn in range(self.ENetwork.data['Buses']):
-                # Get first branch position for this node
-                xpos = LLN2B2[xn][x2+1]
-                if xpos != 0:
-                    # Get other positions is available
-                    LLN2B2[xn][x2+1] = xacu
-                    LLN2B2[xn][x2] += 1
-                    xacu += LLN2B2[xn][x2]
-                    for x3 in range(LLN2B2[xn][x2]):
-                        # Store data sequentially
-                        x0 = x0+1
-                        LLN2B1[x0] = LLaux[xpos]
-                        xpos = LLnext[xpos]
-        self.NoN2B = NoN2B
-        self.p['LLN2B1'] = LLN2B1
-        self.p['LLN2B2'] = LLN2B2
-
         # Add security constraints
         if len(self.settings['Security']) == 0 and \
                 self.settings['SecurityFlag']:
@@ -1024,7 +961,7 @@ class ENetworkClass:
         x0 = aux
         xacu = 0
         for xs in range(NoSec2):
-            xacu += self.networkE.number_of_nodes()
+            xacu += self.ENetwork.data['Buses']
             for xb in range(self.connections['Branches']):
                 if xb+1 != self.settings['Security'][xs]:
                     LLESec2[xb+1][xs+1] = x0+1
@@ -1061,15 +998,15 @@ class ENetworkClass:
         self.p['Loss_Con2'] = Loss_Con2
 
         # Add LL for dynamic loads
-        LLDL = np.zeros(self.networkE.number_of_nodes(), dtype=int)
+        LLDL = np.zeros(self.ENetwork.data['Buses'], dtype=int)
         for xdl in range(self.pumps['Number']):
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
         self.p['LLPump'] = LLDL
 
         # Add LL for feasibility constraints (Nodes)
-        LLFea = np.zeros(self.networkE.number_of_nodes()+1, dtype=int)
+        LLFea = np.zeros(self.ENetwork.data['Buses']+1, dtype=int)
         if self.settings['Feasibility']:
-            NoFea = self.networkE.number_of_nodes()+1
+            NoFea = self.ENetwork.data['Buses']+1
             for xn in range(1, NoFea):
                 LLFea[xn] = xn
         else:

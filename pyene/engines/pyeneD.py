@@ -359,7 +359,6 @@ class ElectricityNetwork:
             ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
 
         # Security constraints
-        print(sett)
         if sett['SecurityFlag']:  # Consider all N-1 constraints
             self.data['SecurityNo'] = self.data['Branches']
             self.data['N-1'] = range(self.data['Branches'])
