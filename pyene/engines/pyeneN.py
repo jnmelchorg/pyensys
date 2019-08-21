@@ -344,21 +344,22 @@ class ENetworkClass:
             sum(m.vNGen[aux+x, xt] for x in self.s['Gen']) - \
             m.vNFea[xh*self.p['faux'], xt]
 
-    def cNDCLossA_rule(self, m, xb, xb2, xt, xh):
+    def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
-        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (self.p['Loss_Con1'][xb2] +
-                 m.vNFlow[self.connections['Flow'][xh] +
-                          xb+1, xt]*self.p['Loss_Con2'][xb2]) *
-                self.ENetwork.Branch[xb].data['BR_R'])
+        return self.ENetwork.cNDCLossA_rule(m, xt, xb, xL,
+                                            self.connections['Flow'][xh],
+                                            self.connections['Loss'][xh])
 
-    def cNDCLossB_rule(self, m, xb, xb2, xt, xh):
+    def cNDCLossB_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Negative) '''
-        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >= \
-            (self.p['Loss_Con1'][xb2] -
-             m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
-             self.p['Loss_Con2'][xb2]) * \
-            self.ENetwork.Branch[xb].data['BR_R']
+#        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >= \
+#            (self.p['Loss_Con1'][xb2] -
+#             m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
+#             self.p['Loss_Con2'][xb2]) * \
+#            self.ENetwork.Branch[xb].data['BR_R']
+        return self.ENetwork.cNDCLossB_rule(m, xt, xb, xL,
+                                            self.connections['Flow'][xh],
+                                            self.connections['Loss'][xh])
 
     def cNDCLossN_rule(self, m, xb, xt, xh):
         ''' No losses '''
@@ -980,6 +981,9 @@ class ENetworkClass:
         self.Number_LossCon = Number_LossCon
         self.p['Loss_Con1'] = Loss_Con1
         self.p['Loss_Con2'] = Loss_Con2
+
+        self.ENetwork.loss['A'] = Loss_Con1
+        self.ENetwork.loss['B'] = Loss_Con2
 
         # Add LL for dynamic loads
         LLDL = np.zeros(self.ENetwork.data['Buses'], dtype=int)

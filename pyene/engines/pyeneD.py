@@ -269,6 +269,10 @@ class Branch:
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
 
+    def get_Pos(self):
+        ''' Get position of the branch '''
+        return self.data['Position']
+
     def get_PosF(self):
         ''' Get bus position at beginning (from) of the branch '''
         return self.data['F_Position']
@@ -311,6 +315,18 @@ class Branch:
                 self.data['RATE_A']
         else:
             return Constraint.Skip
+
+    def cNDCLossA_rule(self, m, xt, xL, ConF, ConL, A, B, xshift):
+        ''' Power losses estimation - Positive '''
+        return m.vNLoss[ConL+self.get_Pos()+xshift, xt] >= \
+            (A[xL]+B[xL]*m.vNFlow[ConF+self.get_Pos()+xshift, xt]) * \
+            self.data['BR_R']
+
+    def cNDCLossB_rule(self, m, xt, xL, ConF, ConL, A, B, xshift):
+        ''' Power losses estimation - Negative '''
+        return m.vNLoss[ConL+self.get_Pos()+xshift, xt] >= \
+            (A[xL]-B[xL]*m.vNFlow[ConF+self.get_Pos()+xshift, xt]) * \
+            self.data['BR_R']
 
 class Bus:
     ''' Electricity bus '''
@@ -367,6 +383,9 @@ class ElectricityNetwork:
                 'Security': None,  # N-1 cases to consider
                 'SecurityNo': None  # Number of N-1 cases
                 }
+        self.loss = {}
+        self.loss['A'] = None
+        self.loss['B'] = None
 
         # Define bus objects - configuration class
         self.BusConfig = [BusConfig() for x in range(NoBus)]
@@ -494,7 +513,18 @@ class ElectricityNetwork:
     def cNEFMin_rule(self, m, xt, xb, xs, ConF):
         ''' Branch capacity constraint (positive) '''
         return self.Branch[xb].cNEFMin_rule(m, xt, xs, ConF, self.data['shift'])
-    
+
+    def cNDCLossA_rule(self, m, xt, xb, xL, ConF, ConL):
+        ''' Power losses estimation - Positive '''
+        return self.Branch[xb].cNDCLossA_rule(m, xt, xL, ConF, ConL,
+                                              self.loss['A'], self.loss['B'],
+                                              self.data['shift'])
+
+    def cNDCLossB_rule(self, m, xt, xb, xL, ConF, ConL):
+        ''' Power losses estimation - Negative '''
+        return self.Branch[xb].cNDCLossB_rule(m, xt, xL, ConF, ConL,
+                                              self.loss['A'], self.loss['B'],
+                                              self.data['shift'])
 
     def findBusPosition(self, bus):
         ''' Find the position of a bus
