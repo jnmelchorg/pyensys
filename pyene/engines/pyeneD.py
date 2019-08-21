@@ -11,6 +11,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 import math
 import numpy as np
 import copy
+from pyomo.core import Constraint
 
 '''                          CONFIGURATION CLASSES                          '''
 
@@ -261,13 +262,35 @@ class Branch:
         self.pyomo['N-1'] = None
 
     def get_BusF(self):
-        ''' Get bus at beginning (from) of the branch '''
-        return self.settings['F_BUS']
+        ''' Get bus number at beginning (from) of the branch '''
+        return self.data['F_BUS']
 
     def get_BusT(self):
-        ''' Get bus at end (to) of the branch '''
-        return self.settings['T_BUS']
+        ''' Get bus number at end (to) of the branch '''
+        return self.data['T_BUS']
 
+    def get_PosF(self):
+        ''' Get bus position at beginning (from) of the branch '''
+        return self.data['F_Position']
+
+    def get_PosT(self):
+        ''' Get bus position at end (to) of the branch '''
+        return self.data['T_Position']
+
+    def get_Sec(self, xs):
+        ''' Get position in N-1 scenario '''
+        return self.pyomo['N-1'][xs]
+
+    def cNEFlow_rule(self, m, xt, xs, ConF, ConV, Bus, xshift):
+        ''' Set DC power flow constraint '''
+        if self.pyomo['N-1'][xs] is not None:
+            xaux1 = ConV+Bus[self.get_PosF()].get_Sec(xs)
+            xaux2 = ConV+Bus[self.get_PosT()].get_Sec(xs)
+
+            return m.vNFlow[ConF+self.get_Sec(xs)+xshift, xt] == \
+                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt])/self.data['BR_X']
+        else:
+            return Constraint.Skip
 
 class Bus:
     ''' Electricity bus '''
@@ -295,6 +318,9 @@ class Bus:
         self.data['NoFB'] = 0  # Number of branches connected from the bus
         self.data['NoTB'] = 0  # Number of branches connected to the bus
 
+        self.pyomo = {}
+        self.pyomo['N-1'] = None
+
     def get_FBranch(self):
         ''' Get list of branches connected to the bus in an N-1 scenario'''
         return self.data['F_Branches']
@@ -302,6 +328,10 @@ class Bus:
     def get_TBranch(self):
         ''' Get list of branches connected to the bus in an N-1 scenario'''
         return self.data['T_Branches']
+
+    def get_Sec(self, xs):
+        ''' Get position of variable in N-1 scenario '''
+        return self.pyomo['N-1'][xs]
 
 class ElectricityNetwork:
     ''' Electricity network '''
@@ -389,10 +419,20 @@ class ElectricityNetwork:
             # Adjust line capacity
             ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
 
+        # Initialize security data for nodes
+        for ob in self.Bus:
+            ob.pyomo['N-1'] = [None] * (self.data['SecurityNo']+1)
+            ob.pyomo['N-1'][0] = ob.data['Position']
+
         # Enable branches in other scenarios (pyomo)
         xsec = 0
         for xs in self.data['N-1']:
             xsec += 1
+            # Add N-1 information to buses
+            for ob in self.Bus:
+                ob.pyomo['N-1'][xsec] = \
+                    xsec*self.data['Buses']+ob.data['Position']
+            # Add N-1 information to branches
             for ob in (self.Branch[xb] for xb in range(self.data['Branches'])
                        if xb+1 != xs):
                 ob.pyomo['N-1'][xsec] = xcou
@@ -422,20 +462,10 @@ class ElectricityNetwork:
                 aux.append(self.Branch[xb].pyomo['N-1'][xs]+self.data['shift'])
         return aux
         aux = []
-        
-#        import sys
-#        sys.exit('Just stop')
-        # Losses
-        # Pumps
-        # Feasibility
-#        print('\nLL bus branch')
-#        xn = 1;
-#        for ob in self.Bus:
-#            print('Bus: ', xn)
-#            xn += 1
-#            print(ob.data['F_Branches'])
-#            print(ob.data['T_Branches'])
-#        print()
+
+    def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
+        ''' Branch flows constraint '''
+        return self.Branch[xb].cNEFlow_rule(m, xt, xs, ConF, ConV, self.Bus, self.data['shift'])
 
     def findBusPosition(self, bus):
         ''' Find the position of a bus

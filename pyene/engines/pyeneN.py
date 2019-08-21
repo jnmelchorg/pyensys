@@ -179,8 +179,9 @@ class ENetworkClass:
             m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
                                    rule=self.cNEPow0_rule)
             # Branch flows
-            m.cNEFlow = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFlow_rule)
+            m.cNEFlow = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFlow_rule)
             # Branch capacity constraint (positive)
             m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'],
                                    self.s['Con'], rule=self.cNEFMax_rule)
@@ -375,21 +376,6 @@ class ENetworkClass:
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
-#        if xt == 0:
-#            for x2 in self.ENetwork.Bus[xn].get_TBranch():
-#                
-#            print(xh)
-#            print(self.ENetwork.Bus[xn].data['T_Branches'])
-#            self.ENetwork.get_TBranch(xn, xs)
-#            self.ENetwork.get_FBranch(xn, xs)
-            
-#        if xt==0:
-#            for x2 in self.ENetwork.Bus[xn].get_TBranch():
-#                print(self.p['LLESec2'][x2+1, xs], end=' ')
-#            print('\nvs')
-#            print(self.ENetwork.get_TBranch(xn, xs))
-#            print()
-            
         return (sum(m.vNGen[self.connections['Generation'][xh] +
                             self.p['LLGen1'][xg], xt]
                     for xg in range(self.p['LLGen2'][xn, 0],
@@ -429,16 +415,12 @@ class ENetworkClass:
                            self.LLTime[xt]])*self.Storage['Efficiency'][xn] /
                 self.scenarios['Weights'][xt] for xn in self.s['Sto'])
 
-    def cNEFlow_rule(self, m, xt, xb, xh):
-        ''' Branch flows '''
-        aux = self.connections['Voltage'][xh]+self.p['LLESec1'][xb, 1]
-        xaux1 = aux+self.ENetwork.Branch[self.p['LLESec1']
-                                         [xb, 0]].data['F_Position']
-        xaux2 = aux+self.ENetwork.Branch[self.p['LLESec1']
-                                         [xb, 0]].data['T_Position']
-        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] == \
-            (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) / \
-            self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['BR_X']
+    def cNEFlow_rule(self, m, xt, xb, xs, xh):
+        ''' Branch flows - DC model '''
+        return self.ENetwork.cNEFlow_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh],
+                                          self.connections['Voltage'][xh])
+
 
     def cNEFMax_rule(self, m, xt, xb, xh):
         ''' Branch capacity constraint (positive) '''
@@ -964,28 +946,21 @@ class ENetworkClass:
         # Auxiliaries for modelling security considerations
         # Position of the variables
         LLESec1 = np.zeros((NoSec1, 2), dtype=int)
-        # Connection between the branch number and the position of the data
-        LLESec2 = np.zeros((self.connections['Branches']+1, NoSec2+1),
-                           dtype=int)
 
         for xb in range(self.connections['Branches']):
             LLESec1[xb][0] = xb
-            LLESec2[xb][0] = xb
         aux = self.connections['Branches']
-        LLESec2[aux][0] = aux
         x0 = aux
         xacu = 0
         for xs in range(NoSec2):
             xacu += self.ENetwork.data['Buses']
             for xb in range(self.connections['Branches']):
                 if xb+1 != self.settings['Security'][xs]:
-                    LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
                     x0 += 1
         self.NoSec1 = NoSec1
         self.NoSec2 = NoSec2
         self.p['LLESec1'] = LLESec1
-        self.p['LLESec2'] = LLESec2
 
         # Add piece-wise power losses estimation
         if self.settings['Losses']:
