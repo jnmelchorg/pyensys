@@ -351,6 +351,8 @@ class Bus:
         # New data
         self.data['F_Branches'] = []  # Branches connected from the bus
         self.data['T_Branches'] = []  # Branches connected to the bus
+        self.data['F_Loss'] = []  # Branches connected from the bus - Losses
+        self.data['T_Loss'] = []  # Branches connected to the bus - Losses
         self.data['NoFB'] = 0  # Number of branches connected from the bus
         self.data['NoTB'] = 0  # Number of branches connected to the bus
 
@@ -364,6 +366,14 @@ class Bus:
     def get_TBranch(self):
         ''' Get list of branches connected to the bus in an N-1 scenario'''
         return self.data['T_Branches']
+
+    def get_FLoss(self):
+        ''' Get list of branches connected to the bus in an N-1 scenario'''
+        return self.data['F_Loss']
+
+    def get_TLoss(self):
+        ''' Get list of branches connected to the bus in an N-1 scenario'''
+        return self.data['T_Loss']
 
     def get_Sec(self, xs):
         ''' Get position of variable in N-1 scenario '''
@@ -476,6 +486,12 @@ class ElectricityNetwork:
                        if xb+1 != xs):
                 ob.pyomo['N-1'][xsec] = xcou
                 xcou += 1
+
+        # Model losses
+        if sett['Losses']:
+            for ob in self.Bus:
+                ob.data['F_Loss'] = ob.data['F_Branches']
+                ob.data['T_Loss'] = ob.data['T_Branches']
 
     def get_Security(self, No):
         ''' Define time series to model security constraints '''

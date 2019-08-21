@@ -179,11 +179,11 @@ class ENetworkClass:
             m.cNEFlow = Constraint(self.s['Tim'], self.s['Bra'],
                                    self.s['Sec2'], self.s['Con'],
                                    rule=self.cNEFlow_rule)
-            # Branch flows
+            # Branch capacity (Positive)
             m.cNEFMax = Constraint(self.s['Tim'], self.s['Bra'],
                                    self.s['Sec2'], self.s['Con'],
                                    rule=self.cNEFMax_rule)
-            # Branch flows
+            # Branch capacity (Negative)
             m.cNEFMin = Constraint(self.s['Tim'], self.s['Bra'],
                                    self.s['Sec2'], self.s['Con'],
                                    rule=self.cNEFMin_rule)
@@ -195,10 +195,7 @@ class ENetworkClass:
                 m.cNDCLossB = Constraint(self.s['Bra'], self.s['Loss'],
                                          self.s['Tim'], self.s['Con'],
                                          rule=self.cNDCLossB_rule)
-            else:
-                m.cNDCLossNo = Constraint(self.s['Bra'], self.s['Tim'],
-                                          self.s['Con'],
-                                          rule=self.cNDCLossN_rule)
+
             # Balance: Gen + Flow in - loss/2 = Demand + flow out + loss/2
             m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'],
                                       self.s['Sec2'], self.s['Con'],
@@ -228,10 +225,10 @@ class ENetworkClass:
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
                                rule=self.cNEGenC_rule)
-        # Dinamic load maximum capacity
+        # Dinamic load (pump) maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)
-        # Dinamic load initialisation
+        # Dinamic load (pump) initialisation
         m.cNDLIni = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNLDIni_rule)
         # Feasibility constraints
@@ -299,11 +296,13 @@ class ENetworkClass:
         self.s['Gen'] = range(self.generationE['Number'])
         self.s['GenCM'] = range(self.NoGenC)
         self.s['Tim'] = range(self.settings['NoTime'])
-        self.s['Loss'] = range(self.Number_LossCon)
         self.s['Sec1'] = range(self.NoSec1)
         self.s['Sec2'] = range(self.NoSec2+1)
         self.s['Sto'] = range(self.Storage['Number'])
         self.s['RES'] = range(self.RES['Number'])
+
+        if self.settings['Losses']:
+            self.s['Loss'] = range(self.Number_LossCon)
 
         return m
 
@@ -314,11 +313,12 @@ class ENetworkClass:
         if self.settings['Flag']:
             m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
-            m.vNLoss = Var(range(Noh*(self.connections['Branches']+1)),
-                           self.s['Tim'], domain=NonNegativeReals,
-                           initialize=0.0)
             m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
+            if self.settings['Losses']:
+                m.vNLoss = Var(range(Noh*(self.connections['Branches']+1)),
+                               self.s['Tim'], domain=NonNegativeReals,
+                               initialize=0.0)
 
         m.vNPump = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
                        domain=NonNegativeReals, initialize=0.0)
@@ -352,18 +352,9 @@ class ENetworkClass:
 
     def cNDCLossB_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Negative) '''
-#        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >= \
-#            (self.p['Loss_Con1'][xb2] -
-#             m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
-#             self.p['Loss_Con2'][xb2]) * \
-#            self.ENetwork.Branch[xb].data['BR_R']
         return self.ENetwork.cNDCLossB_rule(m, xt, xb, xL,
                                             self.connections['Flow'][xh],
                                             self.connections['Loss'][xh])
-
-    def cNDCLossN_rule(self, m, xb, xt, xh):
-        ''' No losses '''
-        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] == 0
 
     def cNEBalance_rule(self, m, xn, xt, xs, xh):
         ''' Nodal balance:
@@ -383,7 +374,7 @@ class ENetworkClass:
                 sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
                     for x2 in self.ENetwork.get_TFlow(xn, xs)) -
                 sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
-                    for x2 in self.ENetwork.Bus[xn].get_TBranch()) ==
+                    for x2 in self.ENetwork.Bus[xn].get_TLoss()) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
@@ -397,7 +388,7 @@ class ENetworkClass:
                 sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
                     for x1 in self.ENetwork.get_FFlow(xn, xs)) +
                 sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
-                    for x1 in self.ENetwork.Bus[xn].get_FBranch()))
+                    for x1 in self.ENetwork.Bus[xn].get_FLoss()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
@@ -738,12 +729,14 @@ class ENetworkClass:
                 print("];")
 
             if self.Print['Losses'] and self.settings['Flag']:
+                aux = 0
                 print("\nEPower_Loss=[")
                 for xb in self.Print['sequence']:
                     for xt in self.s['Tim']:
-                        aux = (m.vNLoss[self.connections['Loss'][xh]+xb+1,
-                                        xt].value *
-                               self.ENetwork.data['baseMVA'])
+                        if self.settings['Losses']:
+                            aux = m.vNLoss[self.connections['Loss'][xh]+xb+1,
+                                           xt].value * \
+                                self.ENetwork.data['baseMVA']
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -974,16 +967,10 @@ class ENetworkClass:
                 Loss_Con2[x1] = ((aux[x1+1]**2-aux[x1]**2) /
                                  (aux[x1+1]-aux[x1]))
                 Loss_Con1[x1] = aux[x1]**2-aux[x1]*Loss_Con2[x1]
-        else:
-            Number_LossCon = 1
-            Loss_Con1 = 0
-            Loss_Con2 = 0
-        self.Number_LossCon = Number_LossCon
-        self.p['Loss_Con1'] = Loss_Con1
-        self.p['Loss_Con2'] = Loss_Con2
 
-        self.ENetwork.loss['A'] = Loss_Con1
-        self.ENetwork.loss['B'] = Loss_Con2
+            self.Number_LossCon = Number_LossCon
+            self.ENetwork.loss['A'] = Loss_Con1
+            self.ENetwork.loss['B'] = Loss_Con2
 
         # Add LL for dynamic loads
         LLDL = np.zeros(self.ENetwork.data['Buses'], dtype=int)
