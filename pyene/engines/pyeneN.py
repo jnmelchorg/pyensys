@@ -375,14 +375,29 @@ class ENetworkClass:
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
+#        if xt == 0:
+#            for x2 in self.ENetwork.Bus[xn].get_TBranch():
+#                
+#            print(xh)
+#            print(self.ENetwork.Bus[xn].data['T_Branches'])
+#            self.ENetwork.get_TBranch(xn, xs)
+#            self.ENetwork.get_FBranch(xn, xs)
+            
+#        if xt==0:
+#            for x2 in self.ENetwork.Bus[xn].get_TBranch():
+#                print(self.p['LLESec2'][x2+1, xs], end=' ')
+#            print('\nvs')
+#            print(self.ENetwork.get_TBranch(xn, xs))
+#            print()
+            
         return (sum(m.vNGen[self.connections['Generation'][xh] +
                             self.p['LLGen1'][xg], xt]
                     for xg in range(self.p['LLGen2'][xn, 0],
                                     self.p['LLGen2'][xn, 1]+1)) +
-                sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][x2+1, xs], xt] -
-                    m.vNLoss[self.connections['Loss'][xh]+x2+1, xt]/2
-                    for x2 in self.ENetwork.Bus[xn].data['T_Branches']) ==
+                sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
+                    for x2 in self.ENetwork.get_TFlow(xn, xs)) -
+                sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
+                    for x2 in self.ENetwork.Bus[xn].get_TBranch()) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
@@ -393,10 +408,10 @@ class ENetworkClass:
                         self.p['LLFea'][xn+1], xt] +
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
-                sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][x1+1, xs], xt] +
-                    m.vNLoss[self.connections['Loss'][xh]+x1+1, xt]/2
-                    for x1 in self.ENetwork.Bus[xn].data['F_Branches']))
+                sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
+                    for x1 in self.ENetwork.get_FFlow(xn, xs)) +
+                sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
+                    for x1 in self.ENetwork.Bus[xn].get_FBranch()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''

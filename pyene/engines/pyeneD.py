@@ -10,6 +10,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import math
 import numpy as np
+import copy
 
 '''                          CONFIGURATION CLASSES                          '''
 
@@ -62,6 +63,7 @@ class BusConfig:
         #  Optional data - not included in all files
         if 'BUS_NAME' in mpc.keys():
             self.settings['Name'] = mpc['BUS_NAME'][No]
+        if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
 
@@ -254,6 +256,10 @@ class Branch:
         self.data['F_Position'] = None
         self.data['T_Position'] = None
 
+        # Paremeters used for pyomo
+        self.pyomo = {}
+        self.pyomo['N-1'] = None
+
     def get_BusF(self):
         ''' Get bus at beginning (from) of the branch '''
         return self.settings['F_BUS']
@@ -289,6 +295,13 @@ class Bus:
         self.data['NoFB'] = 0  # Number of branches connected from the bus
         self.data['NoTB'] = 0  # Number of branches connected to the bus
 
+    def get_FBranch(self):
+        ''' Get list of branches connected to the bus in an N-1 scenario'''
+        return self.data['F_Branches']
+
+    def get_TBranch(self):
+        ''' Get list of branches connected to the bus in an N-1 scenario'''
+        return self.data['T_Branches']
 
 class ElectricityNetwork:
     ''' Electricity network '''
@@ -328,6 +341,9 @@ class ElectricityNetwork:
 
     def initialise(self, sett):
         ''' Prepare objects and remove configuration versions '''
+        # TODO: to be removed
+        xshift = 1  # Beginning the vector with 0 or 1
+        self.data['shift'] = xshift
 
         # Initialise bus object
         self.Bus = [Bus(self.BusConfig[x]) for x in
@@ -339,25 +355,6 @@ class ElectricityNetwork:
                        range(self.data['Branches'])]
         del self.BranchConfig
 
-        # Match buses and nodes
-        for ob in self.Branch:
-            # Find position of the bus (may be different from the number)
-            xf = self.findBusPosition(ob.data['F_BUS'])
-            xt = self.findBusPosition(ob.data['T_BUS'])
-
-            # The branch now includes the position of the buses
-            ob.data['F_Position'] = xf
-            ob.data['T_Position'] = xt
-
-            # Tbe bus now includes the position of the relevant branches
-            self.Bus[xf].data['F_Branches'].append(ob.data['Position'])
-            self.Bus[xt].data['T_Branches'].append(ob.data['Position'])
-            self.Bus[xf].data['NoFB'] += 1
-            self.Bus[xt].data['NoTB'] += 1
-
-            # Adjust line capacity
-            ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
-
         # Security constraints
         if sett['SecurityFlag']:  # Consider all N-1 constraints
             self.data['SecurityNo'] = self.data['Branches']
@@ -366,11 +363,68 @@ class ElectricityNetwork:
             self.data['SecurityNo'] = len(sett['Security'])
             self.data['N-1'] = sett['Security']
 
+        # Match buses and nodes
+        xcou = 0
+        for ob in self.Branch:
+            ob.data['shift'] = xshift
+            # Find position of the bus (may be different from the number)
+            xf = self.findBusPosition(ob.data['F_BUS'])
+            xt = self.findBusPosition(ob.data['T_BUS'])
+
+            # The branch now includes the position of the buses
+            ob.data['F_Position'] = xf
+            ob.data['T_Position'] = xt
+
+            # Enable branch for the first N-1 scenario (intact network)
+            ob.pyomo['N-1'] = [None] * (self.data['SecurityNo']+1)
+            ob.pyomo['N-1'][0] = xcou
+            xcou += 1
+
+            # Tbe bus now includes the position of the relevant branches
+            self.Bus[xf].data['F_Branches'].append(ob.data['Position']+xshift)
+            self.Bus[xt].data['T_Branches'].append(ob.data['Position']+xshift)
+            self.Bus[xf].data['NoFB'] += 1
+            self.Bus[xt].data['NoTB'] += 1
+
+            # Adjust line capacity
+            ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
+
+        # Enable branches in other scenarios (pyomo)
+        xsec = 0
+        for xs in self.data['N-1']:
+            xsec += 1
+            for ob in (self.Branch[xb] for xb in range(self.data['Branches'])
+                       if xb+1 != xs):
+                ob.pyomo['N-1'][xsec] = xcou
+                xcou += 1
+
     def get_Security(self, No):
         ''' Define time series to model security constraints '''
         return (x for x in range(self.data['Branches']) if x != No)
+
+    def get_TFlow(self, xn, xs):
+        ''' Get branches connected to bus per scenario '''
+        aux = []
+        for xb1 in self.Bus[xn].get_TBranch():  # Branches connected to the bus
+            xb = xb1 - self.data['shift']
+            # Is teh branch active in the scenario?
+            if self.Branch[xb].pyomo['N-1'][xs] is not None:
+                aux.append(self.Branch[xb].pyomo['N-1'][xs]+self.data['shift'])
+        return aux
+
+    def get_FFlow(self, xn, xs):
+        ''' Get branches connected from bus per scenario '''
+        aux = []
+        for xb1 in self.Bus[xn].get_FBranch():  # Branches connected to the bus
+            xb = xb1 - self.data['shift']
+            # Is teh branch active in the scenario?
+            if self.Branch[xb].pyomo['N-1'][xs] is not None:
+                aux.append(self.Branch[xb].pyomo['N-1'][xs]+self.data['shift'])
+        return aux
+        aux = []
         
-        
+#        import sys
+#        sys.exit('Just stop')
         # Losses
         # Pumps
         # Feasibility

@@ -40,6 +40,7 @@ def test_pyeneN_4BusSec():
     conf.NM.settings['Losses'] = True
     conf.NM.settings['NoTime'] = 2
     conf.NM.scenarios['Demand'] = [1, 1.1]
+    conf.NM.settings['Feasibility'] = True
 
     EN = pe(conf.EN)
 
