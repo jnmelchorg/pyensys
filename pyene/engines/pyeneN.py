@@ -109,7 +109,6 @@ class pyeneNConfig:
                 'Feasibility': True,
                 'Services': True,
                 'GenBus': True,
-                'sequence': None  # Sequence for branches
                 }
 
 
@@ -709,7 +708,7 @@ class ENetworkClass:
 
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
-                for xb in self.Print['sequence']:
+                for xb in range(self.ENetwork.data['Branches']):
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
                                         xb+1, x2].value *
@@ -731,7 +730,7 @@ class ENetworkClass:
             if self.Print['Losses'] and self.settings['Flag']:
                 aux = 0
                 print("\nEPower_Loss=[")
-                for xb in self.Print['sequence']:
+                for xb in range(self.ENetwork.data['Branches']):
                     for xt in self.s['Tim']:
                         if self.settings['Losses']:
                             aux = m.vNLoss[self.connections['Loss'][xh]+xb+1,
@@ -997,6 +996,13 @@ class ENetworkClass:
         # Load file
         mpc = json.load(open(self.settings['File']))
 
+        # Defining device class
+        from pyene.engines.pyeneD import ElectricityNetwork, Generators
+
+        # Define network model
+        self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
+        self.ENetwork.MPCconfigure(mpc)
+
         self.networkE = nx.Graph()
 
         # Adding network attributes
@@ -1044,12 +1050,10 @@ class ENetworkClass:
                         mpc["branch"][aux[x1]][xeb]
             xLL += 1
 
-        self.Print['sequence'] = np.zeros(xLL, dtype=int)
         aux = np.zeros((xLL, 2), dtype=int)
         x1 = 0
         for (xf, xt) in self.networkE.edges:
             for xp in range(self.networkE[xf][xt]['Parallel']):
-                self.Print['sequence'][self.networkE[xf][xt]['LL'][xp]] = x1
                 aux[x1][0] = xf
                 aux[x1][1] = xt
                 x1 += 1
@@ -1131,12 +1135,12 @@ class ENetworkClass:
 
         # Default settings for demand profiles
         if self.scenarios['Links'] == 'Default':
-            self.scenarios['Links'] = np.ones(self.networkE.number_of_nodes() *
+            self.scenarios['Links'] = np.ones(self.ENetwork.data['Buses'] *
                                               self.scenarios['Number'],
                                               dtype=int)
-            acu = self.networkE.number_of_nodes()
+            acu = self.ENetwork.data['Buses']
             for xs in range(self.scenarios['Number']-1):
-                for xt in range(self.networkE.number_of_nodes()):
+                for xt in range(self.ENetwork.data['Buses']):
                     self.scenarios['Links'][acu] = xs+2
                     acu += 1
 
@@ -1167,7 +1171,7 @@ class ENetworkClass:
             xg2 = -1
             for xg in self.hydropower['Link']:
                 xg2 += 1
-                ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
+                ENetGen['MBASE'][xg] = self.ENetwork.data['baseMVA']
                 # Add polinomial (linear) cost curve
                 if self.hydropower['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2
@@ -1183,7 +1187,7 @@ class ENetworkClass:
                 xg2 += 1
                 ENetGen['PMAX'][xg] = 1000000
                 ENetGen['QMAX'][xg] = 1000000
-                ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
+                ENetGen['MBASE'][xg] = self.ENetwork.data['baseMVA']
                 # Add polinomial (linear) cost curve
                 if self.RES['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2
@@ -1195,24 +1199,8 @@ class ENetworkClass:
                 'Number': NoGen
                 }
 
-        # TODO: Remove this
-        import copy
-        mpc2=copy.deepcopy(mpc)
-        
-        aux = ['F_BUS', 'T_BUS', 'BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B',
-               'RATE_C', 'TAP', 'SHIFT', 'BR_STATUS', 'ANGMIN', 'ANGMAX']
-        for x1 in aux:
-            xb = 0
-            for x2 in self.Print['sequence']:
-                mpc2['branch'][x1][x2] = mpc['branch'][x1][xb]
-                xb += 1
-
         # Defining device class
-        from pyene.engines.pyeneD import ElectricityNetwork, Generators
-
-        # Define network model
-        self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
-        self.ENetwork.MPCconfigure(mpc2)
+        from pyene.engines.pyeneD import Generators
 
         # Define generator model
         self.Generators = Generators(NoOGen, self.hydropower['Number'],

@@ -359,7 +359,7 @@ class pyeneClass():
         if 'buses' in kwarg:
             auxbuses = kwarg.pop('buses')
         else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
+            auxbuses = range(self.NM.ENetwork.data['Buses'])
 
         value = 0
         for xn in auxbuses:
@@ -373,7 +373,7 @@ class pyeneClass():
         if 'buses' in kwarg:
             auxbuses = kwarg.pop('buses')
         else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
+            auxbuses = range(self.NM.ENetwork.data['Buses'])
 
         value = 0
         if self.NM.settings['Feasibility']:

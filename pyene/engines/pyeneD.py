@@ -334,14 +334,14 @@ class Bus:
         ''' Initialise bus class
 
         The class can use the following parameters:
-        ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'BUS_X','BUS_Y','Demand',
-        'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number', 'VM', 'VA',
-        'VMAX', 'VMIN', 'ZONE']
+        [, 'BS', 'BUS_AREA', 'BUS_X','BUS_Y','Demand',
+        'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number', 'VA',
+        , 'ZONE']
         However, only the ones that are currently used are passed
         '''
         # Parameters currently in use
         aux = ['BUS_X', 'BUS_Y', 'Demand', 'PeakP', 'PeakQ', 'Position',
-               'Name', 'Number']
+               'Name', 'Number', 'BUS_TYPE', 'BASE_KV', 'VMAX', 'VMIN', 'VM']
 
         # Get settings
         self.data = {}
@@ -358,6 +358,14 @@ class Bus:
 
         self.pyomo = {}
         self.pyomo['N-1'] = None
+
+    def get_Number(self):
+        ''' Get Bus number '''
+        return self.data['Number']
+
+    def get_Position(self):
+        ''' Get Bus position - beginning from zero '''
+        return self.data['Position']
 
     def get_FBranch(self):
         ''' Get list of branches connected to the bus in an N-1 scenario'''

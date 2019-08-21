@@ -9,6 +9,7 @@ external tools, such as pypsa and pypower
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
+
 try:
     import pypsa
 except ImportError:
@@ -17,6 +18,10 @@ except ImportError:
 
 class EInterfaceClass:
     def pyene2pypsa(self, NM, xscen):
+        
+        xshift = 1
+        
+        
         '''Convert pyene files to pypsa format'''
         # Create pypsa network
         try:
@@ -25,7 +30,7 @@ class EInterfaceClass:
             return (0, False)
 
         nu.set_snapshots(range(NM.settings['NoTime']))
-        baseMVA = NM.networkE.graph['baseMVA']
+        baseMVA = NM.ENetwork.data['baseMVA']
 
         # Names
         auxtxtN = 'Bus'
@@ -55,33 +60,41 @@ class EInterfaceClass:
             x - coordinates
             y - coordinates
         '''
-        PVBus = np.zeros(NM.networkE.number_of_nodes(), dtype=float)
+        PVBus = np.zeros(NM.ENetwork.data['Buses'], dtype=float)
         aux = (NM.generationE['Number']-NM.hydropower['Number'] -
                NM.RES['Number'])
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
-            if NM.networkE.node[xn]['BUS_TYPE'] == 2:
+            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 2:
                 PVBus[xn-1] = NM.generationE['Data']['VG'][xn]
-        for xn in NM.networkE.node:
-            if NM.networkE.node[xn]['BASE_KV'] == 0:
+        xn = 0
+        for ob in NM.ENetwork.Bus:
+            xn += 1
+            if ob.data['BASE_KV'] == 0:
                 aux1 = 1
             else:
-                aux1 = NM.networkE.node[xn]['BASE_KV']
-            if NM.networkE.node[xn]['BUS_TYPE'] == 2 or \
-               NM.networkE.node[xn]['BUS_TYPE'] == 3:
-                aux2 = NM.networkE.node[xn]['VM']
+                aux1 = ob.data['BASE_KV']
+            if ob.data['BUS_TYPE'] == 2 or \
+               ob.data['BUS_TYPE'] == 3:
+                aux2 = ob.data['VM']
             else:
-                aux2 = PVBus[xn-1]
+                aux2 = PVBus[ob.get_Position()]
+#                print('\n\n\nComparing data\n\n\n')
+#                print(NM.networkE.node[xn])
+#                print()
+#                print(ob.data)
+#                print('\n\n\n')
+
             if 'BUS_X' in NM.networkE.node[xn]:
-                nu.add('Bus', auxtxtN+str(xn),
+                nu.add('Bus', auxtxtN+str(ob.get_Number()),
                        v_nom=aux1, v_mag_pu_set=aux2,
-                       v_mag_pu_min=NM.networkE.node[xn]['VMIN'],
-                       v_mag_pu_max=NM.networkE.node[xn]['VMAX'],
-                       x=NM.networkE.node[xn]['BUS_X'],
-                       y=NM.networkE.node[xn]['BUS_Y'])
+                       v_mag_pu_min=ob.data['VMIN'],
+                       v_mag_pu_max=ob.data['VMAX'],
+                       x=ob.data['BUS_X'], y=ob.data['BUS_Y'])
             else:
-                nu.add('Bus', auxtxtN+str(xn), v_nom=aux1, v_mag_pu_set=aux2,
-                       v_mag_pu_min=NM.networkE.node[xn]['VMIN'],
-                       v_mag_pu_max=NM.networkE.node[xn]['VMAX'])
+                nu.add('Bus', auxtxtN+str(ob.get_Number()), v_nom=aux1,
+                       v_mag_pu_set=aux2, v_mag_pu_min=ob.data['VMIN'],
+                       v_mag_pu_max=ob.data['VMAX'])
+
 
         '''                            GENERATOR
         Missing attributes:
@@ -116,9 +129,10 @@ class EInterfaceClass:
         aux = (NM.generationE['Number']-NM.hydropower['Number'] -
                NM.RES['Number'])
         xg = -1
+        xshift = 1
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
             xg += 1
-            if NM.networkE.node[xn]['BUS_TYPE'] == 1:
+            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 1:#NM.networkE.node[xn]['BUS_TYPE'] == 1:
                 aux1 = 'PQ'
             elif NM.networkE.node[xn]['BUS_TYPE'] == 2:
                 aux1 = 'PV'
