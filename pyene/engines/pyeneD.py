@@ -281,14 +281,34 @@ class Branch:
         ''' Get position in N-1 scenario '''
         return self.pyomo['N-1'][xs]
 
+    def is_active(self, xs):
+        ''' Is the line connected in this scenario? '''
+        return self.pyomo['N-1'][xs] is not None
+
     def cNEFlow_rule(self, m, xt, xs, ConF, ConV, Bus, xshift):
         ''' Set DC power flow constraint '''
-        if self.pyomo['N-1'][xs] is not None:
+        if self.is_active(xs):
             xaux1 = ConV+Bus[self.get_PosF()].get_Sec(xs)
             xaux2 = ConV+Bus[self.get_PosT()].get_Sec(xs)
 
             return m.vNFlow[ConF+self.get_Sec(xs)+xshift, xt] == \
                 (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt])/self.data['BR_X']
+        else:
+            return Constraint.Skip
+
+    def cNEFMax_rule(self, m, xt, xs, ConF, xshift):
+        ''' Branch capacity constraint (positive) '''
+        if self.is_active(xs):
+            return m.vNFlow[ConF+self.get_Sec(xs)+xshift, xt] >= \
+                -self.data['RATE_A']
+        else:
+            return Constraint.Skip
+
+    def cNEFMin_rule(self, m, xt, xs, ConF, xshift):
+        ''' Branch capacity constraint (positive) '''
+        if self.is_active(xs):
+            return m.vNFlow[ConF+self.get_Sec(xs)+xshift, xt] <= \
+                self.data['RATE_A']
         else:
             return Constraint.Skip
 
@@ -466,6 +486,15 @@ class ElectricityNetwork:
     def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
         ''' Branch flows constraint '''
         return self.Branch[xb].cNEFlow_rule(m, xt, xs, ConF, ConV, self.Bus, self.data['shift'])
+
+    def cNEFMax_rule(self, m, xt, xb, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        return self.Branch[xb].cNEFMax_rule(m, xt, xs, ConF, self.data['shift'])
+
+    def cNEFMin_rule(self, m, xt, xb, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        return self.Branch[xb].cNEFMin_rule(m, xt, xs, ConF, self.data['shift'])
+    
 
     def findBusPosition(self, bus):
         ''' Find the position of a bus

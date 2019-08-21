@@ -175,20 +175,19 @@ class ENetworkClass:
 
         # Is the network enabled
         if self.settings['Flag']:
-            # Reference line flow
-            m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
-                                   rule=self.cNEPow0_rule)
             # Branch flows
             m.cNEFlow = Constraint(self.s['Tim'], self.s['Bra'],
                                    self.s['Sec2'], self.s['Con'],
                                    rule=self.cNEFlow_rule)
-            # Branch capacity constraint (positive)
-            m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFMax_rule)
-            # Branch capacity constraint (negative)
-            m.cNEFMin = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFMin_rule)
-            # Adding piece wise estimation of losses
+            # Branch flows
+            m.cNEFMax = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFMax_rule)
+            # Branch flows
+            m.cNEFMin = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFMin_rule)
+
             if self.settings['Losses']:
                 m.cNDCLossA = Constraint(self.s['Bra'], self.s['Loss'],
                                          self.s['Tim'], self.s['Con'],
@@ -421,16 +420,15 @@ class ENetworkClass:
                                           self.connections['Flow'][xh],
                                           self.connections['Voltage'][xh])
 
-
-    def cNEFMax_rule(self, m, xt, xb, xh):
+    def cNEFMax_rule(self, m, xt, xb, xs, xh):
         ''' Branch capacity constraint (positive) '''
-        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] >= \
-            -self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['RATE_A']
+        return self.ENetwork.cNEFMax_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh])
 
-    def cNEFMin_rule(self, m, xt, xb, xh):
-        ''' Branch capacity constraint (negative) '''
-        return m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <= \
-            self.ENetwork.Branch[self.p['LLESec1'][xb, 0]].data['RATE_A']
+    def cNEFMin_rule(self, m, xt, xb, xs, xh):
+        ''' Branch capacity constraint (positive) '''
+        return self.ENetwork.cNEFMin_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh])
 
     def cNEGen0_rule(self, m, xt, xh):
         ''' Reference generation '''
@@ -454,10 +452,6 @@ class ENetworkClass:
         ''' Minimum generation '''
         return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
                 self.p['GenMin'][xg])
-
-    def cNEPow0_rule(self, m, xt, xh):
-        ''' Reference line flow '''
-        return m.vNFlow[self.connections['Flow'][xh], xt] == 0
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
