@@ -568,7 +568,6 @@ class ElectricityNetwork:
             xn += 1
 
         return xn
-            
 
 
 class Generators:
@@ -603,7 +602,7 @@ class Generators:
         for x in range(self.settings['RES']):
             self.RESConf[x].MPCconfigure(RES, x)
 
-            
+
 class ELineConfig:
     ''' Default settings for an electricity bus '''
     def __init__(self):
@@ -611,6 +610,7 @@ class ELineConfig:
         self.settings = {
                 'Number': None  # Bus number
                 }
+
 
 class ELine:
     ''' Electricity bus '''
