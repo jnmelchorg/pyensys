@@ -784,9 +784,9 @@ class pyeneClass():
         # Location of each instance
         aux = self.NM.connections['Branches']
         for xc in self.NM.connections['set']:
-            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
+            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch)
             self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
-            self.NM.connections['Loss'][xc] = xc*(aux+1)
+            self.NM.connections['Loss'][xc] = xc*(aux)
             self.NM.connections['Generation'][xc] = xc*(self.NM.generationE
                                                         ['Number']+1)
             self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']

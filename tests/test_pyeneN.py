@@ -48,8 +48,8 @@ def test_pyeneN_4BusSec():
     (NM, NModel, results) = EN.NSim(conf)
     NM.print(NModel)
     print('Losses')
-    Lss01 = NModel.vNLoss[1, 0].value*NM.ENetwork.data['baseMVA']
-    Lss02 = NModel.vNLoss[4, 1].value*NM.ENetwork.data['baseMVA']
+    Lss01 = NModel.vNLoss[0, 0].value*NM.ENetwork.data['baseMVA']
+    Lss02 = NModel.vNLoss[3, 1].value*NM.ENetwork.data['baseMVA']
     print(Lss01, Lss02)
     print(NModel.OF.expr())
 

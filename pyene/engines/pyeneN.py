@@ -320,12 +320,12 @@ class ENetworkClass:
         Noh = len(self.s['Con'])
         # Is the network enabled
         if self.settings['Flag']:
-            m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
+            m.vNFlow = Var(range(Noh*(self.NoBranch)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
             m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
             if self.settings['Losses']:
-                m.vNLoss = Var(range(Noh*(self.connections['Branches']+1)),
+                m.vNLoss = Var(range(Noh*(self.connections['Branches'])),
                                self.s['Tim'], domain=NonNegativeReals,
                                initialize=0.0)
 
@@ -747,7 +747,7 @@ class ENetworkClass:
                 for xb in range(self.ENetwork.data['Branches']):
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
-                                        xb+1, x2].value *
+                                        xb, x2].value *
                                self.ENetwork.data['baseMVA'])
                         print("%8.4f " % aux, end='')
                     print()
@@ -769,7 +769,7 @@ class ENetworkClass:
                 for xb in range(self.ENetwork.data['Branches']):
                     for xt in self.s['Tim']:
                         if self.settings['Losses']:
-                            aux = m.vNLoss[self.connections['Loss'][xh]+xb+1,
+                            aux = m.vNLoss[self.connections['Loss'][xh]+xb,
                                            xt].value * \
                                 self.ENetwork.data['baseMVA']
                         print("%8.4f " % aux, end='')
