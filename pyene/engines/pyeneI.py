@@ -69,6 +69,7 @@ class EInterfaceClass:
         xn = 0
         for ob in NM.ENetwork.Bus:
             xn += 1
+            print  (xn, ob.data['BUS_TYPE'])
             if ob.data['BASE_KV'] == 0:
                 aux1 = 1
             else:
