@@ -995,6 +995,7 @@ class ENetworkClass:
         ''' Read input data '''
         # Load file
         mpc = json.load(open(self.settings['File']))
+        print(mpc['branch'])
 
         # Defining device class
         from pyene.engines.pyeneD import ElectricityNetwork, Generators

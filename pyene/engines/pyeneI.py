@@ -9,7 +9,6 @@ external tools, such as pypsa and pypower
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
-
 try:
     import pypsa
 except ImportError:
@@ -18,10 +17,8 @@ except ImportError:
 
 class EInterfaceClass:
     def pyene2pypsa(self, NM, xscen):
-        
+        # TODO: Remove xshift and prepare/validate tests
         xshift = 1
-        
-        
         '''Convert pyene files to pypsa format'''
         # Create pypsa network
         try:
@@ -66,10 +63,8 @@ class EInterfaceClass:
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
             if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 2:
                 PVBus[xn-1] = NM.generationE['Data']['VG'][xn]
-        xn = 0
+
         for ob in NM.ENetwork.Bus:
-            xn += 1
-            print  (xn, ob.data['BUS_TYPE'])
             if ob.data['BASE_KV'] == 0:
                 aux1 = 1
             else:
@@ -79,23 +74,17 @@ class EInterfaceClass:
                 aux2 = ob.data['VM']
             else:
                 aux2 = PVBus[ob.get_Position()]
-#                print('\n\n\nComparing data\n\n\n')
-#                print(NM.networkE.node[xn])
-#                print()
-#                print(ob.data)
-#                print('\n\n\n')
-
-            if 'BUS_X' in NM.networkE.node[xn]:
+            if ob.data['BUS_X'] is not None:
                 nu.add('Bus', auxtxtN+str(ob.get_Number()),
                        v_nom=aux1, v_mag_pu_set=aux2,
                        v_mag_pu_min=ob.data['VMIN'],
                        v_mag_pu_max=ob.data['VMAX'],
-                       x=ob.data['BUS_X'], y=ob.data['BUS_Y'])
+                       x=ob.data['BUS_X'],
+                       y=ob.data['BUS_Y'])
             else:
                 nu.add('Bus', auxtxtN+str(ob.get_Number()), v_nom=aux1,
                        v_mag_pu_set=aux2, v_mag_pu_min=ob.data['VMIN'],
                        v_mag_pu_max=ob.data['VMAX'])
-
 
         '''                            GENERATOR
         Missing attributes:
@@ -130,12 +119,11 @@ class EInterfaceClass:
         aux = (NM.generationE['Number']-NM.hydropower['Number'] -
                NM.RES['Number'])
         xg = -1
-        xshift = 1
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
             xg += 1
-            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 1:#NM.networkE.node[xn]['BUS_TYPE'] == 1:
+            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 1:
                 aux1 = 'PQ'
-            elif NM.networkE.node[xn]['BUS_TYPE'] == 2:
+            elif NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 2:
                 aux1 = 'PV'
             else:
                 aux1 = 'Slack'
@@ -216,16 +204,16 @@ class EInterfaceClass:
         xL = 0
         ydemP = np.zeros(NM.settings['NoTime'], dtype=float)
         ydemQ = np.zeros(NM.settings['NoTime'], dtype=float)
-        for xn in NM.networkE.node:
-            if NM.demandE['PD'][xn-1] != 0:
+        for xn in range(NM.ENetwork.data['Buses']):
+            if NM.demandE['PD'][xn] != 0:
                 xL += 1
                 for xt in range(NM.settings['NoTime']):
                     aux = (NM.scenarios['Demand']
-                           [NM.busScenario[xn-1][xscen]+xt])
-                    ydemP[xt] = NM.demandE['PD'][xn-1]*aux
-                    ydemQ[xt] = NM.demandE['QD'][xn-1]*aux
+                           [NM.busScenario[xn][xscen]+xt])
+                    ydemP[xt] = NM.demandE['PD'][xn]*aux
+                    ydemQ[xt] = NM.demandE['QD'][xn]*aux
                 nu.add('Load', auxtxtLd+str(xL),
-                       bus=auxtxtN+str(xn),
+                       bus=auxtxtN+str(xn+1),
                        p_set=ydemP,
                        q_set=ydemQ
                        )
@@ -257,18 +245,16 @@ class EInterfaceClass:
             snom - MVA limit
         '''
         auxtxtL = 'Line'
-        xb = 0
-        for (xf, xt) in NM.networkE.edges:
-            if NM.networkE[xf][xt]['TAP'] == 0:
-                xb += 1
-                auxpu = (nu.buses['v_nom']['Bus{}'.format(xf)]**2 /
-                         NM.networkE.graph['baseMVA'])
-                nu.add('Line', auxtxtL+str(xb),
-                       bus0=auxtxtN+str(xf),
-                       bus1=auxtxtN+str(xt),
-                       x=NM.networkE[xf][xt]['BR_X']*auxpu,
-                       r=NM.networkE[xf][xt]['BR_R']*auxpu,
-                       s_nom=NM.networkE[xf][xt]['RATE_A']
+        for ob in NM.ENetwork.Branch:
+            if ob.data['TAP'] == 0:
+                auxpu = nu.buses['v_nom']['Bus{}'.format(ob.get_BusF())]**2 / \
+                    NM.ENetwork.data['baseMVA']
+                nu.add('Line', auxtxtL+str(ob.get_Number()),
+                       bus0=auxtxtN+str(ob.get_BusF()),
+                       bus1=auxtxtN+str(ob.get_BusT()),
+                       x=ob.data['BR_X']*auxpu,
+                       r=ob.data['BR_R']*auxpu,
+                       s_nom=ob.data['RATE_A']*NM.ENetwork.data['baseMVA']
                        )
 
         #                           LINE TYPES
@@ -296,19 +282,17 @@ class EInterfaceClass:
             tap_side - taps at from bus in Matlab
         '''
         auxtxtT = 'Trs'
-        xb = 0
-        for (xf, xt) in NM.networkE.edges:
-            if NM.networkE[xf][xt]['TAP'] != 0:
-                xb += 1
-                nu.add('Transformer', auxtxtT+str(xb),
-                       bus0=auxtxtN+str(xf),
-                       bus1=auxtxtN+str(xt),
+        for ob in NM.ENetwork.Branch:
+            if ob.data['TAP'] != 0:
+                nu.add('Transformer', auxtxtT+str(ob.get_Number()),
+                       bus0=auxtxtN+str(ob.get_BusF()),
+                       bus1=auxtxtN+str(ob.get_BusT()),
                        model='pi',
-                       x=NM.networkE[xf][xt]['BR_X'],
-                       r=NM.networkE[xf][xt]['BR_R'],
-                       b=NM.networkE[xf][xt]['BR_B'],
-                       s_nom=NM.networkE[xf][xt]['RATE_A'],
-                       tap_ratio=NM.networkE[xf][xt]['TAP'],
+                       x=ob.data['BR_X'],
+                       r=ob.data['BR_R'],
+                       b=ob.data['BR_B'],
+                       s_nom=ob.data['RATE_A']*NM.ENetwork.data['baseMVA'],
+                       tap_ratio=ob.data['TAP'],
                        tap_side=0
                        )
 

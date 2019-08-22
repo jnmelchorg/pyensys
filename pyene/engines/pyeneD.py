@@ -85,6 +85,7 @@ class BranchConfig:
                 'RATE_A': None,
                 'RATE_A': None,
                 'RATE_C': None,
+                'TAP': None,
                 'T_BUS': None  # Bus (to)
                 }
 
@@ -103,6 +104,7 @@ class BranchConfig:
         self.settings['RATE_A'] = mpc['RATE_A'][No]
         self.settings['RATE_B'] = mpc['RATE_B'][No]
         self.settings['RATE_C'] = mpc['RATE_C'][No]
+        self.settings['TAP'] = mpc['TAP'][No]
         self.settings['T_BUS'] = mpc['T_BUS'][No]
 
 
@@ -242,12 +244,13 @@ class Branch:
         ''' Initialise bus class
 
         The class can use the following parameters:
-        ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X', 'Number',
+        ['ANGMAX', 'ANGMIN', 'BR_STATUS', 'Number',
         'F_BUS', 'Position', 'RATE_A', 'RATE_B', 'RATE_C', 'T_BUS']
         However, only the ones that are currently used are passed
         '''
 
-        aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS']
+        aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
+               'BR_B']
 
         # Get settings
         self.data = {}
@@ -269,8 +272,12 @@ class Branch:
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
 
+    def get_Number(self):
+        ''' Get branch number - starting from one'''
+        return self.data['Position']+1
+
     def get_Pos(self):
-        ''' Get position of the branch '''
+        ''' Get position of the branch - starting from zero'''
         return self.data['Position']
 
     def get_PosF(self):
