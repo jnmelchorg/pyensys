@@ -1,5 +1,5 @@
 """ Test the pyeneE engine. """
-from fixtures import testConfig, json_directory
+from pyene.fixtures import testConfig, json_directory
 from pyene.engines.pyene import pyeneClass as pe
 import os
 

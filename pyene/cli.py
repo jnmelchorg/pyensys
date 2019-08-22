@@ -144,9 +144,9 @@ def network_simulation_pyeneEN(conf, **kwargs):
     test_pyene(conf)
 
 
-@cli.command('run-test')
-@click.option('--example', default=0, help='Exemple to be executed')
+@cli.command('test')
+@click.option('--test', default=0, help='Example to be executed')
 def network_simulation_pyenetst(**kwargs):
-    """Test specific functionalities"""
-    mthd = kwargs.pop('example')
+    ''' Hidden development functionality '''
+    mthd = kwargs.pop('test')
     test_pyenetest(mthd)

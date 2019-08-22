@@ -31,3 +31,10 @@ pyeneT.py
 *.glp
 *.raw
 *.log
+
+# Json files used for development
+pyene/json/
+
+# Confidential files
+caseGhana_Full.json
+caseGhana_Sim40_BSec_Manual.json

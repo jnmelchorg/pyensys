@@ -1,15 +1,14 @@
-import pytest
 import os
 from pyene.engines.pyene import pyeneConfig
 
 
 def json_directory():
-    """ Directory contain JSON test data. """
-    return os.path.join(os.path.dirname(__file__), 'json')
+    ''' Directory contain JSON files for pytest '''
+    return os.path.join(os.path.dirname(__file__), '..', 'tests', 'json')
 
 
 def fixed_config():
-    '''Dedicated configuration for the tests '''
+    '''Dedicated configuration for pytests '''
     conf = pyeneConfig()
     conf.EM.settings['File'] = os.path.join(json_directory(),
                                             'ResolutionTreeMonth01.json')
@@ -48,6 +47,7 @@ def fixed_config():
     conf.HM.settings['Flag'] = False  # Disable pyeneH
 
     return conf
+
 
 def testConfig():
     return fixed_config()

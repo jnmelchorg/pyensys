@@ -9,10 +9,9 @@ Pyene Networks provides methods to simulate power networks and generation units
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 from __future__ import division
-from pyomo.core import Constraint, Var, NonNegativeReals, Reals
+from pyomo.core import Constraint, Var, NonNegativeReals, Reals, Binary
 import math
 import numpy as np
-import networkx as nx
 import json
 import warnings
 
@@ -32,7 +31,8 @@ class pyeneNConfig:
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
-                'Ancillary': None  # Need for uncillary services
+                'Ancillary': None,  # Need for uncillary services
+                'UC': False  # Model UC
                 }
         # Connections
         self.connections = {
@@ -109,6 +109,7 @@ class pyeneNConfig:
                 'Feasibility': True,
                 'Services': True,
                 'GenBus': True,
+                'UC': True,
                 }
 
 
@@ -215,12 +216,21 @@ class ENetworkClass:
         # Reference generation
         m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNEGen0_rule)
-        # Maximum generation
-        m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGMax_rule)
-        # Minimum generation
-        m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGMin_rule)
+        # Run UC or OPF
+        if self.settings['UC']:
+            # Maximum generation
+            m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMaxUC_rule)
+            # Minimum generation
+            m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMinUC_rule)
+        else:
+            # Maximum generation
+            m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMax_rule)
+            # Minimum generation
+            m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMin_rule)
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
                                rule=self.cNEGenC_rule)
@@ -332,6 +342,10 @@ class ENetworkClass:
         if len(self.s['GServices']) > 0:
             m.vNServ = Var(range(Noh*self.p['GServices']), self.s['Tim'],
                            domain=NonNegativeReals, initialize=0.0)
+        # Add Unit commitment constraints
+        if self.settings['UC']:
+            m.vNGen_Bin = Var(range(Noh*(self.generationE['Number']+1)),
+                              self.s['Tim'], domain=Binary, initialize=0.0)
 
         return m
 
@@ -443,6 +457,16 @@ class ENetworkClass:
         ''' Minimum generation '''
         return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
                 self.p['GenMin'][xg])
+
+    def cNEGMaxUC_rule(self, m, xg, xt, xh):
+        ''' Maximum generation '''
+        aux = self.connections['Generation'][xh]+xg+1
+        return m.vNGen[aux, xt] <= self.p['GenMax'][xg]*m.vNGen_Bin[aux, xt]
+
+    def cNEGMinUC_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        aux = self.connections['Generation'][xh]+xg+1
+        return m.vNGen[aux, xt] >= self.p['GenMin'][xg]*m.vNGen_Bin[aux, xt]
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
@@ -702,6 +726,18 @@ class ENetworkClass:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
                                self.ENetwork.data['baseMVA'])
+                        print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.Print['UC']:
+                print("\nBin_EGen=[")
+                aux = 1
+                for xn in range(1, self.generationE['Number']+1):
+                    for x2 in self.s['Tim']:
+                        if self.settings['UC']:
+                            aux = (m.vNGen_Bin[self.connections['Generation']
+                                   [xh]+xn, x2].value)
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -995,7 +1031,6 @@ class ENetworkClass:
         ''' Read input data '''
         # Load file
         mpc = json.load(open(self.settings['File']))
-        print(mpc['branch'])
 
         # Defining device class
         from pyene.engines.pyeneD import ElectricityNetwork, Generators
