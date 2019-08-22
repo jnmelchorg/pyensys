@@ -397,7 +397,7 @@ def test_pyene_SingleLP():
         m.OFFea = EN.NM.connections['Feasibility']
         m.OFpenalty = EN.Penalty
         m.OFpumps = EN.NM.pumps['Value']
-        m.base = EN.NM.networkE.graph['baseMVA']
+        m.base = EN.NM.ENetwork.data['baseMVA']
         m.OFhDL = EN.NM.connections['Pump']
         m.OFweights = EN.NM.scenarios['Weights']
         m.OFaux = EN.OFaux

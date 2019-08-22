@@ -1004,62 +1004,7 @@ class ENetworkClass:
         self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
         self.ENetwork.MPCconfigure(mpc)
 
-        self.networkE = nx.Graph()
-
-        # Adding network attributes
-        aux = ['version', 'baseMVA', 'NoGen', 'Slack']
-        for x1 in range(4):
-            self.networkE.graph[aux[x1]] = mpc[aux[x1]]
-
-        # Adding buses (nodes) and attributes
-        aux = ['BUS_TYPE', 'GS', 'BS', 'BUS_AREA', 'VM', 'VA', 'BASE_KV',
-               'ZONE', 'VMAX', 'VMIN']
-        for xen in range(mpc["NoBus"]):
-            self.networkE.add_node(mpc['bus']['BUS_I'][xen])
-            for x1 in range(10):
-                self.networkE.node[xen+1][aux[x1]] = mpc["bus"][aux[x1]][xen]
-
-        if 'BUS_X' in mpc['bus']:
-            for xen in range(mpc["NoBus"]):
-                self.networkE.node[xen+1]['BUS_X'] = mpc['bus']['BUS_X'][xen]
-                self.networkE.node[xen+1]['BUS_Y'] = mpc['bus']['BUS_Y'][xen]
-
-        # Adding branches (edges) and attributes
-        aux = ['BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP',
-               'SHIFT', 'BR_STATUS', 'ANGMIN', 'ANGMAX']
         self.connections['Branches'] = mpc['NoBranch']
-        xLL = 0
-        for xeb in range(mpc["NoBranch"]):
-            xaux = [mpc["branch"]["F_BUS"][xeb], mpc["branch"]["T_BUS"][xeb]]
-            self.networkE.add_edge(xaux[0], xaux[1])
-
-            # Option to save branches in parallel
-            if aux[x1] in self.networkE[xaux[0]][xaux[1]]:
-                (self.networkE[xaux[0]][xaux[1]]['LL']
-                 [self.networkE[xaux[0]][xaux[1]]['Parallel']]) = xLL
-                self.networkE[xaux[0]][xaux[1]]['Parallel'] += 1
-                aux2 = str(self.networkE[xaux[0]][xaux[1]]['Parallel'])
-                for x1 in range(11):
-                    self.networkE[xaux[0]][xaux[1]][aux[x1]+aux2] = \
-                        mpc["branch"][aux[x1]][xeb]
-            else:
-                self.networkE[xaux[0]][xaux[1]]['Parallel'] = 1
-                self.networkE[xaux[0]][xaux[1]]['LL'] = {}
-                self.networkE[xaux[0]][xaux[1]]['LL'][0] = xLL
-                for x1 in range(11):
-                    self.networkE[xaux[0]][xaux[1]][aux[x1]] = \
-                        mpc["branch"][aux[x1]][xeb]
-            xLL += 1
-
-        aux = np.zeros((xLL, 2), dtype=int)
-        x1 = 0
-        for (xf, xt) in self.networkE.edges:
-            for xp in range(self.networkE[xf][xt]['Parallel']):
-                aux[x1][0] = xf
-                aux[x1][1] = xt
-                x1 += 1
-            del self.networkE[xf][xt]['LL']
-
         self.demandE = {
                 'PD': np.array(mpc['bus']['PD'], dtype=float),
                 'QD': np.array(mpc['bus']['QD'], dtype=float),
