@@ -497,13 +497,90 @@ class ElectricityNetwork:
         return xn
 
 
+class Conventional:
+    ''' Conventional generator '''
+    def __init__(self, obj):
+        ''' Initialise generator class
+
+        The class can use the following parameters:
+        ['APF', 'GEN', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
+        'QC2MIN', 'QC2MAX', 'QG', 'QMAX', 'QMIN', 'RAMP_AGC',
+        'RAMP_10', 'RAMP_30', 'RAMP_Q', 'RES', 'VG']
+        However, only the ones that are currently used are passed
+        ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+        '''
+        # Parameters currently in use
+        aux = ['Ancillary', 'PMAX', 'PMIN', 'Ramp']
+
+        # Get settings
+        self.data = {}
+        for xa in aux:
+            self.data[xa] = obj.settings[xa]
+        self.data['Bus'] = obj.settings['GEN_BUS']
+
+        aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+        self.cost = {}
+        for xa in aux:
+            self.cost[xa] = obj.cost[xa]
+
+
+class Hydropower:
+    ''' Hydropower generator '''
+    def __init__(self, obj):
+        ''' Initialise hydropower generator class
+
+        The class can use the following parameters:
+        ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp', 'RES', 'Position']
+        ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+        However, only the ones that are currently used are passed
+        '''
+        # Parameters currently in use
+        aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp', 'RES',
+               'Position']
+
+        # Get settings
+        self.data = {}
+        for xa in aux:
+            self.data[xa] = obj.settings[xa]
+        aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+
+        aux = ['MODEL', 'NCOST', 'COST']
+        self.cost = {}
+        for xa in aux:
+            self.cost[xa] = obj.cost[xa]
+
+
+class RES:
+    ''' RES generation '''
+    def __init__(self, obj):
+        ''' Initialise hydropower generator class
+
+        The class can use the following parameters:
+        ['Bus', 'Cost', 'Max', 'Uncertainty', 'Position']
+        ['MODEL', 'NCOST', 'COST']
+        However, only the ones that are currently used are passed
+        '''
+        # Parameters currently in use
+        aux = ['Bus', 'Cost', 'Max', 'Uncertainty', 'Position']
+
+        # Get settings
+        self.data = {}
+        for xa in aux:
+            self.data[xa] = obj.settings[xa]
+
+        aux = ['MODEL', 'NCOST', 'COST']
+        self.cost = {}
+        for xa in aux:
+            self.cost[xa] = obj.cost[xa]
+
+
 class Generators:
     ''' Electricity generators '''
     def __init__(self, NoConv=0, NoHydro=0, NoRES=0):
         ''' General generator settings '''
-        self.settings = {
-                'Conventional': NoConv,
-                'Hydropower': NoHydro,
+        self.data = {
+                'Conv': NoConv,
+                'Hydro': NoHydro,
                 'RES': NoRES
                 }
 
@@ -520,14 +597,31 @@ class Generators:
         ''' Initialize using mat power data '''
 
         # Conventional generators
-        for x in range(self.settings['Conventional']):
+        for x in range(self.data['Conv']):
             self.ConvConf[x].MPCconfigure(mpc, conv, x)
 
-        for x in range(self.settings['Hydropower']):
+        for x in range(self.data['Hydro']):
             self.HydroConf[x].MPCconfigure(hydro, x)
 
-        for x in range(self.settings['RES']):
+        for x in range(self.data['RES']):
             self.RESConf[x].MPCconfigure(RES, x)
+
+    def initialise(self):
+        ''' Prepare objects and remove configuration versions '''
+        # Initialise conventional generation object
+        self.Conv = [Conventional(self.ConvConf[x]) for x in
+                     range(self.data['Conv'])]
+        del self.ConvConf
+
+        # Initialise hydropower generator objects
+        self.Hydro = [Hydropower(self.HydroConf[x]) for x in
+                      range(self.data['Hydro'])]
+        del self.HydroConf
+#
+#        # Initialize RES generator objects
+#        self.RES = [RES(self.RESConf[x]) for x in
+#                      range(self.data['RES'])]
+#        del self.RESConf
 
 
 class ELineConfig:

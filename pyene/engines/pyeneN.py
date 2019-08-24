@@ -841,6 +841,8 @@ class ENetworkClass:
 
     def ProcessEGen(self):
         ''' Process generator parameters '''
+        self.Gen.initialise()
+
         GenMax = self.generationE['Data']['PMAX']
         GenMin = self.generationE['Data']['PMIN']
 
@@ -1045,10 +1047,10 @@ class ENetworkClass:
         self.ENetwork.MPCconfigure(mpc)
 
         # Define generator model
-        self.Generators = Generators(NoOGen, self.hydropower['Number'],
-                                     self.RES['Number'])
-        self.Generators.MPCconfigure(mpc, self.conventional, self.hydropower,
-                                     self.RES)
+        self.Gen = Generators(NoOGen, self.hydropower['Number'],
+                              self.RES['Number'])
+        self.Gen.MPCconfigure(mpc, self.conventional, self.hydropower,
+                              self.RES)
 
         self.connections['Branches'] = mpc['NoBranch']
         self.demandE = {
