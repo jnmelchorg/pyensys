@@ -299,7 +299,7 @@ class ENetworkClass:
         self.s['Con'] = self.connections['set']
         self.s['Bra'] = range(self.connections['Branches'])
         self.s['Bus'] = range(self.ENetwork.data['Buses'])
-        self.s['Buses'] = range(self.NoBuses+1)
+        self.s['Buses'] = range(self.NoBuses)
         self.s['Pump'] = range(self.pumps['Number'])
         self.s['Fea'] = range(self.NoFea)
         self.s['Gen'] = range(self.generationE['Number'])
@@ -322,7 +322,7 @@ class ENetworkClass:
         if self.settings['Flag']:
             m.vNFlow = Var(range(Noh*(self.NoBranch)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
-            m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
+            m.vNVolt = Var(range(Noh*(self.NoBuses)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
             if self.settings['Losses']:
                 m.vNLoss = Var(range(Noh*(self.connections['Branches'])),
@@ -563,7 +563,7 @@ class ENetworkClass:
 
         self.ProcessEGen()
 
-        self.NoBuses = self.ENetwork.data['Buses']*(1+self.NoSec2)-1
+        self.NoBuses = self.ENetwork.data['Buses']*(1+self.NoSec2)
         self.NoBranch = self.ENetwork.data['Branches'] + \
             (self.ENetwork.data['Branches']-1)*self.NoSec2
         self.LLStor = np.zeros((self.ENetwork.data['Buses'],
@@ -721,7 +721,7 @@ class ENetworkClass:
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
-                for xn in range(1, self.generationE['Number']+1):
+                for xn in range(self.generationE['Number']+1):
                     for x2 in self.s['Tim']:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
@@ -733,7 +733,7 @@ class ENetworkClass:
             if self.Print['UC']:
                 print("\nBin_EGen=[")
                 aux = 1
-                for xn in range(1, self.generationE['Number']+1):
+                for xn in range(self.generationE['Number']+1):
                     for x2 in self.s['Tim']:
                         if self.settings['UC']:
                             aux = (m.vNGen_Bin[self.connections['Generation']
