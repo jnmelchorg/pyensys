@@ -841,7 +841,7 @@ class ENetworkClass:
 
     def ProcessEGen(self):
         ''' Process generator parameters '''
-        self.Gen.initialise()
+        self.Gen.initialise(self.ENetwork)
 
         GenMax = self.generationE['Data']['PMAX']
         GenMin = self.generationE['Data']['PMIN']
