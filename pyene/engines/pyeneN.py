@@ -1032,12 +1032,23 @@ class ENetworkClass:
         # Load file
         mpc = json.load(open(self.settings['File']))
 
-        # Defining device class
+        GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
+        NoOGen = len(GenNCost)
+
+        # Defining device classes
         from pyene.engines.pyeneD import ElectricityNetwork, Generators
 
         # Define network model
+        # The definition and configuration methods are separated so, in
+        # principle the classes can be manually configured
         self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
         self.ENetwork.MPCconfigure(mpc)
+
+        # Define generator model
+        self.Generators = Generators(NoOGen, self.hydropower['Number'],
+                                     self.RES['Number'])
+        self.Generators.MPCconfigure(mpc, self.conventional, self.hydropower,
+                                     self.RES)
 
         self.connections['Branches'] = mpc['NoBranch']
         self.demandE = {
@@ -1046,8 +1057,6 @@ class ENetworkClass:
                 }
 
         # Gen generation nodes (to mesure it)
-        GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
-        NoOGen = len(GenNCost)
         NoCst = len(GenNCost[0])
         NoGen = NoOGen+self.hydropower['Number']+self.RES['Number']
 
@@ -1179,12 +1188,3 @@ class ENetworkClass:
                 'Costs': ENetCost,
                 'Number': NoGen
                 }
-
-        # Defining device class
-        from pyene.engines.pyeneD import Generators
-
-        # Define generator model
-        self.Generators = Generators(NoOGen, self.hydropower['Number'],
-                                     self.RES['Number'])
-        self.Generators.MPCconfigure(mpc, self.conventional, self.hydropower,
-                                     self.RES)

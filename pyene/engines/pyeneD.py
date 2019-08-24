@@ -20,46 +20,25 @@ class BusConfig:
     ''' Default settings for an electricity bus '''
     def __init__(self):
         # Basic settings
-        self.settings = {
-                'BASE_KV': None,
-                'BS': None,
-                'BUS_AREA': None,
-                'BUS_TYPE': None,
-                'BUS_X': None,  # Coordinates X
-                'BUS_Y': None,  # Coordinates Y
-                'Demand': None,  # Demand time series
-                'GS': None,
-                'PeakP': None,  # Peak demand (MW)
-                'PeakQ': None,  # Peak demand (MVAr)
-                'Position': None,  # Position of the data in mpc
-                'Name': None,  # Bus name
-                'Number': None,  # Bus number
-                'VM': None,
-                'VA': None,
-                'VMAX': None,
-                'VMIN': None,
-                'ZONE': None
-                }
+        aux = ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'BUS_X', 'BUS_Y',
+               'Demand', 'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number',
+               'VM', 'VA', 'VMAX', 'VMIN', 'ZONE']
+        self.settings = {}
+        for x in aux:
+            self.settings[x] = None
 
     def MPCconfigure(self, mpc, No=0):
         ''' Configure using mat power data '''
 
-        self.settings['BASE_KV'] = mpc['BASE_KV'][No]
-        self.settings['BS'] = mpc['BS'][No]
-        self.settings['BUS_AREA'] = mpc['BUS_AREA'][No]
-        self.settings['BUS_TYPE'] = mpc['BUS_TYPE'][No]
-        # TODO: Demand
-        self.settings['GS'] = mpc['GS'][No]
+        self.settings['Position'] = No
+        self.settings['Number'] = mpc['BUS_I'][No]
         self.settings['PeakP'] = mpc['PD'][No]
         self.settings['PeakP'] = mpc['QD'][No]
-        self.settings['Position'] = No
-        # TODO: Name
-        self.settings['Number'] = mpc['BUS_I'][No]
-        self.settings['VM'] = mpc['VM'][No]
-        self.settings['VA'] = mpc['VA'][No]
-        self.settings['VMAX'] = mpc['VMAX'][No]
-        self.settings['VMIN'] = mpc['VMIN'][No]
-        self.settings['ZONE'] = mpc['ZONE'][No]
+
+        aux = ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'GS', 'VM', 'VA',
+               'VMAX', 'VMIN', 'ZONE']
+        for x in aux:
+            self.settings[x] = mpc[x][No]
 
         #  Optional data - not included in all files
         if 'BUS_NAME' in mpc.keys():
@@ -73,166 +52,120 @@ class BranchConfig:
     ''' Electricity Branch '''
     def __init__(self):
         # Basic settings
-        self.settings = {
-                'ANGMAX': None,
-                'ANGMIN': None,
-                'BR_B': None,
-                'BR_R': None,
-                'BR_STATUS': None,
-                'BR_X': None,
-                'Number': None,  # Branch number
-                'F_BUS': None,  # Bus (from)
-                'RATE_A': None,
-                'RATE_A': None,
-                'RATE_C': None,
-                'TAP': None,
-                'T_BUS': None  # Bus (to)
-                }
+        aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
+               'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP', 'T_BUS']
+        self.settings = {}
+        for x in aux:
+            self.settings[x] = None
 
     def MPCconfigure(self, mpc, No=0):
         ''' Configure using mat power data '''
 
-        self.settings['ANGMAX'] = mpc['ANGMAX'][No]
-        self.settings['ANGMIN'] = mpc['ANGMIN'][No]
-        self.settings['BR_B'] = mpc['BR_B'][No]
-        self.settings['BR_R'] = mpc['BR_R'][No]
-        self.settings['BR_STATUS'] = mpc['BR_STATUS'][No]
-        self.settings['BR_X'] = mpc['BR_X'][No]
         self.settings['Number'] = No+1
-        self.settings['F_BUS'] = mpc['F_BUS'][No]
         self.settings['Position'] = No
-        self.settings['RATE_A'] = mpc['RATE_A'][No]
-        self.settings['RATE_B'] = mpc['RATE_B'][No]
-        self.settings['RATE_C'] = mpc['RATE_C'][No]
-        self.settings['TAP'] = mpc['TAP'][No]
-        self.settings['T_BUS'] = mpc['T_BUS'][No]
+
+        aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
+               'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS']
+        for x in aux:
+            self.settings[x] = mpc[x][No]
 
 
 class ConventionalConfig:
     ''' Conventnional generator '''
     def __init__(self):
         # Basic settings
-        self.settings = {
-                'Ancillary': None,  # Can it provide ancillary services?
-                'APF': None,
-                'GEN': None,
-                'GEN_BUS': None,
-                'MBASE': None,
-                'PC1': None,
-                'PC2': None,
-                'PG': None,
-                'PMAX': None,
-                'PMIN': None,
-                'QC1MIN': None,
-                'QC1MAX': None,
-                'QC2MIN': None,
-                'QC2MAX': None,
-                'QG': None,
-                'QMAX': None,
-                'QMIN': None,
-                'Ramp': None,  # Set ramps for conventional generators
-                'RAMP_AGC': None,
-                'RAMP_10': None,
-                'RAMP_30': None,
-                'RAMP_Q': None,
-                'RES': True,  # Can it support RES integration?
-                'VG': None
-                }
+        aux = ['Ancillary', 'APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
+               'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
+               'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
+               'RAMP_Q', 'RES', 'VG']
+        self.settings = {}
+        for x in aux:
+            self.settings[x] = None
 
         # Cost data
-        self.costs = {
-                'COST': None,
-                'MODEL': None,
-                'NCOST': None,
-                'SHUTDOWN': None,
-                'STARTUP': None
-                }
+        aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+        self.cost = {}
+        for x in aux:
+            self.cost[x] = None
 
     def MPCconfigure(self, mpc, conv, No=0):
         ''' Configure using mat power data '''
 
         # Generator settings - from mat power file
-        self.settings['APF'] = mpc['gen']['APF'][No]
-        self.settings['GEN'] = mpc['gen']['GEN'][No]
-        self.settings['GEN_BUS'] = mpc['gen']['GEN_BUS'][No]
-        self.settings['MBASE'] = mpc['gen']['MBASE'][No]
-        self.settings['PC1'] = mpc['gen']['PC1'][No]
-        self.settings['PC2'] = mpc['gen']['PC2'][No]
-        self.settings['PG'] = mpc['gen']['PG'][No]
-        self.settings['PMAX'] = mpc['gen']['PMAX'][No]
-        self.settings['PMIN'] = mpc['gen']['PMIN'][No]
-        self.settings['QC1MIN'] = mpc['gen']['QC1MIN'][No]
-        self.settings['QC1MAX'] = mpc['gen']['QC1MAX'][No]
-        self.settings['QC2MIN'] = mpc['gen']['QC2MIN'][No]
-        self.settings['QC2MAX'] = mpc['gen']['QC2MAX'][No]
-        self.settings['QG'] = mpc['gen']['QG'][No]
-        self.settings['QMAX'] = mpc['gen']['QMAX'][No]
-        self.settings['QMIN'] = mpc['gen']['QMIN'][No]
-        self.settings['RAMP_AGC'] = mpc['gen']['RAMP_AGC'][No]
-        self.settings['RAMP_10'] = mpc['gen']['RAMP_10'][No]
-        self.settings['RAMP_30'] = mpc['gen']['RAMP_30'][No]
-        self.settings['RAMP_Q'] = mpc['gen']['RAMP_Q'][No]
-        self.settings['VG'] = mpc['gen']['VG'][No]
+        self.settings['Position'] = No
+        aux = ['APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
+               'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX', 'QG', 'QMAX',
+               'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG']
+        for x in aux:
+            self.settings[x] = mpc['gen'][x][No]
 
         # Generator costs - from mat power file
-        self.costs['COST'] = mpc['gencost']['COST'][No]
-        self.costs['MODEL'] = mpc['gencost']['MODEL'][No]
-        self.costs['NCOST'] = mpc['gencost']['NCOST'][No]
-        self.costs['SHUTDOWN'] = mpc['gencost']['SHUTDOWN'][No]
-        self.costs['STARTUP'] = mpc['gencost']['STARTUP'][No]
+        aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
+        for x in aux:
+            self.cost[x] = mpc['gencost'][x][No]
 
         # Generator data - from configuration file
-        self.settings['Ancillary'] = conv['Ancillary']
-        self.settings['Ramp'] = conv['Ramp']
-        self.settings['RES'] = conv['RES']
+        aux = ['Ancillary', 'Ramp', 'RES']
+        for x in aux:
+            self.cost[x] = conv[x]
 
 
 class HydropowerConfig:
     ''' Hydropower generator '''
     def __init__(self):
         # Basic settings
-        self.settings = {
-                'Ancillary': None,  # Can it provide ancillary services?
-                'Baseload': None,  # 0-1 for the use of water for baseload
-                'Bus': None,  # Location (Bus) in the network
-                'Cost': None,  # Costs
-                'Link': None,  # Position of hydropower plants
-                'Max': None,  # Capacity (MW)
-                'Ramp': None,  # Ramp
-                'RES': None  # Can it support RES integration?
-            }
+        aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp',
+               'RES', 'Position']
+        self.settings = {}
+        for x in aux:
+            self.settings[x] = None
+
+        aux = ['MODEL', 'NCOST', 'COST']
+        self.cost = {}
+        for x in aux:
+            self.cost[x] = None
 
     def MPCconfigure(self, hydro, No=0):
         ''' Configure using hydropower settings '''
-        self.settings['Ancillary'] = hydro['Ancillary']
-        self.settings['Baseload'] = hydro['Baseload']
+        self.settings['Position'] = No
+        aux = ['Ancillary', 'Baseload', 'Ramp', 'RES']
+        for x in aux:
+            self.settings[x] = hydro[x]
+
         self.settings['Bus'] = hydro['Bus'][No]
-        self.settings['Cost'] = hydro['Cost'][No]
-        self.settings['Link'] = hydro['Link']
         self.settings['Max'] = hydro['Max'][No]
-        self.settings['Ramp'] = hydro['Ramp']
-        self.settings['RES'] = hydro['RES']
+
+        # Default cost model
+        self.cost['MODEL'] = 2
+        self.cost['NCOST'] = 1
+        self.cost['COST'] = hydro['Cost'][No]
 
 
 class RESConfig:
     ''' RES generator '''
     def __init__(self):
         # Basic settings
-        self.settings = {
-                'Bus': None,  # Location (Bus) in the network
-                'Cost': None,  # Costs
-                'Link': None,  # Position of hydropower plants
-                'Max': None,  # Capacity (MW)
-                'Uncertainty': None  # Introduce reserve needs
-            }
+        aux = ['Bus', 'Cost', 'Max', 'Uncertainty', 'Position']
+        self.settings = {}
+        for x in aux:
+            self.settings[x] = None
+
+        aux = ['MODEL', 'NCOST', 'COST']
+        self.cost = {}
+        for x in aux:
+            self.cost[x] = None
 
     def MPCconfigure(self, RES, No=0):
         ''' Configure using hydropower settings '''
+        self.settings['Position'] = No
         self.settings['Bus'] = RES['Bus'][No]
-        self.settings['Cost'] = RES['Cost'][No]
-        self.settings['Link'] = RES['Link']
         self.settings['Max'] = RES['Max'][No]
         self.settings['Uncertainty'] = RES['Uncertainty']
+
+        # Default cost model
+        self.cost['MODEL'] = 2
+        self.cost['NCOST'] = 1
+        self.cost['COST'] = RES['Cost'][No]
 
 
 '''                               DEVICE CLASSES                            '''
@@ -335,6 +268,7 @@ class Branch:
             (A[xL]-B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
             self.data['BR_R']
 
+
 class Bus:
     ''' Electricity bus '''
     def __init__(self, obj):
@@ -393,6 +327,7 @@ class Bus:
     def get_Sec(self, xs):
         ''' Get position of variable in N-1 scenario '''
         return self.pyomo['N-1'][xs]
+
 
 class ElectricityNetwork:
     ''' Electricity network '''
