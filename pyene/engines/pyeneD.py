@@ -138,7 +138,7 @@ class HydropowerConfig:
         # Default cost model
         self.cost['MODEL'] = 2
         self.cost['NCOST'] = 1
-        self.cost['COST'] = hydro['Cost'][No]
+        self.cost['COST'] = [hydro['Cost'][No]]
 
 
 class RESConfig:
@@ -165,7 +165,7 @@ class RESConfig:
         # Default cost model
         self.cost['MODEL'] = 2
         self.cost['NCOST'] = 1
-        self.cost['COST'] = RES['Cost'][No]
+        self.cost['COST'] = [RES['Cost'][No]]
 
 
 '''                               DEVICE CLASSES                            '''
@@ -499,7 +499,57 @@ class ElectricityNetwork:
         return xn
 
 
-class Conventional:
+class GenClass:
+    ''' Core generation class '''
+    def set_CostCurve(self, sett, xNo, xLen, Base):
+        ''' Define piece wise cost curve approximation '''
+
+        if self.cost['MODEL'] == 1:
+            # Piece-wise model
+            NoPieces = self.data['NCOST']
+            xval = np.zeros(NoPieces, dtype=float)
+            yval = np.zeros(NoPieces, dtype=float)
+            xp = 0
+            for x in range(NoPieces):
+                xval[x] = self.cost['COST'][xp]
+                yval[x] = self.cost['COST'][xp+1]
+                xp += 2
+        else:
+            # Polinomial model
+
+            # Select number of pieces for the approximation
+            if xLen == 0:  # Default case
+                Delta = self.data['Max']
+                Delta /= 3
+            elif xLen == 1:  # Single value for all generators
+                Delta = sett['Pieces'][0]
+            else:  # Predefined number of pieces
+                Delta = sett['Pieces'][xNo]
+
+            NoPieces = int(np.floor(self.data['Max']/Delta))
+            xval = np.zeros(NoPieces+1, dtype=float)
+            yval = np.zeros(NoPieces+1, dtype=float)
+            aux = self.data['Min']
+            for xp in range(NoPieces+1):
+                xval[xp] = aux
+                xc = self.cost['NCOST']-1
+                yval[xp] = self.cost['COST'][xc]
+                for x in range(1, self.cost['NCOST']):
+                    xc -= 1
+                    yval[xp] += self.cost['COST'][xc]*xval[xp]**x
+                aux += Delta
+
+        # Convert to LP constraints
+        self.cost['LCost'] = np.zeros((NoPieces, 2), dtype=float)
+        for xv in range(NoPieces):
+            self.cost['LCost'][xv][0] = (yval[xv+1]-yval[xv]) / (xval[xv+1] -
+                                                                 xval[xv])
+            self.cost['LCost'][xv][1] = \
+                yval[xv]-xval[xv]*self.cost['LCost'][xv][0]
+            self.cost['LCost'][xv][0] *= Base
+
+
+class Conventional(GenClass):
     ''' Conventional generator '''
     def __init__(self, obj):
         ''' Initialise generator class
@@ -516,6 +566,8 @@ class Conventional:
 
         # Get settings
         self.data = {}
+        self.data['Max'] = obj.settings['PMAX']
+        self.data['Min'] = obj.settings['PMIN']
         for xa in aux:
             self.data[xa] = obj.settings[xa]
         self.data['Bus'] = obj.settings['GEN_BUS']
@@ -526,7 +578,7 @@ class Conventional:
             self.cost[xa] = obj.cost[xa]
 
 
-class Hydropower:
+class Hydropower(GenClass):
     ''' Hydropower generator '''
     def __init__(self, obj):
         ''' Initialise hydropower generator class
@@ -542,6 +594,7 @@ class Hydropower:
 
         # Get settings
         self.data = {}
+        self.data['Min'] = 0
         for xa in aux:
             self.data[xa] = obj.settings[xa]
 
@@ -551,7 +604,7 @@ class Hydropower:
             self.cost[xa] = obj.cost[xa]
 
 
-class RES:
+class RES(GenClass):
     ''' RES generation '''
     def __init__(self, obj):
         ''' Initialise hydropower generator class
@@ -566,6 +619,7 @@ class RES:
 
         # Get settings
         self.data = {}
+        self.data['Min'] = 0
         for xa in aux:
             self.data[xa] = obj.settings[xa]
 
@@ -607,7 +661,7 @@ class Generators:
         for x in range(self.data['RES']):
             self.RESConf[x].MPCconfigure(RES, x)
 
-    def initialise(self, ENetwork):
+    def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
         # Initialise conventional generation object
         self.Conv = [Conventional(self.ConvConf[x]) for x in
@@ -623,12 +677,14 @@ class Generators:
         self.RES = [RES(self.RESConf[x]) for x in range(self.data['RES'])]
         del self.RESConf
 
-        # Link generators and buses
+        # Initialise generators
         genaux = ['Conv', 'Hydro', 'RES']
+        xLen = len(sett['Pieces'])
         xt = 0
+        xNo = 0
         for ax in genaux:
             for ob in getattr(self, ax):
-                print(ob.data)
+                # Link generators and buses
                 xb = ENetwork.findBusPosition(ob.data['Bus'])  # Bus
                 xp = ob.data['Position']  # Generator
                 # The Generator knows the position of its bus
@@ -636,4 +692,14 @@ class Generators:
                 # The bus knows the type and location of the generator
                 ENetwork.Bus[xb].data['GenType'].append(xt)
                 ENetwork.Bus[xb].data['GenPosition'].append(xp)
+
+                # Create cost curves
+                ob.set_CostCurve(sett, xNo, xLen, ENetwork.data['baseMVA'])
+                ob.data['Max'] *= ENetwork.data['baseMVA']
+                ob.data['Min'] *= ENetwork.data['baseMVA']
+                xNo += 1
             xt += 1
+
+
+
+    
