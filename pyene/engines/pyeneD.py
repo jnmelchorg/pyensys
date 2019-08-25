@@ -576,6 +576,9 @@ class Conventional(GenClass):
         self.cost = {}
         for xa in aux:
             self.cost[xa] = obj.cost[xa]
+            
+        self.pyomo = {}
+        self.pyomo['vNGen'] = None
 
 
 class Hydropower(GenClass):
@@ -603,6 +606,9 @@ class Hydropower(GenClass):
         for xa in aux:
             self.cost[xa] = obj.cost[xa]
 
+        self.pyomo = {}
+        self.pyomo['vNGen'] = None
+
 
 class RES(GenClass):
     ''' RES generation '''
@@ -628,6 +634,9 @@ class RES(GenClass):
         for xa in aux:
             self.cost[xa] = obj.cost[xa]
 
+        self.pyomo = {}
+        self.pyomo['vNGen'] = None
+
 
 class Generators:
     ''' Electricity generators '''
@@ -636,7 +645,8 @@ class Generators:
         self.data = {
                 'Conv': NoConv,
                 'Hydro': NoHydro,
-                'RES': NoRES
+                'RES': NoRES,
+                'Gen': NoConv+NoHydro+NoRES
                 }
 
         # Conventional generators
@@ -663,6 +673,9 @@ class Generators:
 
     def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
+        xshift = 1
+        self.data['xshift'] = xshift
+
         # Initialise conventional generation object
         self.Conv = [Conventional(self.ConvConf[x]) for x in
                      range(self.data['Conv'])]
@@ -697,9 +710,25 @@ class Generators:
                 ob.set_CostCurve(sett, xNo, xLen, ENetwork.data['baseMVA'])
                 ob.data['Max'] *= ENetwork.data['baseMVA']
                 ob.data['Min'] *= ENetwork.data['baseMVA']
+
+                # Store location of vGen variable
+                ob.pyomo['vNGen'] = xNo+xshift
                 xNo += 1
             xt += 1
 
+    def get_GenInBus(self, Bus):
+        ''' Get list of generators connected to a bus - vNGen'''
+        genaux = ['Conv', 'Hydro', 'RES']
+        aux = []
+        for xt, xp in zip(Bus.data['GenType'], Bus.data['GenPosition']):
+            aux.append(getattr(self, genaux[xt])[xp].pyomo['vNGen'])
 
+        return aux
+
+    def get_GenAll(self):
+        ''' Get all nodes - vNGen '''
+        aux = range(self.data['xshift'], self.data['Gen']+self.data['xshift'])
+
+        return aux
 
     

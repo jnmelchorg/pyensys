@@ -197,6 +197,7 @@ class ENetworkClass:
                                          rule=self.cNDCLossB_rule)
 
             # Balance: Gen + Flow in - loss/2 = Demand + flow out + loss/2
+            print ('Balance rule')
             m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'],
                                       self.s['Sec2'], self.s['Con'],
                                       rule=self.cNEBalance_rule)
@@ -209,6 +210,7 @@ class ENetworkClass:
                 self.p['LossM'] = 1+self.settings['Loss']
 
             # Balance: Gen = Demand
+            print ('Balance zero rule')
             m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
                                       self.s['Con'],
                                       rule=self.cNEBalance0_rule)
@@ -373,17 +375,14 @@ class ENetworkClass:
         ''' Nodal balance:
         Generation + Flow in - loss/2 = Demand + flow out + loss/2
         '''
-
         # Check for case without demand profiles
         if self.LLStor[xn, xh] == 0:
             aux = 0
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
-        return (sum(m.vNGen[self.connections['Generation'][xh] +
-                            self.p['LLGen1'][xg], xt]
-                    for xg in range(self.p['LLGen2'][xn, 0],
-                                    self.p['LLGen2'][xn, 1]+1)) +
+        return (sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                    for xg in self.Gen.get_GenInBus(self.ENetwork.Bus[xn])) +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
                     for x2 in self.ENetwork.get_TFlow(xn, xs)) -
                 sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
