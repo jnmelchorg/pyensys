@@ -197,7 +197,6 @@ class ENetworkClass:
                                          rule=self.cNDCLossB_rule)
 
             # Balance: Gen + Flow in - loss/2 = Demand + flow out + loss/2
-            print ('Balance rule')
             m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'],
                                       self.s['Sec2'], self.s['Con'],
                                       rule=self.cNEBalance_rule)
@@ -210,7 +209,6 @@ class ENetworkClass:
                 self.p['LossM'] = 1+self.settings['Loss']
 
             # Balance: Gen = Demand
-            print ('Balance zero rule')
             m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
                                       self.s['Con'],
                                       rule=self.cNEBalance0_rule)
