@@ -298,7 +298,7 @@ class ENetworkClass:
         ''' Add pyomo sets '''
         self.s['Con'] = self.connections['set']
         self.s['Bra'] = range(self.connections['Branches'])
-        self.s['Bus'] = range(self.ENetwork.data['Buses'])
+        self.s['Bus'] = range(self.ENetwork.get_NoBus())
         self.s['Buses'] = range(self.NoBuses)
         self.s['Pump'] = range(self.pumps['Number'])
         self.s['Fea'] = range(self.NoFea)
@@ -484,7 +484,7 @@ class ENetworkClass:
     def cNLDMax_rule(self, m, xdl, xt, xh):
         ''' Maximum capacity of dynamic loads'''
         return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
-                self.p['MaxPump'][xdl]/self.ENetwork.data['baseMVA'])
+                self.p['MaxPump'][xdl]/self.ENetwork.get_Base())
 
     def cNRESMax_rule(self, m, xt, xg, xh):
         ''' Maximum RES generation '''
@@ -560,10 +560,10 @@ class ENetworkClass:
 
         self.ProcessEGen()
 
-        self.NoBuses = self.ENetwork.data['Buses']*(1+self.NoSec2)
-        self.NoBranch = self.ENetwork.data['Branches'] + \
-            (self.ENetwork.data['Branches']-1)*self.NoSec2
-        self.LLStor = np.zeros((self.ENetwork.data['Buses'],
+        self.NoBuses = self.ENetwork.get_NoBus()*(1+self.NoSec2)
+        self.NoBranch = self.ENetwork.get_NoBra() + \
+            (self.ENetwork.get_NoBra()-1)*self.NoSec2
+        self.LLStor = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
 
         acu = 0
@@ -612,7 +612,7 @@ class ENetworkClass:
             for xg in range(self.hydropower['Number']):
                 self.s['GRamp'][xh] = self.conventional['Number']+xg
                 self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
-                    self.hydropower['Max'][xg]/self.ENetwork.data['baseMVA']
+                    self.hydropower['Max'][xg]/self.ENetwork.get_Base()
                 xh += 1
 
         # Sets and parameters for modelling Ancillary service requirements
@@ -694,7 +694,7 @@ class ENetworkClass:
                      sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
                          for xf in self.s['Fea'])*1000000) *
                     self.scenarios['Weights'][xt] for xt in self.s['Tim']) -
-                sum(self.pumps['Value'][xdl]*self.ENetwork.data['baseMVA'] *
+                sum(self.pumps['Value'][xdl]*self.ENetwork.get_Base() *
                     sum(m.vNPump[self.connections['Pump'][xh] +
                                  xdl+1, xt]*self.scenarios['Weights'][xt]
                         for xt in self.s['Tim']) for xdl in self.s['Pump']))
@@ -722,7 +722,7 @@ class ENetworkClass:
                     for x2 in self.s['Tim']:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
-                               self.ENetwork.data['baseMVA'])
+                               self.ENetwork.get_Base())
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -741,11 +741,11 @@ class ENetworkClass:
 
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
-                for xb in range(self.ENetwork.data['Branches']):
+                for xb in range(self.ENetwork.get_NoBra()):
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
                                         xb, x2].value *
-                               self.ENetwork.data['baseMVA'])
+                               self.ENetwork.get_Base())
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -763,12 +763,12 @@ class ENetworkClass:
             if self.Print['Losses'] and self.settings['Flag']:
                 aux = 0
                 print("\nEPower_Loss=[")
-                for xb in range(self.ENetwork.data['Branches']):
+                for xb in range(self.ENetwork.get_NoBra()):
                     for xt in self.s['Tim']:
                         if self.settings['Losses']:
                             aux = m.vNLoss[self.connections['Loss'][xh]+xb,
                                            xt].value * \
-                                self.ENetwork.data['baseMVA']
+                                self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -778,7 +778,7 @@ class ENetworkClass:
                 for xdl in self.s['Pump']:
                     for xt in self.s['Tim']:
                         aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
-                                       xt].value*self.ENetwork.data['baseMVA']
+                                       xt].value*self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -788,7 +788,7 @@ class ENetworkClass:
                 for xf in self.s['Fea']:
                     for xt in self.s['Tim']:
                         aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
-                                      xt].value*self.ENetwork.data['baseMVA']
+                                      xt].value*self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -798,7 +798,7 @@ class ENetworkClass:
                 for xs in range(self.p['GServices']):
                     for xt in self.s['Tim']:
                         aux = m.vNServ[self.p['GServices']*xh+xs,
-                                       xt].value*self.ENetwork.data['baseMVA']
+                                       xt].value*self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -806,17 +806,17 @@ class ENetworkClass:
     def ProcessEDem(self, ENetDem):
         ''' Process demand and generation parameters '''
         # Adjust demand profiles
-        busData = np.zeros(self.ENetwork.data['Buses'], dtype=float)
-        for xn in range(self.ENetwork.data['Buses']):
-            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.data['baseMVA']
+        busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
+        for xn in range(self.ENetwork.get_NoBus()):
+            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.get_Base()
         # Auxiliar to find demand profiles
-        busScenario = np.zeros((self.ENetwork.data['Buses'],
+        busScenario = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
 
         if self.scenarios['NoDem'] > 0:
             acu = 0
             for xs in range(self.scenarios['Number']):
-                for xn in range(self.ENetwork.data['Buses']):
+                for xn in range(self.ENetwork.get_NoBus()):
                     busScenario[xn][xs] = ((self.scenarios['Links'][acu]-1) *
                                            self.settings['NoTime'])
                     acu += 1
@@ -931,10 +931,10 @@ class ENetworkClass:
 
         # Changing to pu
         for xg in range(self.generationE['Number']):
-            GenMax[xg] /= self.ENetwork.data['baseMVA']
-            GenMin[xg] /= self.ENetwork.data['baseMVA']
+            GenMax[xg] /= self.ENetwork.get_Base()
+            GenMin[xg] /= self.ENetwork.get_Base()
         for xc in range(NoGenC):
-            GenLCst[xc][0] *= self.ENetwork.data['baseMVA']
+            GenLCst[xc][0] *= self.ENetwork.get_Base()
         self.p['GenMax'] = GenMax
         self.p['GenMin'] = GenMin
         self.p['GenLCst'] = GenLCst
@@ -969,7 +969,7 @@ class ENetworkClass:
         x0 = aux
         xacu = 0
         for xs in range(NoSec2):
-            xacu += self.ENetwork.data['Buses']
+            xacu += self.ENetwork.get_NoBus()
             for xb in range(self.connections['Branches']):
                 if xb+1 != self.settings['Security'][xs]:
                     LLESec1[x0][:] = [xb, xacu]
@@ -1001,15 +1001,15 @@ class ENetworkClass:
             self.ENetwork.loss['B'] = Loss_Con2
 
         # Add LL for dynamic loads
-        LLDL = np.zeros(self.ENetwork.data['Buses'], dtype=int)
+        LLDL = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
         for xdl in range(self.pumps['Number']):
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
         self.p['LLPump'] = LLDL
 
         # Add LL for feasibility constraints (Nodes)
-        LLFea = np.zeros(self.ENetwork.data['Buses']+1, dtype=int)
+        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
         if self.settings['Feasibility']:
-            NoFea = self.ENetwork.data['Buses']+1
+            NoFea = self.ENetwork.get_NoBus()+1
             for xn in range(1, NoFea):
                 LLFea[xn] = xn
         else:
@@ -1118,12 +1118,12 @@ class ENetworkClass:
 
         # Default settings for demand profiles
         if self.scenarios['Links'] == 'Default':
-            self.scenarios['Links'] = np.ones(self.ENetwork.data['Buses'] *
+            self.scenarios['Links'] = np.ones(self.ENetwork.get_NoBus() *
                                               self.scenarios['Number'],
                                               dtype=int)
-            acu = self.ENetwork.data['Buses']
+            acu = self.ENetwork.get_NoBus()
             for xs in range(self.scenarios['Number']-1):
-                for xt in range(self.ENetwork.data['Buses']):
+                for xt in range(self.ENetwork.get_NoBus()):
                     self.scenarios['Links'][acu] = xs+2
                     acu += 1
 
@@ -1154,7 +1154,7 @@ class ENetworkClass:
             xg2 = -1
             for xg in self.hydropower['Link']:
                 xg2 += 1
-                ENetGen['MBASE'][xg] = self.ENetwork.data['baseMVA']
+                ENetGen['MBASE'][xg] = self.ENetwork.get_Base()
                 # Add polinomial (linear) cost curve
                 if self.hydropower['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2
@@ -1170,7 +1170,7 @@ class ENetworkClass:
                 xg2 += 1
                 ENetGen['PMAX'][xg] = 1000000
                 ENetGen['QMAX'][xg] = 1000000
-                ENetGen['MBASE'][xg] = self.ENetwork.data['baseMVA']
+                ENetGen['MBASE'][xg] = self.ENetwork.get_Base()
                 # Add polinomial (linear) cost curve
                 if self.RES['Cost'][xg2] != 0:
                     ENetCost['MODEL'][xg] = 2

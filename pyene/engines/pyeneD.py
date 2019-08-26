@@ -395,8 +395,8 @@ class ElectricityNetwork:
         xcou = 0
         for ob in self.Branch:
             # Find position of the bus (may be different from the number)
-            xf = self.findBusPosition(ob.data['F_BUS'])
-            xt = self.findBusPosition(ob.data['T_BUS'])
+            xf = self.findBusPosition(ob.get_BusF())
+            xt = self.findBusPosition(ob.get_BusT())
 
             # The branch now includes the position of the buses
             ob.data['F_Position'] = xf
@@ -408,8 +408,8 @@ class ElectricityNetwork:
             xcou += 1
 
             # Tbe bus now includes the position of the relevant branches
-            self.Bus[xf].data['F_Branches'].append(ob.data['Position'])
-            self.Bus[xt].data['T_Branches'].append(ob.data['Position'])
+            self.Bus[xf].data['F_Branches'].append(ob.get_Pos())
+            self.Bus[xt].data['T_Branches'].append(ob.get_Pos())
             self.Bus[xf].data['NoFB'] += 1
             self.Bus[xt].data['NoTB'] += 1
 
@@ -464,6 +464,14 @@ class ElectricityNetwork:
         return aux
         aux = []
 
+    def get_NoBus(self):
+        ''' Get total number of buses in the network '''
+        return self.data['Buses']
+
+    def get_NoBra(self):
+        ''' Get total number of branches in the network '''
+        return self.data['Branches']
+
     def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
         ''' Branch flows constraint '''
         return self.Branch[xb].cNEFlow_rule(m, xt, xs, ConF, ConV, self.Bus)
@@ -497,6 +505,10 @@ class ElectricityNetwork:
             xn += 1
 
         return xn
+
+    def get_Base(self):
+        ''' Provide base MVA rating '''
+        return self.data['baseMVA']
 
 
 class GenClass:
@@ -548,6 +560,12 @@ class GenClass:
                 yval[xv]-xval[xv]*self.cost['LCost'][xv][0]
             self.cost['LCost'][xv][0] *= Base
 
+        self.pyomo['NoPieces'] = NoPieces
+
+    def get_NoPieces(self):
+        ''' Get number of pices used for piece-wise cost estimations '''
+        return self.pyomo['NoPieces']
+
 
 class Conventional(GenClass):
     ''' Conventional generator '''
@@ -576,9 +594,10 @@ class Conventional(GenClass):
         self.cost = {}
         for xa in aux:
             self.cost[xa] = obj.cost[xa]
-            
+
         self.pyomo = {}
         self.pyomo['vNGen'] = None
+        self.pyomo['NoPieces'] = None
 
 
 class Hydropower(GenClass):
@@ -608,6 +627,7 @@ class Hydropower(GenClass):
 
         self.pyomo = {}
         self.pyomo['vNGen'] = None
+        self.pyomo['NoPieces'] = None
 
 
 class RES(GenClass):
@@ -636,6 +656,7 @@ class RES(GenClass):
 
         self.pyomo = {}
         self.pyomo['vNGen'] = None
+        self.pyomo['NoPieces'] = None
 
 
 class Generators:
@@ -648,6 +669,8 @@ class Generators:
                 'RES': NoRES,
                 'Gen': NoConv+NoHydro+NoRES
                 }
+        self.pyomo = {}
+        self.pyomo['NoPieces'] = 0  # Max number of piece-wise cost curves
 
         # Conventional generators
         self.ConvConf = [ConventionalConfig() for x in range(NoConv)]
@@ -707,12 +730,17 @@ class Generators:
                 ENetwork.Bus[xb].data['GenPosition'].append(xp)
 
                 # Create cost curves
-                ob.set_CostCurve(sett, xNo, xLen, ENetwork.data['baseMVA'])
-                ob.data['Max'] *= ENetwork.data['baseMVA']
-                ob.data['Min'] *= ENetwork.data['baseMVA']
+                ob.set_CostCurve(sett, xNo, xLen, ENetwork.get_Base())
+                ob.data['Max'] *= ENetwork.get_Base()
+                ob.data['Min'] *= ENetwork.get_Base()
 
                 # Store location of vGen variable
                 ob.pyomo['vNGen'] = xNo+xshift
+
+                # Store maximum number of pieces used so far
+                aux = ob.get_NoPieces()
+                if aux > self.pyomo['NoPieces']:
+                    self.pyomo['NoPieces'] = aux
                 xNo += 1
             xt += 1
 
@@ -731,4 +759,6 @@ class Generators:
 
         return aux
 
-    
+    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG):
+        ''' Generation costs - Piece-wise estimation '''
+        self.data['xshift']
