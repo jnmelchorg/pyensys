@@ -18,6 +18,26 @@ class _node():
         self.marginal = None
         self.flag = False
 
+# Simulation without electricity network
+def test_pyene_NoENetwork():
+    print('test_pyene_NoENetwork')
+    conf = testConfig()
+    #    conf.TreeFile = 'ResolutionTreeMonth01.json'
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+    conf.NM.settings['NoTime'] = 1  # Number of time steps
+    conf.NM.settings['Flag'] = False
+    # Create object
+    EN = pe(conf.EN)
+    # Initialise with selected configuration
+    EN.initialise(conf)
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print(m.OF.expr())
+
+    assert 0.0001 >= abs(m.OF.expr()-653086.8750)
 
 # Energy balance and network simulation
 def test_pyene_Small():

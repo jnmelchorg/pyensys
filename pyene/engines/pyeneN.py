@@ -209,9 +209,9 @@ class ENetworkClass:
                 self.p['LossM'] = 1+self.settings['Loss']
 
             # Balance: Gen = Demand
-            m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
-                                      self.s['Con'],
-                                      rule=self.cNEBalance0_rule)
+            m.cNEBalance0 = Constraint(self.s['Tim'], self.s['Sec2'],
+                                       self.s['Con'],
+                                       rule=self.cNEBalance0_rule)
 
         # Reference generation
         m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
@@ -401,11 +401,11 @@ class ENetworkClass:
                     for x1 in self.ENetwork.Bus[xn].get_FLoss()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
-        ''' Nodal balance without networks '''
+        ''' Nodal balance without networks '''        
         # Check for case without demand profiles
-        return sum(self.busData[xn]*self.scenarios['Demand']
+        return float(sum(self.busData[xn]*self.scenarios['Demand']
                    [xt*self.p['daux']+self.busScenario[xn][xh]]
-                   for xn in self.s['Bus'])*self.p['LossM'] + \
+                   for xn in self.s['Bus']))*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
             m.vNFea[xh*self.p['faux'], xt] + \
@@ -842,13 +842,6 @@ class ENetworkClass:
 
         GenMax = self.generationE['Data']['PMAX']
         GenMin = self.generationE['Data']['PMIN']
-
-        # Get LL for generators
-        (LLGen1, LLGen2) = self._getLL(self.ENetwork.data['Buses'],
-                                       self.generationE['Number'],
-                                       self.generationE['Data']['GEN_BUS'])
-        self.p['LLGen1'] = LLGen1
-        self.p['LLGen2'] = LLGen2
 
         # Get size of the required pieces
         laux = len(self.settings['Pieces'])
