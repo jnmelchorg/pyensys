@@ -27,7 +27,7 @@ class EInterfaceClass:
             return (0, False)
 
         nu.set_snapshots(range(NM.settings['NoTime']))
-        baseMVA = NM.ENetwork.data['baseMVA']
+        baseMVA = NM.ENetwork.get_Base()
 
         # Names
         auxtxtN = 'Bus'
@@ -57,34 +57,34 @@ class EInterfaceClass:
             x - coordinates
             y - coordinates
         '''
-        PVBus = np.zeros(NM.ENetwork.data['Buses'], dtype=float)
+        PVBus = np.zeros(NM.ENetwork.get_NoBus(), dtype=float)
         aux = (NM.generationE['Number']-NM.hydropower['Number'] -
                NM.RES['Number'])
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
-            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 2:
+            if NM.ENetwork.Bus[xn-xshift].get_Type() == 2:
                 PVBus[xn-1] = NM.generationE['Data']['VG'][xn]
 
         for ob in NM.ENetwork.Bus:
-            if ob.data['BASE_KV'] == 0:
+            if ob.get_kV() == 0:
                 aux1 = 1
             else:
-                aux1 = ob.data['BASE_KV']
-            if ob.data['BUS_TYPE'] == 2 or \
-               ob.data['BUS_TYPE'] == 3:
-                aux2 = ob.data['VM']
+                aux1 = ob.get_kV()
+            if ob.get_Type() == 2 or ob.get_Type() == 3:
+                aux2 = ob.get_VM()
             else:
-                aux2 = PVBus[ob.get_Position()]
-            if ob.data['BUS_X'] is not None:
+                aux2 = PVBus[ob.get_Pos()]
+
+            if ob.get_X() is not None:
                 nu.add('Bus', auxtxtN+str(ob.get_Number()),
                        v_nom=aux1, v_mag_pu_set=aux2,
-                       v_mag_pu_min=ob.data['VMIN'],
-                       v_mag_pu_max=ob.data['VMAX'],
-                       x=ob.data['BUS_X'],
-                       y=ob.data['BUS_Y'])
+                       v_mag_pu_min=ob.get_Vmin(),
+                       v_mag_pu_max=ob.get_Vmax(),
+                       x=ob.get_X(),
+                       y=ob.get_Y())
             else:
                 nu.add('Bus', auxtxtN+str(ob.get_Number()), v_nom=aux1,
-                       v_mag_pu_set=aux2, v_mag_pu_min=ob.data['VMIN'],
-                       v_mag_pu_max=ob.data['VMAX'])
+                       v_mag_pu_set=aux2, v_mag_pu_min=ob.get_Vmin(),
+                       v_mag_pu_max=ob.get_Vmax())
 
         '''                            GENERATOR
         Missing attributes:
@@ -121,9 +121,9 @@ class EInterfaceClass:
         xg = -1
         for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
             xg += 1
-            if NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 1:
+            if NM.ENetwork.Bus[xn-xshift].get_Type() == 1:
                 aux1 = 'PQ'
-            elif NM.ENetwork.Bus[xn-xshift].data['BUS_TYPE'] == 2:
+            elif NM.ENetwork.Bus[xn-xshift].get_Type() == 2:
                 aux1 = 'PV'
             else:
                 aux1 = 'Slack'
@@ -204,7 +204,7 @@ class EInterfaceClass:
         xL = 0
         ydemP = np.zeros(NM.settings['NoTime'], dtype=float)
         ydemQ = np.zeros(NM.settings['NoTime'], dtype=float)
-        for xn in range(NM.ENetwork.data['Buses']):
+        for xn in range(NM.ENetwork.get_NoBus()):
             if NM.demandE['PD'][xn] != 0:
                 xL += 1
                 for xt in range(NM.settings['NoTime']):
@@ -246,15 +246,15 @@ class EInterfaceClass:
         '''
         auxtxtL = 'Line'
         for ob in NM.ENetwork.Branch:
-            if ob.data['TAP'] == 0:
+            if ob.get_Tap() == 0:
                 auxpu = nu.buses['v_nom']['Bus{}'.format(ob.get_BusF())]**2 / \
-                    NM.ENetwork.data['baseMVA']
+                    NM.ENetwork.get_Base()
                 nu.add('Line', auxtxtL+str(ob.get_Number()),
                        bus0=auxtxtN+str(ob.get_BusF()),
                        bus1=auxtxtN+str(ob.get_BusT()),
-                       x=ob.data['BR_X']*auxpu,
-                       r=ob.data['BR_R']*auxpu,
-                       s_nom=ob.data['RATE_A']*NM.ENetwork.data['baseMVA']
+                       x=ob.get_X()*auxpu,
+                       r=ob.get_R()*auxpu,
+                       s_nom=ob.get_Rate()*NM.ENetwork.get_Base()
                        )
 
         #                           LINE TYPES
@@ -283,16 +283,16 @@ class EInterfaceClass:
         '''
         auxtxtT = 'Trs'
         for ob in NM.ENetwork.Branch:
-            if ob.data['TAP'] != 0:
+            if ob.get_Tap() != 0:
                 nu.add('Transformer', auxtxtT+str(ob.get_Number()),
                        bus0=auxtxtN+str(ob.get_BusF()),
                        bus1=auxtxtN+str(ob.get_BusT()),
                        model='pi',
-                       x=ob.data['BR_X'],
-                       r=ob.data['BR_R'],
-                       b=ob.data['BR_B'],
-                       s_nom=ob.data['RATE_A']*NM.ENetwork.data['baseMVA'],
-                       tap_ratio=ob.data['TAP'],
+                       x=ob.get_X(),
+                       r=ob.get_R(),
+                       b=ob.get_B(),
+                       s_nom=ob.get_Rate()*NM.ENetwork.get_Base(),
+                       tap_ratio=ob.get_Tap(),
                        tap_side=0
                        )
 

@@ -197,6 +197,49 @@ class Branch:
         self.pyomo = {}
         self.pyomo['N-1'] = None
 
+    def cNDCLossA_rule(self, m, xt, xL, ConF, ConL, A, B):
+        ''' Power losses estimation - Positive '''
+        return m.vNLoss[ConL+self.get_Pos(), xt] >= \
+            (A[xL]+B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
+            self.data['BR_R']
+
+    def cNDCLossB_rule(self, m, xt, xL, ConF, ConL, A, B):
+        ''' Power losses estimation - Negative '''
+        return m.vNLoss[ConL+self.get_Pos(), xt] >= \
+            (A[xL]-B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
+            self.data['BR_R']
+
+    def cNEFlow_rule(self, m, xt, xs, ConF, ConV, Bus):
+        ''' Set DC power flow constraint '''
+        if self.is_active(xs):
+            xaux1 = ConV+Bus[self.get_PosF()].get_Secx(xs)
+            xaux2 = ConV+Bus[self.get_PosT()].get_Secx(xs)
+
+            return m.vNFlow[ConF+self.get_Secx(xs), xt] == \
+                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt])/self.data['BR_X']
+        else:
+            return Constraint.Skip
+
+    def cNEFMax_rule(self, m, xt, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        if self.is_active(xs):
+            return m.vNFlow[ConF+self.get_Secx(xs), xt] >= \
+                -self.data['RATE_A']
+        else:
+            return Constraint.Skip
+
+    def cNEFMin_rule(self, m, xt, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        if self.is_active(xs):
+            return m.vNFlow[ConF+self.get_Secx(xs), xt] <= \
+                self.data['RATE_A']
+        else:
+            return Constraint.Skip
+
+    def get_B(self):
+        ''' Get Susceptance '''
+        return self.data['BR_B']
+
     def get_BusF(self):
         ''' Get bus number at beginning (from) of the branch '''
         return self.data['F_BUS']
@@ -204,6 +247,10 @@ class Branch:
     def get_BusT(self):
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
+
+    def get_N1x(self, x):
+        ''' Get values for a single N-1 condition '''
+        return self.pyomo['N-1'][x]
 
     def get_Number(self):
         ''' Get branch number - starting from one'''
@@ -221,53 +268,49 @@ class Branch:
         ''' Get bus position at end (to) of the branch '''
         return self.data['T_Position']
 
-    def get_Sec(self, xs):
+    def get_R(self):
+        ''' Get Resistance '''
+        return self.data['BR_R']
+
+    def get_Rate(self):
+        ''' Get Rate A for normal operation conditions'''
+        return self.data['RATE_A']
+
+    def get_Secx(self, xs):
         ''' Get position in N-1 scenario '''
         return self.pyomo['N-1'][xs]
+
+    def get_Tap(self):
+        ''' Get tap position '''
+        return self.data['TAP']
+
+    def get_X(self):
+        ''' Get Reactance '''
+        return self.data['BR_X']
 
     def is_active(self, xs):
         ''' Is the line connected in this scenario? '''
         return self.pyomo['N-1'][xs] is not None
 
-    def cNEFlow_rule(self, m, xt, xs, ConF, ConV, Bus):
-        ''' Set DC power flow constraint '''
-        if self.is_active(xs):
-            xaux1 = ConV+Bus[self.get_PosF()].get_Sec(xs)
-            xaux2 = ConV+Bus[self.get_PosT()].get_Sec(xs)
+    def set_PosF(self, val):
+        ''' Set bus position at beginning (from) of the branch '''
+        self.data['F_Position'] = val
 
-            return m.vNFlow[ConF+self.get_Sec(xs), xt] == \
-                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt])/self.data['BR_X']
-        else:
-            return Constraint.Skip
+    def set_PosT(self, val):
+        ''' Set bus position at end (to) of the branch '''
+        self.data['T_Position'] = val
 
-    def cNEFMax_rule(self, m, xt, xs, ConF):
-        ''' Branch capacity constraint (positive) '''
-        if self.is_active(xs):
-            return m.vNFlow[ConF+self.get_Sec(xs), xt] >= \
-                -self.data['RATE_A']
-        else:
-            return Constraint.Skip
+    def set_N1(self, val):
+        ''' Set values for all N-1 conditions '''
+        self.pyomo['N-1'] = val
 
-    def cNEFMin_rule(self, m, xt, xs, ConF):
-        ''' Branch capacity constraint (positive) '''
-        if self.is_active(xs):
-            return m.vNFlow[ConF+self.get_Sec(xs), xt] <= \
-                self.data['RATE_A']
-        else:
-            return Constraint.Skip
+    def set_N1x(self, val, x):
+        ''' Set values for a single N-1 condition '''
+        self.pyomo['N-1'][x] = val
 
-    def cNDCLossA_rule(self, m, xt, xL, ConF, ConL, A, B):
-        ''' Power losses estimation - Positive '''
-        return m.vNLoss[ConL+self.get_Pos(), xt] >= \
-            (A[xL]+B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
-            self.data['BR_R']
-
-    def cNDCLossB_rule(self, m, xt, xL, ConF, ConL, A, B):
-        ''' Power losses estimation - Negative '''
-        return m.vNLoss[ConL+self.get_Pos(), xt] >= \
-            (A[xL]-B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
-            self.data['BR_R']
-
+    def set_Rate(self, val):
+        ''' Set Rate A for normal operation conditions'''
+        self.data['RATE_A'] = val
 
 class Bus:
     ''' Electricity bus '''
@@ -301,34 +344,93 @@ class Bus:
 
         self.pyomo = {}
         self.pyomo['N-1'] = None
+    
+    def add_BraF(self, val):
+        ''' Append value to F_Branches - Branches connected from node'''
+        self.data['F_Branches'].append(val)
+        self.data['NoFB'] += 1
+
+    def add_BraT(self, val):
+        ''' Append value to T_Branches - Branches connected to node'''
+        self.data['T_Branches'].append(val)
+        self.data['NoTB'] += 1
+
+    def add_Gen(self, xt, xp):
+        ''' Append generator type and position '''
+        self.data['GenType'].append(xt)
+        self.data['GenPosition'].append(xp)
+
+    def get_BraF(self):
+        ''' Get list of branches connected from the bus in an N-1 scenario'''
+        return self.data['F_Branches']
+
+    def get_BraT(self):
+        ''' Get list of branches connected to the bus in an N-1 scenario'''
+        return self.data['T_Branches']
+
+    def get_kV(self):
+        ''' Get base kV '''
+        return self.data['BASE_KV']
+
+    def get_LossF(self):
+        ''' Get list of branches connected from the bus - Losses'''
+        return self.data['F_Loss']
+
+    def get_LossT(self):
+        ''' Get list of branches connected to the bus - Losses'''
+        return self.data['T_Loss']
 
     def get_Number(self):
         ''' Get Bus number '''
         return self.data['Number']
 
-    def get_Position(self):
+    def get_Pos(self):
         ''' Get Bus position - beginning from zero '''
         return self.data['Position']
 
-    def get_FBranch(self):
-        ''' Get list of branches connected to the bus in an N-1 scenario'''
-        return self.data['F_Branches']
-
-    def get_TBranch(self):
-        ''' Get list of branches connected to the bus in an N-1 scenario'''
-        return self.data['T_Branches']
-
-    def get_FLoss(self):
-        ''' Get list of branches connected to the bus in an N-1 scenario'''
-        return self.data['F_Loss']
-
-    def get_TLoss(self):
-        ''' Get list of branches connected to the bus in an N-1 scenario'''
-        return self.data['T_Loss']
-
-    def get_Sec(self, xs):
+    def get_Secx(self, xs):
         ''' Get position of variable in N-1 scenario '''
         return self.pyomo['N-1'][xs]
+
+    def get_Type(self):
+        ''' Get bus type '''
+        return self.data['BUS_TYPE']
+
+    def get_VM(self):
+        ''' Get Voltege magnitude (pu) '''
+        return self.data['VM']
+
+    def get_Vmax(self):
+        ''' Get max voltage limit (pu) '''
+        return self.data['VMAX']
+
+    def get_Vmin(self):
+        ''' Get max voltage limit (pu) '''
+        return self.data['VMIN']
+
+    def get_X(self):
+        ''' Get X coordinates '''
+        return self.data['BUS_X']
+
+    def get_Y(self):
+        ''' Get Y coordinates '''
+        return self.data['BUS_Y']
+
+    def set_LossF(self, val):
+        ''' Set list of branches connected from the bus - Losses'''
+        self.data['F_Loss'] = val
+
+    def set_LossT(self, val):
+        ''' Set list of branches connected to the bus - Losses'''
+        self.data['T_Loss'] = val
+
+    def set_N1(self, val):
+        ''' Set values for all N-1 conditions '''
+        self.pyomo['N-1'] = val
+
+    def set_N1x(self, val, x):
+        ''' Set values for a single N-1 condition '''
+        self.pyomo['N-1'][x] = val
 
 
 class ElectricityNetwork:
@@ -355,20 +457,70 @@ class ElectricityNetwork:
         # Define branch objects - configuration class
         self.BranchConfig = [BranchConfig() for x in range(NoBranch)]
 
-    def MPCconfigure(self, mpc):
-        ''' Initialize using mat power data '''
+    def cNDCLossA_rule(self, m, xt, xb, xL, ConF, ConL):
+        ''' Power losses estimation - Positive '''
+        return self.Branch[xb].cNDCLossA_rule(m, xt, xL, ConF, ConL,
+                                              self.loss['A'], self.loss['B'])
 
-        # General electricity network settings
-        for xa in ['version', 'baseMVA', 'NoGen', 'Slack']:
-            self.data[xa] = mpc[xa]
+    def cNDCLossB_rule(self, m, xt, xb, xL, ConF, ConL):
+        ''' Power losses estimation - Negative '''
+        return self.Branch[xb].cNDCLossB_rule(m, xt, xL, ConF, ConL,
+                                              self.loss['A'], self.loss['B'])
 
-        # Bus data
-        for x in range(mpc['NoBus']):
-            self.BusConfig[x].MPCconfigure(mpc['bus'], x)
+    def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
+        ''' Branch flows constraint '''
+        return self.Branch[xb].cNEFlow_rule(m, xt, xs, ConF, ConV, self.Bus)
 
-        # Branch data
-        for x in range(mpc['NoBranch']):
-            self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
+    def cNEFMax_rule(self, m, xt, xb, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        return self.Branch[xb].cNEFMax_rule(m, xt, xs, ConF)
+
+    def cNEFMin_rule(self, m, xt, xb, xs, ConF):
+        ''' Branch capacity constraint (positive) '''
+        return self.Branch[xb].cNEFMin_rule(m, xt, xs, ConF)
+
+    def findBusPosition(self, bus):
+        ''' Find the position of a bus
+
+        This is required as the bus numbers may not begin from zero, or some
+        positions may be missing
+        '''
+        xn = 0
+        while self.Bus[xn].data['Number'] != bus:
+            xn += 1
+
+        return xn
+
+    def get_Base(self):
+        ''' Provide base MVA rating '''
+        return self.data['baseMVA']
+
+    def get_FlowF(self, xn, xs):
+        ''' Get branches connected from bus per scenario '''
+        aux = []
+        for xb in self.Bus[xn].get_BraF():  # Branches connected to the bus
+            # Is teh branch active in the scenario?
+            if self.Branch[xb].get_N1x(xs) is not None:
+                aux.append(self.Branch[xb].get_N1x(xs))
+        return aux
+        aux = []
+
+    def get_FlowT(self, xn, xs):
+        ''' Get branches connected to bus per scenario '''
+        aux = []
+        for xb in self.Bus[xn].get_BraT():  # Branches connected to the bus
+            # Is teh branch active in the scenario?
+            if self.Branch[xb].get_N1x(xs) is not None:
+                aux.append(self.Branch[xb].get_N1x(xs))
+        return aux
+
+    def get_NoBra(self):
+        ''' Get total number of branches in the network '''
+        return self.data['Branches']
+
+    def get_NoBus(self):
+        ''' Get total number of buses in the network '''
+        return self.data['Buses']
 
     def initialise(self, sett):
         ''' Prepare objects and remove configuration versions '''
@@ -399,27 +551,25 @@ class ElectricityNetwork:
             xt = self.findBusPosition(ob.get_BusT())
 
             # The branch now includes the position of the buses
-            ob.data['F_Position'] = xf
-            ob.data['T_Position'] = xt
+            ob.set_PosF(xf)
+            ob.set_PosT(xt)
 
             # Enable branch for the first N-1 scenario (intact network)
-            ob.pyomo['N-1'] = [None] * (self.data['SecurityNo']+1)
-            ob.pyomo['N-1'][0] = xcou
+            ob.set_N1([None]*(self.data['SecurityNo']+1))
+            ob.set_N1x(xcou, 0)
             xcou += 1
 
             # Tbe bus now includes the position of the relevant branches
-            self.Bus[xf].data['F_Branches'].append(ob.get_Pos())
-            self.Bus[xt].data['T_Branches'].append(ob.get_Pos())
-            self.Bus[xf].data['NoFB'] += 1
-            self.Bus[xt].data['NoTB'] += 1
+            self.Bus[xf].add_BraF(ob.get_Pos())
+            self.Bus[xt].add_BraT(ob.get_Pos())
 
             # Adjust line capacity
-            ob.data['RATE_A'] = ob.data['RATE_A']/self.data['baseMVA']
+            ob.set_Rate(ob.get_Rate()/self.data['baseMVA'])
 
         # Initialize security data for nodes
         for ob in self.Bus:
-            ob.pyomo['N-1'] = [None] * (self.data['SecurityNo']+1)
-            ob.pyomo['N-1'][0] = ob.data['Position']
+            ob.set_N1([None]*(self.data['SecurityNo']+1))
+            ob.set_N1x(ob.get_Pos(), 0)
 
         # Enable branches in other scenarios (pyomo)
         xsec = 0
@@ -427,88 +577,34 @@ class ElectricityNetwork:
             xsec += 1
             # Add N-1 information to buses
             for ob in self.Bus:
-                ob.pyomo['N-1'][xsec] = \
-                    xsec*self.data['Buses']+ob.data['Position']
+                ob.set_N1x(xsec*self.data['Buses']+ob.data['Position'], xsec)
+
             # Add N-1 information to branches
             for ob in (self.Branch[xb] for xb in range(self.data['Branches'])
                        if xb+1 != xs):
-                ob.pyomo['N-1'][xsec] = xcou
+                ob.set_N1x(xcou, xsec)
                 xcou += 1
 
         # Model losses
         if sett['Losses']:
             for ob in self.Bus:
-                ob.data['F_Loss'] = ob.data['F_Branches']
-                ob.data['T_Loss'] = ob.data['T_Branches']
+                ob.set_LossF(ob.get_BraF())
+                ob.set_LossT(ob.get_BraT())
 
-    def get_Security(self, No):
-        ''' Define time series to model security constraints '''
-        return (x for x in range(self.data['Branches']) if x != No)
+    def MPCconfigure(self, mpc):
+        ''' Initialize using mat power data '''
 
-    def get_TFlow(self, xn, xs):
-        ''' Get branches connected to bus per scenario '''
-        aux = []
-        for xb in self.Bus[xn].get_TBranch():  # Branches connected to the bus
-            # Is teh branch active in the scenario?
-            if self.Branch[xb].pyomo['N-1'][xs] is not None:
-                aux.append(self.Branch[xb].pyomo['N-1'][xs])
-        return aux
+        # General electricity network settings
+        for xa in ['version', 'baseMVA', 'NoGen', 'Slack']:
+            self.data[xa] = mpc[xa]
 
-    def get_FFlow(self, xn, xs):
-        ''' Get branches connected from bus per scenario '''
-        aux = []
-        for xb in self.Bus[xn].get_FBranch():  # Branches connected to the bus
-            # Is teh branch active in the scenario?
-            if self.Branch[xb].pyomo['N-1'][xs] is not None:
-                aux.append(self.Branch[xb].pyomo['N-1'][xs])
-        return aux
-        aux = []
+        # Bus data
+        for x in range(mpc['NoBus']):
+            self.BusConfig[x].MPCconfigure(mpc['bus'], x)
 
-    def get_NoBus(self):
-        ''' Get total number of buses in the network '''
-        return self.data['Buses']
-
-    def get_NoBra(self):
-        ''' Get total number of branches in the network '''
-        return self.data['Branches']
-
-    def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
-        ''' Branch flows constraint '''
-        return self.Branch[xb].cNEFlow_rule(m, xt, xs, ConF, ConV, self.Bus)
-
-    def cNEFMax_rule(self, m, xt, xb, xs, ConF):
-        ''' Branch capacity constraint (positive) '''
-        return self.Branch[xb].cNEFMax_rule(m, xt, xs, ConF)
-
-    def cNEFMin_rule(self, m, xt, xb, xs, ConF):
-        ''' Branch capacity constraint (positive) '''
-        return self.Branch[xb].cNEFMin_rule(m, xt, xs, ConF)
-
-    def cNDCLossA_rule(self, m, xt, xb, xL, ConF, ConL):
-        ''' Power losses estimation - Positive '''
-        return self.Branch[xb].cNDCLossA_rule(m, xt, xL, ConF, ConL,
-                                              self.loss['A'], self.loss['B'])
-
-    def cNDCLossB_rule(self, m, xt, xb, xL, ConF, ConL):
-        ''' Power losses estimation - Negative '''
-        return self.Branch[xb].cNDCLossB_rule(m, xt, xL, ConF, ConL,
-                                              self.loss['A'], self.loss['B'])
-
-    def findBusPosition(self, bus):
-        ''' Find the position of a bus
-
-        This is required as the bus numbers may not begin from zero, or some
-        positions may be missing
-        '''
-        xn = 0
-        while self.Bus[xn].data['Number'] != bus:
-            xn += 1
-
-        return xn
-
-    def get_Base(self):
-        ''' Provide base MVA rating '''
-        return self.data['baseMVA']
+        # Branch data
+        for x in range(mpc['NoBranch']):
+            self.BranchConfig[x].MPCconfigure(mpc['branch'], x)
 
 
 class GenClass:
@@ -566,6 +662,37 @@ class GenClass:
         ''' Get number of pices used for piece-wise cost estimations '''
         return self.pyomo['NoPieces']
 
+    def get_Bus(self):
+        ''' Get bus number '''
+        return self.data['Bus']
+
+    def get_Max(self):
+        ''' Get maximum capacity (MW) '''
+        return self.data['Max']
+
+    def get_Min(self):
+        ''' Get minimum capacity (MW) '''
+        return self.data['Min']
+
+    def get_vNGen(self):
+        ''' Set position of vNGen variable - pyomo'''
+        return self.pyomo['vNGen']
+
+    def set_Max(self, val):
+        ''' Set maximum capacity (MW) '''
+        self.data['Max'] = val
+
+    def set_Min(self, val):
+        ''' Set minimum capacity (MW) '''
+        self.data['Min'] = val
+
+    def set_PosB(self, xb):
+        ''' Set position of the bus '''
+        self.data['BusPosition'] = xb
+
+    def set_vNGen(self, val):
+        ''' Set position of vNGen variable - pyomo'''
+        self.pyomo['vNGen'] = val
 
 class Conventional(GenClass):
     ''' Conventional generator '''
@@ -598,7 +725,6 @@ class Conventional(GenClass):
         self.pyomo = {}
         self.pyomo['vNGen'] = None
         self.pyomo['NoPieces'] = None
-
 
 class Hydropower(GenClass):
     ''' Hydropower generator '''
@@ -681,18 +807,9 @@ class Generators:
         # RES generators
         self.RESConf = [RESConfig() for x in range(NoRES)]
 
-    def MPCconfigure(self, mpc, conv, hydro, RES):
-        ''' Initialize using mat power data '''
-
-        # Conventional generators
-        for x in range(self.data['Conv']):
-            self.ConvConf[x].MPCconfigure(mpc, conv, x)
-
-        for x in range(self.data['Hydro']):
-            self.HydroConf[x].MPCconfigure(hydro, x)
-
-        for x in range(self.data['RES']):
-            self.RESConf[x].MPCconfigure(RES, x)
+    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG):
+        ''' Generation costs - Piece-wise estimation '''
+        self.data['xshift']
 
     def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
@@ -721,21 +838,22 @@ class Generators:
         for ax in genaux:
             for ob in getattr(self, ax):
                 # Link generators and buses
-                xb = ENetwork.findBusPosition(ob.data['Bus'])  # Bus
+                xb = ENetwork.findBusPosition(ob.get_Bus())  # Bus
                 xp = ob.data['Position']  # Generator
                 # The Generator knows the position of its bus
-                ob.data['BusPosition'] = xb
+                ob.set_PosB(xb)
                 # The bus knows the type and location of the generator
-                ENetwork.Bus[xb].data['GenType'].append(xt)
-                ENetwork.Bus[xb].data['GenPosition'].append(xp)
+                ENetwork.Bus[xb].add_Gen(xt, xp)
 
                 # Create cost curves
                 ob.set_CostCurve(sett, xNo, xLen, ENetwork.get_Base())
-                ob.data['Max'] *= ENetwork.get_Base()
-                ob.data['Min'] *= ENetwork.get_Base()
+
+                # MW --> pu
+                ob.set_Max(ob.get_Max()*ENetwork.get_Base())
+                ob.set_Min(ob.get_Min()*ENetwork.get_Base())
 
                 # Store location of vGen variable
-                ob.pyomo['vNGen'] = xNo+xshift
+                ob.set_vNGen(xNo+xshift)
 
                 # Store maximum number of pieces used so far
                 aux = ob.get_NoPieces()
@@ -749,7 +867,7 @@ class Generators:
         genaux = ['Conv', 'Hydro', 'RES']
         aux = []
         for xt, xp in zip(Bus.data['GenType'], Bus.data['GenPosition']):
-            aux.append(getattr(self, genaux[xt])[xp].pyomo['vNGen'])
+            aux.append(getattr(self, genaux[xt])[xp].get_vNGen())
 
         return aux
 
@@ -759,6 +877,15 @@ class Generators:
 
         return aux
 
-    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG):
-        ''' Generation costs - Piece-wise estimation '''
-        self.data['xshift']
+    def MPCconfigure(self, mpc, conv, hydro, RES):
+        ''' Initialize using mat power data '''
+
+        # Conventional generators
+        for x in range(self.data['Conv']):
+            self.ConvConf[x].MPCconfigure(mpc, conv, x)
+
+        for x in range(self.data['Hydro']):
+            self.HydroConf[x].MPCconfigure(hydro, x)
+
+        for x in range(self.data['RES']):
+            self.RESConf[x].MPCconfigure(RES, x)

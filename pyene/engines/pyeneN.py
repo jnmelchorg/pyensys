@@ -382,9 +382,9 @@ class ENetworkClass:
         return (sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
                     for xg in self.Gen.get_GenInBus(self.ENetwork.Bus[xn])) +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
-                    for x2 in self.ENetwork.get_TFlow(xn, xs)) -
+                    for x2 in self.ENetwork.get_FlowT(xn, xs)) -
                 sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
-                    for x2 in self.ENetwork.Bus[xn].get_TLoss()) ==
+                    for x2 in self.ENetwork.Bus[xn].get_LossT()) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
@@ -396,9 +396,9 @@ class ENetworkClass:
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
-                    for x1 in self.ENetwork.get_FFlow(xn, xs)) +
+                    for x1 in self.ENetwork.get_FlowF(xn, xs)) +
                 sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
-                    for x1 in self.ENetwork.Bus[xn].get_FLoss()))
+                    for x1 in self.ENetwork.Bus[xn].get_LossF()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''        
