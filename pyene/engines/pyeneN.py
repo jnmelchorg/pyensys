@@ -232,8 +232,10 @@ class ENetworkClass:
             m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
                                    rule=self.cNEGMin_rule)
         # Piece-wise generation costs approximation
-        m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGenC_rule)
+        m.cNEGenC = Constraint(self.s['Gen'], range(self.Gen.get_NoPieces()),
+                                self.s['Tim'], self.s['Con'],
+                                rule=self.cNEGenC_rule)
+        
         # Dinamic load (pump) maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)
@@ -436,14 +438,11 @@ class ENetworkClass:
         ''' Reference generation '''
         return m.vNGen[self.connections['Generation'][xh], xt] == 0
 
-    def cNEGenC_rule(self, m, xc, xt, xh):
-        ''' Piece-wise generation costs approximation '''
-        return (m.vNGCost[self.connections['Cost'][xh] +
-                          self.p['LLGenC'][xc], xt] /
-                self.scenarios['Weights'][xt] >=
-                m.vNGen[self.connections['Generation'][xh] +
-                        self.p['LLGenC'][xc]+1, xt] *
-                self.p['GenLCst'][xc, 0]+self.p['GenLCst'][xc, 1])
+    def cNEGenC_rule(self, m, xg, xc, xt, xh):
+        return self.Gen.cNEGenC_rule(m, xg, xc, xt,
+                                     self.connections['Cost'][xh],
+                                     self.connections['Generation'][xh],
+                                     self.scenarios['Weights'][xt])
 
     def cNEGMax_rule(self, m, xg, xt, xh):
         ''' Maximum generation '''

@@ -136,9 +136,9 @@ class HydropowerConfig:
         self.settings['Max'] = hydro['Max'][No]
 
         # Default cost model
-        self.cost['MODEL'] = 2
-        self.cost['NCOST'] = 1
-        self.cost['COST'] = [hydro['Cost'][No]]
+        self.cost['MODEL'] = 1
+        self.cost['NCOST'] = 2
+        self.cost['COST'] = [0, 0, 1, hydro['Cost'][No]]
 
 
 class RESConfig:
@@ -163,9 +163,9 @@ class RESConfig:
         self.settings['Uncertainty'] = RES['Uncertainty']
 
         # Default cost model
-        self.cost['MODEL'] = 2
-        self.cost['NCOST'] = 1
-        self.cost['COST'] = [RES['Cost'][No]]
+        self.cost['MODEL'] = 1
+        self.cost['NCOST'] = 2
+        self.cost['COST'] = [0, 0, 1, RES['Cost'][No]]
 
 
 '''                               DEVICE CLASSES                            '''
@@ -609,12 +609,21 @@ class ElectricityNetwork:
 
 class GenClass:
     ''' Core generation class '''
+    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w, xshift):
+        ''' Piece wise cost estimation '''
+        if xc < self.pyomo['NoPieces']:
+            return m.vNGCost[ConC+self.pyomo['vNGen']-xshift, xt]/w >= \
+                m.vNGen[ConG+self.pyomo['vNGen'], xt] * \
+                self.cost['LCost'][xc][0]+self.cost['LCost'][xc][1]
+        
+        return Constraint.Skip
+
     def set_CostCurve(self, sett, xNo, xLen, Base):
         ''' Define piece wise cost curve approximation '''
 
         if self.cost['MODEL'] == 1:
             # Piece-wise model
-            NoPieces = self.data['NCOST']
+            NoPieces = self.cost['NCOST']
             xval = np.zeros(NoPieces, dtype=float)
             yval = np.zeros(NoPieces, dtype=float)
             xp = 0
@@ -622,6 +631,7 @@ class GenClass:
                 xval[x] = self.cost['COST'][xp]
                 yval[x] = self.cost['COST'][xp+1]
                 xp += 2
+            NoPieces -= 1
         else:
             # Polinomial model
 
@@ -793,10 +803,13 @@ class Generators:
                 'Conv': NoConv,
                 'Hydro': NoHydro,
                 'RES': NoRES,
-                'Gen': NoConv+NoHydro+NoRES
+                'Gen': NoConv+NoHydro+NoRES,
+                'Types': None
                 }
         self.pyomo = {}
         self.pyomo['NoPieces'] = 0  # Max number of piece-wise cost curves
+        self.pyomo['Type'] = []
+        self.pyomo['Pos'] = []
 
         # Conventional generators
         self.ConvConf = [ConventionalConfig() for x in range(NoConv)]
@@ -807,9 +820,13 @@ class Generators:
         # RES generators
         self.RESConf = [RESConfig() for x in range(NoRES)]
 
-    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG):
+    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w):
         ''' Generation costs - Piece-wise estimation '''
-        self.data['xshift']
+        xa = self.data['Types'][self.pyomo['Type'][xg]]
+        xp = self.pyomo['Pos'][xg]
+        return getattr(self, xa)[xp].cNEGenC_rule(m, xg, xc, xt, ConC, ConG, w,
+                                                  self.data['xshift'])
+
 
     def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
@@ -831,11 +848,12 @@ class Generators:
         del self.RESConf
 
         # Initialise generators
-        genaux = ['Conv', 'Hydro', 'RES']
+        self.data['Types'] = ['Conv', 'Hydro', 'RES']
         xLen = len(sett['Pieces'])
         xt = 0
         xNo = 0
-        for ax in genaux:
+        for ax in self.data['Types']:
+            xp = 0
             for ob in getattr(self, ax):
                 # Link generators and buses
                 xb = ENetwork.findBusPosition(ob.get_Bus())  # Bus
@@ -855,19 +873,23 @@ class Generators:
                 # Store location of vGen variable
                 ob.set_vNGen(xNo+xshift)
 
+                # Link between positions an generation classes
+                self.pyomo['Type'].append(xt)
+                self.pyomo['Pos'].append(xp)
+
                 # Store maximum number of pieces used so far
                 aux = ob.get_NoPieces()
                 if aux > self.pyomo['NoPieces']:
                     self.pyomo['NoPieces'] = aux
+                xp += 1
                 xNo += 1
             xt += 1
 
     def get_GenInBus(self, Bus):
         ''' Get list of generators connected to a bus - vNGen'''
-        genaux = ['Conv', 'Hydro', 'RES']
         aux = []
         for xt, xp in zip(Bus.data['GenType'], Bus.data['GenPosition']):
-            aux.append(getattr(self, genaux[xt])[xp].get_vNGen())
+            aux.append(getattr(self, self.data['Types'][xt])[xp].get_vNGen())
 
         return aux
 
@@ -876,6 +898,10 @@ class Generators:
         aux = range(self.data['xshift'], self.data['Gen']+self.data['xshift'])
 
         return aux
+
+    def get_NoPieces(self):
+        ''' Return number of pieces for cost estimations  '''
+        return self.pyomo['NoPieces']
 
     def MPCconfigure(self, mpc, conv, hydro, RES):
         ''' Initialize using mat power data '''
