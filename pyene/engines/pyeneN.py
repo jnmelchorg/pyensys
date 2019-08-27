@@ -212,10 +212,6 @@ class ENetworkClass:
             m.cNEBalance0 = Constraint(self.s['Tim'], self.s['Sec2'],
                                        self.s['Con'],
                                        rule=self.cNEBalance0_rule)
-
-        # Reference generation
-        m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGen0_rule)
         # Run UC or OPF
         if self.settings['UC']:
             # Maximum generation
@@ -231,6 +227,7 @@ class ENetworkClass:
             # Minimum generation
             m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
                                    rule=self.cNEGMin_rule)
+
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(self.s['Gen'], range(self.Gen.get_NoPieces()),
                                 self.s['Tim'], self.s['Con'],
@@ -289,7 +286,7 @@ class ENetworkClass:
                                      rule=self.cNUncRES0_rule)
 
         return m
-
+    
     def addPar(self, m):
         ''' Add pyomo parameters '''
         self.p['MaxPump'] = self.pumps['Max']
@@ -403,11 +400,10 @@ class ENetworkClass:
                     for x1 in self.ENetwork.Bus[xn].get_LossF()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
-        ''' Nodal balance without networks '''        
-        # Check for case without demand profiles
+        ''' Nodal balance without networks '''
         return float(sum(self.busData[xn]*self.scenarios['Demand']
-                   [xt*self.p['daux']+self.busScenario[xn][xh]]
-                   for xn in self.s['Bus']))*self.p['LossM'] + \
+                     [xt*self.p['daux']+self.busScenario[xn][xh]]
+                     for xn in self.s['Bus']))*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
             m.vNFea[xh*self.p['faux'], xt] + \
@@ -434,10 +430,6 @@ class ENetworkClass:
         return self.ENetwork.cNEFMin_rule(m, xt, xb, xs,
                                           self.connections['Flow'][xh])
 
-    def cNEGen0_rule(self, m, xt, xh):
-        ''' Reference generation '''
-        return m.vNGen[self.connections['Generation'][xh], xt] == 0
-
     def cNEGenC_rule(self, m, xg, xc, xt, xh):
         return self.Gen.cNEGenC_rule(m, xg, xc, xt,
                                      self.connections['Cost'][xh],
@@ -445,12 +437,13 @@ class ENetworkClass:
                                      self.scenarios['Weights'][xt])
 
     def cNEGMax_rule(self, m, xg, xt, xh):
-        ''' Maximum generation '''
+        ''' Maximum generation capacity '''
+#        return self.Gen.cNEGMax_rule(m, xg, xt, self.connections['Generation'][xh])
         return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] <=
                 self.p['GenMax'][xg])
 
     def cNEGMin_rule(self, m, xg, xt, xh):
-        ''' Minimum generation '''
+        ''' Minimum generation capacity '''
         return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
                 self.p['GenMin'][xg])
 
@@ -544,6 +537,34 @@ class ENetworkClass:
             sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
             (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt]
+
+    def get_ConB(self):
+        ''' Get connections between branches '''
+        return self.connections['Branches']
+
+    def get_ConC(self, x=':'):
+        ''' Get connections between costs '''
+        return self.connections['Cost'][x]
+
+    def get_ConG(self, x=':'):
+        ''' Get connections between generators '''
+        return self.connections['Generation'][x]
+
+    def get_ConL(self, x=':'):
+        ''' Get connections between lossess constraints '''
+        return self.connections['Loss'][x]
+
+    def get_ConFea(self, x=':'):
+        ''' Get connection for feasibility constraints '''
+        return self.connections['Feasibility'][x]
+
+    def get_ConP(self, x=':'):
+        ''' Get connection for pump constraints '''
+        return self.connections['Pump'][x]
+
+    def get_ConS(self):
+        ''' Get connections between nodes '''
+        return self.connections['set']
 
     def initialise(self):
         ''' Initialize externally '''
@@ -1180,3 +1201,35 @@ class ENetworkClass:
                 'Costs': ENetCost,
                 'Number': NoGen
                 }
+
+    def set_ConS(self, val):
+        ''' Set connections for nodes '''
+        self.connections['set'] = val
+
+    def set_ConF(self, val):
+        ''' Set connections between branch flows '''
+        self.connections['Flow'] = val
+
+    def set_ConV(self, val):
+        ''' Set connections between voltages '''
+        self.connections['Voltage'] = val
+
+    def set_ConL(self, val):
+        ''' Set connections between branch Losses '''
+        self.connections['Loss'] = val
+
+    def set_ConG(self, val):
+        ''' Set connections between generators '''
+        self.connections['Generation'] = val
+
+    def set_ConC(self, val):
+        ''' Set connections between costs '''
+        self.connections['Cost'] = val
+
+    def set_ConP(self, val):
+        ''' Set connections between pumps '''
+        self.connections['Pump'] = val
+
+    def set_ConFea(self, val):
+        ''' Set connections between feasibility constraints '''
+        self.connections['Feasibility'] = val

@@ -212,10 +212,10 @@ class Branch:
     def cNEFlow_rule(self, m, xt, xs, ConF, ConV, Bus):
         ''' Set DC power flow constraint '''
         if self.is_active(xs):
-            xaux1 = ConV+Bus[self.get_PosF()].get_Secx(xs)
-            xaux2 = ConV+Bus[self.get_PosT()].get_Secx(xs)
+            xaux1 = ConV+Bus[self.get_PosF()].get_Sec(xs)
+            xaux2 = ConV+Bus[self.get_PosT()].get_Sec(xs)
 
-            return m.vNFlow[ConF+self.get_Secx(xs), xt] == \
+            return m.vNFlow[ConF+self.get_Sec(xs), xt] == \
                 (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt])/self.data['BR_X']
         else:
             return Constraint.Skip
@@ -223,7 +223,7 @@ class Branch:
     def cNEFMax_rule(self, m, xt, xs, ConF):
         ''' Branch capacity constraint (positive) '''
         if self.is_active(xs):
-            return m.vNFlow[ConF+self.get_Secx(xs), xt] >= \
+            return m.vNFlow[ConF+self.get_Sec(xs), xt] >= \
                 -self.data['RATE_A']
         else:
             return Constraint.Skip
@@ -231,7 +231,7 @@ class Branch:
     def cNEFMin_rule(self, m, xt, xs, ConF):
         ''' Branch capacity constraint (positive) '''
         if self.is_active(xs):
-            return m.vNFlow[ConF+self.get_Secx(xs), xt] <= \
+            return m.vNFlow[ConF+self.get_Sec(xs), xt] <= \
                 self.data['RATE_A']
         else:
             return Constraint.Skip
@@ -248,7 +248,7 @@ class Branch:
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
 
-    def get_N1x(self, x):
+    def get_N1(self, x=':'):
         ''' Get values for a single N-1 condition '''
         return self.pyomo['N-1'][x]
 
@@ -276,7 +276,7 @@ class Branch:
         ''' Get Rate A for normal operation conditions'''
         return self.data['RATE_A']
 
-    def get_Secx(self, xs):
+    def get_Sec(self, xs=':'):
         ''' Get position in N-1 scenario '''
         return self.pyomo['N-1'][xs]
 
@@ -300,13 +300,12 @@ class Branch:
         ''' Set bus position at end (to) of the branch '''
         self.data['T_Position'] = val
 
-    def set_N1(self, val):
-        ''' Set values for all N-1 conditions '''
-        self.pyomo['N-1'] = val
-
-    def set_N1x(self, val, x):
-        ''' Set values for a single N-1 condition '''
-        self.pyomo['N-1'][x] = val
+    def set_N1(self, val, x=None):
+        ''' Set values for all conditions '''
+        if x is None:
+            self.pyomo['N-1'] = val
+        else:
+            self.pyomo['N-1'][x] = val
 
     def set_Rate(self, val):
         ''' Set Rate A for normal operation conditions'''
@@ -388,7 +387,7 @@ class Bus:
         ''' Get Bus position - beginning from zero '''
         return self.data['Position']
 
-    def get_Secx(self, xs):
+    def get_Sec(self, xs=':'):
         ''' Get position of variable in N-1 scenario '''
         return self.pyomo['N-1'][xs]
 
@@ -424,13 +423,12 @@ class Bus:
         ''' Set list of branches connected to the bus - Losses'''
         self.data['T_Loss'] = val
 
-    def set_N1(self, val):
-        ''' Set values for all N-1 conditions '''
-        self.pyomo['N-1'] = val
-
-    def set_N1x(self, val, x):
-        ''' Set values for a single N-1 condition '''
-        self.pyomo['N-1'][x] = val
+    def set_N1(self, val, x=None):
+        ''' Set values for all conditions '''
+        if x is None:
+            self.pyomo['N-1'] = val
+        else:
+            self.pyomo['N-1'][x] = val
 
 
 class ElectricityNetwork:
@@ -500,8 +498,8 @@ class ElectricityNetwork:
         aux = []
         for xb in self.Bus[xn].get_BraF():  # Branches connected to the bus
             # Is teh branch active in the scenario?
-            if self.Branch[xb].get_N1x(xs) is not None:
-                aux.append(self.Branch[xb].get_N1x(xs))
+            if self.Branch[xb].get_N1(xs) is not None:
+                aux.append(self.Branch[xb].get_N1(xs))
         return aux
         aux = []
 
@@ -510,8 +508,8 @@ class ElectricityNetwork:
         aux = []
         for xb in self.Bus[xn].get_BraT():  # Branches connected to the bus
             # Is teh branch active in the scenario?
-            if self.Branch[xb].get_N1x(xs) is not None:
-                aux.append(self.Branch[xb].get_N1x(xs))
+            if self.Branch[xb].get_N1(xs) is not None:
+                aux.append(self.Branch[xb].get_N1(xs))
         return aux
 
     def get_NoBra(self):
@@ -556,7 +554,7 @@ class ElectricityNetwork:
 
             # Enable branch for the first N-1 scenario (intact network)
             ob.set_N1([None]*(self.data['SecurityNo']+1))
-            ob.set_N1x(xcou, 0)
+            ob.set_N1(xcou, 0)
             xcou += 1
 
             # Tbe bus now includes the position of the relevant branches
@@ -569,7 +567,7 @@ class ElectricityNetwork:
         # Initialize security data for nodes
         for ob in self.Bus:
             ob.set_N1([None]*(self.data['SecurityNo']+1))
-            ob.set_N1x(ob.get_Pos(), 0)
+            ob.set_N1(ob.get_Pos(), 0)
 
         # Enable branches in other scenarios (pyomo)
         xsec = 0
@@ -577,12 +575,12 @@ class ElectricityNetwork:
             xsec += 1
             # Add N-1 information to buses
             for ob in self.Bus:
-                ob.set_N1x(xsec*self.data['Buses']+ob.data['Position'], xsec)
+                ob.set_N1(xsec*self.data['Buses']+ob.data['Position'], xsec)
 
             # Add N-1 information to branches
             for ob in (self.Branch[xb] for xb in range(self.data['Branches'])
                        if xb+1 != xs):
-                ob.set_N1x(xcou, xsec)
+                ob.set_N1(xcou, xsec)
                 xcou += 1
 
         # Model losses
