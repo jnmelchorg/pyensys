@@ -1103,6 +1103,8 @@ class pyeneClass():
                               ' supported yet')
 
             self.NM.p['GenMax'][index-1] = value
+        value = self.NM.p['GenMax'][index-1]
+        self.NM.Gen.set_Max(index-1, value)
 
     def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''

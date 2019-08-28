@@ -343,18 +343,17 @@ class ENetworkClass:
                            domain=NonNegativeReals, initialize=0.0)
         # Add Unit commitment constraints
         if self.settings['UC']:
-            m.vNGen_Bin = Var(range(Noh*(self.generationE['Number']+1)),
+            m.vNGen_Bin = Var(range(Noh*(self.Gen.get_NoBin()+1)),
                               self.s['Tim'], domain=Binary, initialize=0.0)
 
         return m
 
     def cNAncillary_rule(self, m, xt, xh):
         ''' Ancillary services constraint '''
-        aux = xh*(self.generationE['Number']+1)+1
         return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
-            sum(m.vNGen[aux+x, xt] for x in self.s['Gen']) - \
-            m.vNFea[xh*self.p['faux'], xt]
+            sum(m.vNGen[self.connections['Generation'][xh]+x, xt]
+            for x in self.Gen.get_GenAll())-m.vNFea[xh*self.p['faux'], xt]
 
     def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
@@ -407,8 +406,8 @@ class ENetworkClass:
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
             m.vNFea[xh*self.p['faux'], xt] + \
-            sum(m.vNGen[xh*(self.generationE['Number']+1)+xg+1, xt]
-                for xg in self.s['Gen']) - \
+            sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                for xg in self.Gen.get_GenAll()) - \
             sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
                  m.vNStore[xh*(self.Storage['Number']+1)+xn+1,
                            self.LLTime[xt]])*self.Storage['Efficiency'][xn] /
@@ -438,34 +437,33 @@ class ENetworkClass:
 
     def cNEGMax_rule(self, m, xg, xt, xh):
         ''' Maximum generation capacity '''
-#        return self.Gen.cNEGMax_rule(m, xg, xt, self.connections['Generation'][xh])
-        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] <=
-                self.p['GenMax'][xg])
+        return self.Gen.cNEGMax_rule(m, xg, xt,
+                                     self.connections['Generation'][xh])
 
     def cNEGMin_rule(self, m, xg, xt, xh):
         ''' Minimum generation capacity '''
-        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
-                self.p['GenMin'][xg])
+        return self.Gen.cNEGMin_rule(m, xg, xt,
+                                     self.connections['Generation'][xh])
 
     def cNEGMaxUC_rule(self, m, xg, xt, xh):
         ''' Maximum generation '''
-        aux = self.connections['Generation'][xh]+xg+1
-        return m.vNGen[aux, xt] <= self.p['GenMax'][xg]*m.vNGen_Bin[aux, xt]
+        return self.Gen.cNEGMaxUC_rule(m, xg, xt,
+                                       self.connections['Generation'][xh])
 
     def cNEGMinUC_rule(self, m, xg, xt, xh):
         ''' Minimum generation '''
-        aux = self.connections['Generation'][xh]+xg+1
-        return m.vNGen[aux, xt] >= self.p['GenMin'][xg]*m.vNGen_Bin[aux, xt]
+        return self.Gen.cNEGMinUC_rule(m, xg, xt,
+                                       self.connections['Generation'][xh])
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
-        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
+        x = self.connections['Generation'][xh]+self.s['GRamp'][xg]+1
         return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] >= \
             -self.p['GRamp'][xg]
 
     def cNGenRampUp_rule(self, m, xg, xt, xh):
         ''' Generation ramps (up)'''
-        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
+        x = self.connections['Generation'][xh]+self.s['GRamp'][xg]+1
         return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] <= \
             self.p['GRamp'][xg]
 
@@ -493,14 +491,14 @@ class ENetworkClass:
 
     def cNServicesA_rule(self, m, xt, xh):
         ''' Provision of ancillary services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GAncillary']) >= \
+        aux = self.connections['Generation'][xh]
+        return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[xh*self.p['GServices'], xt]
 
     def cNServicesR_rule(self, m, xt, xh):
         ''' Provision of RES support services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GRES']) >= \
+        aux = self.connections['Generation'][xh]
+        return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNsetFea_rule(self, m, xt, xh):
@@ -755,7 +753,7 @@ class ENetworkClass:
                         if self.settings['UC']:
                             aux = (m.vNGen_Bin[self.connections['Generation']
                                    [xh]+xn, x2].value)
-                        print("%8.4f " % aux, end='')
+                        print("%2.0f " % aux, end='')
                     print()
                 print("];")
 

@@ -607,14 +607,37 @@ class ElectricityNetwork:
 
 class GenClass:
     ''' Core generation class '''
-    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w, xshift):
+    def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w, xshift):
         ''' Piece wise cost estimation '''
         if xc < self.pyomo['NoPieces']:
             return m.vNGCost[ConC+self.pyomo['vNGen']-xshift, xt]/w >= \
                 m.vNGen[ConG+self.pyomo['vNGen'], xt] * \
                 self.cost['LCost'][xc][0]+self.cost['LCost'][xc][1]
-        
         return Constraint.Skip
+
+    def cNEGMax_rule(self, m, xt, ConG):
+        ''' Maximum generation capacity '''
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max']
+
+    def cNEGMaxUC_rule(self, m, xt, ConG):
+        ''' Maximum generation capacity '''
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max'] * \
+            m.vNGen_Bin[self.pyomo['vNGen_Bin'], xt]
+
+    def cNEGMin_rule(self, m, xt, ConG):
+        ''' Minimum generation capacity - Only when needed '''
+        if self.data['Max'] > 0:
+            return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= self.data['Min']
+        else:
+            return Constraint.Skip
+
+    def cNEGMinUC_rule(self, m, xt, ConG):
+        ''' Minimum generation capacity - Only when needed '''
+        if self.data['Max'] > 0:
+            return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
+                self.data['Min']*m.vNGen_Bin[self.pyomo['vNGen_Bin'], xt]
+        else:
+            return Constraint.Skip
 
     def set_CostCurve(self, sett, xNo, xLen, Base):
         ''' Define piece wise cost curve approximation '''
@@ -670,6 +693,13 @@ class GenClass:
         ''' Get number of pices used for piece-wise cost estimations '''
         return self.pyomo['NoPieces']
 
+    def set_Bin(self, xbin):
+        ''' Set binaries for UC '''
+        self.pyomo['vNGen_Bin'] = xbin
+        xbin += 1
+
+        return xbin
+
     def get_Bus(self):
         ''' Get bus number '''
         return self.data['Bus']
@@ -702,6 +732,7 @@ class GenClass:
         ''' Set position of vNGen variable - pyomo'''
         self.pyomo['vNGen'] = val
 
+
 class Conventional(GenClass):
     ''' Conventional generator '''
     def __init__(self, obj):
@@ -732,7 +763,9 @@ class Conventional(GenClass):
 
         self.pyomo = {}
         self.pyomo['vNGen'] = None
+        self.pyomo['vNGen_Bin'] = None
         self.pyomo['NoPieces'] = None
+
 
 class Hydropower(GenClass):
     ''' Hydropower generator '''
@@ -761,6 +794,7 @@ class Hydropower(GenClass):
 
         self.pyomo = {}
         self.pyomo['vNGen'] = None
+        self.pyomo['vNGen_Bin'] = None
         self.pyomo['NoPieces'] = None
 
 
@@ -792,6 +826,26 @@ class RES(GenClass):
         self.pyomo['vNGen'] = None
         self.pyomo['NoPieces'] = None
 
+    def cNEGMax_rule(self, m, xt, ConG):
+        ''' Maximum generation capacity '''
+        return Constraint.Skip
+
+    def cNEGMin_rule(self, m, xt, ConG):
+        ''' Minimum generation capacity '''
+        return Constraint.Skip
+
+    def cNEGMaxUC_rule(self, m, xt, ConG):
+        ''' Maximum generation capacity '''
+        return Constraint.Skip
+
+    def cNEGMinUC_rule(self, m, xt, ConG):
+        ''' Minimum generation capacity '''
+        return Constraint.Skip
+
+    def set_Bin(self, xbin):
+        ''' Set binaries for UC '''
+        return xbin
+
 
 class Generators:
     ''' Electricity generators '''
@@ -802,7 +856,8 @@ class Generators:
                 'Hydro': NoHydro,
                 'RES': NoRES,
                 'Gen': NoConv+NoHydro+NoRES,
-                'Types': None
+                'Types': None,
+                'Bin': None
                 }
         self.pyomo = {}
         self.pyomo['NoPieces'] = 0  # Max number of piece-wise cost curves
@@ -818,13 +873,37 @@ class Generators:
         # RES generators
         self.RESConf = [RESConfig() for x in range(NoRES)]
 
-    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w):
-        ''' Generation costs - Piece-wise estimation '''
+    def _GClass(self, xg):
+        ''' Get class and position of generator corresponsing to xg '''
         xa = self.data['Types'][self.pyomo['Type'][xg]]
         xp = self.pyomo['Pos'][xg]
-        return getattr(self, xa)[xp].cNEGenC_rule(m, xg, xc, xt, ConC, ConG, w,
-                                                  self.data['xshift'])
 
+        return (xa, xp)
+
+    def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w):
+        ''' Generation costs - Piece-wise estimation '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGenC_rule(m, xc, xt, ConC, ConG, w, self.data['xshift'])
+
+    def cNEGMax_rule(self, m, xg, xt, ConG):
+        ''' Maximum generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMax_rule(m, xt, ConG)
+
+    def cNEGMin_rule(self, m, xg, xt, ConG):
+        ''' Minimum generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMin_rule(m, xt, ConG)
+
+    def cNEGMaxUC_rule(self, m, xg, xt, ConG):
+        ''' Maximum generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMaxUC_rule(m, xt, ConG)
+
+    def cNEGMinUC_rule(self, m, xg, xt, ConG):
+        ''' Minimum generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMinUC_rule(m, xt, ConG)
 
     def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
@@ -848,6 +927,7 @@ class Generators:
         # Initialise generators
         self.data['Types'] = ['Conv', 'Hydro', 'RES']
         xLen = len(sett['Pieces'])
+        xbin = 0
         xt = 0
         xNo = 0
         for ax in self.data['Types']:
@@ -861,12 +941,15 @@ class Generators:
                 # The bus knows the type and location of the generator
                 ENetwork.Bus[xb].add_Gen(xt, xp)
 
+                # Add UC considerations
+                xbin = ob.set_Bin(xbin)
+
                 # Create cost curves
                 ob.set_CostCurve(sett, xNo, xLen, ENetwork.get_Base())
 
                 # MW --> pu
-                ob.set_Max(ob.get_Max()*ENetwork.get_Base())
-                ob.set_Min(ob.get_Min()*ENetwork.get_Base())
+                ob.set_Max(ob.get_Max()/ENetwork.get_Base())
+                ob.set_Min(ob.get_Min()/ENetwork.get_Base())
 
                 # Store location of vGen variable
                 ob.set_vNGen(xNo+xshift)
@@ -882,6 +965,7 @@ class Generators:
                 xp += 1
                 xNo += 1
             xt += 1
+        self.data['Bin'] = xbin
 
     def get_GenInBus(self, Bus):
         ''' Get list of generators connected to a bus - vNGen'''
@@ -896,6 +980,10 @@ class Generators:
         aux = range(self.data['xshift'], self.data['Gen']+self.data['xshift'])
 
         return aux
+
+    def get_NoBin(self):
+        ''' Number of binaries required for the generators '''
+        return self.data['Bin']
 
     def get_NoPieces(self):
         ''' Return number of pieces for cost estimations  '''
@@ -913,3 +1001,8 @@ class Generators:
 
         for x in range(self.data['RES']):
             self.RESConf[x].MPCconfigure(RES, x)
+
+    def set_Max(self, xg, val):
+        ''' Update generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        getattr(self, xa)[xp].set_Max(val)
