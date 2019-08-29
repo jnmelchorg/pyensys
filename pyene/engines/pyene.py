@@ -140,22 +140,10 @@ class pyeneClass():
                     m.cAHMOut1 = \
                         Constraint(self.s['LL'], range(self.p['NoHydDown']),
                                    self.NM.s['Tim'], rule=self.cAHMOut1_rule)
-                    if self.NM.hydropower['Baseload'][0] > 0:
-                        m.cABaseload1 = \
-                            Constraint(self.s['LL'],
-                                       range(self.p['NoHydDown']),
-                                       self.NM.s['Tim'],
-                                       rule=self.cABaseload1_rule)
 
                 m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
                                         self.NM.s['Tim'],
                                         rule=self.cAHMOut2_rule)
-
-                if self.NM.hydropower['Baseload'][0] > 0:
-                    m.cABaseload2 = \
-                        Constraint(self.s['LL'], self.s['LLHydOut'],
-                                   self.NM.s['Tim'],
-                                   rule=self.cABaseload2_rule)
 
             else:
                 # Link pyeneE and pyeneN
@@ -218,43 +206,6 @@ class pyeneClass():
         m = self.addPar(m)
 
         return m
-
-    def cABaseload_rule(self, m, xL, xv, xt):
-        ''' Baseload - Without hydraulics'''
-        # TODO Test constraint
-        return m.vNGen[self.p['pyeneN'][xL]+xv, xt] >= \
-            sum(m.vNGen[self.p['pyeneN'][xL]+xv, xt2] *
-                self.NM.scenarios['Weights'][xt2]
-                for xt2 in self.NM.s['Tim']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
-
-    def cABaseload1_rule(self, m, xh, xv, xt):
-        ''' Baseload - Aggregated downstream flows '''
-        # TODO Test constraint
-        # Position of the hydropower plant
-        xb = self.p['LLHydDown'][xv]
-        # Node to be addressed
-        xn = self.HM.hydropower['Node'][xb]-1
-
-        return sum(m.vHup[self.HM.p['ConRiver'][xh] +
-                          self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd],
-                          xt] for xd in range(self.HM.p['LLN2B2'][xn, 2])) >= \
-            sum(sum(sum(m.vHup[self.HM.p['ConRiver'][xh2] +
-                               self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3] +
-                                                   xd], xt2] *
-                        self.NM.scenarios['Weights'][xt2]
-                        for xd in range(self.HM.p['LLN2B2'][xn, 2]))
-                    for xt2 in self.NM.s['Tim']) for xh2 in self.s['LL']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
-
-    def cABaseload2_rule(self, m, xh, xn, xt):
-        ''' Baseload - pyeneH outputs taken from nodal outputs '''
-
-        return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
-            sum(sum(m.vHout[xn+xh2*self.HM.nodes['OutNumber'], xt2] *
-                    self.NM.scenarios['Weights'][xt2]
-                    for xt2 in self.NM.s['Tim']) for xh2 in self.s['LL']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
 
     def cAEMNM_rule(self, m, xL, xv):
         ''' Connecting  pyeneE and pyeneN (MW --> MW)'''

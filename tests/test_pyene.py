@@ -744,3 +744,41 @@ def test_pyene_ENHStorPump():
         0.0001 >= abs(m.vHStor[3, 12].value-4.7323) and \
         0.0001 >= abs(m.vNPump[2, 5].value*100-19.1815) and \
         0.0001 >= abs(m.vNPump[6, 5].value*100-22.5405)
+
+def test_pyene_Baseline():
+    print('test_Baseline')
+    conf = testConfig()
+    # Hydropower
+    conf.NM.conventional['Baseload'] = [1, 0.3]  # Baseload
+    conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.01, 0.01,  0.01]  # Costs
+    conf.NM.hydropower['Baseload'] = [1, 1, 1]  # Baseload
+
+    # Study settings
+    conf.NM.settings['NoTime'] = 24  # Number of time steps
+    conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Profiles and water allowance
+    fileName = os.path.join(json_directory(), 'UKElectricityProfiles.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Winter']['Weekday'])
+    EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
+    EN.set_Hydro(1, 12000)
+    EN.set_Hydro(2, 35000)
+    EN.set_Hydro(3, 2000)
+
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print(m.OF.expr())
+    
+    assert 0.0001 >= abs(m.OF.expr()-15736042.8742)

@@ -105,7 +105,7 @@ class ConventionalConfig:
             self.cost[x] = mpc['gencost'][x][No]
 
         # Generator ramp and provision of services
-        aux = ['Ancillary', 'Ramp', 'RES']
+        aux = ['Ancillary', 'Baseload', 'Ramp', 'RES']
         for x in aux:
             if len(conv[x]) == 1:
                 self.settings[x] = conv[x][0]
@@ -133,7 +133,10 @@ class HydropowerConfig:
         self.settings['Position'] = No
         aux = ['Ancillary', 'Baseload', 'Ramp', 'RES']
         for x in aux:
-            self.settings[x] = hydro[x]
+            if len(hydro[x]) == 1:
+                self.settings[x] = hydro[x][0]
+            else:
+                self.settings[x] = hydro[x][No]
 
         self.settings['Bus'] = hydro['Bus'][No]
         self.settings['Max'] = hydro['Max'][No]
@@ -142,14 +145,6 @@ class HydropowerConfig:
         self.cost['MODEL'] = 1
         self.cost['NCOST'] = 2
         self.cost['COST'] = [0, 0, 1, hydro['Cost'][No]]
-
-        # Generator ramp and provision of services
-        aux = ['Ancillary', 'Ramp', 'RES']
-        for x in aux:
-            if len(hydro[x]) == 1:
-                self.settings[x] = hydro[x][0]
-            else:
-                self.settings[x] = hydro[x][No]
 
 
 class RESConfig:
@@ -167,7 +162,7 @@ class RESConfig:
             self.cost[x] = None
 
     def MPCconfigure(self, RES, No=0):
-        ''' Configure using hydropower settings '''
+        ''' Configure using RES settings '''
         self.settings['Position'] = No
         self.settings['Bus'] = RES['Bus'][No]
         self.settings['Max'] = RES['Max'][No]
@@ -618,6 +613,15 @@ class ElectricityNetwork:
 
 class GenClass:
     ''' Core generation class '''
+    def cNEBaseload_rule(self, m, xt, Tim, w, ConG):
+        ''' Impose provision of baseload '''
+        if self.data['Baseload'] > 0:
+            return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
+                sum(m.vNGen[ConG+self.pyomo['vNGen'], xt2] for xt2 in Tim) * \
+                self.data['Baseload']*w
+        else:
+            return Constraint.Skip
+
     def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w, xshift):
         ''' Piece wise cost estimation '''
         if xc < self.pyomo['NoPieces']:
@@ -641,7 +645,7 @@ class GenClass:
             return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= self.data['Min']
         else:
             return Constraint.Skip
-
+    
     def cNEGMinUC_rule(self, m, xt, ConG):
         ''' Minimum generation capacity - Only when needed '''
         if self.data['Max'] > 0:
@@ -784,7 +788,7 @@ class Conventional(GenClass):
         ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         '''
         # Parameters currently in use
-        aux = ['Ancillary', 'PMAX', 'PMIN', 'Ramp', 'Position']
+        aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position']
 
         # Get settings
         self.data = {}
@@ -835,11 +839,10 @@ class Hydropower(GenClass):
         self.pyomo['vNGen_Bin'] = None
         self.pyomo['NoPieces'] = None
 
-
 class RES(GenClass):
     ''' RES generation '''
     def __init__(self, obj):
-        ''' Initialise hydropower generator class
+        ''' Initialise RES generator class
 
         The class can use the following parameters:
         ['Bus', 'Cost', 'Max', 'Uncertainty', 'Position']
@@ -863,6 +866,10 @@ class RES(GenClass):
         self.pyomo = {}
         self.pyomo['vNGen'] = None
         self.pyomo['NoPieces'] = None
+
+    def cNEBaseload_rule(self, m, xt, Tim, w, ConG):
+        ''' Impose provision of baseload '''
+        return Constraint.Skip
 
     def cNEGMax_rule(self, m, xt, ConG):
         ''' Maximum generation capacity '''
@@ -922,6 +929,12 @@ class Generators:
 
         # RES generators
         self.RESConf = [RESConfig() for x in range(NoRES)]
+
+    def cNEBaseload_rule(self, m, xg, xt, Tim, w, wF, ConG):
+        ''' Baseload rule '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEBaseload_rule(m, xt, Tim, w[xt]/wF,
+                                                      ConG)
 
     def _GClass(self, xg):
         ''' Get class and position of generator corresponsing to xg '''
@@ -1048,6 +1061,10 @@ class Generators:
     def get_NoBin(self):
         ''' Number of binaries required for the generators '''
         return self.data['Bin']
+
+    def get_NoHydro(self):
+        ''' Number of hydropower units '''
+        return self.data['Hydro']
 
     def get_NoPieces(self):
         ''' Return number of pieces for cost estimations  '''

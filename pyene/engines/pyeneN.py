@@ -62,6 +62,7 @@ class pyeneNConfig:
         self.conventional = {
                 'Number': None,  # Number of conventional generators
                 'Ancillary': [True],  # Can it provide ancillary services?
+                'Baseload': [0],  # 0-1 for the use of conv for baseload
                 'Ramp': [None],  # Set ramps for conventional generators
                 'RES': [True]  # Can it support RES integration?
                 }
@@ -211,7 +212,12 @@ class ENetworkClass:
             m.cNEBalance0 = Constraint(self.s['Tim'], self.s['Sec2'],
                                        self.s['Con'],
                                        rule=self.cNEBalance0_rule)
-        # Run UC or OPF
+        # Is there baseload
+        if sum(self.hydropower['Baseload']) > 0:
+            self.scenarios['WSum'] = sum(self.scenarios['Weights'])
+            m.cNEBaseload = Constraint(self.s['Gen'], self.s['Tim'],
+                                       self.s['Con'],
+                                       rule=self.cNEBaseload_rule)
         if self.settings['UC']:
             # Maximum generation
             m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
@@ -412,6 +418,13 @@ class ENetworkClass:
                            self.LLTime[xt]])*self.Storage['Efficiency'][xn] /
                 self.scenarios['Weights'][xt] for xn in self.s['Sto'])
 
+    def cNEBaseload_rule(self, m, xg, xt, xh):
+        ''' Baseload rule '''
+        return self.Gen.cNEBaseload_rule(m, xg, xt, self.s['Tim'],
+                                         self.scenarios['Weights'],
+                                         self.scenarios['WSum'],
+                                         self.connections['Generation'][xh])
+    
     def cNEFlow_rule(self, m, xt, xb, xs, xh):
         ''' Branch flows - DC model '''
         return self.ENetwork.cNEFlow_rule(m, xt, xb, xs,
