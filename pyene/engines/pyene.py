@@ -123,6 +123,7 @@ class pyeneClass():
 
     def addCon(self, m):
         ''' Adding pyomo constraints'''
+        # TODO: hydropower['Baseload'] is now a list
         # Link water consumption throughout different models
         if self.NM.hydropower['Number'] > 0:
             if self.HM.settings['Flag']:
@@ -139,7 +140,7 @@ class pyeneClass():
                     m.cAHMOut1 = \
                         Constraint(self.s['LL'], range(self.p['NoHydDown']),
                                    self.NM.s['Tim'], rule=self.cAHMOut1_rule)
-                    if self.NM.hydropower['Baseload'] > 0:
+                    if self.NM.hydropower['Baseload'][0] > 0:
                         m.cABaseload1 = \
                             Constraint(self.s['LL'],
                                        range(self.p['NoHydDown']),
@@ -150,7 +151,7 @@ class pyeneClass():
                                         self.NM.s['Tim'],
                                         rule=self.cAHMOut2_rule)
 
-                if self.NM.hydropower['Baseload'] > 0:
+                if self.NM.hydropower['Baseload'][0] > 0:
                     m.cABaseload2 = \
                         Constraint(self.s['LL'], self.s['LLHydOut'],
                                    self.NM.s['Tim'],
@@ -895,8 +896,9 @@ class pyeneClass():
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
 
             # Add baseload data
-            if self.NM.hydropower['Baseload'] > 0:
-                self.p['HydroBase'] = self.NM.hydropower['Baseload'] / \
+            # TODO: hydropower['Baseload'] is now a list
+            if self.NM.hydropower['Baseload'][0] > 0:
+                self.p['HydroBase'] = self.NM.hydropower['Baseload'][0] / \
                     sum(self.NM.scenarios['Weights'])/self.p['Number']
 
     def NSim(self, conf):

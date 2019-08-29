@@ -104,10 +104,13 @@ class ConventionalConfig:
         for x in aux:
             self.cost[x] = mpc['gencost'][x][No]
 
-        # Generator data - from configuration file
+        # Generator ramp and provision of services
         aux = ['Ancillary', 'Ramp', 'RES']
         for x in aux:
-            self.cost[x] = conv[x]
+            if len(conv[x]) == 1:
+                self.settings[x] = conv[x][0]
+            else:
+                self.settings[x] = conv[x][No]
 
 
 class HydropowerConfig:
@@ -139,6 +142,14 @@ class HydropowerConfig:
         self.cost['MODEL'] = 1
         self.cost['NCOST'] = 2
         self.cost['COST'] = [0, 0, 1, hydro['Cost'][No]]
+
+        # Generator ramp and provision of services
+        aux = ['Ancillary', 'Ramp', 'RES']
+        for x in aux:
+            if len(hydro[x]) == 1:
+                self.settings[x] = hydro[x][0]
+            else:
+                self.settings[x] = hydro[x][No]
 
 
 class RESConfig:
@@ -639,6 +650,60 @@ class GenClass:
         else:
             return Constraint.Skip
 
+    def cNGenRampDown_rule(self, m, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        if self.data['Ramp'] < self.data['Max']:
+            aux = ConG+self.pyomo['vNGen']
+            return m.vNGen[aux, xt]-m.vNGen[aux, xt0] <= self.data['Ramp']
+        else:
+            return Constraint.Skip
+
+    def cNGenRampUp_rule(self, m, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        if self.data['Ramp'] < self.data['Max']:
+            aux = ConG+self.pyomo['vNGen']
+            return m.vNGen[aux, xt0]-m.vNGen[aux, xt] <= self.data['Ramp']
+        else:
+            return Constraint.Skip
+
+    def get_Bus(self):
+        ''' Get bus number '''
+        return self.data['Bus']
+
+    def get_Max(self):
+        ''' Get maximum capacity (MW) '''
+        return self.data['Max']
+
+    def get_Min(self):
+        ''' Get minimum capacity (MW) '''
+        return self.data['Min']
+
+    def get_NoPieces(self):
+        ''' Get number of pices used for piece-wise cost estimations '''
+        return self.pyomo['NoPieces']
+
+    def get_vNGen(self):
+        ''' Set position of vNGen variable - pyomo'''
+        return self.pyomo['vNGen']
+
+    def set_Bin(self, xbin):
+        ''' Set binaries for UC '''
+        self.pyomo['vNGen_Bin'] = xbin
+        xbin += 1
+
+        return xbin
+
+    def initialise(self):
+        ''' Finalize initialization '''
+
+        # Adjust ramps
+        if self.data['Ramp'] is None:
+            self.data['Ramp'] = self.data['Max']+1
+        elif self.data['Ramp'] <= 0 or self.data['Ramp'] >= 1:
+            self.data['Ramp'] = self.data['Max']+1
+        else:
+            self.data['Ramp'] = self.data['Max']*self.data['Ramp']
+
     def set_CostCurve(self, sett, xNo, xLen, Base):
         ''' Define piece wise cost curve approximation '''
 
@@ -688,33 +753,6 @@ class GenClass:
             self.cost['LCost'][xv][0] *= Base
 
         self.pyomo['NoPieces'] = NoPieces
-
-    def get_NoPieces(self):
-        ''' Get number of pices used for piece-wise cost estimations '''
-        return self.pyomo['NoPieces']
-
-    def set_Bin(self, xbin):
-        ''' Set binaries for UC '''
-        self.pyomo['vNGen_Bin'] = xbin
-        xbin += 1
-
-        return xbin
-
-    def get_Bus(self):
-        ''' Get bus number '''
-        return self.data['Bus']
-
-    def get_Max(self):
-        ''' Get maximum capacity (MW) '''
-        return self.data['Max']
-
-    def get_Min(self):
-        ''' Get minimum capacity (MW) '''
-        return self.data['Min']
-
-    def get_vNGen(self):
-        ''' Set position of vNGen variable - pyomo'''
-        return self.pyomo['vNGen']
 
     def set_Max(self, val):
         ''' Set maximum capacity (MW) '''
@@ -842,9 +880,21 @@ class RES(GenClass):
         ''' Minimum generation capacity '''
         return Constraint.Skip
 
+    def cNGenRampDown_rule(self, m, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        return Constraint.Skip
+
+    def cNGenRampUp_rule(self, m, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        return Constraint.Skip
+
     def set_Bin(self, xbin):
         ''' Set binaries for UC '''
         return xbin
+
+    def initialise(self):
+        ''' Finalize initialization '''
+        return
 
 
 class Generators:
@@ -905,7 +955,17 @@ class Generators:
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGMinUC_rule(m, xt, ConG)
 
-    def initialise(self, ENetwork, sett):
+    def cNGenRampDown_rule(self, m, xg, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNGenRampDown_rule(m, xt, xt0, ConG)
+
+    def cNGenRampUp_rule(self, m, xg, xt, xt0, ConG):
+        ''' Generation ramps (down)'''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNGenRampUp_rule(m, xt, xt0, ConG)
+
+    def initialise(self, ENetwork, sett, conv):
         ''' Prepare objects and remove configuration versions '''
         xshift = 1
         self.data['xshift'] = xshift
@@ -962,6 +1022,10 @@ class Generators:
                 aux = ob.get_NoPieces()
                 if aux > self.pyomo['NoPieces']:
                     self.pyomo['NoPieces'] = aux
+
+                # Finalise initialisation
+                ob.initialise()
+
                 xp += 1
                 xNo += 1
             xt += 1

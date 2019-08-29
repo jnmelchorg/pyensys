@@ -29,7 +29,6 @@ class pyeneNConfig:
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
-                'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
                 'UC': False  # Model UC
@@ -62,9 +61,9 @@ class pyeneNConfig:
         # Conventional generators
         self.conventional = {
                 'Number': None,  # Number of conventional generators
-                'Ancillary': True,  # Can it provide ancillary services?
-                'Ramp': None,  # Set ramps for conventional generators
-                'RES': True  # Can it support RES integration?
+                'Ancillary': [True],  # Can it provide ancillary services?
+                'Ramp': [None],  # Set ramps for conventional generators
+                'RES': [True]  # Can it support RES integration?
                 }
         # Hydropower
         self.hydropower = {
@@ -72,10 +71,10 @@ class pyeneNConfig:
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (MW)
                 'Cost': [],  # Costs
-                'Ramp': [],  # Ramp
-                'Baseload': 0,  # 0-1 for the use of water for baseload
-                'Ancillary': True,  # Can it provide ancillary services?
-                'RES': True,  # Can it support RES integration?
+                'Ramp': [None],  # Ramp
+                'Baseload': [0],  # 0-1 for the use of water for baseload
+                'Ancillary': [True],  # Can it provide ancillary services?
+                'RES': [True],  # Can it support RES integration?
                 'Link': None  # Position of hydropower plants
                 }
         # Pumps
@@ -92,7 +91,7 @@ class pyeneNConfig:
                 'Max': [],  # Capacity (kW)
                 'Cost': [],  # Cost (OF)
                 'Link': None,  # Position of RES generators
-                'Uncertainty': None  # Introduce reserve needs
+                'Uncertainty': [None]  # Introduce reserve needs
                 }
         self.Storage = {
                 'Number': 0,  # Number of storage units
@@ -230,9 +229,9 @@ class ENetworkClass:
 
         # Piece-wise generation costs approximation
         m.cNEGenC = Constraint(self.s['Gen'], range(self.Gen.get_NoPieces()),
-                                self.s['Tim'], self.s['Con'],
-                                rule=self.cNEGenC_rule)
-        
+                               self.s['Tim'], self.s['Con'],
+                               rule=self.cNEGenC_rule)
+
         # Dinamic load (pump) maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)
@@ -281,12 +280,12 @@ class ENetworkClass:
                                         rule=self.cNUncRES_rule)
 
         if len(self.s['GRES']) == 0 and self.RES['Number'] > 0 and \
-                self.RES['Uncertainty'] is not None:
+                self.RES['Uncertainty'][0] is not None:
             m.cNUncRES0 = Constraint(self.s['Tim'], self.s['Con'],
                                      rule=self.cNUncRES0_rule)
 
         return m
-    
+
     def addPar(self, m):
         ''' Add pyomo parameters '''
         self.p['MaxPump'] = self.pumps['Max']
@@ -353,7 +352,7 @@ class ENetworkClass:
         return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
             sum(m.vNGen[self.connections['Generation'][xh]+x, xt]
-            for x in self.Gen.get_GenAll())-m.vNFea[xh*self.p['faux'], xt]
+                for x in self.Gen.get_GenAll())-m.vNFea[xh*self.p['faux'], xt]
 
     def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
@@ -457,15 +456,13 @@ class ENetworkClass:
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
-        x = self.connections['Generation'][xh]+self.s['GRamp'][xg]+1
-        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] >= \
-            -self.p['GRamp'][xg]
+        return self.Gen.cNGenRampDown_rule(m, xg, xt, self.LLTime[xt],
+                                           self.connections['Generation'][xh])
 
     def cNGenRampUp_rule(self, m, xg, xt, xh):
         ''' Generation ramps (up)'''
-        x = self.connections['Generation'][xh]+self.s['GRamp'][xg]+1
-        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] <= \
-            self.p['GRamp'][xg]
+        return self.Gen.cNGenRampUp_rule(m, xg, xt, self.LLTime[xt],
+                                         self.connections['Generation'][xh])
 
     def cNLDIni_rule(self, m, xt, xh):
         ''' Initialising dynamic loads '''
@@ -521,20 +518,22 @@ class ENetworkClass:
 
     def cNUncRES_rule(self, m, xt, xh):
         ''' Corrected maximum RES generation '''
+        # TODO RES['Uncertainty'] is now a list
         return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
                    for xg in self.s['RES']) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt] + \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNUncRES0_rule(self, m, xt, xh):
         ''' Corrected maximum RES generation without support '''
+        # TODO RES['Uncertainty'] is now a list
         return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
                    for xg in self.s['RES']) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt]
+            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt]
 
     def get_ConB(self):
         ''' Get connections between branches '''
@@ -600,7 +599,7 @@ class ENetworkClass:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
         # Sets and parameters for modelling ramp constraints
-        if self.conventional['Ramp'] is not None:
+        if self.conventional['Ramp'][0] is not None:
             if len(self.hydropower['Ramp']) > 0:
                 # Conventional and hydropower
                 aux = self.conventional['Number']+self.hydropower['Number']
@@ -614,9 +613,9 @@ class ENetworkClass:
             for xg in range(self.conventional['Number']):
                 self.s['GRamp'][xg] = xg
                 self.p['GRamp'][xg] = \
-                    self.conventional['Ramp']*self.p['GenMax'][xg]
+                    self.conventional['Ramp'][0]*self.p['GenMax'][xg]
         else:
-            if len(self.hydropower['Ramp']) > 0:
+            if self.hydropower['Ramp'][0] is not None:
                 # Only hydropower
                 aux = self.hydropower['Number']
                 xh = 0
@@ -626,7 +625,7 @@ class ENetworkClass:
                 self.s['GRamp'] = []
                 self.p['GRamp'] = []
 
-        if len(self.hydropower['Ramp']) > 0:
+        if self.hydropower['Ramp'][0] is not None:
             for xg in range(self.hydropower['Number']):
                 self.s['GRamp'][xh] = self.conventional['Number']+xg
                 self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
@@ -671,7 +670,7 @@ class ENetworkClass:
 
         # Sets and parameters for modelling RES support
         self.s['GRES'] = []
-        if self.RES['Number'] > 0 and self.RES['Uncertainty'] is not None:
+        if self.RES['Number'] > 0 and self.RES['Uncertainty'][0] is not None:
             # Check for units that can provide RES support
             if self.conventional['RES']:
                 NoSer += 1
@@ -856,7 +855,7 @@ class ENetworkClass:
 
     def ProcessEGen(self):
         ''' Process generator parameters '''
-        self.Gen.initialise(self.ENetwork, self.settings)
+        self.Gen.initialise(self.ENetwork, self.settings, self.conventional)
 
         GenMax = self.generationE['Data']['PMAX']
         GenMin = self.generationE['Data']['PMIN']
