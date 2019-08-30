@@ -208,6 +208,7 @@ class pyeneClass():
 
     def cAEMNM_rule(self, m, xL, xv):
         ''' Connecting  pyeneE and pyeneN (MW --> MW)'''
+        # TODO: Send first half of the constraint to pyeneH
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
             self.NM.In_From_EM(m, xL, xv)
 
@@ -238,13 +239,10 @@ class pyeneClass():
         xb = self.p['LLHydDown'][xv]
         # Node to be addressed
         xn = self.HM.hydropower['Node'][xb]-1
-        # Position of hydro in pyeneN
-        xg = xb+self.NM.conventional['Number']+xh *\
-            (1+self.NM.generationE['Number'])+1
         # From MW to m^3/s
         aux = self.NM.ENetwork.get_Base()/self.p['EffHydro'][xb]
 
-        return m.vNGen[xg, xt]*aux <= \
+        return m.vNGen[self.NM.get_vNGenH(xh, xb), xt]*aux <= \
             sum(m.vHup[self.HM.p['ConRiver'][xh] +
                        self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd], xt]
                 for xd in range(self.HM.p['LLN2B2'][xn, 2]))
@@ -255,12 +253,9 @@ class pyeneClass():
         xb = self.p['LLHydOut'][xn][1]
         # Position of the pump
         xp = self.p['LLHPumpOut'][xn][1]
-        # Position of hydro in pyeneN
-        xg = xb+self.NM.conventional['Number']+xh *\
-            (1+self.NM.generationE['Number'])+1
 
         return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
-            sum(m.vNGen[xg, xt] *
+            sum(m.vNGen[self.NM.get_vNGenH(xh, xb), xt] *
                 self.NM.ENetwork.get_Base()/self.p['EffHydro'][xb]
                 for x in range(self.p['LLHydOut'][xn][0])) + \
             sum(m.vNPump[1+xp+xh*(1+self.NM.pumps['Number']), xt] *

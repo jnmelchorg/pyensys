@@ -576,10 +576,14 @@ class ENetworkClass:
         ''' Get connections between nodes '''
         return self.connections['set']
 
+    def get_vNGenH(self, xh, xg):
+        ''' Find vNGen position of hydropower plant '''
+        return self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
+
     def In_From_EM(self, m, xh, xg):
-        ''' Connecting  inputs from pyeneE (MW --> MW) '''
-        aux = self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
-        return sum(m.vNGen[aux, xt]*self.scenarios['Weights'][xt]
+        ''' Connecting  inputs from pyeneE (MWh --> MWh) '''
+        return sum(m.vNGen[self.get_vNGenH(xh, xg), xt] *
+                   self.scenarios['Weights'][xt]
                    for xt in self.s['Tim'])*self.ENetwork.get_Base()
 
     def initialise(self):
