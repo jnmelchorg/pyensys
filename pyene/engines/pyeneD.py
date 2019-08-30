@@ -1070,6 +1070,10 @@ class Generators:
         ''' Return number of pieces for cost estimations  '''
         return self.pyomo['NoPieces']
 
+    def get_vNGenH(self, xg):
+        ''' Get position of vNGen variable - pyomo/hydro'''
+        return getattr(self, 'Hydro')[xg].get_vNGen()
+
     def MPCconfigure(self, mpc, conv, hydro, RES):
         ''' Initialize using mat power data '''
 

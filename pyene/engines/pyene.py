@@ -123,7 +123,6 @@ class pyeneClass():
 
     def addCon(self, m):
         ''' Adding pyomo constraints'''
-        # TODO: hydropower['Baseload'] is now a list
         # Link water consumption throughout different models
         if self.NM.hydropower['Number'] > 0:
             if self.HM.settings['Flag']:
@@ -210,9 +209,7 @@ class pyeneClass():
     def cAEMNM_rule(self, m, xL, xv):
         ''' Connecting  pyeneE and pyeneN (MW --> MW)'''
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
-            sum(m.vNGen[self.p['pyeneN'][xL]+xv, xt] *
-                self.NM.scenarios['Weights'][xt]
-                for xt in self.NM.s['Tim'])*self.NM.ENetwork.get_Base()
+            self.NM.In_From_EM(m, xL, xv)
 
     def cAHMIn1_rule(self, m, xL, xv):
         ''' Flows from pyeneE and pyeneHin (MW --> m^3/s)'''
