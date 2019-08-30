@@ -787,6 +787,7 @@ class pyeneClass():
         # Initialise model
         self.HM.initialise()
 
+        # TODO: Replace LL
         # Create LL
         if self.HM.settings['Flag']:
             # Inputs to pyeneH
@@ -842,12 +843,6 @@ class pyeneClass():
                 xn2 = self.HM.connections['NodeSeqOut'][xn1]
                 if xn2 != 0:
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
-
-            # Add baseload data
-            # TODO: hydropower['Baseload'] is now a list
-            if self.NM.hydropower['Baseload'][0] > 0:
-                self.p['HydroBase'] = self.NM.hydropower['Baseload'][0] / \
-                    sum(self.NM.scenarios['Weights'])/self.p['Number']
 
     def NSim(self, conf):
         ''' Network only optimisation '''
