@@ -18,9 +18,10 @@ class _node():
         self.marginal = None
         self.flag = False
 
+
 # Simulation without electricity network
 def test_pyene_NoENetwork():
-    print('test_pyene_NoENetwork')
+    print('01: test_pyene_NoENetwork')
     conf = testConfig()
     #    conf.TreeFile = 'ResolutionTreeMonth01.json'
     conf.EM.settings['File'] = os.path.join(json_directory(),
@@ -39,9 +40,10 @@ def test_pyene_NoENetwork():
 
     assert 0.0001 >= abs(m.OF.expr()-653086.8750)
 
+
 # Energy balance and network simulation
 def test_pyene_Small():
-    print('test_pyene_Small')
+    print('02: test_pyene_Small')
     conf = testConfig()
 #    conf.TreeFile = 'ResolutionTreeMonth01.json'
     conf.EM.settings['File'] = os.path.join(json_directory(),
@@ -62,7 +64,7 @@ def test_pyene_Small():
 
 # Adding hydropower
 def test_pyene_SmallHydro():
-    print('test_pyene_SmallHydro')
+    print('03: test_pyene_SmallHydro')
     conf = testConfig()
     conf.NetworkFile = 'case4.json'
     conf.EM.settings['File'] = os.path.join(json_directory(),
@@ -93,7 +95,7 @@ def test_pyene_SmallHydro():
 
 # Converting to pypsa
 def test_pyene2pypsa():
-    print('test_pyene2pypsa')
+    print('04: test_pyene2pypsa')
     conf = testConfig()
     # Selected network file
     conf.NM.settings['File'] = os.path.join(json_directory(), 'case14.json')
@@ -137,7 +139,7 @@ def test_pyene_Curtailment2Hydro():
     Identify demand curtailment in a first iteration
     and supply customers with hydropower in another.
     '''
-    print('test_pyene_Curtailment2Hydro')
+    print('05: test_pyene_Curtailment2Hydro')
     conf = testConfig()
     # Consider single time step
     conf.NM.settings['NoTime'] = 1  # Single period
@@ -186,7 +188,7 @@ def test_pyene_AllHydro():
     Get all power generation, replace it with hydro, add surplus
     and make sure that it is not used by the pumps
     '''
-    print('test_pyene_AllHydro')
+    print('06: test_pyene_AllHydro')
     conf = testConfig()
     # Consider two time steps
     conf.NM.settings['NoTime'] = 2  # Number of time steps
@@ -255,7 +257,7 @@ def test_pyene_RESPump():
     be used to mitigate curtailment. FInally add more hydro to cover both
     conventional generation and curtailment
     '''
-    print('test_pyene_RESPump')
+    print('07: test_pyene_RESPump')
     conf = testConfig()
     conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.NM.scenarios['Weights'] = [0.5, 1]
@@ -362,7 +364,7 @@ def test_pyene_SingleLP():
     Assume an external engine couples the pyomo model of pyene with some
     constraints to optimise use of hydropower
     '''
-    print('test_pyene_SingleLP')
+    print('08: test_pyene_SingleLP')
     conf = testConfig()
 
     def UpdateConfig(conf):
@@ -557,7 +559,7 @@ def test_pyene_SingleLP():
 
 # Combined use of pyeneE, pyeneN and pyeneH
 def test_pyene_ENH():
-    print('test_pyene_ENH')
+    print('09: test_pyene_ENH')
     conf = testConfig()
     # Hydropower
     conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
@@ -604,7 +606,7 @@ def test_pyene_ENH():
 
 # Combined use of pyeneE, pyeneN and pyeneH + Storage
 def test_pyene_ENHStor():
-    print('test_pyene_ENHStor')
+    print('10: test_pyene_ENHStor')
     conf = testConfig()
     # Hydropower
     conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
@@ -654,7 +656,7 @@ def test_pyene_ENHStor():
 
 # Combined use of pyeneE, pyeneN and pyeneH + Storage
 def test_pyene_ENHStorPump():
-    print('test_pyene_ENHStorPump')
+    print('11: test_pyene_ENHStorPump')
     conf = testConfig()
     # Scenarios
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
@@ -745,8 +747,9 @@ def test_pyene_ENHStorPump():
         0.0001 >= abs(m.vNPump[2, 5].value*100-19.1815) and \
         0.0001 >= abs(m.vNPump[6, 5].value*100-22.5405)
 
+
 def test_pyene_Baseline():
-    print('test_Baseline')
+    print('12: test_Baseline')
     conf = testConfig()
     # Hydropower
     conf.NM.conventional['Baseload'] = [1, 0.3]  # Baseload

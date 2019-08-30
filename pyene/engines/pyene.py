@@ -239,10 +239,8 @@ class pyeneClass():
         xb = self.p['LLHydDown'][xv]
         # Node to be addressed
         xn = self.HM.hydropower['Node'][xb]-1
-        # From MW to m^3/s
-        aux = self.NM.ENetwork.get_Base()/self.p['EffHydro'][xb]
 
-        return m.vNGen[self.NM.get_vNGenH(xh, xb), xt]*aux <= \
+        return self.NM.In_From_HM(m, xh, xt, xb, self.p['EffHydro'][xb]) <= \
             sum(m.vHup[self.HM.p['ConRiver'][xh] +
                        self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd], xt]
                 for xd in range(self.HM.p['LLN2B2'][xn, 2]))
@@ -255,8 +253,7 @@ class pyeneClass():
         xp = self.p['LLHPumpOut'][xn][1]
 
         return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
-            sum(m.vNGen[self.NM.get_vNGenH(xh, xb), xt] *
-                self.NM.ENetwork.get_Base()/self.p['EffHydro'][xb]
+            sum(self.NM.In_From_HM(m, xh, xt, xb, self.p['EffHydro'][xb])
                 for x in range(self.p['LLHydOut'][xn][0])) + \
             sum(m.vNPump[1+xp+xh*(1+self.NM.pumps['Number']), xt] *
                 self.NM.ENetwork.get_Base()/self.p['EffPump'][xp]
@@ -329,21 +326,15 @@ class pyeneClass():
     def get_AllGeneration(self, m, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
         if 'All' in varg:
-            aux = range(1, self.NM.generationE['Number']+1)
+            aux = self.NM.Gen.get_GenAll()
         elif 'Conv' in varg:
-            aux = range(1, self.NM.conventional['Number']+1)
+            aux = self.NM.Gen.get_GenAllC()
         elif 'RES' in varg:
-            aux = range(self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1,
-                        self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1 +
-                        self.NM.RES['Number'])
+            aux = self.NM.Gen.get_GenAllR()
         elif 'Hydro' in varg:
-            aux = range(self.NM.conventional['Number']+1,
-                        self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1)
+            aux = self.NM.Gen.get_GenAllH()
         else:
-            aux = range(1, self.NM.generationE['Number']+1)
+            aux = self.NM.Gen.get_GenAll()
 
         value = 0
         for xn in aux:
@@ -600,8 +591,9 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
-                         [self.NM.resScenario[xg][xh][1]+xt] -
-                         m.vNGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                         [self.NM.resScenario[xg][xh]+xt] -
+                         m.vNGen[self.NM.connections['Generation'][xh] +
+                                 self.NM.Gen.get_vNGenR(xg), xt].value) *
                         auxweight[xt])
             value += acu*auxOF[xh]
         value *= self.NM.ENetwork.get_Base()
@@ -729,8 +721,8 @@ class pyeneClass():
             auxFlow[xc] = xc*(self.NM.NoBranch)
             auxVol[xc] = xc*(self.NM.NoBuses)
             auxLoss[xc] = xc*(aux)
-            auxGen[xc] = xc*(self.NM.generationE['Number']+1)
-            auxCost[xc] = xc*self.NM.generationE['Number']
+            auxGen[xc] = xc*(self.NM.Gen.get_NoGen()+1)
+            auxCost[xc] = xc*self.NM.Gen.get_NoGen()
             auxPump[xc] = xc*(self.NM.pumps['Number']+1)
             auxFea[xc] = xc*self.NM.NoFea
 
@@ -754,8 +746,7 @@ class pyeneClass():
 
         # Adding connections to pyeneN
         self.p['pyeneN'] = np.zeros(self.p['Number'], dtype=int)
-        aux = self.NM.generationE['Number']-self.NM.hydropower['Number'] - \
-            self.NM.RES['Number']+1
+        aux = self.NM.Gen.get_NoGen()+1
         for xc in self.s['LL']:
             self.p['pyeneN'][xc] = self.NM.get_ConG(xc)+aux
 
@@ -1027,24 +1018,22 @@ class pyeneClass():
         if isinstance(value, bool):
             if value:
                 # Maximum capacity
-                self.NM.p['GenMax'][index-1] = \
-                    self.NM.generationE['Data']['PMAX'][index-1] / \
-                    self.NM.ENetwork.get_Base()
+                self.NM.Gen.set_Max(index-1,
+                                    self.NM.Gen.get_Max(index-1) /
+                                    self.NM.ENetwork.get_Base())
             else:
                 # Switch off
-                self.NM.p['GenMax'][index-1] = 0
+                self.NM.Gen.set_Max(index-1, 0)
         else:
             # Adjust capacity
             # TODO: Costs should be recalculated for higher capacities
             value /= self.NM.ENetwork.get_Base()
-            if value > self.NM.generationE['Data']['PMAX'][index-1]:
+            if value > self.NM.Gen.get_Max(index-1):
                 import warnings
                 warnings.warn('Increasing generation capacity is not'
                               ' supported yet')
 
-            self.NM.p['GenMax'][index-1] = value
-        value = self.NM.p['GenMax'][index-1]
-        self.NM.Gen.set_Max(index-1, value)
+            self.NM.Gen.set_Max(index-1, value)
 
     def set_Hydro(self, index, value):
         ''' Set kWh of hydro that are available for a single site '''

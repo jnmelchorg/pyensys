@@ -674,6 +674,10 @@ class GenClass:
         ''' Get bus number '''
         return self.data['Bus']
 
+    def get_BusPos(self):
+        ''' Get bus position '''
+        return self.data['BusPosition']
+
     def get_Max(self):
         ''' Get maximum capacity (MW) '''
         return self.data['Max']
@@ -686,16 +690,25 @@ class GenClass:
         ''' Get number of pices used for piece-wise cost estimations '''
         return self.pyomo['NoPieces']
 
+    def get_P(self):
+        ''' Get power output '''
+        return self.data['PG']
+
+    def get_Q(self):
+        ''' Get reactive power output '''
+        return self.data['QG']
+
+    def get_Pos(self):
+        ''' Get generator position '''
+        return self.data['Position']
+
+    def get_VG(self):
+        ''' Get voltage magnitude'''
+        return self.data['VG']
+
     def get_vNGen(self):
         ''' Set position of vNGen variable - pyomo'''
         return self.pyomo['vNGen']
-
-    def set_Bin(self, xbin):
-        ''' Set binaries for UC '''
-        self.pyomo['vNGen_Bin'] = xbin
-        xbin += 1
-
-        return xbin
 
     def initialise(self):
         ''' Finalize initialization '''
@@ -707,6 +720,13 @@ class GenClass:
             self.data['Ramp'] = self.data['Max']+1
         else:
             self.data['Ramp'] = self.data['Max']*self.data['Ramp']
+
+    def set_Bin(self, xbin):
+        ''' Set binaries for UC '''
+        self.pyomo['vNGen_Bin'] = xbin
+        xbin += 1
+
+        return xbin
 
     def set_CostCurve(self, sett, xNo, xLen, Base):
         ''' Define piece wise cost curve approximation '''
@@ -788,7 +808,8 @@ class Conventional(GenClass):
         ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         '''
         # Parameters currently in use
-        aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position']
+        aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position',
+               'VG', 'PG', 'QG']
 
         # Get settings
         self.data = {}
@@ -978,6 +999,92 @@ class Generators:
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNGenRampUp_rule(m, xt, xt0, ConG)
 
+    def get_GenInBus(self, Bus):
+        ''' Get list of generators connected to a bus - vNGen'''
+        aux = []
+        for xt, xp in zip(Bus.data['GenType'], Bus.data['GenPosition']):
+            aux.append(getattr(self, self.data['Types'][xt])[xp].get_vNGen())
+
+        return aux
+
+    def get_GenAll(self):
+        ''' Get all nodes - vNGen '''
+        aux = self.get_GenDataAll('pyomo', 'vNGen')
+
+        return aux
+
+    def get_GenAllC(self):
+        ''' Get RES nodes - vNGen '''
+        aux = self.get_GenDataType('pyomo', 'vNGen', 'Conv')
+
+        return aux
+
+    def get_GenAllH(self):
+        ''' Get RES nodes - vNGen '''
+        aux = self.get_GenDataType('pyomo', 'vNGen', 'Hydro')
+
+        return aux
+
+    def get_GenAllR(self):
+        ''' Get RES nodes - vNGen '''
+        aux = self.get_GenDataType('pyomo', 'vNGen', 'RES')
+
+        return aux
+
+    def get_GenDataAll(self, at='data', dt='Bus'):
+        ''' Get piece of data from all generators '''
+        Dat = np.zeros(self.data['Gen'], dtype=int)
+        x = 0
+        for ax in self.data['Types']:
+            for ob in getattr(self, ax):
+                Dat[x] = getattr(ob, at)[dt]
+                x += 1
+
+        return Dat
+    
+    def get_GenDataType(self, at='data', dt='Bus', tp='Hydro'):
+        ''' Get piece of data from specific generators '''
+        Dat = np.zeros(self.data[tp], dtype=int)
+        x = 0
+        for ob in getattr(self, tp):
+            Dat[x] = getattr(ob, at)[dt]
+            x += 1
+
+        return Dat
+
+    def get_Max(self, xg):
+        ''' Generation capacity'''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].get_Max()
+
+    def get_NoBin(self):
+        ''' Number of binaries required for the generators '''
+        return self.data['Bin']
+
+    def get_NoCon(self):
+        ''' Number of generators '''
+        return self.data['Conv']
+
+    def get_NoGen(self):
+        ''' Number of generators '''
+        return self.data['Gen']
+
+    def get_NoHydro(self):
+        ''' Number of hydropower units '''
+        return self.data['Hydro']
+
+    def get_NoPieces(self):
+        ''' Return number of pieces for cost estimations  '''
+        return self.pyomo['NoPieces']
+
+    def get_vNGenH(self, xg):
+        ''' Get position of vNGen variable - pyomo/hydro'''
+        return getattr(self, 'Hydro')[xg].get_vNGen()
+
+    def get_vNGenR(self, xg):
+        ''' Get position of vNGen variable - pyomo/hydro'''
+        return getattr(self, 'RES')[xg].get_vNGen()
+
     def initialise(self, ENetwork, sett, conv):
         ''' Prepare objects and remove configuration versions '''
         xshift = 1
@@ -1043,36 +1150,6 @@ class Generators:
                 xNo += 1
             xt += 1
         self.data['Bin'] = xbin
-
-    def get_GenInBus(self, Bus):
-        ''' Get list of generators connected to a bus - vNGen'''
-        aux = []
-        for xt, xp in zip(Bus.data['GenType'], Bus.data['GenPosition']):
-            aux.append(getattr(self, self.data['Types'][xt])[xp].get_vNGen())
-
-        return aux
-
-    def get_GenAll(self):
-        ''' Get all nodes - vNGen '''
-        aux = range(self.data['xshift'], self.data['Gen']+self.data['xshift'])
-
-        return aux
-
-    def get_NoBin(self):
-        ''' Number of binaries required for the generators '''
-        return self.data['Bin']
-
-    def get_NoHydro(self):
-        ''' Number of hydropower units '''
-        return self.data['Hydro']
-
-    def get_NoPieces(self):
-        ''' Return number of pieces for cost estimations  '''
-        return self.pyomo['NoPieces']
-
-    def get_vNGenH(self, xg):
-        ''' Get position of vNGen variable - pyomo/hydro'''
-        return getattr(self, 'Hydro')[xg].get_vNGen()
 
     def MPCconfigure(self, mpc, conv, hydro, RES):
         ''' Initialize using mat power data '''

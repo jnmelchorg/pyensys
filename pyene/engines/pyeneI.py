@@ -58,11 +58,9 @@ class EInterfaceClass:
             y - coordinates
         '''
         PVBus = np.zeros(NM.ENetwork.get_NoBus(), dtype=float)
-        aux = (NM.generationE['Number']-NM.hydropower['Number'] -
-               NM.RES['Number'])
-        for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
-            if NM.ENetwork.Bus[xn-xshift].get_Type() == 2:
-                PVBus[xn-1] = NM.generationE['Data']['VG'][xn]
+        for ob in NM.Gen.Conv:
+            if NM.ENetwork.Bus[ob.get_BusPos()].get_Type() == 2:
+                PVBus[ob.get_BusPos()] = ob.get_VG()
 
         for ob in NM.ENetwork.Bus:
             if ob.get_kV() == 0:
@@ -115,65 +113,39 @@ class EInterfaceClass:
             p_max_pu - multpier for intermittent maximum generation
             marginal_cost - linear model
         '''
-        # Fuel based generation
-        aux = (NM.generationE['Number']-NM.hydropower['Number'] -
-               NM.RES['Number'])
-        xg = -1
-        for xn in NM.generationE['Data']['GEN_BUS'][0:aux]:
+        # Conventional fuel based generation
+        xg = 0
+        for ob in NM.Gen.Conv:
             xg += 1
-            if NM.ENetwork.Bus[xn-xshift].get_Type() == 1:
+            if NM.ENetwork.Bus[ob.get_BusPos()].get_Type() == 1:
                 aux1 = 'PQ'
-            elif NM.ENetwork.Bus[xn-xshift].get_Type() == 2:
+            elif NM.ENetwork.Bus[ob.get_BusPos()].get_Type() == 2:
                 aux1 = 'PV'
             else:
                 aux1 = 'Slack'
-            aux2 = (NM.generationE['Data']['PMAX'][xg] +
-                    NM.generationE['Data']['PMIN'][xg])/2*baseMVA
-            if NM.generationE['Costs']['MODEL'][xg] == 1:
-                xi = 2
-                while NM.generationE['Costs']['COST'][xg][xi] <= aux2:
-                    xi += 2
-                aux3 = ((NM.generationE['Costs']['COST'][xg][xi+1] -
-                         NM.generationE['Costs']['COST'][xg][xi-1]) /
-                        (NM.generationE['Costs']['COST'][xg][xi] -
-                         NM.generationE['Costs']['COST'][xg][xi-2]))
-            else:
-                aux3 = 0
-                for xi in range(NM.generationE['Costs']['NCOST'][xg]-1):
-                    aux3 += ((NM.generationE['Costs']['NCOST'][xg]-xi-1) *
-                             NM.generationE['Costs']['COST'][xg][xi] *
-                             aux2**(NM.generationE['Costs']['NCOST']
-                                    [xg]-xi-2))
-            nu.add('Generator', auxtxtG+str(xg+1),
-                   bus=auxtxtN+str(xn),
+            nu.add('Generator', auxtxtG+str(xg),
+                   bus=auxtxtN+str(ob.get_Bus()),
                    control=aux1,
-                   p_nom_max=NM.generationE['Data']['PMAX'][xg]*baseMVA,
-                   p_set=NM.generationE['Data']['PG'][xg],
-                   q_set=NM.generationE['Data']['QG'][xg],
-                   marginal_cost=aux3
+                   p_nom_max=ob.get_Max()*baseMVA,
+                   p_set=ob.get_P(),
+                   q_set=ob.get_Q(),
+                   marginal_cost=ob.cost['LCost'][0][0]
                    )
 
-        # Renewable generation
-        aux = NM.generationE['Number']-NM.RES['Number']
-        aux1 = 'PQ'
-        xg = aux-1
-        xr = -1
         yres = np.zeros(NM.settings['NoTime'], dtype=float)
-        for xn in (NM.generationE['Data']['GEN_BUS']
-                   [aux:NM.generationE['Number']]):
+        for ob in NM.Gen.RES:
             xg += 1
-            xr += 1
             for xt in range(NM.settings['NoTime']):
                 yres[xt] = (NM.scenarios['RES']
-                            [NM.resScenario[xr][xscen][1]+xt])
+                            [NM.resScenario[ob.get_Pos()][xscen]+xt])
             nu.add('Generator', auxtxtG+str(xg+1),
-                   bus=auxtxtN+str(xn),
-                   control=aux1,
+                   bus=auxtxtN+str(ob.get_Bus()),
+                   control='PQ',
                    p_nom_max=yres,
-                   p_nom=NM.RES['Max'][xr],
-                   p_set=NM.generationE['Data']['PG'][xg],
-                   q_set=NM.generationE['Data']['QG'][xg],
-                   marginal_cost=NM.generationE['Costs']['COST'][xg][0]
+                   p_nom=ob.get_Max()*baseMVA,
+                   p_set=0,
+                   q_set=0,
+                   marginal_cost=ob.cost['LCost'][0][0]
                    )
 
         '''                             CARRIER
