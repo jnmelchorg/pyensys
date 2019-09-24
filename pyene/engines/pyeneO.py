@@ -138,11 +138,10 @@ class pyeneHDF5Settings():
         HDF5table = self.fileh.create_table(HDF5group, "Hydpopower_plants",
                                             self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(EN.NM.hydropower['Number']):
-            HDF5row['location'] = EN.NM.hydropower['Bus'][xh]
-            HDF5row['max'] = EN.NM.hydropower['Max'][xh]
-            HDF5row['cost'] = EN.NM.hydropower['Cost'][xh]
-            HDF5row['link'] = EN.NM.hydropower['Link'][xh]
+        for x in EN.NM.Gen.Hydro:
+            HDF5row['location'] = x.get_BusPos()
+            HDF5row['max'] = x.get_Max()
+            HDF5row['cost'] = x.get_Cost()
             HDF5row.append()
         HDF5table.flush()
 
@@ -159,12 +158,12 @@ class pyeneHDF5Settings():
         HDF5table = self.fileh.create_table(HDF5group, "RES_generators",
                                             self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(EN.NM.RES['Number']):
-            HDF5row['location'] = EN.NM.RES['Bus'][xh]
-            HDF5row['max'] = EN.NM.RES['Max'][xh]
-            HDF5row['cost'] = EN.NM.RES['Cost'][xh]
-            HDF5row['link'] = EN.NM.RES['Link'][xh]
+        for x in EN.NM.Gen.RES:
+            HDF5row['location'] = x.get_BusPos()
+            HDF5row['max'] = x.get_Max()
+            HDF5row['cost'] = x.get_Cost()
             HDF5row.append()
+
         HDF5table.flush()
 
     def saveSummary(self, simulation_name):
@@ -210,7 +209,7 @@ class pyeneHDF5Settings():
         for xs in range(EN.NM.scenarios['NoRES']):
             for xt in range(EN.NM.settings['NoTime']):
                 HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
-                    EN.NM.networkE.graph['baseMVA']
+                    EN.NM.ENetwork.get_Base()
                 xp += 1
         self.fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 

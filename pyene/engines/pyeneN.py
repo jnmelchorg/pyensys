@@ -76,7 +76,7 @@ class pyeneNConfig:
                 'Baseload': [0],  # 0-1 for the use of water for baseload
                 'Ancillary': [True],  # Can it provide ancillary services?
                 'RES': [True],  # Can it support RES integration?
-                'Link': None  # Position of hydropower plants
+                'Link': [None]  # Position of hydropower plants
                 }
         # Pumps
         self.pumps = {
@@ -91,7 +91,7 @@ class pyeneNConfig:
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (kW)
                 'Cost': [],  # Cost (OF)
-                'Link': None,  # Position of RES generators
+                'Link': [None],  # Position of RES generators
                 'Uncertainty': [None]  # Introduce reserve needs
                 }
         self.Storage = {
@@ -420,7 +420,7 @@ class ENetworkClass:
                                          self.scenarios['Weights'],
                                          self.scenarios['WSum'],
                                          self.connections['Generation'][xh])
-    
+
     def cNEFlow_rule(self, m, xt, xb, xs, xh):
         ''' Branch flows - DC model '''
         return self.ENetwork.cNEFlow_rule(m, xt, xb, xs,
@@ -438,6 +438,7 @@ class ENetworkClass:
                                           self.connections['Flow'][xh])
 
     def cNEGenC_rule(self, m, xg, xc, xt, xh):
+        ''' Generation costs '''
         return self.Gen.cNEGenC_rule(m, xg, xc, xt,
                                      self.connections['Cost'][xh],
                                      self.connections['Generation'][xh],
@@ -483,11 +484,12 @@ class ENetworkClass:
                 self.p['MaxPump'][xdl]/self.ENetwork.get_Base())
 
     def cNRESMax_rule(self, m, xt, xg, xh):
+        # TODO: Send to pyeneD
         ''' Maximum RES generation '''
         aux = self.connections['Generation'][xh]+self.Gen.get_vNGenR(xg)
-        return (m.vNGen[aux, xt] <=
-                self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
-                self.RES['Max'][xg])
+        return m.vNGen[aux, xt] <= \
+            self.scenarios['RES'][self.resScenario[xg][xh]+xt] * \
+            self.RES['Max'][xg]
 
     def cNServices_rule(self, m, xt, xh):
         ''' Provision of all services '''
@@ -591,7 +593,6 @@ class ENetworkClass:
     def initialise(self):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
-
         # Read network data
         self.Read()
 
@@ -600,7 +601,7 @@ class ENetworkClass:
         (self.busData, self.busScenario,
          self.resScenario) = self.ProcessEDem(self.demandE)
 
-        self.Gen.initialise(self.ENetwork, self.settings, self.conventional)
+        self.Gen.initialise(self.ENetwork, self.settings)
 
         self.NoBuses = self.ENetwork.get_NoBus()*(1+self.NoSec2)
         self.NoBranch = self.ENetwork.get_NoBra() + \
@@ -624,6 +625,7 @@ class ENetworkClass:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
 
+        # TODO: Redefine using pyeneD
         # Sets and parameters for modelling Ancillary service requirements
         NoSer = 0
         self.s['GAncillary'] = []
@@ -633,20 +635,20 @@ class ENetworkClass:
                 NoSer += 1
                 if self.hydropower['Ancillary']:
                     ''' Conv and hydro can provide ancillary services '''
-                    aux = self.conventional['Number']+self.hydropower['Number']
-                    xh = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()+self.Gen.get_NoHydro()
+                    xh = self.Gen.get_NoCon()
                 else:
                     # Only conventional
                     aux = self.conventional['Number']
 
                 self.s['GAncillary'] = np.zeros(aux, dtype=int)
-                for xg in range(self.conventional['Number']):
+                for xg in range(self.Gen.get_NoCon()):
                     self.s['GAncillary'][xg] = xg
             else:
                 if self.hydropower['Ancillary']:
                     # Only hydro can provide ancillary services
                     NoSer += 1
-                    self.s['GAncillary'] = np.zeros(self.hydropower['Number'],
+                    self.s['GAncillary'] = np.zeros(self.Gen.get_NoHydro(),
                                                     dtype=int)
                     xh = 0
                 else:
@@ -656,38 +658,38 @@ class ENetworkClass:
 
         if self.settings['Ancillary'] is not None and \
                 self.hydropower['Ancillary']:
-            for xg in range(self.hydropower['Number']):
-                self.s['GAncillary'][xh] = self.conventional['Number']+xg
+            for xg in range(self.Gen.get_NoHydro()):
+                self.s['GAncillary'][xh] = self.Gen.get_NoCon()+xg
                 xh += 1
 
         # Sets and parameters for modelling RES support
         self.s['GRES'] = []
-        if self.RES['Number'] > 0 and self.RES['Uncertainty'][0] is not None:
+        if self.Gen.get_NoRES() > 0 and self.RES['Uncertainty'][0] is not None:
             # Check for units that can provide RES support
             if self.conventional['RES']:
                 NoSer += 1
                 if self.hydropower['RES']:
                     ''' Conv and hydro can provide ancillary services '''
-                    aux = self.conventional['Number']+self.hydropower['Number']
-                    xh = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()+self.Gen.get_NoHydro()
+                    xh = self.Gen.get_NoCon()
                 else:
                     # Only conventional
-                    aux = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()
 
                 self.s['GRES'] = np.zeros(aux, dtype=int)
-                for xg in range(self.conventional['Number']):
+                for xg in range(self.Gen.get_NoCon()):
                     self.s['GRES'][xg] = xg
             else:
                 if self.hydropower['RES']:
                     NoSer += 1
                     # Only hydro can provide RES services
-                    self.s['GRES'] = np.zeros(self.hydropower['Number'],
+                    self.s['GRES'] = np.zeros(self.Gen.get_NoHydro(),
                                               dtype=int)
                     xh = 0
 
             if self.hydropower['RES']:
-                for xg in range(self.hydropower['Number']):
-                    self.s['GRES'][xh] = self.conventional['Number']+xg
+                for xg in range(self.Gen.get_NoHydro()):
+                    self.s['GRES'][xh] = self.Gen.get_NoCon()+xg
                     xh += 1
 
         # Generators providing services
@@ -830,14 +832,13 @@ class ENetworkClass:
                     acu += 1
 
         # Auxiliar to find RES profiles
-        resScenario = np.zeros((self.RES['Number'], self.scenarios['Number']),
-                               dtype=int)
+        resScenario = np.zeros((self.Gen.get_NoRES(),
+                                self.scenarios['Number']), dtype=int)
         for xh in range(self.scenarios['Number']):
-            for xg in range(self.RES['Number']):
+            for xg in range(self.Gen.get_NoRES()):
                 # Profile location
                 resScenario[xg][xh] = self.settings['NoTime'] * \
-                    (self.scenarios['LinksRes'][xg+xh*self.RES['Number']]-1)
-                                          
+                    (self.scenarios['LinksRes'][xg+xh*self.Gen.get_NoRES()]-1)
 
         return (busData, busScenario, resScenario)
 
@@ -940,8 +941,11 @@ class ENetworkClass:
         # Define generator model
         self.Gen = Generators(NoOGen, self.hydropower['Number'],
                               self.RES['Number'])
+
         self.Gen.MPCconfigure(mpc, self.conventional, self.hydropower,
                               self.RES)
+        # TODO: Remove conventional, hydropower and RES
+        # del self.conventional, self.hydropower, self.RES
 
         self.connections['Branches'] = mpc['NoBranch']
         self.demandE = {
@@ -967,14 +971,16 @@ class ENetworkClass:
         # All devices are linked to the same profile
         if self.scenarios['NoRES'] == 1:
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
-                                                 self.RES['Number'], dtype=int)
+                                                 self.Gen.get_NoRES(),
+                                                 dtype=int)
         # i.e., each scenario is linked to a profile
         elif self.scenarios['LinksRes'] == 'Default':
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
-                                                 self.RES['Number'], dtype=int)
-            acu = self.RES['Number']
+                                                 self.Gen.get_NoRES(),
+                                                 dtype=int)
+            acu = self.Gen.get_NoRES()
             for xs in range(self.scenarios['Number']-1):
-                for xt in range(self.RES['Number']):
+                for xt in range(self.Gen.get_NoRES()):
                     self.scenarios['LinksRes'][acu] = xs+2
                     acu += 1
 

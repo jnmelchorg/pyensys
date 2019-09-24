@@ -521,31 +521,31 @@ class pyeneClass():
         return value
 
     def get_OFparts(self, m, auxFlags, *varg, **kwarg):
+        # TODO: Validate
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         if auxFlags[0]:  # Conventional generation
-            value += sum(sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg,
-                                           xt].value for xg
-                                 in range(self.NM.conventional['Number']))
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+            for x in self.NM.Gen.Conv:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
-            if self.NM.RES['Number'] > 0:
-                value += sum(sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg,
-                                               xt].value
-                                     for xg in self.NM.RES['Link'])
-                                 for xt in auxtime)*auxOF[xh]
-                             for xh in auxscens)
+            for x in self.NM.Gen.RES:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
-            if self.NM.hydropower['Number'] > 0:
-                value += sum(sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg,
-                                               xt].value
-                                     for xg in self.NM.hydropower['Link'])
-                                 for xt in auxtime)*auxOF[xh]
-                             for xh in auxscens)
+            for x in self.NM.Gen.Hydro:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
@@ -1036,7 +1036,7 @@ class pyeneClass():
             self.NM.Gen.set_Max(index-1, value)
 
     def set_Hydro(self, index, value):
-        ''' Set kWh of hydro that are available for a single site '''
+        ''' Set MWh of hydro that are available for a single site '''
         if self.NM.hydropower['Number'] == 1:
             self.EM.Weight['In'][1] = value
         else:

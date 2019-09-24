@@ -317,6 +317,7 @@ class Branch:
         ''' Set Rate A for normal operation conditions'''
         self.data['RATE_A'] = val
 
+
 class Bus:
     ''' Electricity bus '''
     def __init__(self, obj):
@@ -349,7 +350,7 @@ class Bus:
 
         self.pyomo = {}
         self.pyomo['N-1'] = None
-    
+
     def add_BraF(self, val):
         ''' Append value to F_Branches - Branches connected from node'''
         self.data['F_Branches'].append(val)
@@ -645,7 +646,7 @@ class GenClass:
             return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= self.data['Min']
         else:
             return Constraint.Skip
-    
+
     def cNEGMinUC_rule(self, m, xt, ConG):
         ''' Minimum generation capacity - Only when needed '''
         if self.data['Max'] > 0:
@@ -860,6 +861,11 @@ class Hydropower(GenClass):
         self.pyomo['vNGen_Bin'] = None
         self.pyomo['NoPieces'] = None
 
+    def get_Cost(self):
+        ''' Return linear costs '''
+        return self.cost['COST'][3]
+
+
 class RES(GenClass):
     ''' RES generation '''
     def __init__(self, obj):
@@ -915,6 +921,10 @@ class RES(GenClass):
     def cNGenRampUp_rule(self, m, xt, xt0, ConG):
         ''' Generation ramps (down)'''
         return Constraint.Skip
+
+    def get_Cost(self):
+        ''' Return linear costs '''
+        return self.cost['COST'][3]
 
     def set_Bin(self, xbin):
         ''' Set binaries for UC '''
@@ -1041,7 +1051,7 @@ class Generators:
                 x += 1
 
         return Dat
-    
+
     def get_GenDataType(self, at='data', dt='Bus', tp='Hydro'):
         ''' Get piece of data from specific generators '''
         Dat = np.zeros(self.data[tp], dtype=int)
@@ -1077,6 +1087,10 @@ class Generators:
         ''' Return number of pieces for cost estimations  '''
         return self.pyomo['NoPieces']
 
+    def get_NoRES(self):
+        ''' Number of RES units '''
+        return self.data['RES']
+
     def get_vNGenH(self, xg):
         ''' Get position of vNGen variable - pyomo/hydro'''
         return getattr(self, 'Hydro')[xg].get_vNGen()
@@ -1085,7 +1099,7 @@ class Generators:
         ''' Get position of vNGen variable - pyomo/hydro'''
         return getattr(self, 'RES')[xg].get_vNGen()
 
-    def initialise(self, ENetwork, sett, conv):
+    def initialise(self, ENetwork, sett):
         ''' Prepare objects and remove configuration versions '''
 
         # Initialise conventional generation object
