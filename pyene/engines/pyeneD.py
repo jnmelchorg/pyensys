@@ -622,10 +622,10 @@ class GenClass:
         else:
             return Constraint.Skip
 
-    def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w, xshift):
+    def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w):
         ''' Piece wise cost estimation '''
         if xc < self.pyomo['NoPieces']:
-            return m.vNGCost[ConC+self.pyomo['vNGen']-xshift, xt]/w >= \
+            return m.vNGCost[ConC+self.pyomo['vNGen'], xt]/w >= \
                 m.vNGen[ConG+self.pyomo['vNGen'], xt] * \
                 self.cost['LCost'][xc][0]+self.cost['LCost'][xc][1]
         return Constraint.Skip
@@ -967,7 +967,7 @@ class Generators:
     def cNEGenC_rule(self, m, xg, xc, xt, ConC, ConG, w):
         ''' Generation costs - Piece-wise estimation '''
         (xa, xp) = self._GClass(xg)
-        return getattr(self, xa)[xp].cNEGenC_rule(m, xc, xt, ConC, ConG, w, self.data['xshift'])
+        return getattr(self, xa)[xp].cNEGenC_rule(m, xc, xt, ConC, ConG, w)
 
     def cNEGMax_rule(self, m, xg, xt, ConG):
         ''' Maximum generation capacity '''
@@ -1087,8 +1087,6 @@ class Generators:
 
     def initialise(self, ENetwork, sett, conv):
         ''' Prepare objects and remove configuration versions '''
-        xshift = 1
-        self.data['xshift'] = xshift
 
         # Initialise conventional generation object
         self.Conv = [Conventional(self.ConvConf[x]) for x in
@@ -1132,7 +1130,7 @@ class Generators:
                 ob.set_Min(ob.get_Min()/ENetwork.get_Base())
 
                 # Store location of vGen variable
-                ob.set_vNGen(xNo+xshift)
+                ob.set_vNGen(xNo)
 
                 # Link between positions an generation classes
                 self.pyomo['Type'].append(xt)

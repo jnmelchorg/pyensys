@@ -469,7 +469,7 @@ class pyeneClass():
             for xh in auxscens:
                 acu = 0
                 for xt in auxtime:
-                    acu += m.vNLoss[self.get_ConL(xh)+xb, xt].value * \
+                    acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
                         auxweight[xt]
                 value += acu*auxOF[xh]
             value *= self.NM.ENetwork.get_Base()
@@ -721,7 +721,7 @@ class pyeneClass():
             auxFlow[xc] = xc*(self.NM.NoBranch)
             auxVol[xc] = xc*(self.NM.NoBuses)
             auxLoss[xc] = xc*(aux)
-            auxGen[xc] = xc*(self.NM.Gen.get_NoGen()+1)
+            auxGen[xc] = xc*(self.NM.Gen.get_NoGen())
             auxCost[xc] = xc*self.NM.Gen.get_NoGen()
             auxPump[xc] = xc*(self.NM.pumps['Number']+1)
             auxFea[xc] = xc*self.NM.NoFea
