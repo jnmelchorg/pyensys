@@ -10,7 +10,6 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 from __future__ import division
 from pyomo.core import Constraint, Var, NonNegativeReals, Reals, Binary
-import math
 import numpy as np
 import json
 import warnings
@@ -76,7 +75,6 @@ class pyeneNConfig:
                 'Baseload': [0],  # 0-1 for the use of water for baseload
                 'Ancillary': [True],  # Can it provide ancillary services?
                 'RES': [True],  # Can it support RES integration?
-                'Link': [None]  # Position of hydropower plants
                 }
         # Pumps
         self.pumps = {
@@ -91,7 +89,6 @@ class pyeneNConfig:
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (kW)
                 'Cost': [],  # Cost (OF)
-                'Link': [None],  # Position of RES generators
                 'Uncertainty': [None]  # Introduce reserve needs
                 }
         self.Storage = {
@@ -728,7 +725,7 @@ class ENetworkClass:
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
-                for xn in range(self.Gen.get_NoGen()+1):
+                for xn in range(self.Gen.get_NoGen()):
                     for x2 in self.s['Tim']:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
@@ -740,7 +737,7 @@ class ENetworkClass:
             if self.Print['UC']:
                 print("\nBin_EGen=[")
                 aux = 1
-                for xn in range(self.Gen.get_NoGen()+1):
+                for xn in range(self.Gen.get_NoGen()):
                     for x2 in self.s['Tim']:
                         if self.settings['UC']:
                             aux = (m.vNGen_Bin[self.connections['Generation']

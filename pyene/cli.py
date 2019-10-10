@@ -133,7 +133,7 @@ def network_simulation_pyeneE(conf, **kwargs):
 @click.option('--loss', default=True, type=bool,
               help='Estimate losses')
 @click.option('--feas', default=True, type=bool,
-              help='Consider feasibility constratints')
+              help='Consider feasibility constraints')
 @click.option('--time', default=24, help='Number of time steps')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
