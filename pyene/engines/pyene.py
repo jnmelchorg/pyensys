@@ -873,6 +873,7 @@ class pyeneClass():
         ''' Print results '''
         self.EM.print(m)
         for xh in range(self.p['Number']):
+            self.EM.print(m)
             self.NM.print(m, [xh])
             self.HM.print(m, [xh])
             print()
