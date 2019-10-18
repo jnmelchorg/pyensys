@@ -101,11 +101,11 @@ def test_pyene(conf):
 
     # Print results
     print('\n\nOF: ', mod.OF.expr())
-    EN.NM.offPrint()
-    EN.NM.Print['Generation'] = True
-    EN.NM.Print['Losses'] = True
-    EN.NM.Print['Flows'] = True
-    EN.NM.Print['GenBus'] = True
+#    EN.NM.offPrint()
+#    EN.NM.Print['Generation'] = True
+#    EN.NM.Print['Losses'] = True
+#    EN.NM.Print['Flows'] = True
+#    EN.NM.Print['GenBus'] = True
     EN.Print_ENSim(mod)
 
     # Collect unused hydro:
@@ -134,13 +134,13 @@ def test_pyene(conf):
         resOutNode.value = EN.get_RES(mod, resOutNode)
         print('RES %d: %f' % (resOutNode.index, resOutNode.value))
 
-    # Collect curtailment per node
-    print()
-    curNode = _node()
-    for xn in range(EN.NM.networkE.number_of_nodes()):
-        curNode.bus = xn+1
-        curNode.value = EN.get_DemandCurtailment(mod, curNode.bus)
-        print('Dem %d: %f' % (curNode.bus, curNode.value))
+#    # Collect curtailment per node
+#    print()
+#    curNode = _node()
+#    for xn in range(EN.NM.ENetwork.get_NoBus()):
+#        curNode.bus = xn+1
+#        curNode.value = EN.get_DemandCurtailment(mod, curNode.bus)
+#        print('Dem %d: %f' % (curNode.bus, curNode.value))
 
     # Collect all curtailment
     print()
@@ -153,6 +153,6 @@ def test_pyenetest(mthd):
     '''Test specific functionalities'''
     from .engines.pyeneT import TestClass
 
-    txt = 'example' + str(mthd)
+    txt = 'test' + str(mthd)
     method_to_call = getattr(TestClass, txt)
     method_to_call(TestClass)

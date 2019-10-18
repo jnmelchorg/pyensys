@@ -54,10 +54,10 @@ class pyeneHDF5Settings():
                                                   self.settings['Name1'])
             self.fileh = open_file(self.settings['Name1'], mode='w')
 
-        if self.settings['Directory2'] is not None:
-            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
-                                                  self.settings['Name2'])
-            self.file2 = open_file(self.settings['Name2'], mode='a')
+#        if self.settings['Directory2'] is not None:
+#            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
+#                                                  self.settings['Name2'])
+#            self.file2 = open_file(self.settings['Name2'], mode='a')
 
     '''pytables auxiliary'''
     class PyeneHDF5Flags:
@@ -138,11 +138,10 @@ class pyeneHDF5Settings():
         HDF5table = self.fileh.create_table(HDF5group, "Hydpopower_plants",
                                             self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(EN.NM.hydropower['Number']):
-            HDF5row['location'] = EN.NM.hydropower['Bus'][xh]
-            HDF5row['max'] = EN.NM.hydropower['Max'][xh]
-            HDF5row['cost'] = EN.NM.hydropower['Cost'][xh]
-            HDF5row['link'] = EN.NM.hydropower['Link'][xh]
+        for x in EN.NM.Gen.Hydro:
+            HDF5row['location'] = x.get_BusPos()
+            HDF5row['max'] = x.get_Max()
+            HDF5row['cost'] = x.get_Cost()
             HDF5row.append()
         HDF5table.flush()
 
@@ -159,28 +158,27 @@ class pyeneHDF5Settings():
         HDF5table = self.fileh.create_table(HDF5group, "RES_generators",
                                             self.PyeneHDF5Devices)
         HDF5row = HDF5table.row
-        for xh in range(EN.NM.RES['Number']):
-            HDF5row['location'] = EN.NM.RES['Bus'][xh]
-            HDF5row['max'] = EN.NM.RES['Max'][xh]
-            HDF5row['cost'] = EN.NM.RES['Cost'][xh]
-            HDF5row['link'] = EN.NM.RES['Link'][xh]
+        for x in EN.NM.Gen.RES:
+            HDF5row['location'] = x.get_BusPos()
+            HDF5row['max'] = x.get_Max()
+            HDF5row['cost'] = x.get_Cost()
             HDF5row.append()
+
         HDF5table.flush()
 
-    def saveSummary(self):
-        if self.settings['Directory2'] is None:
-            return
-        HDF5group = \
-            self.file2.create_group(self.file2.root, self.data['name'])
-        self.file2.create_array(HDF5group, "OF", self.data['OF'])
-        self.file2.create_array(HDF5group, "curtailment",
-                                self.data['curtailment'])
-        self.file2.create_array(HDF5group, "spill", self.data['spill'])
-        self.file2.create_array(HDF5group, "Cost_Component", self.data['cost'])
-        self.file2.create_array(HDF5group, "time", [self.time['All'],
+    def saveSummary(self, simulation_name):
+        # Independent files
+        if self.settings['Directory1'] is not None:
+            aux = os.path.join(self.settings['Directory2'], simulation_name)
+            fileh = open_file(aux, mode='w')
+            fileh.create_array(fileh.root, "OF", self.data['OF'])
+            fileh.create_array(fileh.root, "curtailment",
+                               self.data['curtailment'])
+            fileh.create_array(fileh.root, "spill", self.data['spill'])
+            fileh.create_array(fileh.root, "Cost_Component", self.data['cost'])
+            fileh.create_array(fileh.root, "time", [self.time['All'],
                                                     self.time['glpk']])
-
-        self.file2.close()
+            fileh.close()
 
     def saveResults(self, EN, m, SimNo):
         ''' Save results of each iteration '''
@@ -211,7 +209,7 @@ class pyeneHDF5Settings():
         for xs in range(EN.NM.scenarios['NoRES']):
             for xt in range(EN.NM.settings['NoTime']):
                 HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
-                    EN.NM.networkE.graph['baseMVA']
+                    EN.NM.ENetwork.get_Base()
                 xp += 1
         self.fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
 
