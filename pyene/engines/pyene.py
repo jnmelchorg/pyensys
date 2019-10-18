@@ -355,7 +355,7 @@ class pyeneClass():
         value = 0
         if self.NM.settings['Losses']:
             for xb in self.NM.s['Bra']:
-                value += self.get_Loss(m, xb+1, *varg, **kwarg)
+                value += self.get_Loss(m, xb, *varg, **kwarg)
 
         return value
 
