@@ -137,7 +137,7 @@ def network_simulation_pyeneE(conf, **kwargs):
 @click.option('--time', default=24, help='Number of time steps')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
-    """Prepare combined simulation"""
+    """Prepare energy balance and network simulation """
     conf = _update_config_pyeneE(conf, kwargs)
     conf = _update_config_pyeneN(conf, kwargs)
 
