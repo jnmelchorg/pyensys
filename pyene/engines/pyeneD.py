@@ -22,7 +22,7 @@ class BusConfig:
         # Basic settings
         aux = ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'BUS_X', 'BUS_Y',
                'Demand', 'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number',
-               'VM', 'VA', 'VMAX', 'VMIN', 'ZONE']
+               'VM', 'VA', 'VMAX', 'VMIN', 'ZONE', 'Load_Type']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -46,6 +46,8 @@ class BusConfig:
         if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
+        if 'LT' in mpc.keys():
+            self.settings['Load_Type'] = mpc['Load_Type'][No]
 
 
 class BranchConfig:
@@ -298,6 +300,10 @@ class Branch:
         ''' Is the line connected in this scenario? '''
         return self.pyomo['N-1'][xs] is not None
 
+    def set_B(self, val):
+        ''' Set Susceptance'''
+        self.data['BR_B'] = val
+
     def set_PosF(self, val):
         ''' Set bus position at beginning (from) of the branch '''
         self.data['F_Position'] = val
@@ -313,9 +319,17 @@ class Branch:
         else:
             self.pyomo['N-1'][x] = val
 
+    def set_R(self, val):
+        ''' Set Resistance'''
+        self.data['BR_R'] = val
+
     def set_Rate(self, val):
         ''' Set Rate A for normal operation conditions'''
         self.data['RATE_A'] = val
+
+    def set_X(self, val):
+        ''' Set Reactance'''
+        self.data['BR_X'] = val
 
 
 class Bus:
@@ -331,7 +345,8 @@ class Bus:
         '''
         # Parameters currently in use
         aux = ['BUS_X', 'BUS_Y', 'Demand', 'PeakP', 'PeakQ', 'Position',
-               'Name', 'Number', 'BUS_TYPE', 'BASE_KV', 'VMAX', 'VMIN', 'VM']
+               'Name', 'Number', 'BUS_TYPE', 'BASE_KV', 'VMAX', 'VMIN', 'VM',
+               'Load_Type']
 
         # Get settings
         self.data = {}
@@ -339,6 +354,8 @@ class Bus:
             self.data[xa] = obj.settings[xa]
 
         # New data
+        if self.data['Load_Type'] is None:
+            self.data['Load_Type'] = 0  # 0) Urban 1) Rural
         self.data['F_Branches'] = []  # Branches connected from the bus
         self.data['T_Branches'] = []  # Branches connected to the bus
         self.data['F_Loss'] = []  # Branches connected from the bus - Losses
@@ -385,6 +402,10 @@ class Bus:
     def get_LossT(self):
         ''' Get list of branches connected to the bus - Losses'''
         return self.data['T_Loss']
+
+    def get_LT(self):
+        ''' Get load type (1:Urban, 2:Rural) '''
+        return self.data['Load_Type']
 
     def get_Number(self):
         ''' Get Bus number '''
@@ -436,6 +457,10 @@ class Bus:
             self.pyomo['N-1'] = val
         else:
             self.pyomo['N-1'][x] = val
+
+    def set_LT(self, val):
+        ''' Set load type (1:Urban, 2:Rural) '''
+        self.data['Load_Type'] = val
 
 
 class ElectricityNetwork:
@@ -575,6 +600,20 @@ class ElectricityNetwork:
         for ob in self.Bus:
             ob.set_N1([None]*(self.data['SecurityNo']+1))
             ob.set_N1(ob.get_Pos(), 0)
+
+        # Are all the loads the same type?
+        aux = len(sett['Load_type'])
+        if aux == 1:
+            if sett['Load_type'][0] == 1:
+                # An update is only needed if the loads are rural
+                for ob in self.Bus:
+                    ob.set_LT(sett['Load_type'])
+        elif aux > 1:
+            # Update a set of the buses
+            xb = 0
+            for val in sett['Load_type']:
+                self.Bus[xb].set_LT(val)
+                xb += 1
 
         # Enable branches in other scenarios (pyomo)
         xsec = 0

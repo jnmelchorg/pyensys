@@ -303,10 +303,13 @@ class pyeneClass():
             auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         value = 0
+        values = [0, 0]
         for xn in auxbuses:
-            value += self.get_Demand(m, xn+1, *varg, **kwarg)
+            aux = self.get_Demand(m, xn+1, *varg, **kwarg)
+            values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+            value += aux
 
-        return value
+        return value, values
 
     def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
@@ -317,11 +320,14 @@ class pyeneClass():
             auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         value = 0
+        values = [0, 0]
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
-                value += self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
+                aux = self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
+                values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+                value += aux
 
-        return value
+        return value, values
 
     def get_AllGeneration(self, m, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
@@ -1048,41 +1054,30 @@ class pyeneClass():
         raise NotImplementedError('Water prices not yet enabled')
         # Adjust self.NM.p['GenLCst']
 
-    def _set_LineCapacityAux(self, value, *argv):
+    def _set_LineCapacityAux(self, value, index, *argv):
         ''' Auxiliary for selecting line parameters '''
-        aux1 = value
         if 'BR_R' in argv:
-            aux2 = 0
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_R(value)
         elif 'BR_X' in argv:
-            aux2 = 1
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_X(value)
         elif 'BR_B' in argv:
-            aux2 = 2
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_B(value)
         else:
-            aux1 = value/self.NM.ENetwork.get_Base()
-            aux2 = 3
-        return aux1, aux2
+            value /= self.NM.ENetwork.get_Base()
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_Rate(value)
 
     def set_LineCapacity(self, index, value, *argv):
         ''' Adjust maximum capacity of a line - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        aux3 = self.NM.Print['sequence'][index]
-        self.NM.p['branchData'][self.NM.p['LLESec1'][aux3][0]][aux2] = aux1
+        self._set_LineCapacityAux(value, index, *argv)
 
     def set_LineCapacityAll(self, value, *argv):
-        ''' Adjust capacity all lines - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        for xi in self.NM.p['LLESec1']:
-            self.NM.p['branchData'][self.NM.p['LLESec1']
-                                    [xi[0]][0]][aux2] = aux1
-
-    def set_LineCapacityMin(self, value, *argv):
-        ''' Adjust capacity all lines (Min) - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        for xi in self.NM.p['LLESec1']:
-            if aux1 < self.NM.p['branchData'][self.NM.p['LLESec1']
-                                              [xi[0]][0]][aux2]:
-                self.NM.p['branchData'][self.NM.p['LLESec1']
-                                        [xi[0]][0]][aux2] = aux1
+        ''' Adjust capacity of all lines - pass BR_R for R/X/B'''
+        index = range(self.NM.ENetwork.get_NoBra())
+        self._set_LineCapacityAux(value, index, *argv)
 
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''

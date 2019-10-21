@@ -26,7 +26,8 @@ class pyeneNConfig:
                 'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
-                'Feasibility': True,  # Feasibility constraints
+                'Feasibility': True,  # Feasibility constraints (curtailment)
+                'Load_type': [],  # 0 Urban, 1 Rural
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
