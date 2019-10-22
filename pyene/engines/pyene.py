@@ -319,13 +319,13 @@ class pyeneClass():
         else:
             auxbuses = range(self.NM.ENetwork.get_NoBus())
 
-        value = 0
         values = [0, 0]
+        value = 0
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
                 aux = self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
                 values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
-                value += aux
+            value = values[0]+values[1]
 
         return value, values
 

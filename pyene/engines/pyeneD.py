@@ -459,7 +459,7 @@ class Bus:
             self.pyomo['N-1'][x] = val
 
     def set_LT(self, val):
-        ''' Set load type (1:Urban, 2:Rural) '''
+        ''' Set load type (0:Urban, 1:Rural) '''
         self.data['Load_Type'] = val
 
 
