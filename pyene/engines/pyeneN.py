@@ -63,7 +63,7 @@ class pyeneNConfig:
                 'Number': None,  # Number of conventional generators
                 'Ancillary': [True],  # Can it provide ancillary services?
                 'Baseload': [0],  # 0-1 for the use of conv for baseload
-                'Ramp': [None],  # Set ramps for conventional generators
+                'Ramp': [],  # Set ramps for conventional generators
                 'RES': [True]  # Can it support RES integration?
                 }
         # Hydropower

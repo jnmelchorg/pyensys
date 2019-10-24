@@ -106,8 +106,24 @@ class ConventionalConfig:
         for x in aux:
             self.cost[x] = mpc['gencost'][x][No]
 
-        # Generator ramp and provision of services
-        aux = ['Ancillary', 'Baseload', 'Ramp', 'RES']
+        # Ramp constraints
+        aux = len(conv['Ramp'])
+        if aux == 0:  # No values from settings
+            if 'Ramp' in mpc.keys():
+                # Values can be taken from settings
+                self.settings['Ramp'] = mpc['gen']['Ramp'][No]
+            else:
+                self.settings['Ramp'] = None
+        elif aux == 1:  # Assign same ramp to all generators
+            self.settings['Ramp'] = conv['Ramp'][0]
+        else:  # Assign a ramp to each generator
+            if No <= aux:
+                self.settings['Ramp'] = conv['Ramp'][No]
+            else:  # But the information was not provided
+                self.settings['Ramp'] = None
+
+        # Provision of services
+        aux = ['Ancillary', 'Baseload', 'RES']
         for x in aux:
             if len(conv[x]) == 1:
                 self.settings[x] = conv[x][0]
