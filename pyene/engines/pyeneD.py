@@ -79,7 +79,7 @@ class ConventionalConfig:
         aux = ['Ancillary', 'APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
                'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
                'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
-               'RAMP_Q', 'RES', 'VG']
+               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -109,7 +109,7 @@ class ConventionalConfig:
         # Ramp constraints
         aux = len(conv['Ramp'])
         if aux == 0:  # No values from settings
-            if 'Ramp' in mpc.keys():
+            if 'Ramp' in mpc['gen'].keys():
                 # Values can be taken from settings
                 self.settings['Ramp'] = mpc['gen']['Ramp'][No]
             else:
@@ -121,6 +121,17 @@ class ConventionalConfig:
                 self.settings['Ramp'] = conv['Ramp'][No]
             else:  # But the information was not provided
                 self.settings['Ramp'] = None
+
+        # MUT and MDT constraints
+        aux = ['MUT', 'MDT']
+        for x in aux:
+            auxL = len(conv[x])
+            if auxL == 0:
+                self.settings[x] = None
+            elif auxL == 1:
+                self.settings[x] = conv[x][0]
+            else:
+                self.settings[x] = conv[x][No]
 
         # Provision of services
         aux = ['Ancillary', 'Baseload', 'RES']
@@ -692,8 +703,11 @@ class GenClass:
 
     def cNEGMaxUC_rule(self, m, xt, ConG):
         ''' Maximum generation capacity '''
+        if self.pyomo['vNGen_Bin'] is None:
+            return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max']
+
         return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max'] * \
-            m.vNGen_Bin[self.pyomo['vNGen_Bin'], xt]
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt]
 
     def cNEGMin_rule(self, m, xt, ConG):
         ''' Minimum generation capacity - Only when needed '''
@@ -702,13 +716,49 @@ class GenClass:
         else:
             return Constraint.Skip
 
+    def cNEGMinDT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum down time '''
+        if self.pyomo['vNGen_MDT'] is None:
+            return Constraint.Skip
+
+        return m.vNGen_MDT[ConG+self.pyomo['vNGen_MDT'], xt] >= \
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_MDT'], xt0] - \
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_MDT'], xt]
+
+    def cNEGMinDT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum down time '''
+        if self.pyomo['vNGen_MDT'] is None:
+            return Constraint.Skip
+
+        return m.vNGen_MDT[ConG+self.pyomo['vNGen_MDT'], xt]*self.data['MDT'] \
+            <= sum(1-m.vNGen_Bin[ConG+self.pyomo['vNGen_MDT'], xL] for xL in
+                   LL[xt-1:xt+self.data['MDT']-1])
+
     def cNEGMinUC_rule(self, m, xt, ConG):
         ''' Minimum generation capacity - Only when needed '''
-        if self.data['Max'] > 0:
-            return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
-                self.data['Min']*m.vNGen_Bin[self.pyomo['vNGen_Bin'], xt]
-        else:
+        if self.pyomo['vNGen_Bin'] is None:
             return Constraint.Skip
+
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
+            self.data['Min']*m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt]
+
+    def cNEGMinUT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum up time '''
+        if self.pyomo['vNGen_MUT'] is None:
+            return Constraint.Skip
+
+        return m.vNGen_MUT[ConG+self.pyomo['vNGen_MUT'], xt] >= \
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_MUT'], xt] - \
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_MUT'], xt0]
+
+    def cNEGMinUT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum up time - Only when needed '''
+        if self.pyomo['vNGen_MUT'] is None:
+            return Constraint.Skip
+
+        return m.vNGen_MUT[ConG+self.pyomo['vNGen_MUT'], xt]*self.data['MUT'] \
+            <= sum(m.vNGen_Bin[ConG+self.pyomo['vNGen_MUT'], xL] for xL in
+                   LL[xt-1:xt+self.data['MUT']-1])
 
     def cNGenRampDown_rule(self, m, xt, xt0, ConG):
         ''' Generation ramps (down)'''
@@ -725,6 +775,10 @@ class GenClass:
             return m.vNGen[aux, xt0]-m.vNGen[aux, xt] <= self.data['Ramp']
         else:
             return Constraint.Skip
+
+    def get_Bin(self):
+        ''' get binaries for UC '''
+        return self.pyomo['vNGen_Bin']
 
     def get_Bus(self):
         ''' Get bus number '''
@@ -768,7 +822,6 @@ class GenClass:
 
     def initialise(self):
         ''' Finalize initialization '''
-
         # Adjust ramps
         if self.data['Ramp'] is None:
             self.data['Ramp'] = self.data['Max']+1
@@ -779,10 +832,33 @@ class GenClass:
 
     def set_Bin(self, xbin):
         ''' Set binaries for UC '''
-        self.pyomo['vNGen_Bin'] = xbin
-        xbin += 1
+        if self.data['Max'] > 0 and self.data['Min'] > 0:
+            self.pyomo['vNGen_Bin'] = xbin
+            xbin += 1
+        else:
+            self.pyomo['vNGen_Bin'] = None
 
         return xbin
+
+    def set_MDT(self, xMDT):
+        ''' Set variables for minimum down time '''
+        if self.pyomo['vNGen_Bin'] is None or self.data['MDT'] is None:
+            return xMDT
+
+        self.pyomo['vNGen_MDT'] = xMDT
+        xMDT += 1
+
+        return xMDT
+
+    def set_MUT(self, xMUT):
+        ''' Set variables for minimum up time '''
+        if self.pyomo['vNGen_Bin'] is None or self.data['MUT'] is None:
+            return xMUT
+
+        self.pyomo['vNGen_MUT'] = xMUT
+        xMUT += 1
+
+        return xMUT
 
     def set_CostCurve(self, sett, xNo, xLen, Base):
         ''' Define piece wise cost curve approximation '''
@@ -865,7 +941,7 @@ class Conventional(GenClass):
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position',
-               'VG', 'PG', 'QG']
+               'VG', 'PG', 'QG', 'MDT', 'MUT']
 
         # Get settings
         self.data = {}
@@ -883,6 +959,8 @@ class Conventional(GenClass):
         self.pyomo = {}
         self.pyomo['vNGen'] = None
         self.pyomo['vNGen_Bin'] = None
+        self.pyomo['vNGen_MDT'] = None
+        self.pyomo['vNGen_MUT'] = None
         self.pyomo['NoPieces'] = None
 
 
@@ -914,11 +992,29 @@ class Hydropower(GenClass):
         self.pyomo = {}
         self.pyomo['vNGen'] = None
         self.pyomo['vNGen_Bin'] = None
+        self.pyomo['vNGen_MDT'] = None
+        self.pyomo['vNGen_MUT'] = None
         self.pyomo['NoPieces'] = None
 
     def get_Cost(self):
         ''' Return linear costs '''
         return self.cost['COST'][3]
+
+    def cNEGMinDT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum down time '''
+        return Constraint.Skip
+
+    def cNEGMinDT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum down time '''
+        return Constraint.Skip
+
+    def cNEGMinUT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum up time '''
+        return Constraint.Skip
+
+    def cNEGMinUT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum up time '''
+        return Constraint.Skip
 
 
 class RES(GenClass):
@@ -965,8 +1061,24 @@ class RES(GenClass):
         ''' Maximum generation capacity '''
         return Constraint.Skip
 
+    def cNEGMinDT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum down time '''
+        return Constraint.Skip
+
+    def cNEGMinDT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum down time '''
+        return Constraint.Skip
+
     def cNEGMinUC_rule(self, m, xt, ConG):
         ''' Minimum generation capacity '''
+        return Constraint.Skip
+
+    def cNEGMinUT1_rule(self, m, xt, xt0, ConG):
+        ''' Minimum up time '''
+        return Constraint.Skip
+
+    def cNEGMinUT2_rule(self, m, xt, LL, ConG):
+        ''' Minimum up time '''
         return Constraint.Skip
 
     def cNGenRampDown_rule(self, m, xt, xt0, ConG):
@@ -984,6 +1096,14 @@ class RES(GenClass):
     def set_Bin(self, xbin):
         ''' Set binaries for UC '''
         return xbin
+
+    def set_MDT(self, xMDT):
+        ''' Set variables for minimum down time '''
+        return xMDT
+
+    def set_MUT(self, xMUT):
+        ''' Set variables for minimum up time '''
+        return xMUT
 
     def initialise(self):
         ''' Finalize initialization '''
@@ -1049,10 +1169,30 @@ class Generators:
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGMaxUC_rule(m, xt, ConG)
 
+    def cNEGMinDT1_rule(self, m, xg, xt, xt0, ConG):
+        ''' Minimum down time '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMinDT1_rule(m, xt, xt0, ConG)
+
+    def cNEGMinDT2_rule(self, m, xg, xt, LL, ConG):
+        ''' Minimum down time '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMinDT2_rule(m, xt, LL, ConG)
+
     def cNEGMinUC_rule(self, m, xg, xt, ConG):
         ''' Minimum generation capacity '''
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGMinUC_rule(m, xt, ConG)
+
+    def cNEGMinUT1_rule(self, m, xg, xt, xt0, ConG):
+        ''' Minimum up time '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMinUT1_rule(m, xt, xt0, ConG)
+
+    def cNEGMinUT2_rule(self, m, xg, xt, LL, ConG):
+        ''' Minimum up time '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGMinUT2_rule(m, xt, LL, ConG)
 
     def cNGenRampDown_rule(self, m, xg, xt, xt0, ConG):
         ''' Generation ramps (down)'''
@@ -1063,6 +1203,11 @@ class Generators:
         ''' Generation ramps (down)'''
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNGenRampUp_rule(m, xt, xt0, ConG)
+
+    def get_Bin(self, xg):
+        ''' Get position of binaries for a generator '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].get_Bin()
 
     def get_GenInBus(self, Bus):
         ''' Get list of generators connected to a bus - vNGen'''
@@ -1138,6 +1283,14 @@ class Generators:
         ''' Number of hydropower units '''
         return self.data['Hydro']
 
+    def get_NoMDT(self):
+        ''' Number of binaries required for the generators '''
+        return self.data['MDT']
+
+    def get_NoMUT(self):
+        ''' Number of binaries required for the generators '''
+        return self.data['MUT']
+
     def get_NoPieces(self):
         ''' Return number of pieces for cost estimations  '''
         return self.pyomo['NoPieces']
@@ -1175,6 +1328,8 @@ class Generators:
         self.data['Types'] = ['Conv', 'Hydro', 'RES']
         xLen = len(sett['Pieces'])
         xbin = 0
+        xMDT = 0
+        xMUT = 0
         xt = 0
         xNo = 0
         for ax in self.data['Types']:
@@ -1190,6 +1345,8 @@ class Generators:
 
                 # Add UC considerations
                 xbin = ob.set_Bin(xbin)
+                xMDT = ob.set_MDT(xMDT)
+                xMUT = ob.set_MUT(xMUT)
 
                 # Create cost curves
                 ob.set_CostCurve(sett, xNo, xLen, ENetwork.get_Base())
@@ -1217,6 +1374,8 @@ class Generators:
                 xNo += 1
             xt += 1
         self.data['Bin'] = xbin
+        self.data['MUT'] = xMUT
+        self.data['MDT'] = xMDT
 
     def MPCconfigure(self, mpc, conv, hydro, RES):
         ''' Initialize using mat power data '''

@@ -31,7 +31,7 @@ class pyeneNConfig:
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
-                'UC': False  # Model UC
+                'UC': False,  # Model UC
                 }
         # Connections
         self.connections = {
@@ -64,7 +64,9 @@ class pyeneNConfig:
                 'Ancillary': [True],  # Can it provide ancillary services?
                 'Baseload': [0],  # 0-1 for the use of conv for baseload
                 'Ramp': [],  # Set ramps for conventional generators
-                'RES': [True]  # Can it support RES integration?
+                'RES': [True],  # Can it support RES integration?
+                'MUT': [],  # MInimum up time
+                'MDT': []  # Minimum down time
                 }
         # Hydropower
         self.hydropower = {
@@ -223,6 +225,27 @@ class ENetworkClass:
             # Minimum generation
             m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
                                    rule=self.cNEGMinUC_rule)
+            self.LLUC = np.zeros(self.settings['NoTime']*2, dtype=int)
+            x1 = 1
+            for x in range(self.settings['NoTime']*2):
+                self.LLUC[x] = x1
+                x1 += 1
+                if x1 == self.settings['NoTime']:
+                    x1 = 0
+
+            # Minimum down time
+            m.cNEGMinDT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT1_rule)
+            # Minimum up time
+            m.cNEGMinUT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT1_rule)
+            # Minimum down time
+            m.cNEGMinDT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT2_rule)
+            # Minimum up time
+            m.cNEGMinUT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT2_rule)
+            
         else:
             # Maximum generation
             m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
@@ -342,8 +365,15 @@ class ENetworkClass:
                            domain=NonNegativeReals, initialize=0.0)
         # Add Unit commitment constraints
         if self.settings['UC']:
-            m.vNGen_Bin = Var(range(Noh*(self.Gen.get_NoBin()+1)),
-                              self.s['Tim'], domain=Binary, initialize=0.0)
+            m.vNGen_Bin = \
+                Var(range(Noh*(self.Gen.get_NoBin()+1)), self.s['Tim'],
+                    domain=Binary, initialize=1.0)
+            m.vNGen_MUT = \
+                Var(range(Noh*(self.Gen.get_NoMUT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
+            m.vNGen_MDT = \
+                Var(range(Noh*(self.Gen.get_NoMDT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
 
         return m
 
@@ -457,10 +487,30 @@ class ENetworkClass:
         return self.Gen.cNEGMaxUC_rule(m, xg, xt,
                                        self.connections['Generation'][xh])
 
+    def cNEGMinDT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinDT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
+
     def cNEGMinUC_rule(self, m, xg, xt, xh):
         ''' Minimum generation '''
         return self.Gen.cNEGMinUC_rule(m, xg, xt,
                                        self.connections['Generation'][xh])
+
+    def cNEGMinUT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinUT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
@@ -741,12 +791,31 @@ class ENetworkClass:
                 for xn in range(self.Gen.get_NoGen()):
                     for x2 in self.s['Tim']:
                         if self.settings['UC']:
-                            aux = (m.vNGen_Bin[self.connections['Generation']
-                                   [xh]+xn, x2].value)
+                            aux1 = self.Gen.get_Bin(xn)
+                            if aux1 is not None:
+                                aux = (m.vNGen_Bin[self.connections
+                                                   ['Generation'][xh]+aux1,
+                                                   x2].value)
                         print("%2.0f " % aux, end='')
                     print()
                 print("];")
 
+
+            if self.Print['UC']:
+                print("\nBin_MUT=[")
+                aux = 1
+                for xn in range(self.Gen.get_NoGen()):
+                    for x2 in self.s['Tim']:
+                        if self.settings['UC']:
+                            
+                            aux = (m.vNGen_MUT[self.connections
+                                                   ['Generation'][xh]+xn,
+                                                   x2].value)
+                        print("%2.0f " % aux, end='')
+                    print()
+                print("];")
+            
+            
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
                 for xb in range(self.ENetwork.get_NoBra()):
