@@ -15,9 +15,10 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn  # Network component
-from .pyeneE import EnergyClass as de  # Energy component
+from .pyeneN import ENetworkClass as dn  # Network cengine
+from .pyeneE import EnergyClass as de  # Energy engine
 from .pyeneH import HydrologyClass as hn  # Hydrology engine
+from .pyeneR import RESprofiles as rn  # RES engine
 import json
 import os
 
@@ -835,6 +836,8 @@ class pyeneClass():
                 xn2 = self.HM.connections['NodeSeqOut'][xn1]
                 if xn2 != 0:
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
+        self.RM = rn()
+
 
     def NSim(self, conf):
         ''' Network only optimisation '''

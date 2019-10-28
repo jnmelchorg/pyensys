@@ -800,22 +800,6 @@ class ENetworkClass:
                     print()
                 print("];")
 
-
-            if self.Print['UC']:
-                print("\nBin_MUT=[")
-                aux = 1
-                for xn in range(self.Gen.get_NoGen()):
-                    for x2 in self.s['Tim']:
-                        if self.settings['UC']:
-                            
-                            aux = (m.vNGen_MUT[self.connections
-                                                   ['Generation'][xh]+xn,
-                                                   x2].value)
-                        print("%2.0f " % aux, end='')
-                    print()
-                print("];")
-            
-            
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
                 for xb in range(self.ENetwork.get_NoBra()):
