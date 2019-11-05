@@ -711,7 +711,7 @@ class pyeneClass():
                          dtype=float)
 
         # Initialise network model
-        self.NM.initialise()
+        self.NM.initialise(rn(conf.RM))
 
         # Add connections between energy balance and network models
         self.NM.set_ConS(range(NoNM))
@@ -836,7 +836,6 @@ class pyeneClass():
                 xn2 = self.HM.connections['NodeSeqOut'][xn1]
                 if xn2 != 0:
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
-        self.RM = rn()
 
 
     def NSim(self, conf):
@@ -845,7 +844,7 @@ class pyeneClass():
         NM = dn(conf.NM)
 
         # Initialise
-        NM.initialise()
+        NM.initialise(rn(conf.RM))
 
         # Build LP model
         NModel = self.SingleLP(NM)

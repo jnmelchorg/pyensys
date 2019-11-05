@@ -709,6 +709,20 @@ class GenClass:
         return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max'] * \
             m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt]
 
+    def cNEGMaxUCWC_rule(self, m, xt, ConG, Der):
+        ''' Maximum generation capacity '''
+        ''' Maximum generation capacity '''
+        if self.pyomo['vNGen_Bin'] is None:
+            return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max']
+
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= self.data['Max'] * \
+            m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt]*Der[xt]
+
+    def cNEGMaxWC_rule(self, m, xt, ConG, Der):
+        ''' Maximum generation capacity '''
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] <= \
+            self.data['Max']*Der[xt]
+
     def cNEGMin_rule(self, m, xt, ConG):
         ''' Minimum generation capacity - Only when needed '''
         if self.data['Max'] > 0:
@@ -741,6 +755,15 @@ class GenClass:
 
         return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
             self.data['Min']*m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt]
+
+    def cNEGMinUCWC_rule(self, m, xt, ConG, Der):
+        ''' Minimum generation capacity '''
+        if self.pyomo['vNGen_Bin'] is None:
+            return Constraint.Skip
+
+        return m.vNGen[ConG+self.pyomo['vNGen'], xt] >= \
+            self.data['Min']*m.vNGen_Bin[ConG+self.pyomo['vNGen_Bin'], xt] * \
+            Der[xt]
 
     def cNEGMinUT1_rule(self, m, xt, xt0, ConG):
         ''' Minimum up time '''
@@ -1053,12 +1076,12 @@ class RES(GenClass):
         ''' Maximum generation capacity '''
         return Constraint.Skip
 
-    def cNEGMin_rule(self, m, xt, ConG):
-        ''' Minimum generation capacity '''
-        return Constraint.Skip
-
     def cNEGMaxUC_rule(self, m, xt, ConG):
         ''' Maximum generation capacity '''
+        return Constraint.Skip
+
+    def cNEGMin_rule(self, m, xt, ConG):
+        ''' Minimum generation capacity '''
         return Constraint.Skip
 
     def cNEGMinDT1_rule(self, m, xt, xt0, ConG):
@@ -1122,6 +1145,11 @@ class Generators:
                 'Types': None,
                 'Bin': None
                 }
+        self.cooling = {}
+        self.cooling['Flag'] = False
+        self.cooling['Gen2Der'] = []
+        self.cooling['Derate'] = None
+
         self.pyomo = {}
         self.pyomo['NoPieces'] = 0  # Max number of piece-wise cost curves
         self.pyomo['Type'] = []
@@ -1157,17 +1185,27 @@ class Generators:
     def cNEGMax_rule(self, m, xg, xt, ConG):
         ''' Maximum generation capacity '''
         (xa, xp) = self._GClass(xg)
-        return getattr(self, xa)[xp].cNEGMax_rule(m, xt, ConG)
+        # Considering water cooling constraints for conventional generators
+        if self.cooling['Flag'] and self.pyomo['Type'][xg] == 0:
+            aux = self.cooling['Derate'][self.cooling['Gen2Der'][xp]]
+            return getattr(self, xa)[xp].cNEGMaxWC_rule(m, xt, ConG, aux)
+        else:  # Ignoring water cooling constraints
+            return getattr(self, xa)[xp].cNEGMax_rule(m, xt, ConG)
+
+    def cNEGMaxUC_rule(self, m, xg, xt, ConG):
+        ''' Maximum generation capacity '''
+        (xa, xp) = self._GClass(xg)
+        # Considering water cooling constraints for conventional generators
+        if self.cooling['Flag'] and self.pyomo['Type'][xg] == 0:
+            aux = self.cooling['Derate'][self.cooling['Gen2Der'][xp]]
+            return getattr(self, xa)[xp].cNEGMaxUCWC_rule(m, xt, ConG, aux)
+        else:  # Ignoring water cooling constraints
+            return getattr(self, xa)[xp].cNEGMaxUC_rule(m, xt, ConG)
 
     def cNEGMin_rule(self, m, xg, xt, ConG):
         ''' Minimum generation capacity '''
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGMin_rule(m, xt, ConG)
-
-    def cNEGMaxUC_rule(self, m, xg, xt, ConG):
-        ''' Maximum generation capacity '''
-        (xa, xp) = self._GClass(xg)
-        return getattr(self, xa)[xp].cNEGMaxUC_rule(m, xt, ConG)
 
     def cNEGMinDT1_rule(self, m, xg, xt, xt0, ConG):
         ''' Minimum down time '''
@@ -1307,8 +1345,65 @@ class Generators:
         ''' Get position of vNGen variable - pyomo/hydro'''
         return getattr(self, 'RES')[xg].get_vNGen()
 
-    def initialise(self, ENetwork, sett):
+    def initialise(self, ENetwork, sett, RM):
         ''' Prepare objects and remove configuration versions '''
+
+        # Get cooling information
+        self.cooling['Flag'] = RM.cooling['Flag']
+        if self.cooling['Flag']:
+            # Link generators and capacity derate profiles
+            self.cooling['Gen2Der'] = np.zeros(self.data['Conv'], dtype=int)
+            for x in range(len(RM.cooling['Gen2Temp'])):
+                self.cooling['Gen2Der'][x] = RM.cooling['Gen2Temp'][x]
+
+            # NUmber of profiles and time periods
+            NoT = len(RM.cooling['temp_w'][0])
+
+            # Link generator types to cooling data
+            aux = len(RM.cooling['GenType'])
+            if aux == 0:
+                # All generator types are the same
+                NoW = len(RM.cooling['temp_w'])
+                # Produce profiles
+                self.cooling['Derate'] = np.zeros((NoW, NoT), dtype=float)
+                for x in range(NoW):
+                    self.cooling['Derate'][x] = \
+                        RM.get_CF(temp_w=RM.cooling['temp_w'][x], index=0)
+            else:
+                # Check generator types
+                axType = np.zeros(self.data['Conv'], dtype=int)
+                for x in range(aux):
+                    axType[x] = RM.cooling['GenType'][x]
+                # Find number of simulations to be made,
+                # i.e., unique combinations of temperatures and generator types
+                aux = {}
+                aux['No'] = 0
+                aux['type'] = []
+                aux['prof'] = []
+                for x1 in range(self.data['Conv']):
+                    x2 = 0
+                    # Check if it is a new or repeated case
+                    while x2 <= x1:
+                        if x2 == x1:  # Is it the end of the loop?
+                            # New profile
+                            aux['type'].append(axType[x1])
+                            aux['prof'].append(self.cooling['Gen2Der'][x1])
+                            self.cooling['Gen2Der'][x1] = aux['No']
+                            aux['No'] += 1
+                        elif axType[x1] == axType[x2] and \
+                                self.cooling['Gen2Der'][x1] == \
+                                self.cooling['Gen2Der'][x2]:
+                            # Same as x2
+                            self.cooling['Gen2Der'][x1] = x2
+                            x2 = x1
+                        x2 += 1
+                # Produce profiles
+                self.cooling['Derate'] = \
+                    np.zeros((aux['No'], NoT), dtype=float)
+                for x in range(aux['No']):
+                    self.cooling['Derate'][x] = \
+                        RM.get_CF(temp_w=RM.cooling['temp_w'][aux['prof'][x]],
+                                  index=aux['type'][x])
 
         # Initialise conventional generation object
         self.Conv = [Conventional(self.ConvConf[x]) for x in

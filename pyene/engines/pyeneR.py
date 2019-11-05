@@ -41,7 +41,15 @@ class pyeneRConfig():
 
         # Water for cooling
         self.cooling = {
+                'Flag': False,  # Consider cooling
                 'Types': ['Nuclear', 'Coal','CCGT'],
+                'Gen2Temp': [],  # Link generators to temp_w profiles
+                'GenType': [],  # Generation types
+                'temp_w': [[13.3876, 12.6934, 12.2074, 12.1380, 12.1380,
+                           12.4851, 12.7628, 13.6652, 14.9148, 15.8173,
+                           16.5809, 17.1362, 17.2057, 17.6222, 17.4833,
+                           17.4833, 17.2057, 16.7891, 16.3726, 15.8173,
+                           14.8454, 14.2206, 13.1793, 13.2487]],
                 'TempThres': [15.0, 15.0, 15.0],  # Temp not affect CF
                 'TempShut': [32.0, 32.0, 32.0],  # Tempe that leads to shutdown
                 'TempMax': [35.0, 35.0, 35.0],  # Max outlet temperature
@@ -63,6 +71,12 @@ class RESprofiles():
         # Copy attributes
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
+
+    def buildCF(self):
+        ''' Build parameters for generator's CF '''
+        aux = len(self.cooling['Gen2Temp'])
+
+            
 
     def buildPV(self, direct, diffuse):
         ''' Produce PV generation multiplier '''
@@ -111,12 +125,22 @@ class RESprofiles():
 
         return windMultiplier
 
-    def get_CF(self, temp_w, type='Coal'):
+    def get_CF(self, **kwargs):
         ''' Calculate capacity factor '''
 
-        # Select type of generator
-        index = self.cooling['Types'].index(type)
+        if 'temp_w' in kwargs:
+            temp_w = kwargs.pop('temp_w')
+        else:
+            temp_w = self.cooling['temp_w']
 
+        if 'type' in kwargs:
+            index = self.cooling['Types'].index(kwargs.pop('type'))
+        elif 'index' in kwargs:
+            index = kwargs.pop('index')
+        else:
+            index = self.cooling['Types'].index('Coal')
+
+        # Select generator data
         temp_w_health = self.cooling['TempThres'][index]
         temp_w_shutdown = self.cooling['TempShut'][index]
         temp_w_max = self.cooling['TempMax'][index]

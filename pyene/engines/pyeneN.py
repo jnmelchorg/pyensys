@@ -638,7 +638,7 @@ class ENetworkClass:
         aux = self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
         return m.vNGen[aux, xt]*self.ENetwork.get_Base()/Eff
 
-    def initialise(self):
+    def initialise(self, RM):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
         # Read network data
@@ -649,7 +649,7 @@ class ENetworkClass:
         (self.busData, self.busScenario,
          self.resScenario) = self.ProcessEDem(self.demandE)
 
-        self.Gen.initialise(self.ENetwork, self.settings)
+        self.Gen.initialise(self.ENetwork, self.settings, RM)
 
         self.NoBuses = self.ENetwork.get_NoBus()*(1+self.NoSec2)
         self.NoBranch = self.ENetwork.get_NoBra() + \
