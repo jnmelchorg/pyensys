@@ -368,6 +368,12 @@ class EnergyClass:
             m.cSoCStochastic = Constraint(self.s['LLTS3'], self.s['Vec'],
                                           rule=self.cSoCStochastic_rule)
 
+        # print(self.p['LLTS1'])
+        # print(self.p['LLTS2'])
+        # print(self.p['WghtFull'])
+        # import sys
+        # sys.exit('hasta aqui')
+
         return m
 
     def addPar(self, m):
