@@ -1,0 +1,13 @@
+appdirs==1.4.3
+Click==7.0
+Cython==0.29.14
+decorator==4.4.1
+networkx==2.4
+nose==1.3.7
+numexpr==2.7.0
+numpy==1.17.4
+ply==3.11
+Pyomo==5.6.7
+PyUtilib==5.7.2
+six==1.13.0
+tables==3.6.1
