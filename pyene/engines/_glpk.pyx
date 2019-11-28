@@ -106,9 +106,9 @@ cdef class GLPKSolver:
             ia[aux1 + 1] = iapy[aux1]
             ja[aux1 + 1] = japy[aux1]
             ar[aux1 + 1] = arpy[aux1]
-        
+
         glp_load_matrix(self.prob, ne, ia, ja, ar)
-        
+
         free(ia)
         free(ja)
         free(ar)
@@ -142,4 +142,6 @@ cdef class GLPKSolver:
         cdef int col = self.col_ids[name] + col_offset
         return glp_get_col_prim(self.prob, col)
 
-
+    cpdef void set_prob_name(self, str name):
+        cname = name.encode("utf-8")
+        glp_set_prob_name(self.prob, cname)

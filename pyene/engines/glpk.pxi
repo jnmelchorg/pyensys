@@ -172,6 +172,8 @@ cdef extern from "glpk.h":
     void glp_set_row_stat(glp_prob *P, int i, int state)
     void glp_set_col_stat(glp_prob *P, int i, int state)
 
+    void glp_set_prob_name(glp_prob *P, const char *name)
+
 message_levels = {
     'off': GLP_MSG_OFF,
     'error': GLP_MSG_ERR,

@@ -31,6 +31,21 @@ def model():
     return opt.solve(lpModel)
 
 
+def test_glpk():
+    from engines._glpk import GLPKSolver
+
+    rows_id = "prows"
+
+    solver = GLPKSolver()
+    solver.set_dir("max")
+    solver.set_prob_name("PS GLPK test problem")
+    solver.add_rows(rows_id, 2)
+    solver.set_row_bnds(rows_id, 0, "upper", 0.0, 1.0);
+    solver.set_row_bnds(rows_id, 1, "upper", 0.0, 2.0);
+
+
 if __name__ == "__main__":
     results = model()
     print(results)
+
+    test_glpk()

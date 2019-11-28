@@ -15,5 +15,5 @@ test_requires = [
 ]
 
 setup(
-    ext_modules=cythonize([Extension('_glpk', ['_glpk.pyx'], libraries=['glpk'],)])
+    ext_modules=cythonize([Extension('_glpk', ['_glpk.pyx'], libraries=['glpk'],)], language_level = "3")
 )

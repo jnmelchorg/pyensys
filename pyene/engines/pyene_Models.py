@@ -19,7 +19,7 @@ class Energymodel():
 
     def optimisation(self):
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='off')       
+        self.solver = GLPKSolver(message_level='off')
         # Definition of minimisation problem
         self.solver.set_dir('max')
         # Definition of the mathematical formulation
@@ -58,7 +58,7 @@ class Energymodel():
         """ This class method determines the number of constraints """
         # Number of constrains in the energy balance
         self.number_constraints += (self.LL['NosBal']+1) * self.size['Vectors']
-        self.number_constraints += (self.LL['NosAgg']+1) * self.size['Vectors'] 
+        self.number_constraints += (self.LL['NosAgg']+1) * self.size['Vectors']
         if self.LL['NosUnc'] != 0:
             self.number_constraints += (self.LL['NosUnc']+1) * self.size['Vectors']
 
@@ -80,10 +80,10 @@ class Energymodel():
         if self.LL['NosUnc'] != 0:
             self.AggregationStochastic()
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
- 
+
     def Energybalance(self):
         """ This class method writes the energy balance in glpk
-        
+
         First, it is reserved space in memory to store the energy balance constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
@@ -130,13 +130,13 @@ class Energymodel():
         #       print("%d %d %d" %(self.ia[i], self.ja[i], self.ar[i]))
         # for vectors in range(self.size['Vectors']):
         #     for nodes in range(1, self.LL['NosBal']+1):
-        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))            
+        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))
         # import sys
         # sys.exit('hasta aqui')
 
     def Aggregation(self):
         """ This class method writes the aggregation constraints in glpk
-        
+
         First, it is reserved space in memory to store the aggregation constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
@@ -145,7 +145,7 @@ class Energymodel():
         # Reserving space in glpk for aggregation constraints
         self.Agg_row_number = self.solver.add_rows('Agg', self.LL['NosAgg'] * \
             self.size['Vectors'])   # Number of columns (constraints) in matrix A
-                                    # for aggregation        
+                                    # for aggregation
         nep = self.ne # For verification, TODO remove in future versions
         # Generating the matrix A for the aggregation contraints
         for vectors in range(self.size['Vectors']):
@@ -200,13 +200,13 @@ class Energymodel():
         #       print("%d %d %d" %(self.ia[i], self.ja[i], self.ar[i]))
         # for vectors in range(self.size['Vectors']):
         #     for nodes in range(1, self.LL['NosBal']+1):
-        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))            
+        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))
         # import sys
         # sys.exit('hasta aqui')
 
     def AggregationStochastic(self):
         """ This class method writes the aggregation constraints for stochastic scenarios in glpk
-        
+
         First, it is reserved space in memory to store the aggregation constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
@@ -215,7 +215,7 @@ class Energymodel():
         # Reserving space in glpk for aggregation constraints
         self.Agg_Sto_row_number = self.solver.add_rows('AggStoch', self.LL['NosAgg'] * \
             self.size['Vectors'])   # Number of columns (constraints) in matrix A
-                                    # for aggregation        
+                                    # for aggregation
         nep = self.ne
         # Generating the matrix A for the aggregation contraints
         # TODO review this constraint
@@ -262,7 +262,7 @@ class Energymodel():
                             (self.LL['NosBal'] + 1)) + self.p['LLTS3'][nodes, 1] + aux1 + 1
                 self.ne += 1
 
-                    
+
 
         # Defining the limits for the aggregation constraints
         for vectors in range(self.size['Vectors']):
@@ -287,7 +287,7 @@ class Energymodel():
     def Objective_function(self):
         """ This class method defines the cost coefficients for the
          objective function in glpk
-         
+
         A dummy objective function is created for the problem """
 
         self.solver.set_obj_coef('cols', 1, 2)
@@ -305,12 +305,12 @@ class Energymodel():
         #       print("%d %d %d" %(self.ia[i], self.ja[i], self.ar[i]))
         # for vectors in range(self.size['Vectors']):
         #     for nodes in range(1, self.LL['NosBal']+1):
-        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))            
+        #         print("%f" %(self.Weight['In'][nodes, vectors] - self.Weight['Out'][nodes, vectors]))
         # import sys
         # sys.exit('hasta aqui')
 
 
- 
+
         # m.vEIn = self.Weight['In']
         # m.vEOut = self.Weight['Out']
 
