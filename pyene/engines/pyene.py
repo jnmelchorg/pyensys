@@ -510,7 +510,7 @@ class pyeneClass():
             value += self.get_AllLoss(m, *varg, **kwarg)
 
         if auxFlags[3]:  # Curtailment
-            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)
+            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)[0]
 
         if auxFlags[4]:  # Spill
             value += self.get_AllRES(m, *varg, **kwarg)
@@ -700,9 +700,12 @@ class pyeneClass():
         self.NM.scenarios['Number'] = aux
 
         if self.NM.scenarios['NoDem'] > 0:
+            aux = self.NM.scenarios['Demand']
             self.NM.scenarios['Demand'] = \
-                np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
-                        dtype=float)
+                    np.ones(self.NM.settings['NoTime'] *
+                            self.NM.scenarios['NoDem'], dtype=float)
+            for x in range(len(aux)):
+                self.NM.scenarios['Demand'][x] = aux[x]
 
         # Initialise RES
         if self.NM.RES['Number'] > 0:

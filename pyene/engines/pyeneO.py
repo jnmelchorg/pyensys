@@ -112,7 +112,7 @@ class pyeneHDF5Settings():
             aux[x] = True
             self.data['cost'][x] += EN.get_OFparts(m, aux)
 
-        self.data['curtailment'] += EN.get_AllDemandCurtailment(m)
+        self.data['curtailment'] += EN.get_AllDemandCurtailment(m)[0]
         self.data['spill'] += EN.get_AllRES(m)
         self.data['OF'] += EN.get_OFparts(m, [True for x in range(5)])
 
@@ -251,14 +251,14 @@ class pyeneHDF5Settings():
                 HDF5row['spill'] = EN.get_AllRES(m, 'snapshot', times=[xt],
                                                  scens=[xs])
                 HDF5row['demand'] = EN.get_AllDemand(m, 'snapshot',
-                                                     times=[xt], scens=[xs])
+                                                     times=[xt], scens=[xs])[0]
                 HDF5row['pump'] = EN.get_AllPumps(m, 'snapshot', times=[xt],
                                                   scens=[xs])
                 HDF5row['loss'] = EN.get_AllLoss(m, 'snapshot', times=[xt],
                                                  scens=[xs])
                 HDF5row['curtailment'] = \
                     EN.get_AllDemandCurtailment(m, 'snapshot', times=[xt],
-                                                scens=[xs])
+                                                scens=[xs])[0]
                 HDF5row.append()
             HDF5table.flush()
 
