@@ -324,7 +324,7 @@ class pyeneClass():
         value = 0
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
-                aux = self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
+                aux = self.get_DemandCurtailment(m, xn, *varg, **kwarg)
                 values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
             value = values[0]+values[1]
 

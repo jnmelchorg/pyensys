@@ -961,7 +961,7 @@ class ENetworkClass:
         # Add LL for feasibility constraints (Nodes)
         LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
         if self.settings['Feasibility']:
-            NoFea = self.ENetwork.get_NoBus()+1
+            NoFea = self.ENetwork.get_NoBus()
             for xn in range(1, NoFea):
                 LLFea[xn] = xn
         else:
