@@ -401,6 +401,9 @@ class pyeneClass():
 
     def get_DemandCurtailment(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
+        if self.NM.p['LLFea1'][bus] == 0:
+            return 0
+
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
@@ -702,8 +705,8 @@ class pyeneClass():
         if self.NM.scenarios['NoDem'] > 0:
             aux = self.NM.scenarios['Demand']
             self.NM.scenarios['Demand'] = \
-                    np.ones(self.NM.settings['NoTime'] *
-                            self.NM.scenarios['NoDem'], dtype=float)
+                np.ones(self.NM.settings['NoTime'] *
+                        self.NM.scenarios['NoDem'], dtype=float)
             for x in range(len(aux)):
                 self.NM.scenarios['Demand'][x] = aux[x]
 

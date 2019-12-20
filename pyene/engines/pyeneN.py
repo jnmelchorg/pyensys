@@ -111,6 +111,10 @@ class pyeneNConfig:
                 'GenBus': True,
                 'UC': True,
                 }
+        # TODO: Remove reference
+        self.Aux = {
+                'shift': 1
+                }
 
 
 class ENetworkClass:
@@ -163,7 +167,8 @@ class ENetworkClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
-
+        # Currently using the same feasibility variable as the generators
+        # TODO: Assign dedicated curtailment/spilling variable
         if self.scenarios['NoDem'] == 0:
             self.p['daux'] = 0
         else:
@@ -245,7 +250,7 @@ class ENetworkClass:
             # Minimum up time
             m.cNEGMinUT2 = Constraint(self.s['Gen'], self.s['Tim'],
                                       self.s['Con'], rule=self.cNEGMinUT2_rule)
-            
+
         else:
             # Maximum generation
             m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
@@ -265,9 +270,7 @@ class ENetworkClass:
         # Dinamic load (pump) initialisation
         m.cNDLIni = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNLDIni_rule)
-        # Feasibility constraints
-        m.cNsetFea = Constraint(self.s['Tim'], self.s['Con'],
-                                rule=self.cNsetFea_rule)
+
         # Adding RES limits
         if self.RES['Number'] > 0:
             m.cNRESMax = Constraint(self.s['Tim'], self.s['RES'],
@@ -382,7 +385,8 @@ class ENetworkClass:
         return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
             sum(m.vNGen[self.connections['Generation'][xh]+x, xt]
-                for x in self.Gen.get_GenAll())-m.vNFea[xh*self.p['faux'], xt]
+                for x in self.Gen.get_GenAll()) - \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
     def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
@@ -418,8 +422,9 @@ class ENetworkClass:
                 (m.vNStore[self.LLStor[xn, xh], xt] -
                  m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
-                m.vNFea[self.connections['Feasibility'][xh] +
-                        self.p['LLFea'][xn+1], xt] +
+                sum(m.vNFea[self.connections['Feasibility'][xh] +
+                            self.p['LLFea2'][xn], xt] for x1 in
+                    range(self.p['LLFea1'][xn])) +
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
@@ -434,7 +439,7 @@ class ENetworkClass:
                      for xn in self.s['Bus']))*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
-            m.vNFea[xh*self.p['faux'], xt] + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
             sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
                 for xg in self.Gen.get_GenAll()) - \
             sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
@@ -558,10 +563,6 @@ class ENetworkClass:
         return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
-    def cNsetFea_rule(self, m, xt, xh):
-        ''' Positions without feasibility constraints '''
-        return m.vNFea[self.connections['Feasibility'][xh], xt] == 0
-
     def cNStore0_rule(self, m, xt):
         ''' Reference storage '''
         return m.vNStore[0, xt] == 0
@@ -583,7 +584,8 @@ class ENetworkClass:
                    for xg in self.Gen.get_GenAllR()) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNUncRES0_rule(self, m, xt, xh):
@@ -593,7 +595,8 @@ class ENetworkClass:
                    for xg in self.Gen.get_GenAllR()) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt]
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
     def get_ConB(self):
         ''' Get connections between branches '''
@@ -846,10 +849,14 @@ class ENetworkClass:
 
             if self.Print['Feasibility']:
                 print("\nFeas=[")
-                for xf in self.s['Fea']:
+                for xn in range(self.ENetwork.get_NoBus()):
                     for xt in self.s['Tim']:
-                        aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
-                                      xt].value*self.ENetwork.get_Base()
+                        if self.p['LLFea1'][xn] == 0:
+                            aux = 0
+                        else:
+                            aux = m.vNFea[self.connections['Feasibility'][xh] +
+                                          self.p['LLFea2'][xn], xt].value * \
+                                self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -958,19 +965,38 @@ class ENetworkClass:
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
         self.p['LLPump'] = LLDL
 
-        # Add LL for feasibility constraints (Nodes)
-        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
-        if self.settings['Feasibility']:
-            NoFea = self.ENetwork.get_NoBus()
-            for xn in range(1, NoFea):
-                LLFea[xn] = xn
-        else:
-            NoFea = 1
-        self.LL = {}
-        self.NoLL = {}
-        self.iLL = {}
-        self.p['LLFea'] = LLFea
+        # Add LL for feasibility constraints only in nodes with demand
+        NoFea = 0
+        LLFea1 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        LLFea2 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        for xn in range(self.ENetwork.get_NoBus()):
+            if self.demandE['PD'][xn] > 0:
+                LLFea1[xn] = 1
+                LLFea2[xn] = NoFea
+                NoFea += 1
+        self.p['LLFea1'] = LLFea1
+        self.p['LLFea2'] = LLFea2
         self.NoFea = NoFea
+        print  ('To be deleted')
+#        print ()
+#        print (LLFea1)
+#        print (LLFea2)
+#        print (NoFea)
+#        print ()
+#        aux[1000]
+#
+#        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
+#        if self.settings['Feasibility']:
+#            NoFea = self.ENetwork.get_NoBus()
+#            for xn in range(1, NoFea):
+#                LLFea[xn] = xn
+#        else:
+#            NoFea = 1
+#        self.LL = {}
+#        self.NoLL = {}
+#        self.iLL = {}
+#        self.p['LLFea'] = LLFea
+#        self.NoFea = NoFea
 
     def Read(self):
         ''' Read input data '''
