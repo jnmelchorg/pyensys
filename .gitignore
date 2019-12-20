@@ -6,6 +6,7 @@ __pycache__/
 
 # cache folder
 .pytest_cache/
+.cache/
 
 # To-be-deleted folder
 TBD/
@@ -24,3 +25,16 @@ outputs/
 
 # test cases
 pyeneT.py
+
+# Pyomo mistakes
+*.lp
+*.glp
+*.raw
+*.log
+
+# Json files used for development
+pyene/json/
+
+# Confidential files
+caseGhana_Full.json
+caseGhana_Sim40_BSec_Manual.json

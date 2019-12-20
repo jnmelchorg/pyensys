@@ -15,9 +15,10 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn  # Network component
-from .pyeneE import EnergyClass as de  # Energy component
+from .pyeneN import ENetworkClass as dn  # Network cengine
+from .pyeneE import EnergyClass as de  # Energy engine
 from .pyeneH import HydrologyClass as hn  # Hydrology engine
+from .pyeneR import RESprofiles as rn  # RES engine
 import json
 import os
 
@@ -44,6 +45,18 @@ class ENEConfig():
     def __init__(self):
         # Chose to load data from file
         self.Penalty = 1000000
+        # Option to overwrite parameters
+        self.Overwrite = {
+                'DemandX': [],  # Position of demand profiles to overwrite
+                'DemandL': [],  # Link position-->profile
+                'Demand': [],  # New demand time-series
+                'RESX': [],  # Position of RES profiles to overwrite
+                'RESL': [],  # Link position-->profile
+                'RES': [],  # New RES time-series
+                'HydroX': [],  # Position of Hydropower values to overwrite
+                'HydroL': [],  # Link position-->profile
+                'Hydro': []  # New hydropower time-series
+                }
 
 
 class pyeneClass():
@@ -75,7 +88,7 @@ class pyeneClass():
 
     def _Calculate_OFaux(self):
         WghtAgg = 0+self.EM.p['WghtFull']
-        OFaux = np.ones(len(self.NM.connections['set']), dtype=float)
+        OFaux = np.ones(len(self.NM.get_ConS()), dtype=float)
         xp = 0
         for xn in range(self.EM.LL['NosBal']+1):
             aux = self.EM.tree['After'][xn][0]
@@ -127,21 +140,10 @@ class pyeneClass():
                     m.cAHMOut1 = \
                         Constraint(self.s['LL'], range(self.p['NoHydDown']),
                                    self.NM.s['Tim'], rule=self.cAHMOut1_rule)
-                    if self.NM.hydropower['Baseload'] > 0:
-                        m.cABaseload1 = \
-                            Constraint(self.s['LL'],
-                                       range(self.p['NoHydDown']),
-                                       self.NM.s['Tim'],
-                                       rule=self.cABaseload1_rule)
 
                 m.cAHMOut2 = Constraint(self.s['LL'], range(self.p['NoHMout']),
                                         self.NM.s['Tim'],
                                         rule=self.cAHMOut2_rule)
-                if self.NM.hydropower['Baseload'] > 0:
-                    m.cABaseload2 = \
-                        Constraint(self.s['LL'], self.s['LLHydOut'],
-                                   self.NM.s['Tim'],
-                                   rule=self.cABaseload2_rule)
 
             else:
                 # Link pyeneE and pyeneN
@@ -205,49 +207,11 @@ class pyeneClass():
 
         return m
 
-    def cABaseload_rule(self, m, xL, xv, xt):
-        ''' Baseload - Without hydraulics'''
-        # TODO Test constraint
-        return m.vNGen[self.p['pyeneN'][xL]+xv, xt] >= \
-            sum(m.vNGen[self.p['pyeneN'][xL]+xv, xt2] *
-                self.NM.scenarios['Weights'][xt2]
-                for xt2 in self.NM.s['Tim']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
-
-    def cABaseload1_rule(self, m, xh, xv, xt):
-        ''' Baseload - Aggregated downstream flows '''
-        # TODO Test constraint
-        # Position of the hydropower plant
-        xb = self.p['LLHydDown'][xv]
-        # Node to be addressed
-        xn = self.HM.hydropower['Node'][xb]-1
-
-        return sum(m.vHup[self.HM.p['ConRiver'][xh] +
-                          self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd],
-                          xt] for xd in range(self.HM.p['LLN2B2'][xn, 2])) >= \
-            sum(sum(sum(m.vHup[self.HM.p['ConRiver'][xh2] +
-                               self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3] +
-                                                   xd], xt2] *
-                        self.NM.scenarios['Weights'][xt2]
-                        for xd in range(self.HM.p['LLN2B2'][xn, 2]))
-                    for xt2 in self.NM.s['Tim']) for xh2 in self.s['LL']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
-
-    def cABaseload2_rule(self, m, xh, xn, xt):
-        ''' Baseload - pyeneH outputs taken from nodal outputs '''
-
-        return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
-            sum(sum(m.vHout[xn+xh2*self.HM.nodes['OutNumber'], xt2] *
-                    self.NM.scenarios['Weights'][xt2]
-                    for xt2 in self.NM.s['Tim']) for xh2 in self.s['LL']) * \
-            self.NM.scenarios['Weights'][xt]*self.p['HydroBase']
-
     def cAEMNM_rule(self, m, xL, xv):
         ''' Connecting  pyeneE and pyeneN (MW --> MW)'''
+        # TODO: Send first half of the constraint to pyeneH
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
-            sum(m.vNGen[self.p['pyeneN'][xL]+xv, xt] *
-                self.NM.scenarios['Weights'][xt]
-                for xt in self.NM.s['Tim'])*self.NM.networkE.graph['baseMVA']
+            self.NM.In_From_EM(m, xL, xv)
 
     def cAHMIn1_rule(self, m, xL, xv):
         ''' Flows from pyeneE and pyeneHin (MW --> m^3/s)'''
@@ -255,7 +219,7 @@ class pyeneClass():
         return m.vEOut[self.p['pyeneE'][xL], xv] == \
             sum((m.vHin[self.p['NoHMin']*xL+xv, xt] -
                  sum(m.vNPump[xp, xt] *
-                     self.NM.networkE.graph['baseMVA'] /
+                     self.NM.ENetwork.get_Base() /
                      self.p['EffPump'][self.p['pyeneHin'][xv][1]]
                      for x in range(self.p['pyeneHin'][xv][0]))) *
                 self.NM.scenarios['Weights'][xt]
@@ -266,7 +230,7 @@ class pyeneClass():
         return m.vHin[self.p['NoHMin']*xL+xv, xt] == \
             sum(m.vNPump[self.p['pyeneHin'][xv][1]+xL *
                          (self.NM.pumps['Number']+1)+1, xt] *
-                self.NM.networkE.graph['baseMVA'] /
+                self.NM.ENetwork.get_Base() /
                 self.p['EffPump'][self.p['pyeneHin'][xv][1]]
                 for x in range(self.p['pyeneHin'][xv][0]))
 
@@ -276,13 +240,8 @@ class pyeneClass():
         xb = self.p['LLHydDown'][xv]
         # Node to be addressed
         xn = self.HM.hydropower['Node'][xb]-1
-        # Position of hydro in pyeneN
-        xg = xb+self.NM.conventional['Number']+xh *\
-            (1+self.NM.generationE['Number'])+1
-        # From MW to m^3/s
-        aux = self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
 
-        return m.vNGen[xg, xt]*aux <= \
+        return self.NM.In_From_HM(m, xh, xt, xb, self.p['EffHydro'][xb]) <= \
             sum(m.vHup[self.HM.p['ConRiver'][xh] +
                        self.HM.p['LLN2B1'][self.HM.p['LLN2B2'][xn, 3]+xd], xt]
                 for xd in range(self.HM.p['LLN2B2'][xn, 2]))
@@ -293,16 +252,12 @@ class pyeneClass():
         xb = self.p['LLHydOut'][xn][1]
         # Position of the pump
         xp = self.p['LLHPumpOut'][xn][1]
-        # Position of hydro in pyeneN
-        xg = xb+self.NM.conventional['Number']+xh *\
-            (1+self.NM.generationE['Number'])+1
 
         return m.vHout[xn+xh*self.HM.nodes['OutNumber'], xt] >= \
-            sum(m.vNGen[xg, xt] *
-                self.NM.networkE.graph['baseMVA']/self.p['EffHydro'][xb]
+            sum(self.NM.In_From_HM(m, xh, xt, xb, self.p['EffHydro'][xb])
                 for x in range(self.p['LLHydOut'][xn][0])) + \
             sum(m.vNPump[1+xp+xh*(1+self.NM.pumps['Number']), xt] *
-                self.NM.networkE.graph['baseMVA']/self.p['EffPump'][xp]
+                self.NM.ENetwork.get_Base()/self.p['EffPump'][xp]
                 for x in range(self.p['LLHPumpOut'][xn][0]))
 
     def CheckProfile(self, value):
@@ -346,13 +301,16 @@ class pyeneClass():
         if 'buses' in kwarg:
             auxbuses = kwarg.pop('buses')
         else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
+            auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         value = 0
+        values = [0, 0]
         for xn in auxbuses:
-            value += self.get_Demand(m, xn+1, *varg, **kwarg)
+            aux = self.get_Demand(m, xn+1, *varg, **kwarg)
+            values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+            value += aux
 
-        return value
+        return value, values
 
     def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
@@ -360,33 +318,30 @@ class pyeneClass():
         if 'buses' in kwarg:
             auxbuses = kwarg.pop('buses')
         else:
-            auxbuses = range(self.NM.networkE.number_of_nodes())
+            auxbuses = range(self.NM.ENetwork.get_NoBus())
 
+        values = [0, 0]
         value = 0
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
-                value += self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
+                aux = self.get_DemandCurtailment(m, xn, *varg, **kwarg)
+                values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+            value = values[0]+values[1]
 
-        return value
+        return value, values
 
     def get_AllGeneration(self, m, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
         if 'All' in varg:
-            aux = range(1, self.NM.generationE['Number']+1)
+            aux = self.NM.Gen.get_GenAll()
         elif 'Conv' in varg:
-            aux = range(1, self.NM.conventional['Number']+1)
+            aux = self.NM.Gen.get_GenAllC()
         elif 'RES' in varg:
-            aux = range(self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1,
-                        self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1 +
-                        self.NM.RES['Number'])
+            aux = self.NM.Gen.get_GenAllR()
         elif 'Hydro' in varg:
-            aux = range(self.NM.conventional['Number']+1,
-                        self.NM.conventional['Number'] +
-                        self.NM.hydropower['Number']+1)
+            aux = self.NM.Gen.get_GenAllH()
         else:
-            aux = range(1, self.NM.generationE['Number']+1)
+            aux = self.NM.Gen.get_GenAll()
 
         value = 0
         for xn in aux:
@@ -407,7 +362,7 @@ class pyeneClass():
         value = 0
         if self.NM.settings['Losses']:
             for xb in self.NM.s['Bra']:
-                value += self.get_Loss(m, xb+1, *varg, **kwarg)
+                value += self.get_Loss(m, xb, *varg, **kwarg)
 
         return value
 
@@ -440,12 +395,15 @@ class pyeneClass():
                 acu += (self.NM.busData[xb]*self.NM.scenarios['Demand']
                         [xt+self.NM.busScenario[xb][xh]])*auxweight[xt]
             value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        value *= self.NM.ENetwork.get_Base()
 
         return value
 
     def get_DemandCurtailment(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
+        if self.NM.p['LLFea1'][bus] == 0:
+            return 0
+
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
@@ -455,10 +413,9 @@ class pyeneClass():
                 acu = 0
                 for xt in auxtime:
                     acu += auxweight[xt] * \
-                        m.vNFea[self.NM.connections['Feasibility'][xh]+bus,
-                                xt].value
+                        m.vNFea[self.NM.get_ConFea(xh)+bus, xt].value
                 value += acu*auxOF[xh]
-            value *= self.NM.networkE.graph['baseMVA']
+            value *= self.NM.ENetwork.get_Base()
 
         return value
 
@@ -471,10 +428,10 @@ class pyeneClass():
         for xh in auxscens:
             acu = 0
             for xt in auxtime:
-                acu += (m.vNGen[self.NM.connections['Generation']
-                                [xh]+index, xt].value*auxweight[xt])
+                acu += m.vNGen[self.NM.get_ConG(xh)+index, xt].value * \
+                    auxweight[xt]
             value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        value *= self.NM.ENetwork.get_Base()
 
         return value
 
@@ -492,7 +449,7 @@ class pyeneClass():
             HydroValue = False
         else:
             aux2 = -1*int(m.dual.get(cobject[1, index-1]))
-            aux3 = self.Penalty/self.NM.networkE.graph['baseMVA']
+            aux3 = self.Penalty/self.NM.ENetwork.get_Base()
             if aux2 > aux3:
                 HydroValue = True
             else:
@@ -512,7 +469,7 @@ class pyeneClass():
         return HydroValue
 
     def get_Loss(self, m, xb, *varg, **kwarg):
-        '''Get the kWh that had to be curtailed from a given bus'''
+        '''Get losses for a given branch'''
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
@@ -522,10 +479,10 @@ class pyeneClass():
             for xh in auxscens:
                 acu = 0
                 for xt in auxtime:
-                    acu += (m.vNLoss[self.NM.connections['Loss']
-                                     [xh]+xb, xt].value)*auxweight[xt]
+                    acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
+                        auxweight[xt]
                 value += acu*auxOF[xh]
-            value *= self.NM.networkE.graph['baseMVA']
+            value *= self.NM.ENetwork.get_Base()
 
         elif self.NM.settings['Loss'] is not None:
             # If losses have been estimated
@@ -556,53 +513,62 @@ class pyeneClass():
             value += self.get_AllLoss(m, *varg, **kwarg)
 
         if auxFlags[3]:  # Curtailment
-            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)
+            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)[0]
 
         if auxFlags[4]:  # Spill
             value += self.get_AllRES(m, *varg, **kwarg)
 
         return value
 
+    def get_OFpart(self, m, xg, *varg, **kwarg):
+        ''' Get components of the objective function '''
+        (auxtime, auxweight, auxscens,
+         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+
+        value = sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg, xt].value
+                        for xt in auxtime)*auxOF[xh] for xh in auxscens)
+
+        return value
+
     def get_OFparts(self, m, auxFlags, *varg, **kwarg):
+        # TODO: Validate
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
         value = 0
         if auxFlags[0]:  # Conventional generation
-            value += sum(sum(sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg,
-                                           xt].value for xg
-                                 in range(self.NM.conventional['Number']))
-                             for xt in auxtime)*auxOF[xh] for xh in auxscens)
+            for x in self.NM.Gen.Conv:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
-            if self.NM.RES['Number'] > 0:
-                value += sum(sum(sum(m.vNGCost[self.NM.connections['Cost']
-                                     [xh]+xg, xt].value
-                                     for xg in self.NM.RES['Link'])
-                                 for xt in auxtime)*auxOF[xh]
-                             for xh in auxscens)
+            for x in self.NM.Gen.RES:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
-            if self.NM.hydropower['Number'] > 0:
-                value += sum(sum(sum(m.vNGCost[self.NM.connections['Cost']
-                                     [xh]+xg, xt].value
-                                     for xg in self.NM.hydropower['Link'])
-                                 for xt in auxtime)*auxOF[xh]
-                             for xh in auxscens)
+            for x in self.NM.Gen.Hydro:
+                value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
+                                           xt].value *
+                                 self.NM.scenarios['Weights'][xt] for xt in
+                                 auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
-                             self.NM.networkE.graph['baseMVA'] *
-                             sum(m.vNPump[self.NM.connections['Pump'][xh] +
-                                          xdl+1, xt].value *
+                             self.NM.ENetwork.get_Base() *
+                             sum(m.vNPump[self.NM.get_ConP(xh)+xdl+1,
+                                          xt].value *
                                  self.NM.scenarios['Weights'][xt]
                                  for xt in auxtime)
                              for xdl in self.NM.s['Pump']) *
                          auxOF[xh] for xh in auxscens)
 
         if auxFlags[4]:  # Curtailment
-            value += sum(sum(sum(m.vNFea[self.NM.connections['Feasibility']
-                                 [xh]+xf, xt].value
+            value += sum(sum(sum(m.vNFea[self.NM.get_ConFea(xh)+xf, xt].value
                                  for xf in self.NM.s['Fea'])*self.Penalty
                              for xt in auxtime) *
                          auxOF[xh] for xh in auxscens)
@@ -618,9 +584,9 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += auxweight[xt] * \
-                    m.vNPump[self.NM.connections['Pump'][xh]+index, xt].value
+                    m.vNPump[self.NM.get_ConP(xh)+index, xt].value
             value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        value *= self.NM.ENetwork.get_Base()
 
         return value
 
@@ -635,11 +601,12 @@ class pyeneClass():
             acu = 0
             for xt in auxtime:
                 acu += ((self.NM.RES['Max'][xg]*self.NM.scenarios['RES']
-                         [self.NM.resScenario[xg][xh][1]+xt] -
-                         m.vNGen[self.NM.resScenario[xg][xh][0], xt].value) *
+                         [self.NM.resScenario[xg][xh]+xt] -
+                         m.vNGen[self.NM.connections['Generation'][xh] +
+                                 self.NM.Gen.get_vNGenR(xg), xt].value) *
                         auxweight[xt])
             value += acu*auxOF[xh]
-        value *= self.NM.networkE.graph['baseMVA']
+        value *= self.NM.ENetwork.get_Base()
 
         return value
 
@@ -653,7 +620,7 @@ class pyeneClass():
         # Remove weights
         if 'snapshot' in varg:
             auxweight = np.ones(len(self.NM.s['Tim']), dtype=int)
-            auxOF = np.ones(len(self.NM.connections['set']), dtype=int)
+            auxOF = np.ones(len(self.NM.get_ConS()), dtype=int)
         else:
             auxweight = self.NM.scenarios['Weights']
             auxOF = self.OFaux
@@ -662,7 +629,7 @@ class pyeneClass():
         if 'scens' in kwarg:
             auxscens = kwarg.pop('scens')
         else:
-            auxscens = self.NM.connections['set']
+            auxscens = self.NM.get_ConS()
 
         return (auxtime, auxweight, auxscens, auxOF)
 
@@ -736,9 +703,12 @@ class pyeneClass():
         self.NM.scenarios['Number'] = aux
 
         if self.NM.scenarios['NoDem'] > 0:
+            aux = self.NM.scenarios['Demand']
             self.NM.scenarios['Demand'] = \
-                np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
-                        dtype=float)
+                np.ones(self.NM.settings['NoTime'] *
+                        self.NM.scenarios['NoDem'], dtype=float)
+            for x in range(len(aux)):
+                self.NM.scenarios['Demand'][x] = aux[x]
 
         # Initialise RES
         if self.NM.RES['Number'] > 0:
@@ -747,28 +717,36 @@ class pyeneClass():
                          dtype=float)
 
         # Initialise network model
-        self.NM.initialise()
+        self.NM.initialise(rn(conf.RM))
 
-        # Add connections between energy balance and networ models
-        self.NM.connections['set'] = range(NoNM)
-        self.NM.connections['Flow'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Voltage'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Loss'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Generation'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Cost'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Pump'] = np.zeros(NoNM, dtype=int)
-        self.NM.connections['Feasibility'] = np.zeros(NoNM, dtype=int)
+        # Add connections between energy balance and network models
+        self.NM.set_ConS(range(NoNM))
+        auxFlow = np.zeros(NoNM, dtype=int)
+        auxVol = np.zeros(NoNM, dtype=int)
+        auxLoss = np.zeros(NoNM, dtype=int)
+        auxGen = np.zeros(NoNM, dtype=int)
+        auxCost = np.zeros(NoNM, dtype=int)
+        auxPump = np.zeros(NoNM, dtype=int)
+        auxFea = np.zeros(NoNM, dtype=int)
         # Location of each instance
-        aux = self.NM.networkE.number_of_edges()
-        for xc in self.NM.connections['set']:
-            self.NM.connections['Flow'][xc] = xc*(self.NM.NoBranch+1)
-            self.NM.connections['Voltage'][xc] = xc*(self.NM.NoBuses+1)
-            self.NM.connections['Loss'][xc] = xc*(aux+1)
-            self.NM.connections['Generation'][xc] = xc*(self.NM.generationE
-                                                        ['Number']+1)
-            self.NM.connections['Cost'][xc] = xc*self.NM.generationE['Number']
-            self.NM.connections['Pump'][xc] = xc*(self.NM.pumps['Number']+1)
-            self.NM.connections['Feasibility'][xc] = xc*self.NM.NoFea
+        aux = self.NM.get_ConB()
+        for xc in self.NM.get_ConS():
+            auxFlow[xc] = xc*(self.NM.NoBranch)
+            auxVol[xc] = xc*(self.NM.NoBuses)
+            auxLoss[xc] = xc*(aux)
+            auxGen[xc] = xc*(self.NM.Gen.get_NoGen())
+            auxCost[xc] = xc*self.NM.Gen.get_NoGen()
+            auxPump[xc] = xc*(self.NM.pumps['Number']+1)
+            auxFea[xc] = xc*self.NM.NoFea
+
+        self.NM.set_ConF(auxFlow)
+        self.NM.set_ConV(auxVol)
+        self.NM.set_ConL(auxLoss)
+        self.NM.set_ConG(auxGen)
+        self.NM.set_ConC(auxCost)
+        self.NM.set_ConP(auxPump)
+        self.NM.set_ConFea(auxFea)
+        del auxFlow, auxVol, auxLoss, auxGen, auxPump, auxFea
 
         # Build LL to link the models through hydro consumption
         # Adding connections to pyeneE
@@ -781,10 +759,9 @@ class pyeneClass():
 
         # Adding connections to pyeneN
         self.p['pyeneN'] = np.zeros(self.p['Number'], dtype=int)
-        aux = self.NM.generationE['Number']-self.NM.hydropower['Number'] - \
-            self.NM.RES['Number']+1
+        aux = self.NM.Gen.get_NoGen()+1
         for xc in self.s['LL']:
-            self.p['pyeneN'][xc] = self.NM.connections['Generation'][xc]+aux
+            self.p['pyeneN'][xc] = self.NM.get_ConG(xc)+aux
 
         # Create hydraulic data
         if conf.HM.settings['Flag']:
@@ -809,6 +786,7 @@ class pyeneClass():
         # Initialise model
         self.HM.initialise()
 
+        # TODO: Replace LL
         # Create LL
         if self.HM.settings['Flag']:
             # Inputs to pyeneH
@@ -865,10 +843,6 @@ class pyeneClass():
                 if xn2 != 0:
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
 
-            # Add baseload data
-            if self.NM.hydropower['Baseload'] > 0:
-                self.p['HydroBase'] = self.NM.hydropower['Baseload'] / \
-                    sum(self.NM.scenarios['Weights'])/self.p['Number']
 
     def NSim(self, conf):
         ''' Network only optimisation '''
@@ -876,7 +850,7 @@ class pyeneClass():
         NM = dn(conf.NM)
 
         # Initialise
-        NM.initialise()
+        NM.initialise(rn(conf.RM))
 
         # Build LP model
         NModel = self.SingleLP(NM)
@@ -894,25 +868,26 @@ class pyeneClass():
 
     def OF_rule(self, m):
         ''' Objective function for energy and networks model'''
-        return sum((sum((sum(m.vNGCost[self.NM.connections['Cost'][xh]+xg, xt]
+        return sum((sum((sum(m.vNGCost[self.NM.get_ConC(xh)+xg, xt]
                              for xg in self.NM.s['Gen']) +
-                         sum(m.vNFea[self.NM.connections['Feasibility'][xh]+xf,
-                                     xt] for xf in self.NM.s['Fea']) *
+                         sum(m.vNFea[self.NM.get_ConFea(xh)+xf, xt]
+                             for xf in self.NM.s['Fea']) *
                          self.Penalty)*self.NM.scenarios['Weights'][xt]
                         for xt in self.NM.s['Tim']) -
                     sum(self.NM.pumps['Value'][xdl] *
-                        self.NM.networkE.graph['baseMVA'] *
-                        sum(m.vNPump[self.NM.connections['Pump'][xh]+xdl+1,
-                                     xt]*self.NM.scenarios['Weights'][xt]
+                        self.NM.ENetwork.get_Base() *
+                        sum(m.vNPump[self.NM.get_ConP(xh)+xdl+1, xt] *
+                            self.NM.scenarios['Weights'][xt]
                             for xt in self.NM.s['Tim'])
                         for xdl in self.NM.s['Pump'])) *
-                   self.OFaux[xh] for xh in self.NM.connections['set']) + \
+                   self.OFaux[xh] for xh in self.NM.get_ConS()) + \
             m.vHpenalty
 
     def Print_ENSim(self, m):
         ''' Print results '''
         self.EM.print(m)
         for xh in range(self.p['Number']):
+            self.EM.print(m)
             self.NM.print(m, [xh])
             self.HM.print(m, [xh])
             print()
@@ -1058,25 +1033,25 @@ class pyeneClass():
         if isinstance(value, bool):
             if value:
                 # Maximum capacity
-                self.NM.p['GenMax'][index-1] = \
-                    self.NM.generationE['Data']['PMAX'][index-1] / \
-                    self.NM.networkE.graph['baseMVA']
+                self.NM.Gen.set_Max(index-1,
+                                    self.NM.Gen.get_Max(index-1) /
+                                    self.NM.ENetwork.get_Base())
             else:
                 # Switch off
-                self.NM.p['GenMax'][index-1] = 0
+                self.NM.Gen.set_Max(index-1, 0)
         else:
             # Adjust capacity
             # TODO: Costs should be recalculated for higher capacities
-            value /= self.NM.networkE.graph['baseMVA']
-            if value > self.NM.generationE['Data']['PMAX'][index-1]:
+            value /= self.NM.ENetwork.get_Base()
+            if value > self.NM.Gen.get_Max(index-1):
                 import warnings
                 warnings.warn('Increasing generation capacity is not'
                               ' supported yet')
 
-            self.NM.p['GenMax'][index-1] = value
+            self.NM.Gen.set_Max(index-1, value)
 
     def set_Hydro(self, index, value):
-        ''' Set kWh of hydro that are available for a single site '''
+        ''' Set MWh of hydro that are available for a single site '''
         if self.NM.hydropower['Number'] == 1:
             self.EM.Weight['In'][1] = value
         else:
@@ -1087,19 +1062,30 @@ class pyeneClass():
         raise NotImplementedError('Water prices not yet enabled')
         # Adjust self.NM.p['GenLCst']
 
-    def set_LineCapacity(self, index, value, *argv):
-        ''' Adjust maximum capacity of a line '''
-        aux1 = value
+    def _set_LineCapacityAux(self, value, index, *argv):
+        ''' Auxiliary for selecting line parameters '''
         if 'BR_R' in argv:
-            aux2 = 0
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_R(value)
         elif 'BR_X' in argv:
-            aux2 = 1
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_X(value)
         elif 'BR_B' in argv:
-            aux2 = 2
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_B(value)
         else:
-            aux1 = value/self.NM.networkE.graph['baseMVA']
-            aux2 = 3
-        self.NM.p['branchData'][self.NM.p['LLESec1'][index-1][0]][aux2] = aux1
+            value /= self.NM.ENetwork.get_Base()
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_Rate(value)
+
+    def set_LineCapacity(self, index, value, *argv):
+        ''' Adjust maximum capacity of a line - pass BR_R for R/X/B'''
+        self._set_LineCapacityAux(value, index, *argv)
+
+    def set_LineCapacityAll(self, value, *argv):
+        ''' Adjust capacity of all lines - pass BR_R for R/X/B'''
+        index = range(self.NM.ENetwork.get_NoBra())
+        self._set_LineCapacityAux(value, index, *argv)
 
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''
@@ -1108,9 +1094,21 @@ class pyeneClass():
 
     def set_RES(self, index, value):
         '''
-        Set PV/Wind profile  - more than one device can be connected to
-        each profile
+        Set PV/Wind profile  
+        
+        index - beginning from 1
+        value - time series
+        
+        if the index is in self.Overwrite['RESX'], the time series in 'RES'
+        will overwrite value
         '''
+
+        # Overwrite value?
+        if index in self.Overwrite['RESX']:
+            value = self.Overwrite['RES'][self.Overwrite['RESL']
+                                          [self.Overwrite['RESX'].index(index)
+                                           ]]
+
         if index <= self.NM.scenarios['NoRES']:
             value = self.CheckProfile(value)
 
@@ -1121,7 +1119,7 @@ class pyeneClass():
             xi = 0
             for xs in range(aux1, aux2):
                 self.NM.scenarios['RES'][xs] = \
-                    (value[xi]/self.NM.networkE.graph['baseMVA'])
+                    (value[xi]/self.NM.ENetwork.get_Base())
                 xi += 1
 
     def SingleLP(self, ENM):

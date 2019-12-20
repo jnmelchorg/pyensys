@@ -133,20 +133,20 @@ def network_simulation_pyeneE(conf, **kwargs):
 @click.option('--loss', default=True, type=bool,
               help='Estimate losses')
 @click.option('--feas', default=True, type=bool,
-              help='Consider feasibility constratints')
+              help='Consider feasibility constraints')
 @click.option('--time', default=24, help='Number of time steps')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
-    """Prepare combined simulation"""
+    """Prepare energy balance and network simulation """
     conf = _update_config_pyeneE(conf, kwargs)
     conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyene(conf)
 
 
-@cli.command('run-test')
-@click.option('--example', default=0, help='Exemple to be executed')
+@cli.command('test')
+@click.option('--test', default=0, help='Example to be executed')
 def network_simulation_pyenetst(**kwargs):
-    """Test specific functionalities"""
-    mthd = kwargs.pop('example')
+    ''' Hidden development functionality '''
+    mthd = kwargs.pop('test')
     test_pyenetest(mthd)

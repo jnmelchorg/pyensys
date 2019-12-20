@@ -9,10 +9,8 @@ Pyene Networks provides methods to simulate power networks and generation units
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 from __future__ import division
-from pyomo.core import Constraint, Var, NonNegativeReals, Reals
-import math
+from pyomo.core import Constraint, Var, NonNegativeReals, Reals, Binary
 import numpy as np
-import networkx as nx
 import json
 import warnings
 
@@ -28,19 +26,22 @@ class pyeneNConfig:
                 'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
-                'Feasibility': True,  # Feasibility constraints
+                'Feasibility': True,  # Feasibility constraints (curtailment)
+                'Load_type': [],  # 0 Urban, 1 Rural
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
-                'Constraint': [],  # Set line capacity constraints
-                'GRamp': None,  # Set ramps for conventional generators
                 'Loss': None,  # Factor for losses
-                'Ancillary': None  # Need for uncillary services
+                'Ancillary': None,  # Need for uncillary services
+                'UC': False,  # Model UC
                 }
         # Connections
         self.connections = {
                 'set': range(1),  # Connections between nodes
+                'Branches': 0,  # Real number of branches (including parallel)
                 'Flow': [0],  # Power flow through the lines
                 'Voltage': [0],  # Voltages in each node
                 'Loss': [0],  # Power losses
+                'Loss_Param': [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2,
+                               1.6, 2, 2.5, 3],  # To model power losses
                 'Feasibility': [0],  # Lines to trip for security consideration
                 'Generation': [0],  # Location (bus) of generators
                 'Cost': [0],  # Generator consts
@@ -60,9 +61,12 @@ class pyeneNConfig:
         # Conventional generators
         self.conventional = {
                 'Number': None,  # Number of conventional generators
-                'Ancillary': True,  # Can it provide ancillary services?
-                'Ramp': None,  # Set ramps for conventional generators
-                'RES': True  # Can it support RES integration?
+                'Ancillary': [True],  # Can it provide ancillary services?
+                'Baseload': [0],  # 0-1 for the use of conv for baseload
+                'Ramp': [],  # Set ramps for conventional generators
+                'RES': [True],  # Can it support RES integration?
+                'MUT': [],  # MInimum up time
+                'MDT': []  # Minimum down time
                 }
         # Hydropower
         self.hydropower = {
@@ -70,11 +74,10 @@ class pyeneNConfig:
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (MW)
                 'Cost': [],  # Costs
-                'Ramp': [],  # Ramp
-                'Baseload': 0,  # 0-1 for the use of water for baseload
-                'Ancillary': True,  # Can it provide ancillary services?
-                'RES': True,  # Can it support RES integration?
-                'Link': None  # Position of hydropower plants
+                'Ramp': [None],  # Ramp
+                'Baseload': [0],  # 0-1 for the use of water for baseload
+                'Ancillary': [True],  # Can it provide ancillary services?
+                'RES': [True],  # Can it support RES integration?
                 }
         # Pumps
         self.pumps = {
@@ -89,8 +92,7 @@ class pyeneNConfig:
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (kW)
                 'Cost': [],  # Cost (OF)
-                'Link': None,  # Position of RES generators
-                'Uncertainty': None  # Introduce reserve needs
+                'Uncertainty': [None]  # Introduce reserve needs
                 }
         self.Storage = {
                 'Number': 0,  # Number of storage units
@@ -106,7 +108,12 @@ class pyeneNConfig:
                 'Curtailment': True,
                 'Feasibility': True,
                 'Services': True,
-                'GenBus': True
+                'GenBus': True,
+                'UC': True,
+                }
+        # TODO: Remove reference
+        self.Aux = {
+                'shift': 1
                 }
 
 
@@ -160,7 +167,8 @@ class ENetworkClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
-
+        # Currently using the same feasibility variable as the generators
+        # TODO: Assign dedicated curtailment/spilling variable
         if self.scenarios['NoDem'] == 0:
             self.p['daux'] = 0
         else:
@@ -172,19 +180,19 @@ class ENetworkClass:
 
         # Is the network enabled
         if self.settings['Flag']:
-            # Reference line flow
-            m.cNEPow0 = Constraint(self.s['Tim'], self.s['Con'],
-                                   rule=self.cNEPow0_rule)
             # Branch flows
-            m.cNEFlow = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFlow_rule)
-            # Branch capacity constraint (positive)
-            m.cNEFMax = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFMax_rule)
-            # Branch capacity constraint (negative)
-            m.cNEFMin = Constraint(self.s['Tim'], self.s['Sec1'],
-                                   self.s['Con'], rule=self.cNEFMin_rule)
-            # Adding piece wise estimation of losses
+            m.cNEFlow = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFlow_rule)
+            # Branch capacity (Positive)
+            m.cNEFMax = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFMax_rule)
+            # Branch capacity (Negative)
+            m.cNEFMin = Constraint(self.s['Tim'], self.s['Bra'],
+                                   self.s['Sec2'], self.s['Con'],
+                                   rule=self.cNEFMin_rule)
+
             if self.settings['Losses']:
                 m.cNDCLossA = Constraint(self.s['Bra'], self.s['Loss'],
                                          self.s['Tim'], self.s['Con'],
@@ -192,10 +200,7 @@ class ENetworkClass:
                 m.cNDCLossB = Constraint(self.s['Bra'], self.s['Loss'],
                                          self.s['Tim'], self.s['Con'],
                                          rule=self.cNDCLossB_rule)
-            else:
-                m.cNDCLossNo = Constraint(self.s['Bra'], self.s['Tim'],
-                                          self.s['Con'],
-                                          rule=self.cNDCLossN_rule)
+
             # Balance: Gen + Flow in - loss/2 = Demand + flow out + loss/2
             m.cNEBalance = Constraint(self.s['Bus'], self.s['Tim'],
                                       self.s['Sec2'], self.s['Con'],
@@ -209,31 +214,63 @@ class ENetworkClass:
                 self.p['LossM'] = 1+self.settings['Loss']
 
             # Balance: Gen = Demand
-            m.cNEBalance = Constraint(self.s['Tim'], self.s['Sec2'],
-                                      self.s['Con'],
-                                      rule=self.cNEBalance0_rule)
+            m.cNEBalance0 = Constraint(self.s['Tim'], self.s['Sec2'],
+                                       self.s['Con'],
+                                       rule=self.cNEBalance0_rule)
+        # Is there baseload
+        if sum(self.hydropower['Baseload']) > 0:
+            self.scenarios['WSum'] = sum(self.scenarios['Weights'])
+            m.cNEBaseload = Constraint(self.s['Gen'], self.s['Tim'],
+                                       self.s['Con'],
+                                       rule=self.cNEBaseload_rule)
+        if self.settings['UC']:
+            # Maximum generation
+            m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMaxUC_rule)
+            # Minimum generation
+            m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMinUC_rule)
+            self.LLUC = np.zeros(self.settings['NoTime']*2, dtype=int)
+            x1 = 1
+            for x in range(self.settings['NoTime']*2):
+                self.LLUC[x] = x1
+                x1 += 1
+                if x1 == self.settings['NoTime']:
+                    x1 = 0
 
-        # Reference generation
-        m.cNEGen0 = Constraint(self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGen0_rule)
-        # Maximum generation
-        m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGMax_rule)
-        # Minimum generation
-        m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
-                               rule=self.cNEGMin_rule)
+            # Minimum down time
+            m.cNEGMinDT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT1_rule)
+            # Minimum up time
+            m.cNEGMinUT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT1_rule)
+            # Minimum down time
+            m.cNEGMinDT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT2_rule)
+            # Minimum up time
+            m.cNEGMinUT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT2_rule)
+
+        else:
+            # Maximum generation
+            m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMax_rule)
+            # Minimum generation
+            m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNEGMin_rule)
+
         # Piece-wise generation costs approximation
-        m.cNEGenC = Constraint(self.s['GenCM'], self.s['Tim'], self.s['Con'],
+        m.cNEGenC = Constraint(self.s['Gen'], range(self.Gen.get_NoPieces()),
+                               self.s['Tim'], self.s['Con'],
                                rule=self.cNEGenC_rule)
-        # Dinamic load maximum capacity
+
+        # Dinamic load (pump) maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)
-        # Dinamic load initialisation
+        # Dinamic load (pump) initialisation
         m.cNDLIni = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNLDIni_rule)
-        # Feasibility constraints
-        m.cNsetFea = Constraint(self.s['Tim'], self.s['Con'],
-                                rule=self.cNsetFea_rule)
+
         # Adding RES limits
         if self.RES['Number'] > 0:
             m.cNRESMax = Constraint(self.s['Tim'], self.s['RES'],
@@ -247,14 +284,11 @@ class ENetworkClass:
         m.cNStore0 = Constraint(self.s['Tim'], rule=self.cNStore0_rule)
 
         # Adding generation ramps
-        aux = len(self.s['GRamp'])
-        if aux > 0:
-            m.cNGenRampUp = \
-                Constraint(range(aux), self.s['Tim'], self.s['Con'],
-                           rule=self.cNGenRampUp_rule)
-            m.cNGenRampDown = \
-                Constraint(range(aux), self.s['Tim'], self.s['Con'],
-                           rule=self.cNGenRampDown_rule)
+        m.cNGenRampUp = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
+                                   rule=self.cNGenRampUp_rule)
+        m.cNGenRampDown = Constraint(self.s['Gen'], self.s['Tim'],
+                                     self.s['Con'],
+                                     rule=self.cNGenRampDown_rule)
 
         # Adding service constraints
         if len(self.s['GServices']) > 0:
@@ -273,7 +307,7 @@ class ENetworkClass:
                                         rule=self.cNUncRES_rule)
 
         if len(self.s['GRES']) == 0 and self.RES['Number'] > 0 and \
-                self.RES['Uncertainty'] is not None:
+                self.RES['Uncertainty'][0] is not None:
             m.cNUncRES0 = Constraint(self.s['Tim'], self.s['Con'],
                                      rule=self.cNUncRES0_rule)
 
@@ -288,19 +322,20 @@ class ENetworkClass:
     def addSets(self, m):
         ''' Add pyomo sets '''
         self.s['Con'] = self.connections['set']
-        self.s['Bra'] = range(self.networkE.number_of_edges())
-        self.s['Bus'] = range(self.networkE.number_of_nodes())
-        self.s['Buses'] = range(self.NoBuses+1)
+        self.s['Bra'] = range(self.connections['Branches'])
+        self.s['Bus'] = range(self.ENetwork.get_NoBus())
+        self.s['Buses'] = range(self.NoBuses)
         self.s['Pump'] = range(self.pumps['Number'])
         self.s['Fea'] = range(self.NoFea)
-        self.s['Gen'] = range(self.generationE['Number'])
-        self.s['GenCM'] = range(self.NoGenC)
+        self.s['Gen'] = range(self.Gen.get_NoGen())
         self.s['Tim'] = range(self.settings['NoTime'])
-        self.s['Loss'] = range(self.Number_LossCon)
         self.s['Sec1'] = range(self.NoSec1)
         self.s['Sec2'] = range(self.NoSec2+1)
         self.s['Sto'] = range(self.Storage['Number'])
         self.s['RES'] = range(self.RES['Number'])
+
+        if self.settings['Losses']:
+            self.s['Loss'] = range(self.Number_LossCon)
 
         return m
 
@@ -309,171 +344,188 @@ class ENetworkClass:
         Noh = len(self.s['Con'])
         # Is the network enabled
         if self.settings['Flag']:
-            m.vNFlow = Var(range(Noh*(self.NoBranch+1)), self.s['Tim'],
+            m.vNFlow = Var(range(Noh*(self.NoBranch)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
-            m.vNLoss = Var(range(Noh*(self.networkE.number_of_edges()+1)),
-                           self.s['Tim'], domain=NonNegativeReals,
-                           initialize=0.0)
-            m.vNVolt = Var(range(Noh*(self.NoBuses+1)), self.s['Tim'],
+            m.vNVolt = Var(range(Noh*(self.NoBuses)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
+            if self.settings['Losses']:
+                m.vNLoss = Var(range(Noh*(self.connections['Branches'])),
+                               self.s['Tim'], domain=NonNegativeReals,
+                               initialize=0.0)
 
         m.vNPump = Var(range(Noh*(self.pumps['Number']+1)), self.s['Tim'],
                        domain=NonNegativeReals, initialize=0.0)
         m.vNFea = Var(range(Noh*self.NoFea), self.s['Tim'],
                       domain=NonNegativeReals, initialize=0.0)
-        m.vNGCost = Var(range(Noh*self.generationE['Number']), self.s['Tim'],
+        m.vNGCost = Var(range(Noh*self.Gen.get_NoGen()), self.s['Tim'],
                         domain=NonNegativeReals, initialize=0.0)
-        m.vNGen = Var(range(Noh*(self.generationE['Number']+1)), self.s['Tim'],
+        m.vNGen = Var(range(Noh*(self.Gen.get_NoGen()+1)), self.s['Tim'],
                       domain=NonNegativeReals, initialize=0.0)
         m.vNStore = Var(range(Noh*(self.Storage['Number'])+1), self.s['Tim'],
                         domain=NonNegativeReals, initialize=0.0)
         if len(self.s['GServices']) > 0:
             m.vNServ = Var(range(Noh*self.p['GServices']), self.s['Tim'],
                            domain=NonNegativeReals, initialize=0.0)
+        # Add Unit commitment constraints
+        if self.settings['UC']:
+            m.vNGen_Bin = \
+                Var(range(Noh*(self.Gen.get_NoBin()+1)), self.s['Tim'],
+                    domain=Binary, initialize=1.0)
+            m.vNGen_MUT = \
+                Var(range(Noh*(self.Gen.get_NoMUT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
+            m.vNGen_MDT = \
+                Var(range(Noh*(self.Gen.get_NoMDT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
 
         return m
 
     def cNAncillary_rule(self, m, xt, xh):
         ''' Ancillary services constraint '''
-        aux = xh*(self.generationE['Number']+1)+1
         return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
-            sum(m.vNGen[aux+x, xt] for x in self.s['Gen']) - \
-            m.vNFea[xh*self.p['faux'], xt]
+            sum(m.vNGen[self.connections['Generation'][xh]+x, xt]
+                for x in self.Gen.get_GenAll()) - \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
-    def cNDCLossA_rule(self, m, xb, xb2, xt, xh):
+    def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
-        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (self.p['Loss_Con1'][xb2] +
-                 m.vNFlow[self.connections['Flow'][xh] +
-                          xb+1, xt]*self.p['Loss_Con2'][xb2]) *
-                self.p['branchData'][xb, 0])
+        return self.ENetwork.cNDCLossA_rule(m, xt, xb, xL,
+                                            self.connections['Flow'][xh],
+                                            self.connections['Loss'][xh])
 
-    def cNDCLossB_rule(self, m, xb, xb2, xt, xh):
+    def cNDCLossB_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Negative) '''
-        return (m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] >=
-                (self.p['Loss_Con1'][xb2] -
-                 m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] *
-                 self.p['Loss_Con2'][xb2])*self.p['branchData'][xb, 0])
-
-    def cNDCLossN_rule(self, m, xb, xt, xh):
-        ''' No losses '''
-        return m.vNLoss[self.connections['Loss'][xh]+xb+1, xt] == 0
+        return self.ENetwork.cNDCLossB_rule(m, xt, xb, xL,
+                                            self.connections['Flow'][xh],
+                                            self.connections['Loss'][xh])
 
     def cNEBalance_rule(self, m, xn, xt, xs, xh):
         ''' Nodal balance:
         Generation + Flow in - loss/2 = Demand + flow out + loss/2
         '''
-
         # Check for case without demand profiles
         if self.LLStor[xn, xh] == 0:
             aux = 0
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
-        return (sum(m.vNGen[self.connections['Generation'][xh] +
-                            self.p['LLGen1'][xg], xt]
-                    for xg in range(self.p['LLGen2'][xn, 0],
-                                    self.p['LLGen2'][xn, 1]+1)) +
-                sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][self.p['LLN2B1']
-                                               [x2+self.p['LLN2B2'][xn, 1]],
-                                               xs], xt] -
-                    m.vNLoss[self.connections['Loss'][xh] +
-                             self.p['LLN2B1'][x2 +
-                                              self.p['LLN2B2'][xn, 1]], xt]/2
-                    for x2 in range(1+self.p['LLN2B2'][xn, 0])) ==
+        return (sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                    for xg in self.Gen.get_GenInBus(self.ENetwork.Bus[xn])) +
+                sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
+                    for x2 in self.ENetwork.get_FlowT(xn, xs)) -
+                sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
+                    for x2 in self.ENetwork.Bus[xn].get_LossT()) ==
                 self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
                 (m.vNStore[self.LLStor[xn, xh], xt] -
                  m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
-                m.vNFea[self.connections['Feasibility'][xh] +
-                        self.p['LLFea'][xn+1], xt] +
+                sum(m.vNFea[self.connections['Feasibility'][xh] +
+                            self.p['LLFea2'][xn], xt] for x1 in
+                    range(self.p['LLFea1'][xn])) +
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
-                sum(m.vNFlow[self.connections['Flow'][xh] +
-                             self.p['LLESec2'][self.p['LLN2B1']
-                             [x1+self.p['LLN2B2'][xn, 3]], xs], xt] +
-                    m.vNLoss[self.connections['Loss'][xh] +
-                             self.p['LLN2B1'][x1 +
-                                              self.p['LLN2B2'][xn, 3]], xt]/2
-                    for x1 in range(1+self.p['LLN2B2'][xn, 2])))
+                sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
+                    for x1 in self.ENetwork.get_FlowF(xn, xs)) +
+                sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
+                    for x1 in self.ENetwork.Bus[xn].get_LossF()))
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
-        # Check for case without demand profiles
-        return sum(self.busData[xn]*self.scenarios['Demand']
-                   [xt*self.p['daux']+self.busScenario[xn][xh]]
-                   for xn in self.s['Bus'])*self.p['LossM'] + \
+        return float(sum(self.busData[xn]*self.scenarios['Demand']
+                     [xt*self.p['daux']+self.busScenario[xn][xh]]
+                     for xn in self.s['Bus']))*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
-            m.vNFea[xh*self.p['faux'], xt] + \
-            sum(m.vNGen[xh*(self.generationE['Number']+1)+xg+1, xt]
-                for xg in self.s['Gen']) - \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
+            sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                for xg in self.Gen.get_GenAll()) - \
             sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
                  m.vNStore[xh*(self.Storage['Number']+1)+xn+1,
                            self.LLTime[xt]])*self.Storage['Efficiency'][xn] /
                 self.scenarios['Weights'][xt] for xn in self.s['Sto'])
 
-    def cNEFlow_rule(self, m, xt, xb, xh):
-        ''' Branch flows '''
-        aux = self.connections['Voltage'][xh]+self.p['LLESec1'][xb, 1]
-        xaux1 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 0]
-        xaux2 = aux+self.p['branchNo'][self.p['LLESec1'][xb, 0], 1]
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] ==
-                (m.vNVolt[xaux1, xt]-m.vNVolt[xaux2, xt]) /
-                self.p['branchData'][self.p['LLESec1'][xb, 0], 1])
+    def cNEBaseload_rule(self, m, xg, xt, xh):
+        ''' Baseload rule '''
+        return self.Gen.cNEBaseload_rule(m, xg, xt, self.s['Tim'],
+                                         self.scenarios['Weights'],
+                                         self.scenarios['WSum'],
+                                         self.connections['Generation'][xh])
 
-    def cNEFMax_rule(self, m, xt, xb, xh):
+    def cNEFlow_rule(self, m, xt, xb, xs, xh):
+        ''' Branch flows - DC model '''
+        return self.ENetwork.cNEFlow_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh],
+                                          self.connections['Voltage'][xh])
+
+    def cNEFMax_rule(self, m, xt, xb, xs, xh):
         ''' Branch capacity constraint (positive) '''
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] >=
-                -self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
+        return self.ENetwork.cNEFMax_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh])
 
-    def cNEFMin_rule(self, m, xt, xb, xh):
-        ''' Branch capacity constraint (negative) '''
-        return (m.vNFlow[self.connections['Flow'][xh]+xb+1, xt] <=
-                self.p['branchData'][self.p['LLESec1'][xb, 0], 3])
+    def cNEFMin_rule(self, m, xt, xb, xs, xh):
+        ''' Branch capacity constraint (positive) '''
+        return self.ENetwork.cNEFMin_rule(m, xt, xb, xs,
+                                          self.connections['Flow'][xh])
 
-    def cNEGen0_rule(self, m, xt, xh):
-        ''' Reference generation '''
-        return m.vNGen[self.connections['Generation'][xh], xt] == 0
-
-    def cNEGenC_rule(self, m, xc, xt, xh):
-        ''' Piece-wise generation costs approximation '''
-        return (m.vNGCost[self.connections['Cost'][xh] +
-                          self.p['LLGenC'][xc], xt] /
-                self.scenarios['Weights'][xt] >=
-                m.vNGen[self.connections['Generation'][xh] +
-                        self.p['LLGenC'][xc]+1, xt] *
-                self.p['GenLCst'][xc, 0]+self.p['GenLCst'][xc, 1])
+    def cNEGenC_rule(self, m, xg, xc, xt, xh):
+        ''' Generation costs '''
+        return self.Gen.cNEGenC_rule(m, xg, xc, xt,
+                                     self.connections['Cost'][xh],
+                                     self.connections['Generation'][xh],
+                                     self.scenarios['Weights'][xt])
 
     def cNEGMax_rule(self, m, xg, xt, xh):
-        ''' Maximum generation '''
-        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] <=
-                self.p['GenMax'][xg])
+        ''' Maximum generation capacity '''
+        return self.Gen.cNEGMax_rule(m, xg, xt,
+                                     self.connections['Generation'][xh])
 
     def cNEGMin_rule(self, m, xg, xt, xh):
-        ''' Minimum generation '''
-        return (m.vNGen[self.connections['Generation'][xh]+xg+1, xt] >=
-                self.p['GenMin'][xg])
+        ''' Minimum generation capacity '''
+        return self.Gen.cNEGMin_rule(m, xg, xt,
+                                     self.connections['Generation'][xh])
 
-    def cNEPow0_rule(self, m, xt, xh):
-        ''' Reference line flow '''
-        return m.vNFlow[self.connections['Flow'][xh], xt] == 0
+    def cNEGMaxUC_rule(self, m, xg, xt, xh):
+        ''' Maximum generation '''
+        return self.Gen.cNEGMaxUC_rule(m, xg, xt,
+                                       self.connections['Generation'][xh])
+
+    def cNEGMinDT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinDT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinUC_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUC_rule(m, xg, xt,
+                                       self.connections['Generation'][xh])
+
+    def cNEGMinUT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinUT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
-        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
-        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] >= \
-            -self.p['GRamp'][xg]
+        return self.Gen.cNGenRampDown_rule(m, xg, xt, self.LLTime[xt],
+                                           self.connections['Generation'][xh])
 
     def cNGenRampUp_rule(self, m, xg, xt, xh):
         ''' Generation ramps (up)'''
-        x = xh*(self.generationE['Number']+1)+self.s['GRamp'][xg]+1
-        return m.vNGen[x, xt]-m.vNGen[x, self.LLTime[xt]] <= \
-            self.p['GRamp'][xg]
+        return self.Gen.cNGenRampUp_rule(m, xg, xt, self.LLTime[xt],
+                                         self.connections['Generation'][xh])
 
     def cNLDIni_rule(self, m, xt, xh):
         ''' Initialising dynamic loads '''
@@ -482,36 +534,34 @@ class ENetworkClass:
     def cNLDMax_rule(self, m, xdl, xt, xh):
         ''' Maximum capacity of dynamic loads'''
         return (m.vNPump[self.connections['Pump'][xh]+xdl+1, xt] <=
-                self.p['MaxPump'][xdl]/self.networkE.graph['baseMVA'])
+                self.p['MaxPump'][xdl]/self.ENetwork.get_Base())
 
     def cNRESMax_rule(self, m, xt, xg, xh):
+        # TODO: Send to pyeneD
         ''' Maximum RES generation '''
-        return (m.vNGen[self.resScenario[xg][xh][0], xt] <=
-                self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
-                self.RES['Max'][xg])
+        aux = self.connections['Generation'][xh]+self.Gen.get_vNGenR(xg)
+        return m.vNGen[aux, xt] <= \
+            self.scenarios['RES'][self.resScenario[xg][xh]+xt] * \
+            self.RES['Max'][xg]
 
     def cNServices_rule(self, m, xt, xh):
         ''' Provision of all services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GServices']) >= \
+        aux = self.connections['Generation'][xh]
+        return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             sum(m.vNServ[xh*self.p['GServices']+xs, xt]
                 for xs in range(self.p['GServices']))
 
     def cNServicesA_rule(self, m, xt, xh):
         ''' Provision of ancillary services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GAncillary']) >= \
+        aux = self.connections['Generation'][xh]
+        return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[xh*self.p['GServices'], xt]
 
     def cNServicesR_rule(self, m, xt, xh):
         ''' Provision of RES support services '''
-        aux = xh*(self.generationE['Number']+1)+1
-        return sum(m.vNGen[aux+x, xt] for x in self.s['GRES']) >= \
+        aux = self.connections['Generation'][xh]
+        return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
-
-    def cNsetFea_rule(self, m, xt, xh):
-        ''' Positions without feasibility constraints '''
-        return m.vNFea[self.connections['Feasibility'][xh], xt] == 0
 
     def cNStore0_rule(self, m, xt):
         ''' Reference storage '''
@@ -529,25 +579,71 @@ class ENetworkClass:
 
     def cNUncRES_rule(self, m, xt, xh):
         ''' Corrected maximum RES generation '''
-        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
-                   for xg in self.s['RES']) <= \
-            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
+        # TODO RES['Uncertainty'] is now a list
+        return sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                   for xg in self.Gen.get_GenAllR()) <= \
+            sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNUncRES0_rule(self, m, xt, xh):
         ''' Corrected maximum RES generation without support '''
-        return sum(m.vNGen[self.resScenario[xg][xh][0], xt]
-                   for xg in self.s['RES']) <= \
-            sum(self.scenarios['RES'][self.resScenario[xg][xh][1]+xt] *
+        # TODO RES['Uncertainty'] is now a list
+        return sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
+                   for xg in self.Gen.get_GenAllR()) <= \
+            sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'])+m.vNFea[xh*self.p['faux']+1, xt]
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
-    def initialise(self):
+    def get_ConB(self):
+        ''' Get connections between branches '''
+        return self.connections['Branches']
+
+    def get_ConC(self, x=':'):
+        ''' Get connections between costs '''
+        return self.connections['Cost'][x]
+
+    def get_ConG(self, x=':'):
+        ''' Get connections between generators '''
+        return self.connections['Generation'][x]
+
+    def get_ConL(self, x=':'):
+        ''' Get connections between lossess constraints '''
+        return self.connections['Loss'][x]
+
+    def get_ConFea(self, x=':'):
+        ''' Get connection for feasibility constraints '''
+        return self.connections['Feasibility'][x]
+
+    def get_ConP(self, x=':'):
+        ''' Get connection for pump constraints '''
+        return self.connections['Pump'][x]
+
+    def get_ConS(self):
+        ''' Get connections between nodes '''
+        return self.connections['set']
+
+    def get_vNGenH(self, xh, xg):
+        ''' Find vNGen position of hydropower plant '''
+        return self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
+
+    def In_From_EM(self, m, xh, xg):
+        ''' Connecting  inputs from pyeneE (MWh --> MWh) '''
+        aux = self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
+        return sum(m.vNGen[aux, xt]*self.scenarios['Weights'][xt]
+                   for xt in self.s['Tim'])*self.ENetwork.get_Base()
+
+    def In_From_HM(self, m, xh, xt, xg, Eff):
+        ''' Connecting  inputs from pyeneH (vol --> MWh) '''
+        aux = self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
+        return m.vNGen[aux, xt]*self.ENetwork.get_Base()/Eff
+
+    def initialise(self, RM):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
-
         # Read network data
         self.Read()
 
@@ -556,13 +652,12 @@ class ENetworkClass:
         (self.busData, self.busScenario,
          self.resScenario) = self.ProcessEDem(self.demandE)
 
-        self.ProcessEGen()
+        self.Gen.initialise(self.ENetwork, self.settings, RM)
 
-        self.NoBuses = self.networkE.number_of_nodes()*(1+self.NoSec2)-1
-        self.NoBranch = (self.networkE.number_of_edges() +
-                         (self.networkE.number_of_edges()-1)*self.NoSec2)
-
-        self.LLStor = np.zeros((self.networkE.number_of_nodes(),
+        self.NoBuses = self.ENetwork.get_NoBus()*(1+self.NoSec2)
+        self.NoBranch = self.ENetwork.get_NoBra() + \
+            (self.ENetwork.get_NoBra()-1)*self.NoSec2
+        self.LLStor = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
 
         acu = 0
@@ -580,41 +675,9 @@ class ENetworkClass:
         if self.scenarios['Weights'] is None:
             self.scenarios['Weights'] = np.ones(self.settings['NoTime'],
                                                 dtype=float)
-        # Sets and parameters for modelling ramp constraints
-        if self.conventional['Ramp'] is not None:
-            if len(self.hydropower['Ramp']) > 0:
-                # Conventional and hydropower
-                aux = self.conventional['Number']+self.hydropower['Number']
-                xh = self.conventional['Number']
-            else:
-                # Only conventional
-                aux = self.conventional['Number']
 
-            self.s['GRamp'] = np.zeros(aux, dtype=int)
-            self.p['GRamp'] = np.zeros(aux, dtype=float)
-            for xg in range(self.conventional['Number']):
-                self.s['GRamp'][xg] = xg
-                self.p['GRamp'][xg] = \
-                    self.conventional['Ramp']*self.p['GenMax'][xg]
-        else:
-            if len(self.hydropower['Ramp']) > 0:
-                # Only hydropower
-                aux = self.hydropower['Number']
-                xh = 0
-                self.s['GRamp'] = np.zeros(aux, dtype=int)
-                self.p['GRamp'] = np.zeros(aux, dtype=float)
-            else:
-                self.s['GRamp'] = []
-                self.p['GRamp'] = []
-
-        if len(self.hydropower['Ramp']) > 0:
-            for xg in range(self.hydropower['Number']):
-                self.s['GRamp'][xh] = self.conventional['Number']+xg
-                self.p['GRamp'][xh] = self.hydropower['Ramp'][xg] * \
-                    self.hydropower['Max'][xg]/self.networkE.graph['baseMVA']
-                xh += 1
-
-        # Sets and parameters for modelling Ancilarry service requirements
+        # TODO: Redefine using pyeneD
+        # Sets and parameters for modelling Ancillary service requirements
         NoSer = 0
         self.s['GAncillary'] = []
         if self.settings['Ancillary'] is not None:
@@ -623,20 +686,20 @@ class ENetworkClass:
                 NoSer += 1
                 if self.hydropower['Ancillary']:
                     ''' Conv and hydro can provide ancillary services '''
-                    aux = self.conventional['Number']+self.hydropower['Number']
-                    xh = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()+self.Gen.get_NoHydro()
+                    xh = self.Gen.get_NoCon()
                 else:
                     # Only conventional
                     aux = self.conventional['Number']
 
                 self.s['GAncillary'] = np.zeros(aux, dtype=int)
-                for xg in range(self.conventional['Number']):
+                for xg in range(self.Gen.get_NoCon()):
                     self.s['GAncillary'][xg] = xg
             else:
                 if self.hydropower['Ancillary']:
                     # Only hydro can provide ancillary services
                     NoSer += 1
-                    self.s['GAncillary'] = np.zeros(self.hydropower['Number'],
+                    self.s['GAncillary'] = np.zeros(self.Gen.get_NoHydro(),
                                                     dtype=int)
                     xh = 0
                 else:
@@ -646,38 +709,38 @@ class ENetworkClass:
 
         if self.settings['Ancillary'] is not None and \
                 self.hydropower['Ancillary']:
-            for xg in range(self.hydropower['Number']):
-                self.s['GAncillary'][xh] = self.conventional['Number']+xg
+            for xg in range(self.Gen.get_NoHydro()):
+                self.s['GAncillary'][xh] = self.Gen.get_NoCon()+xg
                 xh += 1
 
         # Sets and parameters for modelling RES support
         self.s['GRES'] = []
-        if self.RES['Number'] > 0 and self.RES['Uncertainty'] is not None:
+        if self.Gen.get_NoRES() > 0 and self.RES['Uncertainty'][0] is not None:
             # Check for units that can provide RES support
             if self.conventional['RES']:
                 NoSer += 1
                 if self.hydropower['RES']:
                     ''' Conv and hydro can provide ancillary services '''
-                    aux = self.conventional['Number']+self.hydropower['Number']
-                    xh = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()+self.Gen.get_NoHydro()
+                    xh = self.Gen.get_NoCon()
                 else:
                     # Only conventional
-                    aux = self.conventional['Number']
+                    aux = self.Gen.get_NoCon()
 
                 self.s['GRES'] = np.zeros(aux, dtype=int)
-                for xg in range(self.conventional['Number']):
+                for xg in range(self.Gen.get_NoCon()):
                     self.s['GRES'][xg] = xg
             else:
                 if self.hydropower['RES']:
                     NoSer += 1
                     # Only hydro can provide RES services
-                    self.s['GRES'] = np.zeros(self.hydropower['Number'],
+                    self.s['GRES'] = np.zeros(self.Gen.get_NoHydro(),
                                               dtype=int)
                     xh = 0
 
             if self.hydropower['RES']:
-                for xg in range(self.hydropower['Number']):
-                    self.s['GRES'][xh] = self.conventional['Number']+xg
+                for xg in range(self.Gen.get_NoHydro()):
+                    self.s['GRES'][xh] = self.Gen.get_NoCon()+xg
                     xh += 1
 
         # Generators providing services
@@ -693,7 +756,7 @@ class ENetworkClass:
                      sum(m.vNFea[self.connections['Feasibility'][xh]+xf, xt]
                          for xf in self.s['Fea'])*1000000) *
                     self.scenarios['Weights'][xt] for xt in self.s['Tim']) -
-                sum(self.pumps['Value'][xdl]*self.networkE.graph['baseMVA'] *
+                sum(self.pumps['Value'][xdl]*self.ENetwork.get_Base() *
                     sum(m.vNPump[self.connections['Pump'][xh] +
                                  xdl+1, xt]*self.scenarios['Weights'][xt]
                         for xt in self.s['Tim']) for xdl in self.s['Pump']))
@@ -709,29 +772,44 @@ class ENetworkClass:
             sh = self.s['Con']
 
         for xh in sh:
-            print("\nCASE:", xh)
+            print("\n% CASE:", xh)
 
             if self.Print['GenBus']:
-                print('\nFlow_EGen_Bus=', self.generationE['Data']['GEN_BUS'], ';')                                     
+                print('\nFlow_EGen_Bus=', self.Gen.get_GenDataAll(), ';')
 
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
-                for xn in range(1, self.generationE['Number']+1):
+                for xn in range(self.Gen.get_NoGen()):
                     for x2 in self.s['Tim']:
                         aux = (m.vNGen[self.connections['Generation'][xh]+xn,
                                        x2].value *
-                               self.networkE.graph['baseMVA'])
+                               self.ENetwork.get_Base())
                         print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+
+            if self.Print['UC']:
+                print("\nBin_EGen=[")
+                aux = 1
+                for xn in range(self.Gen.get_NoGen()):
+                    for x2 in self.s['Tim']:
+                        if self.settings['UC']:
+                            aux1 = self.Gen.get_Bin(xn)
+                            if aux1 is not None:
+                                aux = (m.vNGen_Bin[self.connections
+                                                   ['Generation'][xh]+aux1,
+                                                   x2].value)
+                        print("%2.0f " % aux, end='')
                     print()
                 print("];")
 
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
-                for x1 in range(1, self.networkE.number_of_edges()+1):
+                for xb in range(self.ENetwork.get_NoBra()):
                     for x2 in self.s['Tim']:
                         aux = (m.vNFlow[self.connections['Flow'][xh] +
-                                        x1, x2].value *
-                               self.networkE.graph['baseMVA'])
+                                        xb, x2].value *
+                               self.ENetwork.get_Base())
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -747,12 +825,14 @@ class ENetworkClass:
                 print("];")
 
             if self.Print['Losses'] and self.settings['Flag']:
+                aux = 0
                 print("\nEPower_Loss=[")
-                for xb in range(1, self.networkE.number_of_edges()+1):
+                for xb in range(self.ENetwork.get_NoBra()):
                     for xt in self.s['Tim']:
-                        aux = (m.vNLoss[self.connections['Loss'][xh]+xb,
-                                        xt].value *
-                               self.networkE.graph['baseMVA'])
+                        if self.settings['Losses']:
+                            aux = m.vNLoss[self.connections['Loss'][xh]+xb,
+                                           xt].value * \
+                                self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -762,17 +842,21 @@ class ENetworkClass:
                 for xdl in self.s['Pump']:
                     for xt in self.s['Tim']:
                         aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
-                                       xt].value*self.networkE.graph['baseMVA']
+                                       xt].value*self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
 
             if self.Print['Feasibility']:
                 print("\nFeas=[")
-                for xf in self.s['Fea']:
+                for xn in range(self.ENetwork.get_NoBus()):
                     for xt in self.s['Tim']:
-                        aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
-                                      xt].value*self.networkE.graph['baseMVA']
+                        if self.p['LLFea1'][xn] == 0:
+                            aux = 0
+                        else:
+                            aux = m.vNFea[self.connections['Feasibility'][xh] +
+                                          self.p['LLFea2'][xn], xt].value * \
+                                self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -782,7 +866,7 @@ class ENetworkClass:
                 for xs in range(self.p['GServices']):
                     for xt in self.s['Tim']:
                         aux = m.vNServ[self.p['GServices']*xh+xs,
-                                       xt].value*self.networkE.graph['baseMVA']
+                                       xt].value*self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -790,267 +874,74 @@ class ENetworkClass:
     def ProcessEDem(self, ENetDem):
         ''' Process demand and generation parameters '''
         # Adjust demand profiles
-        busData = np.zeros(self.networkE.number_of_nodes(), dtype=float)
-        for xn in range(self.networkE.number_of_nodes()):
-            busData[xn] = self.demandE['PD'][xn]/self.networkE.graph['baseMVA']
+        busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
+        for xn in range(self.ENetwork.get_NoBus()):
+            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.get_Base()
         # Auxiliar to find demand profiles
-        busScenario = np.zeros((self.networkE.number_of_nodes(),
+        busScenario = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
 
         if self.scenarios['NoDem'] > 0:
             acu = 0
             for xs in range(self.scenarios['Number']):
-                for xn in range(self.networkE.number_of_nodes()):
+                for xn in range(self.ENetwork.get_NoBus()):
                     busScenario[xn][xs] = ((self.scenarios['Links'][acu]-1) *
                                            self.settings['NoTime'])
                     acu += 1
 
         # Auxiliar to find RES profiles
-        resScenario = np.zeros((self.RES['Number'], self.scenarios['Number'],
-                                2), dtype=int)
+        resScenario = np.zeros((self.Gen.get_NoRES(),
+                                self.scenarios['Number']), dtype=int)
         for xh in range(self.scenarios['Number']):
-            for xg in range(self.RES['Number']):
-                # Generator location
-                resScenario[xg][xh][0] = (1+xg+xh-self.RES['Number'] +
-                                          self.generationE['Number']*(1+xh))
+            for xg in range(self.Gen.get_NoRES()):
                 # Profile location
-                resScenario[xg][xh][1] = ((self.scenarios['LinksRes']
-                                           [xg+xh*(self.RES['Number'])]-1) *
-                                          self.settings['NoTime'])
+                resScenario[xg][xh] = self.settings['NoTime'] * \
+                    (self.scenarios['LinksRes'][xg+xh*self.Gen.get_NoRES()]-1)
 
         return (busData, busScenario, resScenario)
 
-    def ProcessEGen(self):
-        ''' Process generator parameters '''
-        GenMax = self.generationE['Data']['PMAX']
-        GenMin = self.generationE['Data']['PMIN']
-
-        # Get LL for generators
-        (LLGen1, LLGen2) = self._getLL(self.networkE.number_of_nodes(),
-                                       self.generationE['Number'],
-                                       self.generationE['Data']['GEN_BUS'])
-        self.p['LLGen1'] = LLGen1
-        self.p['LLGen2'] = LLGen2
-
-        # Get size of the required pieces
-        laux = len(self.settings['Pieces'])
-        vaux = self.settings['Pieces']
-        self.settings['Pieces'] = np.zeros(self.generationE['Number'],
-                                           dtype=int)
-        # Set selected value for conventional generators
-        if laux == 1:
-            for xg in range(self.conventional['Number']):
-                self.settings['Pieces'][xg] = vaux[0]
-        # Set selected values for the first set of generators
-        elif laux < self.generationE['Number']:
-            for xg in range(laux):
-                self.settings['Pieces'][xg] = vaux[xg]
-
-        # Get number of variables and differentials required
-        pwNo = np.zeros(self.generationE['Number'], dtype=int)
-        NoGenC = 0
-        for xg in range(self.generationE['Number']):
-            # Linear model - single piece
-            if self.generationE['Costs']['MODEL'][xg] == 1:
-                NoGenC += self.generationE['Costs']['NCOST'][xg]
-            # Quadratic with default settings
-            elif self.settings['Pieces'][xg] == 0:
-                pwNo[xg] = self.generationE['Costs']['NCOST'][xg]
-                NoGenC += pwNo[xg]
-            # Quadratic with bespoke number of pieces
-            elif self.generationE['Costs']['MODEL'][xg] == 2:
-                pwNo[xg] = math.ceil((self.generationE['Data']
-                                      ['PMAX'][xg] -
-                                      self.generationE['Data']
-                                      ['PMIN'][xg]) /
-                                     self.settings['Pieces'][xg])
-                NoGenC += pwNo[xg]
-
-        LLGenC = np.zeros(NoGenC, dtype=int)
-        GenLCst = np.zeros((NoGenC, 2), dtype=float)
-        acu = 0
-        for xg in range(self.generationE['Number']):
-            # Number of cost parameters
-            auxNo = int(self.generationE['Costs']['NCOST'][xg])
-
-            # Check cost function
-            if self.generationE['Costs']['MODEL'][xg] == 1:  # Piece-wise model
-                # Collect parameters
-                xval = np.zeros(auxNo, dtype=float)
-                yval = np.zeros(auxNo, dtype=float)
-                xc = 0
-                xv = 0
-                while xc <= auxNo*2-1:
-                    xval[xv] = self.generationE['Costs']['COST'][xg][xc]
-                    yval[xv] = self.generationE['Costs']['COST'][xg][xc+1]
-                    xv += 1
-                    xc += 2
-                auxNo -= 1
-            elif self.generationE['Costs']['MODEL'][xg] == 2:  # Pol model
-                # Get costs function
-                fc = self.generationE['Costs']['COST'][xg][:]
-                xval = np.zeros(pwNo[xg]+1, dtype=float)
-                yval = np.zeros(pwNo[xg]+1, dtype=float)
-
-                # Solve equation to get parameters
-                Dtx = (self.generationE['Data']['PMAX'][xg] -
-                       self.generationE['Data']['PMIN'][xg])/pwNo[xg]
-                aux = self.generationE['Data']['PMIN'][xg] - Dtx
-                for xv in range(pwNo[xg]+1):
-                    xval[xv] = aux + Dtx
-                    aux = xval[xv]
-                    yval[xv] = fc[auxNo-1]
-                    for xc in range(auxNo):
-                        yval[xv] += fc[xc]*xval[xv]**(auxNo-xc-1)
-
-            # Convert parameters to LP constraints
-            for x1 in range(acu, acu+pwNo[xg]):
-                LLGenC[x1] = xg
-            for xv in range(pwNo[xg]):
-                GenLCst[acu+xv][0] = (yval[xv+1] -
-                                      yval[xv]) / (xval[xv+1]-xval[xv])
-                GenLCst[acu+xv][1] = yval[xv]-xval[xv]*GenLCst[acu+xv][0]
-            acu += pwNo[xg]
-        self.p['LLGenC'] = LLGenC
-
-        # Changing to pu
-        for xg in range(self.generationE['Number']):
-            GenMax[xg] /= self.networkE.graph['baseMVA']
-            GenMin[xg] /= self.networkE.graph['baseMVA']
-        for xc in range(NoGenC):
-            GenLCst[xc][0] *= self.networkE.graph['baseMVA']
-        self.p['GenMax'] = GenMax
-        self.p['GenMin'] = GenMin
-        self.p['GenLCst'] = GenLCst
-        self.NoGenC = NoGenC
-
     def ProcessENet(self):
         ''' Process information for optimisation purposes '''
-        # Map connections between nodes and branches (non-sequential search)
-        NoN2B = self.networkE.number_of_edges()*2+1  # Number of data points
-        LLaux = np.zeros(NoN2B, dtype=int)  # connections (non-sequential)
-        LLnext = np.zeros(NoN2B, dtype=int)  # Next connection (non-sequential)
-        LLN2B1 = np.zeros(NoN2B, dtype=int)  # connections (sequential)
-        # Position of first connection and number of connections
-        LLN2B2 = np.zeros((self.networkE.number_of_nodes(), 4), dtype=int)
 
-        x0 = 0  # Initial position (LLaux)
-        x1 = 0  # Initial position (branches)
-        for (xf, xt) in self.networkE.edges:
-            x1 += 1
-            auxNode = [xf-1, xt-1]
-            auxX = [3, 1]
-            for x2 in range(2):
-                x0 += 1
-                # Get next position
-                xpos = LLN2B2[auxNode[x2]][auxX[x2]]
-                # Initialize if the position is available
-                if xpos == 0:
-                    LLN2B2[auxNode[x2]][auxX[x2]] = x0
-                else:  # Search for next available position
-                    while LLnext[xpos] != 0:
-                        xpos = LLnext[xpos]
-                    # Storing data position
-                    LLnext[xpos] = x0
-                    (LLN2B2[auxNode[x2]]
-                           [auxX[x2]-1]) = LLN2B2[auxNode[x2]][auxX[x2]-1]+1
-                # Storing data point
-                LLaux[x0] = x1
-
-        # Remove the 'next' by arranging the data sequentially
-        x0 = 0  # Position LLN2B1
-        xacu = 1  # Total number of positions addressed so far
-        for x2 in [2, 0]:
-            for xn in range(self.networkE.number_of_nodes()):
-                # Get first branch position for this node
-                xpos = LLN2B2[xn][x2+1]
-                if xpos != 0:
-                    # Get other positions is available
-                    LLN2B2[xn][x2+1] = xacu
-                    xacu += LLN2B2[xn][x2]+1
-                    for x3 in range(LLN2B2[xn][x2]+1):
-                        # Store data sequentially
-                        x0 = x0+1
-                        LLN2B1[x0] = LLaux[xpos]
-                        xpos = LLnext[xpos]
-        self.NoN2B = NoN2B
-        self.p['LLN2B1'] = LLN2B1
-        self.p['LLN2B2'] = LLN2B2
-
-        # Set line limits
-        branchNo = np.zeros((self.networkE.number_of_edges(), 2), dtype=int)
-        branchData = np.zeros((self.networkE.number_of_edges(), 4),
-                              dtype=float)
-        xb = 0
-        for (xf, xt) in self.networkE.edges:
-            branchNo[xb, :] = [xf-1, xt-1]
-            branchData[xb, :4] = [self.networkE[xf][xt]['BR_R'],
-                                  self.networkE[xf][xt]['BR_X'],
-                                  self.networkE[xf][xt]['BR_B'],
-                                  self.networkE[xf][xt]['RATE_A'] /
-                                  self.networkE.graph['baseMVA']]
-            xb += 1
-
-        self.p['branchNo'] = branchNo
-        self.p['branchData'] = branchData
+        # Initialise electricity network object
+        self.ENetwork.initialise(self.settings)
 
         # Add security constraints
         if len(self.settings['Security']) == 0 and \
                 self.settings['SecurityFlag']:
             self.settings['Security'] = \
-                [x+1 for x in range(self.networkE.number_of_edges())]
+                [x+1 for x in range(self.connections['Branches'])]
 
         # Add security considerations
         NoSec2 = len(self.settings['Security'])
 
         # Number of parameters required for simulating security
-        aux = self.networkE.number_of_edges()
-        NoSec1 = self.networkE.number_of_edges()*(1+NoSec2)-NoSec2
+        aux = self.connections['Branches']
+        NoSec1 = self.connections['Branches']*(1+NoSec2)-NoSec2
         # Auxiliaries for modelling security considerations
         # Position of the variables
         LLESec1 = np.zeros((NoSec1, 2), dtype=int)
-        # Connection between the branch number and the position of the data
-        LLESec2 = np.zeros((self.networkE.number_of_edges()+1, NoSec2+1),
-                           dtype=int)
 
-        for xb in range(self.networkE.number_of_edges()):
+        for xb in range(self.connections['Branches']):
             LLESec1[xb][0] = xb
-            LLESec2[xb][0] = xb
-        aux = self.networkE.number_of_edges()
-        LLESec2[aux][0] = aux
+        aux = self.connections['Branches']
         x0 = aux
         xacu = 0
         for xs in range(NoSec2):
-            xacu += self.networkE.number_of_nodes()
-            for xb in range(self.networkE.number_of_edges()):
+            xacu += self.ENetwork.get_NoBus()
+            for xb in range(self.connections['Branches']):
                 if xb+1 != self.settings['Security'][xs]:
-                    LLESec2[xb+1][xs+1] = x0+1
                     LLESec1[x0][:] = [xb, xacu]
                     x0 += 1
         self.NoSec1 = NoSec1
         self.NoSec2 = NoSec2
         self.p['LLESec1'] = LLESec1
-        self.p['LLESec2'] = LLESec2
 
-        # Adjust branch data if there are predefined constraints
-        aux = len(self.settings['Constraint'])
-        if aux > 0:
-            if aux == 1:
-                aux = self.settings['Constraint'][0] / \
-                    self.networkE.graph['baseMVA']
-                self.settings['Constraint'] = \
-                    np.zeros(self.networkE.number_of_edges(), dtype=float)
-                for xb in range(self.networkE.number_of_edges()):
-                    self.settings['Constraint'][xb] = aux
-            for xb in range(self.networkE.number_of_edges()):
-                branchData[LLESec1[xb][0]][3] = self.settings['Constraint'][xb]
-
-        # Add power losses estimation
+        # Add piece-wise power losses estimation
         if self.settings['Losses']:
             # Auxiliar for the cuadratic function to model losses
             # Choosing points for the lines
-            aux = [0, 0.01, 0.025, 0.05, 0.1, 0.2, 0.4, 0.8, 1.2, 1.6,
-                   2, 2.5, 3]
+            aux = self.connections['Loss_Param']
 
             # Number of points to model
             Number_LossCon = len(aux)-1
@@ -1063,146 +954,93 @@ class ENetworkClass:
                 Loss_Con2[x1] = ((aux[x1+1]**2-aux[x1]**2) /
                                  (aux[x1+1]-aux[x1]))
                 Loss_Con1[x1] = aux[x1]**2-aux[x1]*Loss_Con2[x1]
-        else:
-            Number_LossCon = 1
-            Loss_Con1 = 0
-            Loss_Con2 = 0
-        self.Number_LossCon = Number_LossCon
-        self.p['Loss_Con1'] = Loss_Con1
-        self.p['Loss_Con2'] = Loss_Con2
+
+            self.Number_LossCon = Number_LossCon
+            self.ENetwork.loss['A'] = Loss_Con1
+            self.ENetwork.loss['B'] = Loss_Con2
 
         # Add LL for dynamic loads
-        LLDL = np.zeros(self.networkE.number_of_nodes(), dtype=int)
+        LLDL = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
         for xdl in range(self.pumps['Number']):
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
         self.p['LLPump'] = LLDL
 
-        # Add LL for feasibility constraints (Nodes)
-        LLFea = np.zeros(self.networkE.number_of_nodes()+1, dtype=int)
-        if self.settings['Feasibility']:
-            NoFea = self.networkE.number_of_nodes()+1
-            for xn in range(1, NoFea):
-                LLFea[xn] = xn
-        else:
-            NoFea = 1
-        self.LL = {}
-        self.NoLL = {}
-        self.iLL = {}
-        self.p['LLFea'] = LLFea
+        # Add LL for feasibility constraints only in nodes with demand
+        NoFea = 0
+        LLFea1 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        LLFea2 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        for xn in range(self.ENetwork.get_NoBus()):
+            if self.demandE['PD'][xn] > 0:
+                LLFea1[xn] = 1
+                LLFea2[xn] = NoFea
+                NoFea += 1
+        self.p['LLFea1'] = LLFea1
+        self.p['LLFea2'] = LLFea2
         self.NoFea = NoFea
+        print  ('To be deleted')
+#        print ()
+#        print (LLFea1)
+#        print (LLFea2)
+#        print (NoFea)
+#        print ()
+#        aux[1000]
+#
+#        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
+#        if self.settings['Feasibility']:
+#            NoFea = self.ENetwork.get_NoBus()
+#            for xn in range(1, NoFea):
+#                LLFea[xn] = xn
+#        else:
+#            NoFea = 1
+#        self.LL = {}
+#        self.NoLL = {}
+#        self.iLL = {}
+#        self.p['LLFea'] = LLFea
+#        self.NoFea = NoFea
 
     def Read(self):
         ''' Read input data '''
         # Load file
         mpc = json.load(open(self.settings['File']))
 
-        self.networkE = nx.Graph()
+        GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
+        NoOGen = len(GenNCost)
 
-        # Adding network attributes
-        aux = ['version', 'baseMVA', 'NoGen', 'Slack']
-        for x1 in range(4):
-            self.networkE.graph[aux[x1]] = mpc[aux[x1]]
+        # Defining device classes
+        from pyene.engines.pyeneD import ElectricityNetwork, Generators
 
-        # Adding buses (nodes) and attributes
-        aux = ['BUS_TYPE', 'GS', 'BS', 'BUS_AREA', 'VM', 'VA', 'BASE_KV',
-               'ZONE', 'VMAX', 'VMIN']
-        for xen in range(mpc["NoBus"]):
-            self.networkE.add_node(mpc['bus']['BUS_I'][xen])
-            for x1 in range(10):
-                self.networkE.node[xen+1][aux[x1]] = mpc["bus"][aux[x1]][xen]
+        # Define network model
+        # The definition and configuration methods are separated so, in
+        # principle the classes can be manually configured
+        self.ENetwork = ElectricityNetwork(mpc['NoBus'], mpc["NoBranch"])
+        self.ENetwork.MPCconfigure(mpc)
 
-        # Adding branches (edges) and attributes
-        aux = ['BR_R', 'BR_X', 'BR_B', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP',
-               'SHIFT', 'BR_STATUS', 'ANGMIN', 'ANGMAX']
-        for xeb in range(mpc["NoBranch"]):
-            xaux = [mpc["branch"]["F_BUS"][xeb], mpc["branch"]["T_BUS"][xeb]]
-            self.networkE.add_edge(xaux[0], xaux[1])
-            for x1 in range(11):
-                (self.networkE[xaux[0]][xaux[1]]
-                 [aux[x1]]) = mpc["branch"][aux[x1]][xeb]
+        # Define generator model
+        self.Gen = Generators(NoOGen, self.hydropower['Number'],
+                              self.RES['Number'])
 
+        self.Gen.MPCconfigure(mpc, self.conventional, self.hydropower,
+                              self.RES)
+        # TODO: Remove conventional, hydropower and RES
+        # del self.conventional, self.hydropower, self.RES
+
+        self.connections['Branches'] = mpc['NoBranch']
         self.demandE = {
                 'PD': np.array(mpc['bus']['PD'], dtype=float),
                 'QD': np.array(mpc['bus']['QD'], dtype=float),
                 }
-
-        # Gen generation nodes (to mesure it)
-        GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
-        NoOGen = len(GenNCost)
-        NoCst = len(GenNCost[0])
-        NoGen = NoOGen+self.hydropower['Number']+self.RES['Number']
-
-        # Defime generation data
-        ENetGen = {
-                'GEN_BUS': np.zeros(NoGen, dtype=int),
-                'PG': np.zeros(NoGen, dtype=float),
-                'QG': np.zeros(NoGen, dtype=float),
-                'QMAX': np.zeros(NoGen, dtype=float),
-                'QMIN': np.zeros(NoGen, dtype=float),
-                'VG': np.zeros(NoGen, dtype=float),
-                'MBASE': np.zeros(NoGen, dtype=float),
-                'GEN': np.zeros(NoGen, dtype=int),
-                'PMAX': np.zeros(NoGen, dtype=float),
-                'PMIN': np.zeros(NoGen, dtype=float),
-                'PC1': np.zeros(NoGen, dtype=float),
-                'PC2': np.zeros(NoGen, dtype=float),
-                'QC1MIN': np.zeros(NoGen, dtype=float),
-                'QC1MAX': np.zeros(NoGen, dtype=float),
-                'QC2MIN': np.zeros(NoGen, dtype=float),
-                'QC2MAX': np.zeros(NoGen, dtype=float),
-                'RAMP_AGC': np.zeros(NoGen, dtype=float),
-                'RAMP_10': np.zeros(NoGen, dtype=float),
-                'RAMP_30': np.zeros(NoGen, dtype=float),
-                'RAMP_Q': np.zeros(NoGen, dtype=float),
-                'APF': np.zeros(NoGen, dtype=float)
-                }
-        ENetCost = {
-                'MODEL': np.zeros(NoGen, dtype=int),
-                'STARTUP': np.zeros(NoGen, dtype=float),
-                'SHUTDOWN': np.zeros(NoGen, dtype=float),
-                'NCOST': np.zeros(NoGen, dtype=int),
-                'COST': np.zeros((NoGen, NoCst), dtype=float)
-                }
-
-        ENetGen['GEN_BUS'][0:NoOGen] = mpc['gen']['GEN_BUS']
-        ENetGen['PG'][0:NoOGen] = mpc['gen']['PG']
-        ENetGen['QG'][0:NoOGen] = mpc['gen']['QG']
-        ENetGen['QMAX'][0:NoOGen] = mpc['gen']['QMAX']
-        ENetGen['QMIN'][0:NoOGen] = mpc['gen']['QMIN']
-        ENetGen['VG'][0:NoOGen] = mpc['gen']['VG']
-        ENetGen['MBASE'][0:NoOGen] = mpc['gen']['MBASE']
-        ENetGen['GEN'][0:NoOGen] = mpc['gen']['GEN']
-        ENetGen['PMAX'][0:NoOGen] = mpc['gen']['PMAX']
-        ENetGen['PMIN'][0:NoOGen] = mpc['gen']['PMIN']
-        ENetGen['PC1'][0:NoOGen] = mpc['gen']['PC1']
-        ENetGen['PC2'][0:NoOGen] = mpc['gen']['PC2']
-        ENetGen['QC1MIN'][0:NoOGen] = mpc['gen']['QC1MIN']
-        ENetGen['QC1MAX'][0:NoOGen] = mpc['gen']['QC1MAX']
-        ENetGen['QC2MIN'][0:NoOGen] = mpc['gen']['QC2MIN']
-        ENetGen['QC2MAX'][0:NoOGen] = mpc['gen']['QC2MAX']
-        ENetGen['RAMP_AGC'][0:NoOGen] = mpc['gen']['RAMP_AGC']
-        ENetGen['RAMP_10'][0:NoOGen] = mpc['gen']['RAMP_10']
-        ENetGen['RAMP_30'][0:NoOGen] = mpc['gen']['RAMP_30']
-        ENetGen['RAMP_Q'][0:NoOGen] = mpc['gen']['RAMP_Q']
-        ENetGen['APF'][0:NoOGen] = mpc['gen']['APF']
-
-        ENetCost['MODEL'][0:NoOGen] = mpc['gencost']['MODEL']
-        ENetCost['STARTUP'][0:NoOGen] = mpc['gencost']['STARTUP']
-        ENetCost['SHUTDOWN'][0:NoOGen] = mpc['gencost']['SHUTDOWN']
-        ENetCost['NCOST'][0:NoOGen] = mpc['gencost']['NCOST']
-        ENetCost['COST'][0:NoOGen][:] = mpc['gencost']['COST']
 
         # Adjust demand dimensions
         self.scenarios['Demand'] = np.asarray(self.scenarios['Demand'])
 
         # Default settings for demand profiles
         if self.scenarios['Links'] == 'Default':
-            self.scenarios['Links'] = np.ones(self.networkE.number_of_nodes() *
+            self.scenarios['Links'] = np.ones(self.ENetwork.get_NoBus() *
                                               self.scenarios['Number'],
                                               dtype=int)
-            acu = self.networkE.number_of_nodes()
+            acu = self.ENetwork.get_NoBus()
             for xs in range(self.scenarios['Number']-1):
-                for xt in range(self.networkE.number_of_nodes()):
+                for xt in range(self.ENetwork.get_NoBus()):
                     self.scenarios['Links'][acu] = xs+2
                     acu += 1
 
@@ -1210,126 +1048,47 @@ class ENetworkClass:
         # All devices are linked to the same profile
         if self.scenarios['NoRES'] == 1:
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
-                                                 self.RES['Number'], dtype=int)
+                                                 self.Gen.get_NoRES(),
+                                                 dtype=int)
         # i.e., each scenario is linked to a profile
         elif self.scenarios['LinksRes'] == 'Default':
             self.scenarios['LinksRes'] = np.ones(self.scenarios['Number'] *
-                                                 self.RES['Number'], dtype=int)
-            acu = self.RES['Number']
+                                                 self.Gen.get_NoRES(),
+                                                 dtype=int)
+            acu = self.Gen.get_NoRES()
             for xs in range(self.scenarios['Number']-1):
-                for xt in range(self.RES['Number']):
+                for xt in range(self.Gen.get_NoRES()):
                     self.scenarios['LinksRes'][acu] = xs+2
                     acu += 1
 
-        # Add renewable generation
-        self.conventional['Number'] = NoOGen
-        if self.hydropower['Number'] > 0:
-            # Adding hydro
-            self.hydropower['Link'] = range(NoOGen,
-                                            NoOGen+self.hydropower['Number'])
-            ENetGen['GEN_BUS'][self.hydropower['Link']] = (self.hydropower
-                                                           ['Bus'])
-            ENetGen['PMAX'][self.hydropower['Link']] = self.hydropower['Max']
-            xg2 = -1
-            for xg in self.hydropower['Link']:
-                xg2 += 1
-                ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
-                # Add polinomial (linear) cost curve
-                if self.hydropower['Cost'][xg2] != 0:
-                    ENetCost['MODEL'][xg] = 2
-                    ENetCost['NCOST'][xg] = 2
-                    ENetCost['COST'][xg][0] = self.hydropower['Cost'][xg2]
+    def set_ConS(self, val):
+        ''' Set connections for nodes '''
+        self.connections['set'] = val
 
-        if self.RES['Number'] > 0:
-            # Adding intermittent generation
-            self.RES['Link'] = range(NoOGen+self.hydropower['Number'], NoGen)
-            ENetGen['GEN_BUS'][self.RES['Link']] = self.RES['Bus']
-            xg2 = -1
-            for xg in self.RES['Link']:
-                xg2 += 1
-                ENetGen['PMAX'][xg] = 1000000
-                ENetGen['QMAX'][xg] = 1000000
-                ENetGen['MBASE'][xg] = self.networkE.graph['baseMVA']
-                # Add polinomial (linear) cost curve
-                if self.RES['Cost'][xg2] != 0:
-                    ENetCost['MODEL'][xg] = 2
-                    ENetCost['NCOST'][xg] = 2
-                    ENetCost['COST'][xg][0] = self.RES['Cost'][xg2]
-        self.generationE = {
-                'Data': ENetGen,
-                'Costs': ENetCost,
-                'Number': NoGen
-                }
+    def set_ConF(self, val):
+        ''' Set connections between branch flows '''
+        self.connections['Flow'] = val
 
-#        # Creating conventional generator objects
-#        from .pyeneD import ConvClass
-#        DM_GenC = [ConvClass() for x in range(NoOGen)]
-#        scens = np.zeros(self.scenarios['Number'], dtype=int)
-#        for xs in range(1, self.scenarios['Number']):
-#            scens[xs] = xs*NoGen
-#        acu = 1
-#        for xc in range(NoOGen):
-#            # Connection to the electricity network
-#            DM_GenC[xc].name = 'Conventional generator No. ' + str(xc)
-#            DM_GenC[xc].node['NM'] = mpc['gen']['GEN_BUS'][xc]
-#            DM_GenC[xc].gen['PG'] = mpc['gen']['PG'][xc]
-#            DM_GenC[xc].gen['QG'] = mpc['gen']['QG'][xc]
-#            DM_GenC[xc].gen['QMAX'] = mpc['gen']['QMAX'][xc]
-#            DM_GenC[xc].gen['QMIN'] = mpc['gen']['QMIN'][xc]
-#            DM_GenC[xc].gen['VG'] = mpc['gen']['VG'][xc]
-#            DM_GenC[xc].gen['MBASE'] = mpc['gen']['MBASE'][xc]
-#            DM_GenC[xc].gen['GEN'] = mpc['gen']['GEN'][xc]
-#            DM_GenC[xc].gen['PMAX'] = mpc['gen']['PMAX'][xc]
-#            DM_GenC[xc].gen['PMIN'] = mpc['gen']['PMIN'][xc]
-#            DM_GenC[xc].gen['PC1'] = mpc['gen']['PC1'][xc]
-#            DM_GenC[xc].gen['PC2'] = mpc['gen']['PC2'][xc]
-#            DM_GenC[xc].gen['QC1MIN'] = mpc['gen']['QC1MIN'][xc]
-#            DM_GenC[xc].gen['QC1MAX'] = mpc['gen']['QC1MAX'][xc]
-#            DM_GenC[xc].gen['QC2MIN'] = mpc['gen']['QC2MIN'][xc]
-#            DM_GenC[xc].gen['QC2MAX'] = mpc['gen']['QC2MAX'][xc]
-#            DM_GenC[xc].gen['RAMP_AGC'] = mpc['gen']['RAMP_AGC'][xc]
-#            DM_GenC[xc].gen['RAMP_10'] = mpc['gen']['RAMP_10'][xc]
-#            DM_GenC[xc].gen['RAMP_30'] = mpc['gen']['RAMP_30'][xc]
-#            DM_GenC[xc].gen['RAMP_Q'] = mpc['gen']['RAMP_Q'][xc]
-#            DM_GenC[xc].gen['APF'] = mpc['gen']['APF'][xc]
-#            DM_GenC[xc].gen['MODEL'] = mpc['gencost']['MODEL'][xc]
-#            DM_GenC[xc].gen['STARTUP'] = mpc['gencost']['STARTUP'][xc]
-#            DM_GenC[xc].gen['SHUTDOWN'] = mpc['gencost']['SHUTDOWN'][xc]
-#            DM_GenC[xc].gen['NCOST'] = mpc['gencost']['NCOST'][xc]
-#            DM_GenC[xc].gen['COST'] = mpc['gencost']['COST'][xc][:]
-#            DM_GenC[xc].no['vNGen'] = acu
-#            DM_GenC[xc].no['vNGCost'] = acu
-#            acu += 1
-#
-#        # Creating RES generator objects
-#        from .pyeneD import RESClass
-#        DM_GenR = [RESClass() for x in range(self.RES['Number'])]
-#        for xr in range(self.RES['Number']):
-#            # Connection to the electricity network
-#            DM_GenR[xr].name = 'RES generator No. ' + str(xr)
-#            DM_GenR[xr].node['NM'] = self.RES['Bus'][xr]
-#            DM_GenR[xr].gen['PMAX'] = 1000000
-#            DM_GenR[xr].gen['QMAX'] = 1000000
-#            DM_GenR[xr].gen['QMIN'] = 0
-#            DM_GenR[xr].gen['MODEL'] = 2
-#            DM_GenR[xr].gen['NCOST'] = 2
-#            DM_GenR[xr].gen['COST'] = self.RES['Cost'][xr]
-#            DM_GenR[xr].gen['MBASE'] = self.networkE.graph['baseMVA']
-#            DM_GenR[xr].no['vNGen'] = acu
-#            DM_GenR[xr].no['vNGCost'] = acu
-#            acu += 1
-#
-#        # Creating hydropower generators
-#        from .pyeneD import HydroClass
-#        DM_GenH = [HydroClass() for x in range(self.hydropower['Number'])]
-#        for xh in range(self.hydropower['Number']):
-#            DM_GenH[xh].name = 'Hydropower generator No. ' + str(xh)
-#            DM_GenH[xh].node['NM'] = self.hydropower['Bus'][xh]
-#            DM_GenH[xh].gen['PMAX'] = self.hydropower['Max'][xh]
-#            DM_GenH[xh].gen['MBASE'] = self.networkE.graph['baseMVA']
-#            DM_GenH[xh].gen['MODEL'] = 2
-#            DM_GenH[xh].gen['NCOST'] = 2
-#            DM_GenH[xh].gen['COST'] = self.hydropower['Cost'][xh]
-#            DM_GenR[xc].no['vNGen'] = acu
-#            DM_GenR[xc].no['vNGCost'] = acu
-#            acu += 1
+    def set_ConV(self, val):
+        ''' Set connections between voltages '''
+        self.connections['Voltage'] = val
+
+    def set_ConL(self, val):
+        ''' Set connections between branch Losses '''
+        self.connections['Loss'] = val
+
+    def set_ConG(self, val):
+        ''' Set connections between generators '''
+        self.connections['Generation'] = val
+
+    def set_ConC(self, val):
+        ''' Set connections between costs '''
+        self.connections['Cost'] = val
+
+    def set_ConP(self, val):
+        ''' Set connections between pumps '''
+        self.connections['Pump'] = val
+
+    def set_ConFea(self, val):
+        ''' Set connections between feasibility constraints '''
+        self.connections['Feasibility'] = val

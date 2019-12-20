@@ -69,6 +69,9 @@ class pyeneEConfig:
                 'Vectors': [],  # Number of vectors
                 'Nodes': []  # Number of nodes
                 }
+        self.Print = {
+                'SoC': True
+                }
 
 
 class EnergyClass:
@@ -491,12 +494,13 @@ class EnergyClass:
 
     def print(self, m):
         ''' Print results '''
-        for xv in self.s['Vec']:
-            print('Vector No:', xv)
-            for x1 in self.s['Nodz']:
-                print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
-                      % m.vSoC[x1, 0, xv].value, ", %10.2f"
-                      % m.vSoC[x1, 1, xv].value, "]")
+        if self.Print:
+            for xv in self.s['Vec']:
+                print('Vector No:', xv)
+                for x1 in self.s['Nodz']:
+                    print("SoC[%3.0f" % x1, "][0:1]=[%10.2f"
+                          % m.vSoC[x1, 0, xv].value, ", %10.2f"
+                          % m.vSoC[x1, 1, xv].value, "]")
 
     def Read(self, FileName, jsonPath):
         ''' Read input data '''
