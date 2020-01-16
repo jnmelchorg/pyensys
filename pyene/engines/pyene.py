@@ -21,6 +21,7 @@ from .pyeneH import HydrologyClass as hn  # Hydrology engine
 from .pyene_Models import Energymodel as EMod # Energy model in glpk
 import json
 import os
+import time
 
 
 class pyeneConfig():
@@ -192,7 +193,7 @@ class pyeneClass():
         m = self.EM.addSets(m)
         m = self.NM.addSets(m)
         m = self.HM.addSets(m)
-        m = self.addSets(m)
+        m = self.addSets(m) # This do nothing, it can be removed
 
         # Model Variables
         m = self.EM.addVars(m)
@@ -281,11 +282,17 @@ class pyeneClass():
         # Initialise
         EM.initialise()
 
-        # Build LP model
-        EModel = self.SingleLP(EM)
-
+        start = time.time()
         Model = EMod(EM)
         Model.optimisation()
+        end = time.time()
+        time1 = end - start
+        print(end - start)        
+        
+
+        start = time.time()
+        # Build LP model
+        EModel = self.SingleLP(EM)
 
         #                          Objective function                         #
         EModel.OF = Objective(rule=EM.OF_rule, sense=minimize)
@@ -295,6 +302,12 @@ class pyeneClass():
 
         # Print
         results = opt.solve(EModel)
+
+        end = time.time()
+        time2 = end - start
+        print(end - start)
+
+        print('GLPK is %f times faster than pyomo' %(time2/time1))
 
         return (EM, EModel, results)
 

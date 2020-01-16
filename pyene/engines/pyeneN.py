@@ -21,7 +21,7 @@ class pyeneNConfig:
         # Basic settings
         self.settings = {
                 'File': None,  # File to be loaded
-                'Flag': True,  # Add electricity network
+                'Flag': False,  # Add electricity network
                 'NoTime': 1,  # Number of time steps
                 'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
@@ -34,7 +34,7 @@ class pyeneNConfig:
                 }
         # Connections
         self.connections = {
-                'set': range(1),  # Connections between nodes
+                'set': range(1),  # Connections between nodes in the tree (last layer of the tree)
                 'Branches': 0,  # Real number of branches (including parallel)
                 'Flow': [0],  # Power flow through the lines
                 'Voltage': [0],  # Voltages in each node
@@ -907,7 +907,7 @@ class ENetworkClass:
         # Add LL for feasibility constraints (Nodes)
         LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
         if self.settings['Feasibility']:
-            NoFea = self.ENetwork.get_NoBus()+1
+            NoFea = self.ENetwork.get_NoBus()+1 # why is it the number of nodes + 1??
             for xn in range(1, NoFea):
                 LLFea[xn] = xn
         else:
