@@ -372,6 +372,12 @@ class Networkmodel():
                                 self.NM.ENetwork.get_Base()), end = ' ')
                     print('')
                 print('')
+            print('LC:')
+            for j in range(self.NM.settings['NoTime']):
+                print("%f" %(self.solver.get_col_prim(\
+                            str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+                                self.NM.ENetwork.get_Base()), end = ' ')
+            print('')
         print('')
 
         # for i in range(self.size['Vectors']):
