@@ -210,7 +210,6 @@ class ENetworkClass:
                                        self.s['Con'],
                                        rule=self.cNEBalance0_rule)
 
-            m.cNEBalance0.pprint()
         # Is there baseload
         if sum(self.hydropower['Baseload']) > 0:
             self.scenarios['WSum'] = sum(self.scenarios['Weights'])
@@ -236,7 +235,7 @@ class ENetworkClass:
         m.cNEGenC = Constraint(self.s['Gen'], range(self.Gen.get_NoPieces()),
                                self.s['Tim'], self.s['Con'],
                                rule=self.cNEGenC_rule)
-        
+
         # Dinamic load (pump) maximum capacity
         m.cNDLMax = Constraint(self.s['Pump'], self.s['Tim'], self.s['Con'],
                                rule=self.cNLDMax_rule)

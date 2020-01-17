@@ -377,7 +377,31 @@ class Networkmodel():
                 print("%f" %(self.solver.get_col_prim(\
                             str(self.loadcurtailmentsystem[i, j][0]), 0) * \
                                 self.NM.ENetwork.get_Base()), end = ' ')
-            print('')
+            print('\n\n')
+            if len(self.NM.Gen.Conv) > 0:
+                print('Thermal Generation cost:')
+                for k in range(len(self.NM.Gen.Conv)):
+                    for j in range(self.NM.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.thermalCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
+            if len(self.NM.Gen.RES) > 0:
+                print('RES Generation cost:')
+                for k in range(len(self.NM.Gen.RES)):
+                    for j in range(self.NM.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.RESCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
+            if len(self.NM.Gen.Hydro) > 0:
+                print('Hydro Generation cost:')
+                for k in range(len(self.NM.Gen.Hydro)):
+                    for j in range(self.NM.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.HydroCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
         print('')
 
         # for i in range(self.size['Vectors']):
@@ -989,19 +1013,19 @@ class Networkmodel():
                 if len(self.NM.Gen.Conv) > 0: 
                     for k in range(len(self.NM.Gen.Conv)):
                         self.solver.set_obj_coef(\
-                            str(self.thermalgenerators[i, j][0]),\
+                            str(self.thermalCG[i, j][0]),\
                             k, OFaux[i] * self.NM.scenarios['Weights'][j])
             # Cost for RES generation    
                 if len(self.NM.Gen.RES) > 0: 
                     for k in range(len(self.NM.Gen.RES)):
                         self.solver.set_obj_coef(\
-                            str(self.RESgenerators[i, j][0]),\
+                            str(self.RESCG[i, j][0]),\
                             k, OFaux[i] * self.NM.scenarios['Weights'][j])
             # Cost for Hydroelectric generation    
                 if len(self.NM.Gen.Hydro) > 0: 
                     for k in range(len(self.NM.Gen.Hydro)):
                         self.solver.set_obj_coef(\
-                            str(self.Hydrogenerators[i, j][0]),\
+                            str(self.HydroCG[i, j][0]),\
                             k, OFaux[i] * self.NM.scenarios['Weights'][j])
             # Punitive cost for load curtailment
                 self.solver.set_obj_coef(\

@@ -1012,8 +1012,6 @@ class pyeneClass():
 
         m.OF = Objective(rule=self.OF_rule, sense=minimize)
 
-        m.OF.pprint()
-
         # Optimise
         opt = SolverFactory('glpk')
         # Print
