@@ -339,6 +339,41 @@ class Networkmodel():
         ret = self.solver.simplex()
         assert ret == 0
 
+
+        for i in self.NM.connections['set']:
+            print('Case %d :' %(i))
+            print('')
+            print('Generation:')
+            for k in range(len(self.NM.Gen.Conv)):
+                for j in range(self.NM.settings['NoTime']):
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.thermalgenerators[i, j][0]), k) * \
+                            self.NM.ENetwork.get_Base()), end = ' ')
+                print('')
+            for k in range(len(self.NM.Gen.RES)):
+                for j in range(self.NM.settings['NoTime']):                
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.RESgenerators[i, j][0]), k) * \
+                            self.NM.ENetwork.get_Base()), end = ' ')
+                print('')
+            for k in range(len(self.NM.Gen.Hydro)):
+                for j in range(self.NM.settings['NoTime']):
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.Hydrogenerators[i, j][0]), k) * \
+                            self.NM.ENetwork.get_Base()), end = ' ')
+                print('')
+            print('')
+            if self.NM.pumps['Number'] > 0:
+                print('Pumps:')
+                for k in range(self.NM.pumps['Number']):
+                    for j in range(self.NM.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.pumps[i, j][0]), k) * \
+                                self.NM.ENetwork.get_Base()), end = ' ')
+                    print('')
+                print('')
+        print('')
+
         # for i in range(self.size['Vectors']):
         #     print("vector %d:" %(i))
         #     for j in range(self.LL['NosBal']+1):
@@ -546,7 +581,10 @@ class Networkmodel():
                         self.solver.set_col_bnds(\
                             str(self.RESgenerators[i, j][0]), k,\
                             'bounded', self.NM.Gen.RES[k].get_Min(),\
-                            self.NM.Gen.RES[k].get_Max())
+                            self.NM.scenarios['RES']\
+                                [self.NM.resScenario[k][i]+j] * \
+                                self.NM.RES['Max'][k])
+
                 # Limits for the Hydroelectric generators
                 if len(self.NM.Gen.Hydro) > 0:
                     for k in range(len(self.NM.Gen.Hydro)):
@@ -736,15 +774,15 @@ class Networkmodel():
             # Storing the variables for load curtailment
                 self.ia[self.ne] = self.powerbalance[i, j][1]
                 self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
-                self.ar[self.ne] = 1
+                self.ar[self.ne] = 1.0
                 self.ne += 1
             # Storing the variables for pumps
                 if self.NM.pumps['Number'] > 0:
                     for k in range(self.NM.pumps['Number']):
                         self.ia[self.ne] = self.powerbalance[i, j][1]
-                    self.ja[self.ne] = self.pumps[i, j][1] + k
-                    self.ar[self.ne] = -1
-                    self.ne += 1
+                        self.ja[self.ne] = self.pumps[i, j][1] + k
+                        self.ar[self.ne] = -1.0
+                        self.ne += 1
             # Defining the resources (b) for the constraints
                 totaldemand = 0                
                 # TODO: Change the inputs of losses and demand scenarios
@@ -813,6 +851,7 @@ class Networkmodel():
                                 l, 'lower',\
                                 self.NM.scenarios['Weights'][j] * \
                                 self.NM.Gen.Conv[k].cost['LCost'][l][1], 0)
+
                 if len(self.NM.Gen.RES) > 0:
                     for k in range(len(self.NM.Gen.RES)):
                         for l in range(self.NM.Gen.RES[k].get_NoPieces()):
@@ -837,6 +876,7 @@ class Networkmodel():
                                 l, 'lower',\
                                 self.NM.scenarios['Weights'][j] * \
                                 self.NM.Gen.RES[k].cost['LCost'][l][1], 0)
+
                 if len(self.NM.Gen.Hydro) > 0:
                     for k in range(len(self.NM.Gen.Hydro)):
                         for l in range(self.NM.Gen.Hydro[k].get_NoPieces()):
