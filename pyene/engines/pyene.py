@@ -413,7 +413,8 @@ class pyeneClass():
                 acu = 0
                 for xt in auxtime:
                     acu += auxweight[xt] * \
-                        m.vNFea[self.NM.get_ConFea(xh)+bus, xt].value
+                        m.vNFea[self.NM.get_ConFea(xh) + \
+                                self.NM.p['LLFea2'][bus], xt].value
                 value += acu*auxOF[xh]
             value *= self.NM.ENetwork.get_Base()
 

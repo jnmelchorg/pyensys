@@ -977,7 +977,7 @@ class ENetworkClass:
         self.p['LLFea1'] = LLFea1
         self.p['LLFea2'] = LLFea2
         self.NoFea = NoFea
-        print  ('To be deleted')
+#        print  ('To be deleted')
 #        print ()
 #        print (LLFea1)
 #        print (LLFea2)
