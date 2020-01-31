@@ -25,7 +25,7 @@ class Energymodel():
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
-    def optimisation(self):
+    def optimisationEM(self):
         """ This class method solve the optimisation problem """
         # TODO to be expanded with a general optimisation problem       
         # Creation of model instance
@@ -50,9 +50,12 @@ class Energymodel():
     def modeldefinitionEM(self):
         """ This class method build and solve the optimisation problem,
          to be expanded with a general optimisation problem """
-        self.dnvariablesEM()                                      # Function to determine de number of variables
-        self.dnconstraintsEM()                                    # Function to determine de number of constraints
-        self.solver.add_cols('cols', self.number_variablesEM)     # Number of rows (variables) of the matrix A
+        # TODO: create functions such as posvariables and variables in a 
+        # similar way than the network model
+        self.dnvariablesEM()    # Function to determine de number of variables
+        self.dnconstraintsEM()  # Function to determine de number of constraints
+        # Number of columns (variables) of the matrix A
+        self.solver.add_cols('cols', self.number_variablesEM)
 
         # define matrix of coeficients (matrix A)
         self.Bounds_variablesEM()
@@ -95,7 +98,8 @@ class Energymodel():
     def Energybalance(self):
         """ This class method writes the energy balance in glpk
         
-        First, it is reserved space in memory to store the energy balance constraints.
+        First, it is reserved space in memory to store the energy balance 
+        constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
@@ -328,7 +332,7 @@ class Networkmodel():
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
 
-    def optimisation(self):
+    def optimisationNM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
         self.solver = GLPKSolver(message_level='all')       
@@ -1040,3 +1044,145 @@ class Networkmodel():
                             k, -OFaux[i] * self.NM.scenarios['Weights'][j] \
                                 * self.NM.ENetwork.get_Base() \
                                     * self.NM.pumps['Value'][k])
+
+
+class EnergyandNetwork(Energymodel, Networkmodel):
+    """ This class builds and solve the energy and network models(NM) 
+    using the gplk wrapper.
+
+    The information of the pyeneClass is passed to this class,
+    which provides the parameters for the model. Furthermore,
+    the GLPKSolver class that contains the GLPK wrapper is imported """
+
+    number_variablesENM = 0
+    number_constraintsENM = 0
+
+    def __init__(self, obj1=None, obj2=None):
+        """
+        Parameters
+        ----------
+        obj1 : Energy object
+            Information of the energy tree
+        obj2 : Network object
+            Information of the power system
+        """
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
+        Energymodel.__init__(self, obj1)
+        Networkmodel.__init__(self, obj2)
+
+        def optimisationENM(self):
+            """ This class method solve the optimisation problem """
+            # Creation of model instance
+            self.solver = GLPKSolver(message_level='all')       
+            # Definition of minimisation problem
+            self.solver.set_dir('min')
+            # Definition of the mathematical formulation
+            self.EnergyandEconomicDispatchModels()
+            ret = self.solver.simplex()
+            assert ret == 0
+
+        def EnergyandEconomicDispatchModels(self):
+            """ This class method builds the optimisation model
+            for the energy and economic dispatch problem """
+            # Function to determine de number of variables in the energy model
+            self.dnvariablesEM()
+            # Function to determine de number of constraints in the energy 
+            # model
+            self.dnconstraintsEM()            
+            # Function to determine de number of variables in the economic 
+            # dispatch
+            self.dnvariablesED()
+            # Function to determine de number of constraints in the economic 
+            # dispatch
+            self.dnconstraintsED()
+            # Number of variables in the Energy and Network models
+            self.number_variablesENM = self.number_variablesED + \
+                self.number_variablesEM
+            # Number of constraints in the Energy and Network models
+            self.number_constraintsENM = self.number_constraintsED + \
+                self.number_constraintsEM
+            # Creation of variables for the energy model in 
+            # glpk (matrix A)
+            self.solver.add_cols('EMcols', self.number_variablesEM)
+            # Creation of variables for the economic dispatch in 
+            # glpk (matrix A)
+            self.variablesED()
+
+            # define matrix of coeficients (matrix A)
+            self.Bounds_variablesEM()
+
+
+        def coeffmatrixEEDM(self):
+            """ This class method contains the functions that allow building 
+            the coefficient matrix (matrix A) for the simplex method """
+            # The coefficient matrix is stored in CSR format (sparse matrix) 
+            # to be later added to glpk
+            self.ia = np.empty(math.ceil(self.number_constraintsENM * \
+                self.number_variablesENM / 3), dtype=int) # Position in rows
+            self.ja = np.empty(math.ceil(self.number_constraintsENM * \
+                self.number_variablesENM / 3), dtype=int) # Position in columns
+            self.ar = np.empty(math.ceil(self.number_constraintsED * \
+                self.number_variablesENM / 3), dtype=float) # Value
+            self.ne = 0 # Number of non-zero coefficients in matrix A
+
+            self.Energybalance()
+            self.Aggregation()
+            if self.LL['NosUnc'] != 0:
+                self.AggregationStochastic()
+
+            self.constraintsED()
+            self.activepowerbalancesystem()
+            self.piecewiselinearisationcost()
+            self.generationrampsconstraints()
+
+
+
+            self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
+
+    def posconstraintsEED(self):
+            """ This class method creates the vectors that store the positions
+            of contraints that links the energy and ED problems """
+            # Creating the matrices to store the position of constraints in
+            # matrix A
+            self.connectionEDandEnergy = np.empty(\
+                self.size['Vectors'],\
+                len(self.NM.connections['set']), dtype=[('napos', 'U20'),\
+                    ('nupos', 'i4')]) # Start position 
+                        # of energy and economic dispatch constraints (rows)             
+    
+    def constraintsEED(self):
+        """ This class method reserves the space in glpk for the constraints of
+        that links the energy and economic dispatch problems """
+
+        self.posconstraintsEED()
+
+        for i in range(self.size['Vectors']):
+            for j in self.NM.connections['set']:
+                self.connectionEDandEnergy[i, j] = ('CEED'+str(i)+str(j),\
+                    self.solver.add_rows('CEED'+str(i)+str(j), 1))  # Number of 
+                        # columns (constraints) in matrix A for the 
+                        # constraints that links the energy and economic 
+                        # dispatch model
+
+
+    def EnergyandNetworkRelation(self):
+        """ This class method writes the constraint that links the energy
+        model with the network model in glpk.
+    
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
+        # Generating the matrix A for the active power balance constraints
+        for i in self.NM.connections['set']:
+            for j in range(self.NM.settings['NoTime']):
+            # Storing the thermal generation variables
+                if len(self.NM.Gen.Conv) > 0:
+                    for k in range(len(self.NM.Gen.Conv)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.thermalgenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
