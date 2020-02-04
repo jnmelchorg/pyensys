@@ -83,7 +83,7 @@ class pyeneClass():
         m = self.EM.addCon(m)
         m = self.NM.addCon(m)
         m = self.HM.addCon(m)
-        # m = self.addCon(m)
+        m = self.addCon(m)
 
         return m
 
@@ -284,7 +284,7 @@ class pyeneClass():
 
         start = time.time()
         Model = EMod(EM)
-        Model.optimisation()
+        Model.optimisationEM()
         end = time.time()
         time1 = end - start
         print(end - start)        
