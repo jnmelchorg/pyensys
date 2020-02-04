@@ -79,7 +79,7 @@ class Energymodel():
 
     def dnvariablesEM(self):
         """ This class method determines the number of variables """
-        self.number_variablesEM += (self.TreeNodes) * 2 \
+        self.number_variablesEM += (self.TreeNodes) * 4 \
             * self.NumberTrees
 
     def dnconstraintsEM(self):
@@ -127,6 +127,16 @@ class Energymodel():
             dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
             # of variables in matrix A (rows) for total storage of 
             # energy or water in the tree for each vector
+        
+        self.InputsTree = np.empty(self.NumberTrees, \
+            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            # of variables in matrix A (rows) for inputs of 
+            # energy or water in the tree for each vector
+
+        self.OutputsTree = np.empty(self.NumberTrees, \
+            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            # of variables in matrix A (rows) for inputs of 
+            # energy or water in the tree for each vector
 
     def variablesEM(self):
         """ This class method defines the variables and their limits for the
@@ -143,6 +153,17 @@ class Energymodel():
             self.Totalstorage[i] = ('TotalStorage'+str(i),\
                 self.solver.add_cols('TotalStorage'+str(i),\
                 (self.TreeNodes)))
+        for i in range(self.NumberTrees):
+            # Variables for storage of energy or water
+            self.InputsTree[i] = ('InputsTree'+str(i),\
+                self.solver.add_cols('InputsTree'+str(i),\
+                (self.TreeNodes)))
+        for i in range(self.NumberTrees):
+            # Variables for storage of energy or water
+            self.OutputsTree[i] = ('OutputsTree'+str(i),\
+                self.solver.add_cols('OutputsTree'+str(i),\
+                (self.TreeNodes)))
+        
 
         # Defining the limits of the variables
         for i in range(self.NumberTrees):
@@ -152,6 +173,13 @@ class Energymodel():
                 str(self.Partialstorage[i][0]), 0, 'fixed', 0.0, 0.0)
             self.solver.set_col_bnds(\
                 str(self.Totalstorage[i][0]), 0, 'fixed', 0.0, 0.0)
+            for j in range(self.TreeNodes):
+                self.solver.set_col_bnds(\
+                    str(self.InputsTree[i][0]), j, 'fixed', \
+                        self.IntakeTree[j, i], self.IntakeTree[j, i])
+                self.solver.set_col_bnds(\
+                    str(self.OutputsTree[i][0]), j, 'fixed', \
+                        self.OutputTree[j, i], self.OutputTree[j, i])
 
     # Constraints EM
     
@@ -213,17 +241,23 @@ class Energymodel():
                 elif(self.LLEB[nodes, 1] == 1):
                     self.ja[self.ne] = self.Totalstorage[vectors][1] + \
                             self.LLEB[nodes, 0]
+                # Storing the Inputs            
+                self.ne += 1
+                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
+                self.ja[self.ne] = self.InputsTree[vectors][1] + nodes
+                self.ar[self.ne] = -1
+                # Storing the Outputs            
+                self.ne += 1
+                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
+                self.ja[self.ne] = self.OutputsTree[vectors][1] + nodes
+                self.ar[self.ne] = 1
                 self.ne += 1
 
         # Defining the limits for the energy constraints
         for vectors in range(self.NumberTrees):
             for nodes in range(1, self.TreeNodes):
                 self.solver.set_row_bnds(str(self.treebalance[vectors][0]), \
-                    nodes - 1, 'fixed', \
-                    self.IntakeTree[nodes, vectors] - \
-                        self.OutputTree[nodes, vectors], \
-                    self.IntakeTree[nodes, vectors] - \
-                        self.OutputTree[nodes, vectors])
+                    nodes - 1, 'fixed', 0, 0)
 
         # For verification
         # TODO: include it in pytest
@@ -242,8 +276,7 @@ class Energymodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
-        print(self.WeightNodes)
-        sys.exit('finish')
+
         # Generating the matrix A for the aggregation contraints
         for vectors in range(self.NumberTrees):
             for nodes in range(1, self.TreeNodes):
@@ -1138,13 +1171,16 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     def optimisationENM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='all')       
+        self.solver = GLPKSolver(message_level='off')       
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation
         self.EnergyandEconomicDispatchModels()
         ret = self.solver.simplex()
         assert ret == 0
+
+        print('Objective Function: %.10f' %(self.solver.get_obj_val()))
+
         for i in self.connections['set']:
             print('Case %d :' %(i))
             print('')
@@ -1276,11 +1312,29 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
         if len(self.Gen.Hydro) > 0:
             self.constraintsEED()
+            self.releaselimitsvariables()
             self.EnergyandNetworkRelation()
+
 
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
 
-   # Constraints ED
+    # Variables EED
+
+    def releaselimitsvariables(self):
+        """ This class method release the bounds of variables that were fixed
+        for individual models but that need to be released for the calculations
+        of the energy and economic dispatch in glpk 
+        
+        The released variables belong to:
+        Energy model
+        """
+        for i in range(self.NumberTrees):
+            for j in range(1, self.TreeNodes):
+                self.solver.set_col_bnds(\
+                    str(self.OutputsTree[i][0]), j, 'lower', \
+                        0, sys.float_info.max)      
+
+    # Constraints EED
 
     def posconstraintsEED(self):
         """ This class method creates the vectors that store the positions
@@ -1319,11 +1373,9 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             # of hydro generators (rivers) TODO: Explain this better and 
             # separate the data for this
             for j in self.connections['set']:
-                print(self.Totalstorage)
-                sys.exit('salida')
                 # Storing the variables for the total storage of the tree
                 self.ia[self.ne] = self.connectionEDandEnergy[i, j][1]
-                self.ja[self.ne] = self.Totalstorage[i][1] + \
+                self.ja[self.ne] = self.OutputsTree[i][1] + \
                     self.p['pyeneE'][j]
                 self.ar[self.ne] = 1.0
                 self.ne += 1
@@ -1339,7 +1391,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                     str(self.connectionEDandEnergy[i, j][0]), 0,\
                     'fixed', 0, 0)
         
-
     # Objective function EED
 
     def Objective_functionEED(self):
