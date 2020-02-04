@@ -142,4 +142,8 @@ cdef class GLPKSolver:
         cdef int col = self.col_ids[name] + col_offset
         return glp_get_col_prim(self.prob, col)
 
+    cpdef double get_obj_val(self):
+        # retrieve objective value
+        return glp_get_obj_val(self.prob)
+
 
