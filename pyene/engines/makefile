@@ -5,4 +5,4 @@ run: compile
 	python tests/test_core.py
 
 compile:
-	python setup.py build_ext -IC:\ANACONDA3\Library\include -LC:\ANACONDA3\Library\lib --inplace develop
+	'C:\ANACONDA3\python.exe' setup.py build_ext -I'C:\ANACONDA3\Library\include' -L'C:\ANACONDA3\Library\lib' --inplace develop
