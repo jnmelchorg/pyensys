@@ -415,9 +415,6 @@ class Networkmodel():
     which provides the parameters for the model. Furthermore,
     the GLPKSolver class that contains the GLPK wrapper is imported """
 
-    number_variablesED = 0
-    number_constraintsED = 0
-
     def __init__(self, obj=None):
         """
         Parameters
@@ -507,79 +504,50 @@ class Networkmodel():
         print('')
 
 
-    def EconomicDispatchModel(self):
-        """ This class method builds the optimisation model
-        for the economic dispatch problem """
-        self.dnvariablesED()    # Function to determine de number of variables
-        self.dnconstraintsED()  # Function to determine de number of constraints
+    ############################################
+    ###   COMMON VARIABLES AND CONSTRAINTS   ###
+    ###   FOR DIFFERENT MODELS               ###
+    ############################################
 
-        # define matrix of coeficients (matrix A)
-        self.variablesED()
-        self.coeffmatrixED()
-        self.Objective_functionED()
-
-    def dnvariablesED(self):
-        """ This class method determines the number of variables for the 
-        economic dispatch problem """
+    # Number of variables and constraints
+    def dnvariablesCommon(self):
+        """ This class method determines the number of variables that 
+        are common for various problems """
         # TODO: Create a variable for size last tree nodes
         # len(self.connections['set'])
         # TODO: Further analysis of energy storage variables and constraints
         # Active power generation variables
-        self.number_variablesED += len(self.connections['set']) \
+        self.number_variablesCommon = 0
+        self.number_variablesCommon += len(self.connections['set']) \
             * self.Gen.get_NoGen() * self.settings['NoTime']
         # Generation cost variables
-        self.number_variablesED += len(self.connections['set']) \
+        self.number_variablesCommon += len(self.connections['set']) \
             * self.Gen.get_NoGen() * self.settings['NoTime']
         # Active power storage variables
-        self.number_variablesED += len(self.connections['set']) \
+        self.number_variablesCommon += len(self.connections['set']) \
             * self.Storage['Number'] * self.settings['NoTime']
         # Pumps variables
-        self.number_variablesED += len(self.connections['set']) \
+        self.number_variablesCommon += len(self.connections['set']) \
             * self.pumps['Number'] * self.settings['NoTime']
-        # Load curtailment variables
-        self.number_variablesED += len(self.connections['set']) \
-            * self.settings['NoTime']
 
-    def dnconstraintsED(self):
-        """ This class method determines the number of constraints for the 
-        economic dispatch problem """
-        self.number_constraintsED += len(self.connections['set']) * \
-            self.settings['NoTime']     # Constraints for power balance 
-                                        # of whole power system
-        self.number_constraintsED += len(self.connections['set']) \
+    def dnconstraintsCommon(self):
+        """ This class method determines the number of constraints that 
+        are common for various problems """
+
+        self.number_constraintsCommon = 0
+        self.number_constraintsCommon += len(self.connections['set']) \
             * self.Gen.get_NoGen() * self.settings['NoTime'] * \
                 self.Gen.get_NoPieces() # Constraints 
                                         # for the piecewise linearisation
                                         # of the quadratic generation cost
-        self.number_constraintsED += len(self.connections['set']) \
+        self.number_constraintsCommon += len(self.connections['set']) \
             * self.Gen.get_NoGen() * self.settings['NoTime'] # Constraints 
                                     # for the generation ramps
 
-    def coeffmatrixED(self):
-        """ This class method contains the functions that allow building 
-        the coefficient matrix (matrix A) for the simplex method """
-        # The coefficient matrix is stored in CSR format (sparse matrix) to be
-        # later added to glpk
-        self.ia = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in rows
-        self.ja = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=float) # Value
-        self.ne = 0 # Number of non-zero coefficients in matrix A
-        
-        self.constraintsED()
-        self.activepowerbalancesystem()
-        self.piecewiselinearisationcost()
-        self.generationrampsconstraints()
-
-        self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
-
-    # Variables ED
-
-    def PosvariablesED(self):
+    # Variables
+    def PosvariablesCommon(self):
         """ This class method creates the vector that stores the positions of 
-        variables for the ED problem """
+        variables that are common for various problems """
 
         if len(self.Gen.Conv) > 0:
             self.thermalgenerators = np.empty(\
@@ -632,15 +600,10 @@ class Networkmodel():
                     ('nupos', 'i4')]) # Start position 
                 # of Hydroelectric generation cost variables in matrix A (rows)
                 # for each period and each tree node
-        self.loadcurtailmentsystem = np.empty((len(self.connections['set']),\
-            self.settings['NoTime']),\
-            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
-            # in matrix A (rows) of variables
-            # for load curtailment in the system for each tree node
 
-    def variablesED(self):
-        """ This class method defines the variables and their limits for the
-        economic dispatch problem """
+    def variablesCommon(self):
+        """ This class method defines the variables and their limits that 
+        are common for various problems """
         self.PosvariablesED()
         
         # Reserving space in glpk for ED variables
@@ -685,8 +648,7 @@ class Networkmodel():
                     self.pumpsvar[i, j] = ('Pumps'+str(i)+str(j),\
                         self.solver.add_cols('Pumps'+str(i)+str(j),\
                         self.pumps['Number']))
-                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+str(j),\
-                    self.solver.add_cols('LCS'+str(i)+str(j), 1))
+
 
         # Defining the limits of the variables
         for i in self.connections['set']:
@@ -723,18 +685,12 @@ class Networkmodel():
                             'bounded', 0,\
                             self.pumps['Max'][k]/self.ENetwork.get_Base())
 
-    # Constraints ED
-
-    def posconstraintsED(self):
+    # Constraints
+    def posconstraintsCommon(self):
             """ This class method creates the vectors that store the positions of 
-            contraints for the ED problem """
+            contraints that are common for various problems """
             # Creating the matrices to store the position of constraints in
             # matrix A
-            self.powerbalance = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
-                    ('nupos', 'i4')]) # Start position 
-                        # of active power balance constraints (rows) 
-                        # for each tree node
             if len(self.Gen.Conv) > 0:
                 self.thermalpiecewisecost = \
                     np.empty((len(self.connections['set']),\
@@ -776,7 +732,7 @@ class Networkmodel():
                         # (rows) for each tree node, for each period and for 
                         # each hydroelectrical generator
             
-    def constraintsED(self):
+    def constraintsCommon(self):
         """ This class method reserves the space in glpk for the constraints of
         the economic dispatch problem """
 
@@ -784,11 +740,6 @@ class Networkmodel():
 
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-                self.powerbalance[i, j] = ('PB'+str(i)+str(j),\
-                    self.solver.add_rows('PB'+str(i)+str(j), 1))  # Number of 
-                        # columns (constraints) in matrix A for the active 
-                        # power balance constraints fo each period and each 
-                        # tree node
                 if len(self.Gen.Conv) > 0:
                     for k in range(len(self.Gen.Conv)):
                         self.thermalpiecewisecost[i, j, k] =\
@@ -841,101 +792,6 @@ class Networkmodel():
                                 # generation ramps constraints for each 
                                 # period, for each tree node and for each 
                                 # thermal generator
-
-    def activepowerbalancesystem(self):
-        """ This class method writes the power balance constraint in glpk
-        
-        First, it is reserved space in memory to store the constraints.
-        Second, the coefficients of the constraints are introduced
-        in the matrix of coefficients (matrix A).
-        Third, the bounds of the constraints are defined """
-
-        # Generating the matrix A for the active power balance constraints
-        for i in self.connections['set']:
-            for j in range(self.settings['NoTime']):
-            # Storing the thermal generation variables
-                if len(self.Gen.Conv) > 0:
-                    for k in range(len(self.Gen.Conv)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.thermalgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing the RES generation variables
-                if len(self.Gen.RES) > 0:
-                    for k in range(len(self.Gen.RES)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.RESgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing the Hydroelectric generation variables
-                if len(self.Gen.Hydro) > 0:
-                    for k in range(len(self.Gen.Hydro)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.Hydrogenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing variables for ESS
-            # TODO: Modify the constraint for the first period
-                if self.Storage['Number'] > 0:
-                    if j > 0: # Start only after the first period
-                        for k in range(self.Storage['Number']):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j][1] + k
-                            self.ar[self.ne] = self.Storage['Efficiency'][k] \
-                                / self.scenarios['Weights'][j - 1]
-                            self.ne += 1
-                        for k in range(self.Storage['Number']):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j - 1][1] + k
-                            self.ar[self.ne] = \
-                                -self.Storage['Efficiency'][k] \
-                                / self.scenarios['Weights'][j - 1]
-                            self.ne += 1
-            # Storing the variables for load curtailment
-                self.ia[self.ne] = self.powerbalance[i, j][1]
-                self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
-                self.ar[self.ne] = 1.0
-                self.ne += 1
-            # Storing the variables for pumps
-                if self.pumps['Number'] > 0:
-                    for k in range(self.pumps['Number']):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = self.pumpsvar[i, j][1] + k
-                        self.ar[self.ne] = -1.0
-                        self.ne += 1
-            # Defining the resources (b) for the constraints
-                totaldemand = 0                
-                # TODO: Change the inputs of losses and demand scenarios
-                # for parameters
-                if self.scenarios['NoDem'] == 0:
-                    if self.settings['Loss'] is None:
-                        for k in range(self.ENetwork.get_NoBus()):
-                            totaldemand = totaldemand + self.busData[k] * \
-                                self.scenarios['Demand']\
-                                    [self.busScenario[k][i]]
-                    else:
-                        for k in range(self.ENetwork.get_NoBus()):
-                            totaldemand = totaldemand + self.busData[k] * \
-                                self.scenarios['Demand']\
-                                    [self.busScenario[k][i]] * \
-                                (1 + self.settings['Loss'])
-                else:
-                    if self.settings['Loss'] is None:
-                        for k in range(self.ENetwork.get_NoBus()):
-                            totaldemand = totaldemand + self.busData[k] * \
-                                self.scenarios['Demand']\
-                                    [j+self.busScenario[k][i]]
-                    else:
-                        for k in range(self.ENetwork.get_NoBus()):
-                            totaldemand = totaldemand + self.busData[k] * \
-                                self.scenarios['Demand'] \
-                                    [j+self.busScenario[k][i]] * \
-                                (1 + self.settings['Loss'])
-                self.solver.set_row_bnds(str(self.powerbalance[i, j][0]), 0,\
-                    'fixed', totaldemand, totaldemand)
 
     def piecewiselinearisationcost(self):
         """ This class method writes the piecewise linearisarion of
@@ -1080,6 +936,221 @@ class Networkmodel():
                             k, 'bounded', -self.Gen.Hydro[k].data['Ramp'],\
                             self.Gen.Hydro[k].data['Ramp'])
 
+
+    #############################
+    ###   ECONOMIC DISPATCH   ###
+    #############################
+
+    def EconomicDispatchModel(self):
+        """ This class method builds the optimisation model
+        for the economic dispatch problem """
+
+        self.number_variablesED = 0
+        self.number_constraintsED = 0
+
+        self.dnvariablesED()    # Function to determine de number of variables
+        self.dnconstraintsED()  # Function to determine de number of constraints
+
+        # define matrix of coeficients (matrix A)
+        self.variablesED()
+        self.coeffmatrixED()
+        self.Objective_functionED()
+
+    def dnvariablesED(self):
+        """ This class method determines the number of variables for the 
+        economic dispatch problem """
+
+        self.dnvariablesCommon()
+        self.number_variablesED = self.number_variablesCommon
+        # Load curtailment variables
+        self.number_variablesED += len(self.connections['set']) \
+            * self.settings['NoTime']
+
+    def dnconstraintsED(self):
+        """ This class method determines the number of constraints for the 
+        economic dispatch problem """
+
+        self.dnconstraintsCommon()
+        self.number_constraintsED = self.number_constraintsCommon
+
+        self.number_constraintsED += len(self.connections['set']) * \
+            self.settings['NoTime']     # Constraints for power balance 
+                                        # of whole power system
+
+    def coeffmatrixED(self):
+        """ This class method contains the functions that allow building 
+        the coefficient matrix (matrix A) for the simplex method """
+        # The coefficient matrix is stored in CSR format (sparse matrix) to be
+        # later added to glpk
+        self.ia = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=int) # Position in rows
+        self.ja = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=int) # Position in columns
+        self.ar = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=float) # Value
+        self.ne = 0 # Number of non-zero coefficients in matrix A
+        
+        self.constraintsED()
+        self.activepowerbalancesystem()
+        self.piecewiselinearisationcost()
+        self.generationrampsconstraints()
+
+        self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
+
+    # Variables ED
+
+    def PosvariablesED(self):
+        """ This class method creates the vector that stores the positions of 
+        variables for the ED problem """
+
+        self.PosvariablesCommon()
+
+        self.loadcurtailmentsystem = np.empty((len(self.connections['set']),\
+            self.settings['NoTime']),\
+            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            # in matrix A (rows) of variables
+            # for load curtailment in the system for each tree node
+
+    def variablesED(self):
+        """ This class method defines the variables and their limits for the
+        economic dispatch problem """
+        self.PosvariablesED()
+
+        self.variablesCommon()
+        
+        # Reserving space in glpk for ED variables
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+str(j),\
+                    self.solver.add_cols('LCS'+str(i)+str(j), 1))
+
+    # Constraints ED
+
+    def posconstraintsED(self):
+            """ This class method creates the vectors that store the positions of 
+            contraints for the ED problem """
+            # Creating the matrices to store the position of constraints in
+            # matrix A
+
+            self.posconstraintsCommon()
+
+            self.powerbalance = np.empty((len(self.connections['set']),\
+                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                    ('nupos', 'i4')]) # Start position 
+                        # of active power balance constraints (rows) 
+                        # for each tree node
+            
+    def constraintsED(self):
+        """ This class method reserves the space in glpk for the constraints of
+        the economic dispatch problem """
+
+        self.posconstraintsED()
+
+        self.constraintsCommon()
+
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+                self.powerbalance[i, j] = ('PB'+str(i)+str(j),\
+                    self.solver.add_rows('PB'+str(i)+str(j), 1))  # Number of 
+                        # columns (constraints) in matrix A for the active 
+                        # power balance constraints fo each period and each 
+                        # tree node
+
+    def activepowerbalancesystem(self):
+        """ This class method writes the power balance constraint in glpk
+        
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
+
+        # Generating the matrix A for the active power balance constraints
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+            # Storing the thermal generation variables
+                if len(self.Gen.Conv) > 0:
+                    for k in range(len(self.Gen.Conv)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.thermalgenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing the RES generation variables
+                if len(self.Gen.RES) > 0:
+                    for k in range(len(self.Gen.RES)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.RESgenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing the Hydroelectric generation variables
+                if len(self.Gen.Hydro) > 0:
+                    for k in range(len(self.Gen.Hydro)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.Hydrogenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing variables for ESS
+            # TODO: Modify the constraint for the first period
+                if self.Storage['Number'] > 0:
+                    if j > 0: # Start only after the first period
+                        for k in range(self.Storage['Number']):
+                            self.ia[self.ne] = self.powerbalance[i, j][1]
+                            self.ja[self.ne] = self.ESS[i, j][1] + k
+                            self.ar[self.ne] = self.Storage['Efficiency'][k] \
+                                / self.scenarios['Weights'][j - 1]
+                            self.ne += 1
+                        for k in range(self.Storage['Number']):
+                            self.ia[self.ne] = self.powerbalance[i, j][1]
+                            self.ja[self.ne] = self.ESS[i, j - 1][1] + k
+                            self.ar[self.ne] = \
+                                -self.Storage['Efficiency'][k] \
+                                / self.scenarios['Weights'][j - 1]
+                            self.ne += 1
+            # Storing the variables for load curtailment
+                self.ia[self.ne] = self.powerbalance[i, j][1]
+                self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
+                self.ar[self.ne] = 1.0
+                self.ne += 1
+            # Storing the variables for pumps
+                if self.pumps['Number'] > 0:
+                    for k in range(self.pumps['Number']):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = self.pumpsvar[i, j][1] + k
+                        self.ar[self.ne] = -1.0
+                        self.ne += 1
+            # Defining the resources (b) for the constraints
+                totaldemand = 0                
+                # TODO: Change the inputs of losses and demand scenarios
+                # for parameters
+                if self.scenarios['NoDem'] == 0:
+                    if self.settings['Loss'] is None:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [self.busScenario[k][i]]
+                    else:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [self.busScenario[k][i]] * \
+                                (1 + self.settings['Loss'])
+                else:
+                    if self.settings['Loss'] is None:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [j+self.busScenario[k][i]]
+                    else:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand'] \
+                                    [j+self.busScenario[k][i]] * \
+                                (1 + self.settings['Loss'])
+                self.solver.set_row_bnds(str(self.powerbalance[i, j][0]), 0,\
+                    'fixed', totaldemand, totaldemand)
+
     # Objective function ED
 
     def Objective_functionED(self):
@@ -1135,6 +1206,276 @@ class Networkmodel():
                                 * self.ENetwork.get_Base() \
                                     * self.pumps['Value'][k])
 
+    ##############################
+    ###   OPTIMAL POWER FLOW   ###
+    ##############################
+
+    def OptimalPowerFlowModel(self):
+        """ This class method builds the optimisation model
+        for the economic dispatch problem """
+
+        self.number_variablesOPF = 0
+        self.number_constraintsOPF = 0
+
+        self.dnvariablesOPF()    # Function to determine de number of variables
+        self.dnconstraintsOPF()  # Function to determine de number of constraints
+
+        # define matrix of coeficients (matrix A)
+        self.variablesOPF()
+        self.coeffmatrixOPF()
+        self.Objective_functionOPF()
+
+    def dnvariablesOPF(self):
+        """ This class method determines the number of variables for the 
+        economic dispatch problem """
+
+        self.dnvariablesCommon()
+        self.number_variablesED = self.number_variablesCommon
+        # Load curtailment variables
+        self.number_variablesED += len(self.connections['set']) \
+            * self.settings['NoTime']
+
+    def dnconstraintsOPF(self):
+        """ This class method determines the number of constraints for the 
+        economic dispatch problem """
+
+        self.dnconstraintsCommon()
+        self.number_constraintsED = self.number_constraintsCommon
+
+        self.number_constraintsED += len(self.connections['set']) * \
+            self.settings['NoTime']     # Constraints for power balance 
+                                        # of whole power system
+
+    def coeffmatrixOPF(self):
+        """ This class method contains the functions that allow building 
+        the coefficient matrix (matrix A) for the simplex method """
+        # The coefficient matrix is stored in CSR format (sparse matrix) to be
+        # later added to glpk
+        self.ia = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=int) # Position in rows
+        self.ja = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=int) # Position in columns
+        self.ar = np.empty(math.ceil(self.number_constraintsED * \
+            self.number_variablesED / 3), dtype=float) # Value
+        self.ne = 0 # Number of non-zero coefficients in matrix A
+        
+        self.constraintsED()
+        self.activepowerbalancesystem()
+        self.piecewiselinearisationcost()
+        self.generationrampsconstraints()
+
+        self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
+
+    # Variables ED
+
+    def PosvariablesOPF(self):
+        """ This class method creates the vector that stores the positions of 
+        variables for the ED problem """
+
+        self.PosvariablesCommon()
+
+        self.loadcurtailmentsystem = np.empty((len(self.connections['set']),\
+            self.settings['NoTime']),\
+            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            # in matrix A (rows) of variables
+            # for load curtailment in the system for each tree node
+
+    def variablesOPF(self):
+        """ This class method defines the variables and their limits for the
+        economic dispatch problem """
+        self.PosvariablesED()
+
+        self.variablesCommon()
+        
+        # Reserving space in glpk for ED variables
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+str(j),\
+                    self.solver.add_cols('LCS'+str(i)+str(j), 1))
+
+    # Constraints ED
+
+    def posconstraintsOPF(self):
+            """ This class method creates the vectors that store the positions of 
+            contraints for the ED problem """
+            # Creating the matrices to store the position of constraints in
+            # matrix A
+
+            self.posconstraintsCommon()
+
+            self.powerbalance = np.empty((len(self.connections['set']),\
+                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                    ('nupos', 'i4')]) # Start position 
+                        # of active power balance constraints (rows) 
+                        # for each tree node
+            
+    def constraintsOPF(self):
+        """ This class method reserves the space in glpk for the constraints of
+        the economic dispatch problem """
+
+        self.posconstraintsED()
+
+        self.constraintsCommon()
+
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+                self.powerbalance[i, j] = ('PB'+str(i)+str(j),\
+                    self.solver.add_rows('PB'+str(i)+str(j), 1))  # Number of 
+                        # columns (constraints) in matrix A for the active 
+                        # power balance constraints fo each period and each 
+                        # tree node
+
+    def activepowerbalancepernode(self):
+        """ This class method writes the power balance constraint in glpk
+        
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
+
+        # Generating the matrix A for the active power balance constraints
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+            # Storing the thermal generation variables
+                if len(self.Gen.Conv) > 0:
+                    for k in range(len(self.Gen.Conv)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.thermalgenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing the RES generation variables
+                if len(self.Gen.RES) > 0:
+                    for k in range(len(self.Gen.RES)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.RESgenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing the Hydroelectric generation variables
+                if len(self.Gen.Hydro) > 0:
+                    for k in range(len(self.Gen.Hydro)):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = \
+                            self.Hydrogenerators[i, j][1] + k
+                        self.ar[self.ne] = 1.0
+                        self.ne += 1
+            # Storing variables for ESS
+            # TODO: Modify the constraint for the first period
+                if self.Storage['Number'] > 0:
+                    if j > 0: # Start only after the first period
+                        for k in range(self.Storage['Number']):
+                            self.ia[self.ne] = self.powerbalance[i, j][1]
+                            self.ja[self.ne] = self.ESS[i, j][1] + k
+                            self.ar[self.ne] = self.Storage['Efficiency'][k] \
+                                / self.scenarios['Weights'][j - 1]
+                            self.ne += 1
+                        for k in range(self.Storage['Number']):
+                            self.ia[self.ne] = self.powerbalance[i, j][1]
+                            self.ja[self.ne] = self.ESS[i, j - 1][1] + k
+                            self.ar[self.ne] = \
+                                -self.Storage['Efficiency'][k] \
+                                / self.scenarios['Weights'][j - 1]
+                            self.ne += 1
+            # Storing the variables for load curtailment
+                self.ia[self.ne] = self.powerbalance[i, j][1]
+                self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
+                self.ar[self.ne] = 1.0
+                self.ne += 1
+            # Storing the variables for pumps
+                if self.pumps['Number'] > 0:
+                    for k in range(self.pumps['Number']):
+                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                        self.ja[self.ne] = self.pumpsvar[i, j][1] + k
+                        self.ar[self.ne] = -1.0
+                        self.ne += 1
+            # Defining the resources (b) for the constraints
+                totaldemand = 0                
+                # TODO: Change the inputs of losses and demand scenarios
+                # for parameters
+                if self.scenarios['NoDem'] == 0:
+                    if self.settings['Loss'] is None:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [self.busScenario[k][i]]
+                    else:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [self.busScenario[k][i]] * \
+                                (1 + self.settings['Loss'])
+                else:
+                    if self.settings['Loss'] is None:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand']\
+                                    [j+self.busScenario[k][i]]
+                    else:
+                        for k in range(self.ENetwork.get_NoBus()):
+                            totaldemand = totaldemand + self.busData[k] * \
+                                self.scenarios['Demand'] \
+                                    [j+self.busScenario[k][i]] * \
+                                (1 + self.settings['Loss'])
+                self.solver.set_row_bnds(str(self.powerbalance[i, j][0]), 0,\
+                    'fixed', totaldemand, totaldemand)
+
+    # Objective function ED
+
+    def Objective_functionOPF(self):
+        """ This class method defines the objective function of the economic
+        dispatch in glpk """
+
+        # Calculating the aggregated weights for the last nodes in the tree
+        # TODO: explain the aggregated weights better
+        # WghtAgg = 0 + self.EM.p['WghtFull']
+        OFaux = np.ones(len(self.connections['set']), dtype=float)
+        # xp = 0
+        # for xn in range(self.TreeNodes):
+        #     aux = self.LLNodesAfter[xn][0]
+        #     if aux != 0:
+        #         for xb in range(aux, self.EM.self.LLNodesAfter[xn][1] + 1):
+        #             WghtAgg[xb] *= WghtAgg[xn]
+        #     else:
+        #         OFaux[xp] = WghtAgg[xn]
+        #         xp += 1
+
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+            # Cost for conventional generation    
+                if len(self.Gen.Conv) > 0: 
+                    for k in range(len(self.Gen.Conv)):
+                        self.solver.set_obj_coef(\
+                            str(self.thermalCG[i, j][0]),\
+                            k, OFaux[i] * self.scenarios['Weights'][j])
+            # Cost for RES generation    
+                if len(self.Gen.RES) > 0: 
+                    for k in range(len(self.Gen.RES)):
+                        self.solver.set_obj_coef(\
+                            str(self.RESCG[i, j][0]),\
+                            k, OFaux[i] * self.scenarios['Weights'][j])
+            # Cost for Hydroelectric generation    
+                if len(self.Gen.Hydro) > 0: 
+                    for k in range(len(self.Gen.Hydro)):
+                        self.solver.set_obj_coef(\
+                            str(self.HydroCG[i, j][0]),\
+                            k, OFaux[i] * self.scenarios['Weights'][j])
+            # Punitive cost for load curtailment
+            # TODO: Set a parameter penalty in pyeneN
+                self.solver.set_obj_coef(\
+                            str(self.loadcurtailmentsystem[i, j][0]),\
+                            0, OFaux[i] * self.scenarios['Weights'][j] \
+                                * 100000000)
+            # Operation cost of pumps
+                if self.pumps['Number'] > 0:
+                    for k in range(self.pumps['Number']):
+                        self.solver.set_obj_coef(\
+                            str(self.pumpsvar[i, j][0]),\
+                            k, -OFaux[i] * self.scenarios['Weights'][j] \
+                                * self.ENetwork.get_Base() \
+                                    * self.pumps['Value'][k])
+
+
 
 class EnergyandNetwork(Energymodel, Networkmodel):
     """ This class builds and solve the energy and network models(NM) 
@@ -1167,6 +1508,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 # Copy attributes
         for pars in obj3.__dict__.keys():
             setattr(self, pars, getattr(obj3, pars))
+
 
     def optimisationENM(self):
         """ This class method solve the optimisation problem """
@@ -1253,7 +1595,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
                         j)))
 
-
     def EnergyandEconomicDispatchModels(self):
         """ This class method builds the optimisation model
         for the energy and economic dispatch problem """
@@ -1284,7 +1625,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         self.coeffmatrixEEDM()
 
         self.Objective_functionEED()
-
 
     def coeffmatrixEEDM(self):
         """ This class method contains the functions that allow building 
