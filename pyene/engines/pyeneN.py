@@ -21,7 +21,7 @@ class pyeneNConfig:
         # Basic settings
         self.settings = {
                 'File': None,  # File to be loaded
-                'Flag': False,  # Add electricity network
+                'Flag': True,  # Add electricity network
                 'NoTime': 1,  # Number of time steps
                 'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
