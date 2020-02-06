@@ -1,3 +1,18 @@
+"""
+Pyene Models provides a glpk implementation of different methods
+for: 
+1) Balancing multiple vectors at different time aggregation levels.
+2) Optimal dispatch of diverse generation technologies without considering
+the transmission system (Economic Dispatch)
+3) Optimal dispatch of diverse generation technologies considering
+the transmission system (Optimal Power Flow)
+
+@author: Dr Jose Nicolas Melchor Gutierrez
+https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
+
+@contributor:
+"""
+
 from ._glpk import GLPKSolver
 import numpy as np
 import sys
@@ -1230,9 +1245,27 @@ class Networkmodel():
         economic dispatch problem """
 
         self.dnvariablesCommon()
-        self.number_variablesED = self.number_variablesCommon
-        # Load curtailment variables
-        self.number_variablesED += len(self.connections['set']) \
+        self.number_variablesOPF = self.number_variablesCommon
+        # Active power flow variables
+        self.number_variablesOPF += self.ENetwork.get_NoBra() * \
+            len(self.connections['set']) * \
+            (len(self.settings['Security']) + 1) \
+            * self.settings['NoTime']
+        if self.settings['Losses']:
+            # Active power losses variables
+            self.number_variablesOPF += self.ENetwork.get_NoBra() * \
+                len(self.connections['set']) * \
+                (len(self.settings['Security']) + 1) \
+                * self.settings['NoTime']
+        # load curtailment variables
+        self.number_variablesOPF += self.ENetwork.get_NoBus() * \
+            len(self.connections['set']) * \
+            (len(self.settings['Security']) + 1) \
+            * self.settings['NoTime']
+        # Voltage angle variables
+        self.number_variablesOPF += self.ENetwork.get_NoBus() * \
+            len(self.connections['set']) * \
+            (len(self.settings['Security']) + 1) \
             * self.settings['NoTime']
 
     def dnconstraintsOPF(self):
@@ -1240,29 +1273,50 @@ class Networkmodel():
         economic dispatch problem """
 
         self.dnconstraintsCommon()
-        self.number_constraintsED = self.number_constraintsCommon
-
-        self.number_constraintsED += len(self.connections['set']) * \
-            self.settings['NoTime']     # Constraints for power balance 
-                                        # of whole power system
+        self.number_constraintsOPF = self.number_constraintsCommon
+        # Constraint that relates the active power flow and the voltage angle
+        self.number_constraintsOPF += self.ENetwork.get_NoBra() * \
+                len(self.connections['set']) * \
+                (len(self.settings['Security']) + 1) \
+                * self.settings['NoTime']
+        if self.settings['Losses']:
+            # Constraint for losses linearization
+            self.number_constraintsOPF += self.ENetwork.get_NoBra() * \
+                    len(self.connections['set']) * \
+                    (len(self.settings['Security']) + 1) \
+                    * self.settings['NoTime'] * \
+                    len(self.connections['Loss_Param']) - 1
+            # Constraint for losses linearization
+            self.number_constraintsOPF += self.ENetwork.get_NoBra() * \
+                    len(self.connections['set']) * \
+                    (len(self.settings['Security']) + 1) \
+                    * self.settings['NoTime'] * \
+                    len(self.connections['Loss_Param']) - 1
+        # Active power balance constraint
+        self.number_constraintsOPF += self.ENetwork.get_NoBus() * \
+                len(self.connections['set']) * \
+                (len(self.settings['Security']) + 1) \
+                * self.settings['NoTime']
 
     def coeffmatrixOPF(self):
         """ This class method contains the functions that allow building 
         the coefficient matrix (matrix A) for the simplex method """
         # The coefficient matrix is stored in CSR format (sparse matrix) to be
         # later added to glpk
-        self.ia = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in rows
-        self.ja = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=float) # Value
+        self.ia = np.empty(math.ceil(self.number_constraintsOPF * \
+            self.number_variablesOPF / 3), dtype=int) # Position in rows
+        self.ja = np.empty(math.ceil(self.number_constraintsOPF * \
+            self.number_variablesOPF / 3), dtype=int) # Position in columns
+        self.ar = np.empty(math.ceil(self.number_constraintsOPF * \
+            self.number_variablesOPF / 3), dtype=float) # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
         
-        self.constraintsED()
-        self.activepowerbalancesystem()
+        self.constraintsOPF()
+
         self.piecewiselinearisationcost()
         self.generationrampsconstraints()
+
+
 
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
 
@@ -1274,11 +1328,25 @@ class Networkmodel():
 
         self.PosvariablesCommon()
 
-        self.loadcurtailmentsystem = np.empty((len(self.connections['set']),\
-            self.settings['NoTime']),\
+        self.ActivePowerFlow = np.empty((len(self.connections['set']),\
+            self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
             dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
-            # in matrix A (rows) of variables
-            # for load curtailment in the system for each tree node
+            # in matrix A (rows) of variables for the active power flow
+        if self.settings['Losses']:
+            self.ActivePowerLosses = np.empty((len(self.connections['set']),\
+                self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
+                dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+                # in matrix A (rows) of variables for the active power losses
+        self.LoadCurtailmentNode = np.empty((len(self.connections['set']),\
+            self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
+            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            # in matrix A (rows) of variables for the load curtailment per
+            # node
+        self.VoltageAngle = np.empty((len(self.connections['set']),\
+            self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
+            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            # in matrix A (rows) of variables for the voltage angle per
+            # node
 
     def variablesOPF(self):
         """ This class method defines the variables and their limits for the
@@ -1287,13 +1355,76 @@ class Networkmodel():
 
         self.variablesCommon()
         
-        # Reserving space in glpk for ED variables
+        # Reserving space in glpk for OPF variables
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+str(j),\
-                    self.solver.add_cols('LCS'+str(i)+str(j), 1))
-
-    # Constraints ED
+                for k in range(len(self.settings['Security']) + 1):
+                    self.ActivePowerFlow[i, j, k] = \
+                        ('ActivePowerFlow'+str(i)+str(j)+str(k),\
+                        self.solver.add_cols(\
+                        'ActivePowerFlow'+str(i)+str(j)+str(k),\
+                        self.ENetwork.get_NoBra()))
+                    if self.settings['Losses']:
+                         self.ActivePowerLosses[i, j, k] = \
+                            ('ActivePowerLosses'+str(i)+str(j)+str(k),\
+                            self.solver.add_cols(\
+                            'ActivePowerLosses'+str(i)+str(j)+str(k),\
+                            self.ENetwork.get_NoBra()))
+                    self.LoadCurtailmentNode[i, j, k] = \
+                        ('LoadCurtailmentNode'+str(i)+str(j)+str(k),\
+                        self.solver.add_cols(\
+                        'LoadCurtailmentNode'+str(i)+str(j)+str(k),\
+                        self.ENetwork.get_NoBus()))
+                    self.VoltageAngle[i, j, k] = \
+                        ('VoltageAngle'+str(i)+str(j)+str(k),\
+                        self.solver.add_cols(\
+                        'VoltageAngle'+str(i)+str(j)+str(k),\
+                        self.ENetwork.get_NoBus()))
+        
+        # Defining the limits of the variables
+        for i in self.connections['set']:
+            for j in range(self.settings['NoTime']):
+                for k in range(len(self.settings['Security']) + 1):
+                    for ii in range(self.ENetwork.get_NoBra()):
+                        # If the line is active in the current contingency then
+                        # define the limits
+                        if self.ENetwork.Branch[ii].is_active(k):
+                            self.solver.set_col_bnds(\
+                                str(self.ActivePowerFlow[i, j, k][0]), ii,\
+                                'bounded', \
+                                -self.ENetwork.Branch[ii].get_Rate(),\
+                                self.ENetwork.Branch[ii].get_Rate())
+                        # If the line is not active in the current contingency 
+                        # then fix the active power flow to zero
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.ActivePowerFlow[i, j, k][0]), ii,\
+                                'fixed', 0, 0)
+                    for ii in range(self.ENetwork.get_NoBus()):
+                        # If the demand in the node is greater than zero then
+                        # define the limits
+                        if self.busData[ii] > 0:
+                            if self.scenarios['NoDem'] == 0:
+                                self.solver.set_col_bnds(\
+                                    str(self.LoadCurtailmentNode[i, j, k][0]),\
+                                    ii,'bounded', 0, self.busData[ii] * \
+                                    self.scenarios['Demand'][0])
+                            else:
+                                self.solver.set_col_bnds(\
+                                    str(self.LoadCurtailmentNode[i, j, k][0]),\
+                                    ii,'bounded', 0, self.busData[ii] * \
+                                    self.scenarios['Demand'][j])
+                        # If the demand in the node is zero then
+                        # fix the load curtailment to zero
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.LoadCurtailmentNode[i, j, k][0]), ii,\
+                                'fixed', 0, 0)
+                    for ii in range(self.ENetwork.get_NoBus()):
+                        self.solver.set_col_bnds(\
+                            str(self.VoltageAngle[i, j, k][0]), ii,'free', 0, 0)
+                    
+    # Constraints OPF
 
     def posconstraintsOPF(self):
             """ This class method creates the vectors that store the positions of 
@@ -1303,11 +1434,33 @@ class Networkmodel():
 
             self.posconstraintsCommon()
 
-            self.powerbalance = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
-                    ('nupos', 'i4')]) # Start position 
-                        # of active power balance constraints (rows) 
-                        # for each tree node
+            self.activepowerbalancenode = np.empty(\
+                (len(self.connections['set']),\
+                self.settings['NoTime'], \
+                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U20'),\
+                ('nupos', 'i4')]) # Start position of active power balance 
+                                  # constraints (rows) per node
+            self.activepowerflowconstraint = np.empty(\
+                (len(self.connections['set']),\
+                self.settings['NoTime'], \
+                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U20'),\
+                ('nupos', 'i4')]) # Start position of active power flow 
+                                  # constraints (rows) per line
+            if self.settings['Losses']:
+                self.activepowerlosses1 = np.empty(\
+                    (len(self.connections['set']),\
+                    self.settings['NoTime'], \
+                    (len(self.settings['Security']) + 1), \
+                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U20'),\
+                    ('nupos', 'i4')]) # Start position of active power losses 
+                                      # constraints (rows) per line and per piece
+                self.activepowerlosses2 = np.empty(\
+                    (len(self.connections['set']),\
+                    self.settings['NoTime'], \
+                    (len(self.settings['Security']) + 1), \
+                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U20'),\
+                    ('nupos', 'i4')]) # Start position of active power losses 
+                                      # constraints (rows) per line and per piece
             
     def constraintsOPF(self):
         """ This class method reserves the space in glpk for the constraints of
@@ -1319,11 +1472,107 @@ class Networkmodel():
 
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-                self.powerbalance[i, j] = ('PB'+str(i)+str(j),\
-                    self.solver.add_rows('PB'+str(i)+str(j), 1))  # Number of 
-                        # columns (constraints) in matrix A for the active 
-                        # power balance constraints fo each period and each 
-                        # tree node
+                for k in range(len(self.settings['Security']) + 1):
+                    self.activepowerbalancenode[i, j, k] = \
+                        ('activepowerbalancenode'+str(i)+str(j)+str(k),\
+                        self.solver.add_rows(\
+                        'activepowerbalancenode'+str(i)+str(j)+str(k),\
+                        self.ENetwork.get_NoBus()))  # Number of 
+                            # rows (constraints) in matrix A for the active 
+                            # power balance constraints per node
+                    # Pre-contingency
+                    if k == 0:
+                        self.activepowerflowconstraint[i, j, k] = \
+                            ('activepowerflowconstraint'+str(i)+str(j)+str(k),\
+                            self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+str(j)+str(k),\
+                            self.ENetwork.get_NoBra()))  # Number of 
+                                # rows (constraints) in matrix A for the active 
+                                # power flow constraints per line
+                    # Post-contingency
+                    else:
+                        self.activepowerflowconstraint[i, j, k] = \
+                            ('activepowerflowconstraint'+str(i)+str(j)+str(k),\
+                            self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+str(j)+str(k),\
+                            self.ENetwork.get_NoBra() - 1))  # Number of 
+                                # rows (constraints) in matrix A for the active 
+                                # power flow constraints per line
+                    if self.settings['Losses']:
+                        # Pre-contingency
+                        if k == 0:
+                            for ii in range(self.ENetwork.get_NoBra()):
+                                self.activepowerlosses1[i, j, k, ii] = \
+                                    ('activepowerlosses1'+str(i)+str(j)+str(k) \
+                                    +str(ii), self.solver.add_rows(\
+                                    'activepowerlosses1'+str(i)+str(j)+str(k) \
+                                    +str(ii), self.ENetwork.get_NoBra()))
+                                    # Number of rows (constraints) in matrix A 
+                                    # for the active power losses constraints 
+                                    # per line and per piece
+                        # Post-contingency
+                        else:
+                            for ii in range(self.ENetwork.get_NoBra()):
+                                # If the line is active in the current contingency
+                                # then reserve the space
+                                if self.ENetwork.Branch[ii].is_active(k):
+                                    self.activepowerlosses1[i, j, k, ii] = \
+                                        ('activepowerlosses1'+str(i)+str(j)+ \
+                                        str(k) +str(ii), self.solver.add_rows(\
+                                        'activepowerlosses1'+str(i)+str(j) \
+                                        +str(k)+str(ii), \
+                                        self.ENetwork.get_NoBra() - 1)) # Number
+                                            # of rows (constraints) in matrix A 
+                                            # for the active power losses 
+                                            # constraints per line 
+                                            # and per piece
+                                # If the line is not active in the current 
+                                # contingency then do not reserve space
+                                else:
+                                     self.activepowerlosses1[i, j, k, ii] = \
+                                        ('activepowerlosses1'+str(i)+str(j)+ \
+                                        str(k) +str(ii), 0) # Number
+                                            # of rows (constraints) in matrix A 
+                                            # for the active power losses 
+                                            # constraints per line 
+                                            # and per piece
+                        # Pre-contingency
+                        if k == 0:
+                            for ii in range(self.ENetwork.get_NoBra()):
+                                self.activepowerlosses2[i, j, k, ii] = \
+                                    ('activepowerlosses2'+str(i)+str(j)+str(k) \
+                                    +str(ii), self.solver.add_rows(\
+                                    'activepowerlosses2'+str(i)+str(j)+str(k) \
+                                    +str(ii), self.ENetwork.get_NoBra()))
+                                    # Number of rows (constraints) in matrix A 
+                                    # for the active power losses constraints 
+                                    # per line and per piece
+                        # Post-contingency
+                        else:
+                            for ii in range(self.ENetwork.get_NoBra()):
+                                # If the line is active in the current contingency
+                                # then reserve the space
+                                if self.ENetwork.Branch[ii].is_active(k):
+                                    self.activepowerlosses2[i, j, k, ii] = \
+                                        ('activepowerlosses2'+str(i)+str(j)+ \
+                                        str(k) +str(ii), self.solver.add_rows(\
+                                        'activepowerlosses2'+str(i)+str(j) \
+                                        +str(k)+str(ii), \
+                                        self.ENetwork.get_NoBra() - 1)) # Number
+                                            # of rows (constraints) in matrix A 
+                                            # for the active power losses 
+                                            # constraints per line 
+                                            # and per piece
+                                # If the line is not active in the current 
+                                # contingency then do not reserve space
+                                else:
+                                     self.activepowerlosses2[i, j, k, ii] = \
+                                        ('activepowerlosses2'+str(i)+str(j)+ \
+                                        str(k) +str(ii), 0) # Number
+                                            # of rows (constraints) in matrix A 
+                                            # for the active power losses 
+                                            # constraints per line 
+                                            # and per piece
 
     def activepowerbalancepernode(self):
         """ This class method writes the power balance constraint in glpk
@@ -1377,11 +1626,6 @@ class Networkmodel():
                                 -self.Storage['Efficiency'][k] \
                                 / self.scenarios['Weights'][j - 1]
                             self.ne += 1
-            # Storing the variables for load curtailment
-                self.ia[self.ne] = self.powerbalance[i, j][1]
-                self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
-                self.ar[self.ne] = 1.0
-                self.ne += 1
             # Storing the variables for pumps
                 if self.pumps['Number'] > 0:
                     for k in range(self.pumps['Number']):
@@ -1420,7 +1664,7 @@ class Networkmodel():
                 self.solver.set_row_bnds(str(self.powerbalance[i, j][0]), 0,\
                     'fixed', totaldemand, totaldemand)
 
-    # Objective function ED
+    # Objective function OPF
 
     def Objective_functionOPF(self):
         """ This class method defines the objective function of the economic
