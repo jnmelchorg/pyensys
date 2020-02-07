@@ -134,22 +134,22 @@ class Energymodel():
         variables for the energy problem """
 
         self.Partialstorage = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
             # of variables in matrix A (rows) for partial storage of 
             # energy or water in the tree for each vector
 
         self.Totalstorage = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
             # of variables in matrix A (rows) for total storage of 
             # energy or water in the tree for each vector
         
         self.InputsTree = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
             # of variables in matrix A (rows) for inputs of 
             # energy or water in the tree for each vector
 
         self.OutputsTree = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
             # of variables in matrix A (rows) for inputs of 
             # energy or water in the tree for each vector
 
@@ -204,11 +204,11 @@ class Energymodel():
         # Creating the matrices to store the position of constraints in
         # matrix A
         self.treebalance = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
                     # of the tree balance constraints (rows) 
                     # for vector
         self.treeaggregation = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start position 
+            dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start position 
                     # of the tree aggregation constraints (rows) 
                     # for vector
         
@@ -567,51 +567,51 @@ class Networkmodel():
         if len(self.Gen.Conv) > 0:
             self.thermalgenerators = np.empty(\
                 (len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of thermal generators' variables in matrix A (rows)
                 # for each period and each tree node
         if len(self.Gen.RES) > 0:
             self.RESgenerators = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of RES generators' variables in matrix A (rows)
                 # for each period and each tree node
         if len(self.Gen.Hydro) > 0:        
             self.Hydrogenerators = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of Hydroelectric generators' variables in matrix A (rows)
                 # for each period and each tree node
         # TODO: Change this with a flag for batteries
         if self.Storage['Number'] > 0:
             self.ESS = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of Energy Storage Systems' variables in matrix A (rows)
                 # for each period and each tree node
         # TODO: Change this with a flag for pumps
         if self.pumps['Number'] > 0:
             self.pumpsvar = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of pumps' variables in matrix A (rows)
                 # for each period and each tree node
         if len(self.Gen.Conv) > 0:
             self.thermalCG = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of thermal generation cost variables in matrix A (rows)
                 # for each period and each tree node
         if len(self.Gen.RES) > 0:
             self.RESCG = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of RES generation cost variables in matrix A (rows)
                 # for each period and each tree node
         if len(self.Gen.Hydro) > 0:
             self.HydroCG = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                 # of Hydroelectric generation cost variables in matrix A (rows)
                 # for each period and each tree node
@@ -710,7 +710,7 @@ class Networkmodel():
                 self.thermalpiecewisecost = \
                     np.empty((len(self.connections['set']),\
                     self.settings['NoTime'], len(self.Gen.Conv)),\
-                        dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start 
+                        dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start 
                         # position of piecewise linearisation constraints 
                         # (rows) for each tree node, for each period and 
                         # for each thermal generator
@@ -718,7 +718,7 @@ class Networkmodel():
                 self.RESpiecewisecost = \
                     np.empty((len(self.connections['set']),\
                     self.settings['NoTime'], len(self.Gen.RES)),\
-                        dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start 
+                        dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start 
                         # position of piecewise linearisation constraints 
                         # (rows) for each tree node, for each period and 
                         # for each RES generator
@@ -726,7 +726,7 @@ class Networkmodel():
                 self.Hydropiecewisecost = \
                     np.empty((len(self.connections['set']),\
                     self.settings['NoTime'], len(self.Gen.Hydro)),\
-                        dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start 
+                        dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start 
                         # position of piecewise linearisation constraints 
                         # (rows) for each tree node, for each period and 
                         # for each Hydro generator
@@ -734,7 +734,7 @@ class Networkmodel():
                 self.thermalgenerationramps = \
                     np.empty((len(self.connections['set']),\
                     self.settings['NoTime'] - 1),\
-                        dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start 
+                        dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start 
                         # position of thermal generation ramps constraints 
                         # (rows) for each tree node, for each period and for 
                         # each thermal generator
@@ -742,7 +742,7 @@ class Networkmodel():
                 self.Hydrogenerationramps = \
                     np.empty((len(self.connections['set']),\
                     self.settings['NoTime'] - 1),\
-                        dtype=[('napos', 'U20'), ('nupos', 'i4')]) # Start 
+                        dtype=[('napos', 'U40'), ('nupos', 'i4')]) # Start 
                         # position of Hydroelectrical generation ramps constraints
                         # (rows) for each tree node, for each period and for 
                         # each hydroelectrical generator
@@ -960,9 +960,6 @@ class Networkmodel():
         """ This class method builds the optimisation model
         for the economic dispatch problem """
 
-        self.number_variablesED = 0
-        self.number_constraintsED = 0
-
         self.dnvariablesED()    # Function to determine de number of variables
         self.dnconstraintsED()  # Function to determine de number of constraints
 
@@ -975,6 +972,7 @@ class Networkmodel():
         """ This class method determines the number of variables for the 
         economic dispatch problem """
 
+        self.number_variablesED = 0
         self.dnvariablesCommon()
         self.number_variablesED = self.number_variablesCommon
         # Load curtailment variables
@@ -985,6 +983,7 @@ class Networkmodel():
         """ This class method determines the number of constraints for the 
         economic dispatch problem """
 
+        self.number_constraintsED = 0
         self.dnconstraintsCommon()
         self.number_constraintsED = self.number_constraintsCommon
 
@@ -1022,7 +1021,7 @@ class Networkmodel():
 
         self.loadcurtailmentsystem = np.empty((len(self.connections['set']),\
             self.settings['NoTime']),\
-            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            dtype=[('napos', 'U40'),('nupos', 'i4')]) # Start position
             # in matrix A (rows) of variables
             # for load curtailment in the system for each tree node
 
@@ -1050,7 +1049,7 @@ class Networkmodel():
             self.posconstraintsCommon()
 
             self.powerbalance = np.empty((len(self.connections['set']),\
-                self.settings['NoTime']), dtype=[('napos', 'U20'),\
+                self.settings['NoTime']), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position 
                         # of active power balance constraints (rows) 
                         # for each tree node
@@ -1229,21 +1228,19 @@ class Networkmodel():
         """ This class method builds the optimisation model
         for the economic dispatch problem """
 
-        self.number_variablesOPF = 0
-        self.number_constraintsOPF = 0
-
         self.dnvariablesOPF()    # Function to determine de number of variables
         self.dnconstraintsOPF()  # Function to determine de number of constraints
 
         # define matrix of coeficients (matrix A)
         self.variablesOPF()
         self.coeffmatrixOPF()
-        self.Objective_functionOPF()
+        # self.Objective_functionOPF()
 
     def dnvariablesOPF(self):
         """ This class method determines the number of variables for the 
         economic dispatch problem """
 
+        self.number_variablesOPF = 0
         self.dnvariablesCommon()
         self.number_variablesOPF = self.number_variablesCommon
         # Active power flow variables
@@ -1272,6 +1269,7 @@ class Networkmodel():
         """ This class method determines the number of constraints for the 
         economic dispatch problem """
 
+        self.number_constraintsOPF = 0
         self.dnconstraintsCommon()
         self.number_constraintsOPF = self.number_constraintsCommon
         # Constraint that relates the active power flow and the voltage angle
@@ -1315,7 +1313,7 @@ class Networkmodel():
 
         self.piecewiselinearisationcost()
         self.generationrampsconstraints()
-
+        self.activepowerbalancepernode()
 
 
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
@@ -1330,28 +1328,28 @@ class Networkmodel():
 
         self.ActivePowerFlow = np.empty((len(self.connections['set']),\
             self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
-            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            dtype=[('napos', 'U40'),('nupos', 'i4')]) # Start position
             # in matrix A (rows) of variables for the active power flow
         if self.settings['Losses']:
             self.ActivePowerLosses = np.empty((len(self.connections['set']),\
                 self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
-                dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+                dtype=[('napos', 'U40'),('nupos', 'i4')]) # Start position
                 # in matrix A (rows) of variables for the active power losses
         self.LoadCurtailmentNode = np.empty((len(self.connections['set']),\
             self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
-            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            dtype=[('napos', 'U40'),('nupos', 'i4')]) # Start position
             # in matrix A (rows) of variables for the load curtailment per
             # node
         self.VoltageAngle = np.empty((len(self.connections['set']),\
             self.settings['NoTime'], (len(self.settings['Security']) + 1)),\
-            dtype=[('napos', 'U20'),('nupos', 'i4')]) # Start position
+            dtype=[('napos', 'U40'),('nupos', 'i4')]) # Start position
             # in matrix A (rows) of variables for the voltage angle per
             # node
 
     def variablesOPF(self):
         """ This class method defines the variables and their limits for the
         economic dispatch problem """
-        self.PosvariablesED()
+        self.PosvariablesOPF()
 
         self.variablesCommon()
         
@@ -1437,13 +1435,13 @@ class Networkmodel():
             self.activepowerbalancenode = np.empty(\
                 (len(self.connections['set']),\
                 self.settings['NoTime'], \
-                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U20'),\
+                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U40'),\
                 ('nupos', 'i4')]) # Start position of active power balance 
                                   # constraints (rows) per node
             self.activepowerflowconstraint = np.empty(\
                 (len(self.connections['set']),\
                 self.settings['NoTime'], \
-                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U20'),\
+                (len(self.settings['Security']) + 1)), dtype=[('napos', 'U40'),\
                 ('nupos', 'i4')]) # Start position of active power flow 
                                   # constraints (rows) per line
             if self.settings['Losses']:
@@ -1451,14 +1449,14 @@ class Networkmodel():
                     (len(self.connections['set']),\
                     self.settings['NoTime'], \
                     (len(self.settings['Security']) + 1), \
-                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U20'),\
+                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position of active power losses 
                                       # constraints (rows) per line and per piece
                 self.activepowerlosses2 = np.empty(\
                     (len(self.connections['set']),\
                     self.settings['NoTime'], \
                     (len(self.settings['Security']) + 1), \
-                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U20'),\
+                    self.ENetwork.get_NoBra()), dtype=[('napos', 'U40'),\
                     ('nupos', 'i4')]) # Start position of active power losses 
                                       # constraints (rows) per line and per piece
             
@@ -1466,7 +1464,7 @@ class Networkmodel():
         """ This class method reserves the space in glpk for the constraints of
         the economic dispatch problem """
 
-        self.posconstraintsED()
+        self.posconstraintsOPF()
 
         self.constraintsCommon()
 
@@ -1585,54 +1583,64 @@ class Networkmodel():
         # Generating the matrix A for the active power balance constraints
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-            # Storing the thermal generation variables
-                if len(self.Gen.Conv) > 0:
-                    for k in range(len(self.Gen.Conv)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.thermalgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing the RES generation variables
-                if len(self.Gen.RES) > 0:
-                    for k in range(len(self.Gen.RES)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.RESgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing the Hydroelectric generation variables
-                if len(self.Gen.Hydro) > 0:
-                    for k in range(len(self.Gen.Hydro)):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.Hydrogenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
-            # Storing variables for ESS
-            # TODO: Modify the constraint for the first period
-                if self.Storage['Number'] > 0:
-                    if j > 0: # Start only after the first period
-                        for k in range(self.Storage['Number']):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j][1] + k
-                            self.ar[self.ne] = self.Storage['Efficiency'][k] \
-                                / self.scenarios['Weights'][j - 1]
-                            self.ne += 1
-                        for k in range(self.Storage['Number']):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j - 1][1] + k
-                            self.ar[self.ne] = \
-                                -self.Storage['Efficiency'][k] \
-                                / self.scenarios['Weights'][j - 1]
-                            self.ne += 1
-            # Storing the variables for pumps
-                if self.pumps['Number'] > 0:
-                    for k in range(self.pumps['Number']):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = self.pumpsvar[i, j][1] + k
-                        self.ar[self.ne] = -1.0
-                        self.ne += 1
+                for k in range(len(self.settings['Security']) + 1):
+                    for ii in range(self.ENetwork.get_NoBus()):
+                        # Storing the thermal generation variables
+                            if len(self.Gen.Conv) > 0:
+                                for jj in range(len(self.Gen.Conv)):
+                                    print(self.Gen.Conv[jj].get_BusPos())
+                                    print(self.Gen.Conv[jj].get_Bus())
+                                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                                    self.ja[self.ne] = \
+                                        self.thermalgenerators[i, j][1] + jj
+                                    self.ar[self.ne] = 1.0
+                                    self.ne += 1
+                                sys.exit('hasta aqui')
+                        # Storing the RES generation variables
+                            if len(self.Gen.RES) > 0:
+                                for k in range(len(self.Gen.RES)):
+                                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                                    self.ja[self.ne] = \
+                                        self.RESgenerators[i, j][1] + k
+                                    self.ar[self.ne] = 1.0
+                                    self.ne += 1
+                        # Storing the Hydroelectric generation variables
+                            if len(self.Gen.Hydro) > 0:
+                                for k in range(len(self.Gen.Hydro)):
+                                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                                    self.ja[self.ne] = \
+                                        self.Hydrogenerators[i, j][1] + k
+                                    self.ar[self.ne] = 1.0
+                                    self.ne += 1
+                        # Storing variables for ESS
+                        # TODO: Modify the constraint for the first period
+                            if self.Storage['Number'] > 0:
+                                if j > 0: # Start only after the first period
+                                    for k in range(self.Storage['Number']):
+                                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                                        self.ja[self.ne] = self.ESS[i, j][1] + k
+                                        self.ar[self.ne] = self.Storage['Efficiency'][k] \
+                                            / self.scenarios['Weights'][j - 1]
+                                        self.ne += 1
+                                    for k in range(self.Storage['Number']):
+                                        self.ia[self.ne] = self.powerbalance[i, j][1]
+                                        self.ja[self.ne] = self.ESS[i, j - 1][1] + k
+                                        self.ar[self.ne] = \
+                                            -self.Storage['Efficiency'][k] \
+                                            / self.scenarios['Weights'][j - 1]
+                                        self.ne += 1
+                        # Storing the variables for pumps
+                            if self.pumps['Number'] > 0:
+                                for k in range(self.pumps['Number']):
+                                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                                    self.ja[self.ne] = self.pumpsvar[i, j][1] + k
+                                    self.ar[self.ne] = -1.0
+                                    self.ne += 1
+                        # Storing the variables for flows
+
+
+
+
             # Defining the resources (b) for the constraints
                 totaldemand = 0                
                 # TODO: Change the inputs of losses and demand scenarios
@@ -1846,25 +1854,47 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         self.dnvariablesEM()
         # Function to determine de number of constraints in the energy 
         # model
-        self.dnconstraintsEM()            
-        # Function to determine de number of variables in the economic 
-        # dispatch
-        self.dnvariablesED()
-        # Function to determine de number of constraints in the economic 
-        # dispatch
-        self.dnconstraintsED()
-        # Number of variables in the Energy and Network models
-        self.number_variablesENM = self.number_variablesED + \
-            self.number_variablesEM
-        # Number of constraints in the Energy and Network models
-        self.number_constraintsENM = self.number_constraintsED + \
-            self.number_constraintsEM
+        self.dnconstraintsEM()
         # Creation of variables for the energy model in 
         # glpk (matrix A)
         self.variablesEM()
-        # Creation of variables for the economic dispatch in 
-        # glpk (matrix A)
-        self.variablesED()
+
+
+        if self.settings['Flag']:
+            # Function to determine de number of variables in the optimal
+            # power flow
+            self.dnvariablesOPF()
+            # Function to determine de number of constraints in the optimal
+            # power flow
+            self.dnconstraintsOPF()
+            # Number of variables in the Energy and Optimal Power Flow models
+            self.number_variablesENM = self.number_variablesOPF + \
+                self.number_variablesEM
+            # Number of constraints in the Energy and Optimal Power Flow models
+            self.number_constraintsENM = self.number_constraintsOPF + \
+                self.number_constraintsEM
+
+            # Creation of variables for the Optimal Power Flow in 
+            # glpk (matrix A)
+            self.variablesOPF()
+
+        else:
+            # Function to determine de number of variables in the economic 
+            # dispatch
+            self.dnvariablesED()
+            # Function to determine de number of constraints in the economic 
+            # dispatch
+            self.dnconstraintsED()
+            # Number of variables in the Energy and Economic Dispatch models
+            self.number_variablesENM = self.number_variablesED + \
+                self.number_variablesEM
+            # Number of constraints in the Energy and Economic Dispatch models
+            self.number_constraintsENM = self.number_constraintsED + \
+                self.number_constraintsEM
+
+            # Creation of variables for the economic dispatch in 
+            # glpk (matrix A)
+            self.variablesED()
 
         self.coeffmatrixEEDM()
 
@@ -1879,7 +1909,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.number_variablesENM / 3), dtype=int) # Position in rows
         self.ja = np.empty(math.ceil(self.number_constraintsENM * \
             self.number_variablesENM / 3), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsED * \
+        self.ar = np.empty(math.ceil(self.number_constraintsENM * \
             self.number_variablesENM / 3), dtype=float) # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
 
@@ -1889,15 +1919,19 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # if self.LL['NosUnc'] != 0:
         #     self.AggregationStochastic()
 
-        self.constraintsED()
-        self.activepowerbalancesystem()
+        if self.settings['Flag']:
+            self.constraintsOPF()
+            self.activepowerbalancepernode()
+        else:
+            self.constraintsED()
+            self.activepowerbalancesystem()
+            if len(self.Gen.Hydro) > 0:
+                self.constraintsEED()
+                self.releaselimitsvariables()
+                self.EnergyandNetworkRelation()
+        # Common constraints
         self.piecewiselinearisationcost()
         self.generationrampsconstraints()
-
-        if len(self.Gen.Hydro) > 0:
-            self.constraintsEED()
-            self.releaselimitsvariables()
-            self.EnergyandNetworkRelation()
 
 
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
@@ -1926,7 +1960,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # Creating the matrices to store the position of constraints in
         # matrix A
         self.connectionEDandEnergy = np.empty((self.NumberTrees,\
-            len(self.connections['set'])), dtype=[('napos', 'U20'),\
+            len(self.connections['set'])), dtype=[('napos', 'U40'),\
                 ('nupos', 'i4')]) # Start position 
                     # of energy and economic dispatch constraints (rows)             
     
