@@ -1563,15 +1563,16 @@ class Networkmodel():
                                             # and per piece
                         # Pre-contingency
                         if k == 0:
-                            for ii in range(self.ENetwork.get_NoBra()):
-                                self.activepowerlosses2[i, j, k, ii] = \
-                                    ('activepowerlosses2'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.solver.add_rows(\
-                                    'activepowerlosses2'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.Number_LossCon))
-                                    # Number of rows (constraints) in matrix A 
-                                    # for the active power losses constraints 
-                                    # per line and per piece
+                            pass
+                            # for ii in range(self.ENetwork.get_NoBra()):
+                            #     self.activepowerlosses2[i, j, k, ii] = \
+                            #         ('activepowerlosses2'+str(i)+str(j)+str(k) \
+                            #         +str(ii), self.solver.add_rows(\
+                            #         'activepowerlosses2'+str(i)+str(j)+str(k) \
+                            #         +str(ii), self.Number_LossCon))
+                            #         # Number of rows (constraints) in matrix A 
+                            #         # for the active power losses constraints 
+                            #         # per line and per piece
                         # Post-contingency
                         else:
                             for ii in range(self.ENetwork.get_NoBra()):
@@ -1790,9 +1791,9 @@ class Networkmodel():
                             self.ne += 1
 
                         # Defining the resources (b) for the constraints
-                        self.solver.set_row_bnds(\
-                            str(self.activepowerflowconstraint[i, j, k][0]),\
-                                ii, 'fixed', 0, 0)
+                            self.solver.set_row_bnds(\
+                                str(self.activepowerflowconstraint[i, j, k][0]),\
+                                    ii, 'fixed', 0, 0)
                     # Post-contingency
                     else:
                         counter = 0
@@ -1869,11 +1870,11 @@ class Networkmodel():
                                 self.ne += 1
 
                             # Defining the resources (b) for the constraints
-                            self.solver.set_row_bnds(\
-                                str(self.activepowerlosses1\
-                                    [i, j, k, ii][0]), jj, 'lower', \
-                                    self.ENetwork.loss['A'][jj]\
-                                    * self.ENetwork.Branch[ii].get_R(), 0)
+                                self.solver.set_row_bnds(\
+                                    str(self.activepowerlosses1\
+                                        [i, j, k, ii][0]), jj, 'lower', \
+                                        self.ENetwork.loss['A'][jj]\
+                                        * self.ENetwork.Branch[ii].get_R(), 0)
                     # Post-contingency
                     else:
                         for ii in range(self.ENetwork.get_NoBra()):
@@ -1901,11 +1902,11 @@ class Networkmodel():
                                     self.ne += 1
 
                                 # Defining the resources (b) for the constraints
-                                self.solver.set_row_bnds(\
-                                    str(self.activepowerlosses1\
-                                        [i, j, k, ii][0]), jj, 'lower', \
-                                        self.ENetwork.loss['A'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R(), 0)
+                                    self.solver.set_row_bnds(\
+                                        str(self.activepowerlosses1\
+                                            [i, j, k, ii][0]), jj, 'lower', \
+                                            self.ENetwork.loss['A'][jj]\
+                                            * self.ENetwork.Branch[ii].get_R(), 0)
 
     def activepowerlosses2constraints(self):
         """ This class method writes the active power losses constraints in glpk
@@ -1943,11 +1944,11 @@ class Networkmodel():
                                 self.ne += 1
 
                             # Defining the resources (b) for the constraints
-                            self.solver.set_row_bnds(\
-                                str(self.activepowerlosses2\
-                                    [i, j, k, ii][0]), jj, 'lower', \
-                                    self.ENetwork.loss['A'][jj]\
-                                    * self.ENetwork.Branch[ii].get_R(), 0)
+                                self.solver.set_row_bnds(\
+                                    str(self.activepowerlosses2\
+                                        [i, j, k, ii][0]), jj, 'lower', \
+                                        self.ENetwork.loss['A'][jj]\
+                                        * self.ENetwork.Branch[ii].get_R(), 0)
                     # Post-contingency
                     else:
                         for ii in range(self.ENetwork.get_NoBra()):
@@ -1975,11 +1976,11 @@ class Networkmodel():
                                     self.ne += 1
 
                                 # Defining the resources (b) for the constraints
-                                self.solver.set_row_bnds(\
-                                    str(self.activepowerlosses2\
-                                        [i, j, k, ii][0]), jj, 'lower', \
-                                        self.ENetwork.loss['A'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R(), 0)
+                                    self.solver.set_row_bnds(\
+                                        str(self.activepowerlosses2\
+                                            [i, j, k, ii][0]), jj, 'lower', \
+                                            self.ENetwork.loss['A'][jj]\
+                                            * self.ENetwork.Branch[ii].get_R(), 0)
 
 
 class EnergyandNetwork(Energymodel, Networkmodel):
@@ -2018,7 +2019,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     def optimisationENM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='off')       
+        self.solver = GLPKSolver(message_level='all')       
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation
@@ -2207,11 +2208,11 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # The coefficient matrix is stored in CSR format (sparse matrix) 
         # to be later added to glpk
         self.ia = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 2), dtype=int) # Position in rows
+            self.number_variablesENM / 3), dtype=int) # Position in rows
         self.ja = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 2), dtype=int) # Position in columns
+            self.number_variablesENM / 3), dtype=int) # Position in columns
         self.ar = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 2), dtype=float) # Value
+            self.number_variablesENM / 3), dtype=float) # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
 
         self.constraintsEM()
@@ -2226,7 +2227,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.activepowerflowconstraints()
             if self.settings['Losses']:
                 self.activepowerlosses1constraints()
-                self.activepowerlosses2constraints()
+                # self.activepowerlosses2constraints()
         else:
             self.constraintsED()
             self.activepowerbalancesystem()
@@ -2253,9 +2254,9 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         Energy model
         """
         for i in range(self.NumberTrees):
-            for j in range(1, self.TreeNodes):
+            for j in self.connections['set']:
                 self.solver.set_col_bnds(\
-                    str(self.OutputsTree[i][0]), j, 'lower', \
+                    str(self.OutputsTree[i][0]), self.p['pyeneE'][j], 'lower', \
                         0, sys.float_info.max)      
 
     # Constraints ENM
