@@ -2026,7 +2026,8 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     def optimisationENM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='off')       
+        self.solver = GLPKSolver(message_level='off', \
+            simplex_method='dualprimal')       
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation
@@ -2036,125 +2037,125 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
         print('Objective Function: %.10f' %(self.solver.get_obj_val()))
 
-        # for i in self.connections['set']:
-        #     print('Case %d :' %(i))
-        #     print('')
-        #     print('Generation:')
-        #     for k in range(len(self.Gen.Conv)):
-        #         for j in range(self.settings['NoTime']):
-        #             print("%f" %(self.solver.get_col_prim(\
-        #                 str(self.thermalgenerators[i, j][0]), k) * \
-        #                     self.ENetwork.get_Base()), end = ' ')
-        #         print('')
-        #     for k in range(len(self.Gen.RES)):
-        #         for j in range(self.settings['NoTime']):                
-        #             print("%f" %(self.solver.get_col_prim(\
-        #                 str(self.RESgenerators[i, j][0]), k) * \
-        #                     self.ENetwork.get_Base()), end = ' ')
-        #         print('')
-        #     for k in range(len(self.Gen.Hydro)):
-        #         for j in range(self.settings['NoTime']):
-        #             print("%f" %(self.solver.get_col_prim(\
-        #                 str(self.Hydrogenerators[i, j][0]), k) * \
-        #                     self.ENetwork.get_Base()), end = ' ')
-        #         print('')
-        #     print('')
-        #     if self.pumps['Number'] > 0:
-        #         print('Pumps:')
-        #         for k in range(self.pumps['Number']):
-        #             for j in range(self.settings['NoTime']):
-        #                 print("%f" %(self.solver.get_col_prim(\
-        #                     str(self.pumpsvar[i, j][0]), k) * \
-        #                         self.ENetwork.get_Base()), end = ' ')
-        #             print('')
-        #         print('')
-        #     if len(self.Gen.Conv) > 0:
-        #         print('Thermal Generation cost:')
-        #         for k in range(len(self.Gen.Conv)):
-        #             for j in range(self.settings['NoTime']):
-        #                 print("%f" %(self.solver.get_col_prim(\
-        #                     str(self.thermalCG[i, j][0]), k)), end = ' ')
-        #             print('')
-        #         print('')
-        #     if len(self.Gen.RES) > 0:
-        #         print('RES Generation cost:')
-        #         for k in range(len(self.Gen.RES)):
-        #             for j in range(self.settings['NoTime']):
-        #                 print("%f" %(self.solver.get_col_prim(\
-        #                     str(self.RESCG[i, j][0]), k)), end = ' ')
-        #             print('')
-        #         print('')
-        #     if len(self.Gen.Hydro) > 0:
-        #         print('Hydro Generation cost:')
-        #         for k in range(len(self.Gen.Hydro)):
-        #             for j in range(self.settings['NoTime']):
-        #                 print("%f" %(self.solver.get_col_prim(\
-        #                     str(self.HydroCG[i, j][0]), k)), end = ' ')
-        #             print('')
-        #         print('')
+        for i in self.connections['set']:
+            print('Case %d :' %(i))
+            print('')
+            print('Generation:')
+            for k in range(len(self.Gen.Conv)):
+                for j in range(self.settings['NoTime']):
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.thermalgenerators[i, j][0]), k) * \
+                            self.ENetwork.get_Base()), end = ' ')
+                print('')
+            for k in range(len(self.Gen.RES)):
+                for j in range(self.settings['NoTime']):                
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.RESgenerators[i, j][0]), k) * \
+                            self.ENetwork.get_Base()), end = ' ')
+                print('')
+            for k in range(len(self.Gen.Hydro)):
+                for j in range(self.settings['NoTime']):
+                    print("%f" %(self.solver.get_col_prim(\
+                        str(self.Hydrogenerators[i, j][0]), k) * \
+                            self.ENetwork.get_Base()), end = ' ')
+                print('')
+            print('')
+            if self.pumps['Number'] > 0:
+                print('Pumps:')
+                for k in range(self.pumps['Number']):
+                    for j in range(self.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.pumpsvar[i, j][0]), k) * \
+                                self.ENetwork.get_Base()), end = ' ')
+                    print('')
+                print('')
+            if len(self.Gen.Conv) > 0:
+                print('Thermal Generation cost:')
+                for k in range(len(self.Gen.Conv)):
+                    for j in range(self.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.thermalCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
+            if len(self.Gen.RES) > 0:
+                print('RES Generation cost:')
+                for k in range(len(self.Gen.RES)):
+                    for j in range(self.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.RESCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
+            if len(self.Gen.Hydro) > 0:
+                print('Hydro Generation cost:')
+                for k in range(len(self.Gen.Hydro)):
+                    for j in range(self.settings['NoTime']):
+                        print("%f" %(self.solver.get_col_prim(\
+                            str(self.HydroCG[i, j][0]), k)), end = ' ')
+                    print('')
+                print('')
 
-        #     if self.settings['Flag']:
-        #     # Optimal Power Flow
-        #         print('Voltage angle:')
-        #         for k in range(len(self.settings['Security']) + 1):
-        #             print('Contingency %d :' %(k))
-        #             for ii in range(self.ENetwork.get_NoBus()):
-        #                 for j in range(self.settings['NoTime']):
-        #                     print("%f" %(self.solver.get_col_prim(\
-        #                         str(self.VoltageAngle[i, j, k][0]), ii)),\
-        #                             end = ' ')
-        #                 print('')
-        #             print('')
-        #         print('Load Curtailment:')
-        #         for k in range(len(self.settings['Security']) + 1):
-        #             print('Contingency %d :' %(k))
-        #             for ii in range(self.ENetwork.get_NoBus()):
-        #                 for j in range(self.settings['NoTime']):
-        #                     print("%f" %(self.solver.get_col_prim(\
-        #                         str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-        #                             * self.ENetwork.get_Base()), end = ' ')
-        #                 print('')
-        #             print('')
-        #         print('Active Power Flow:')
-        #         for k in range(len(self.settings['Security']) + 1):
-        #             print('Contingency %d :' %(k))
-        #             for ii in range(self.ENetwork.get_NoBra()):
-        #                 for j in range(self.settings['NoTime']):
-        #                     print("%f" %(self.solver.get_col_prim(\
-        #                         str(self.ActivePowerFlow[i, j, k][0]), ii)\
-        #                             * self.ENetwork.get_Base()), end = ' ')
-        #                 print('')
-        #             print('')
-        #         if self.settings['Losses']:
-        #             print('Active Power Losses:')
-        #             for k in range(len(self.settings['Security']) + 1):
-        #                 print('Contingency %d :' %(k))
-        #                 for ii in range(self.ENetwork.get_NoBra()):
-        #                     for j in range(self.settings['NoTime']):
-        #                         print("%f" %(self.solver.get_col_prim(\
-        #                             str(self.ActivePowerLosses[i, j, k][0]),\
-        #                                 ii) * self.ENetwork.get_Base()),\
-        #                                     end = ' ')
-        #                     print('')
-        #                 print('')
-        #         print('\n\n')
-        #     else:
-        #     # Economic dispatch
-        #         print('Load Curtailment:')
-        #         for j in range(self.settings['NoTime']):
-        #             print("%f" %(self.solver.get_col_prim(\
-        #                         str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-        #                             self.ENetwork.get_Base()), end = ' ')
-        #         print('\n\n')
-        #         print('')
+            if self.settings['Flag']:
+            # Optimal Power Flow
+                print('Voltage angle:')
+                for k in range(len(self.settings['Security']) + 1):
+                    print('Contingency %d :' %(k))
+                    for ii in range(self.ENetwork.get_NoBus()):
+                        for j in range(self.settings['NoTime']):
+                            print("%f" %(self.solver.get_col_prim(\
+                                str(self.VoltageAngle[i, j, k][0]), ii)),\
+                                    end = ' ')
+                        print('')
+                    print('')
+                print('Load Curtailment:')
+                for k in range(len(self.settings['Security']) + 1):
+                    print('Contingency %d :' %(k))
+                    for ii in range(self.ENetwork.get_NoBus()):
+                        for j in range(self.settings['NoTime']):
+                            print("%f" %(self.solver.get_col_prim(\
+                                str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
+                                    * self.ENetwork.get_Base()), end = ' ')
+                        print('')
+                    print('')
+                print('Active Power Flow:')
+                for k in range(len(self.settings['Security']) + 1):
+                    print('Contingency %d :' %(k))
+                    for ii in range(self.ENetwork.get_NoBra()):
+                        for j in range(self.settings['NoTime']):
+                            print("%f" %(self.solver.get_col_prim(\
+                                str(self.ActivePowerFlow[i, j, k][0]), ii)\
+                                    * self.ENetwork.get_Base()), end = ' ')
+                        print('')
+                    print('')
+                if self.settings['Losses']:
+                    print('Active Power Losses:')
+                    for k in range(len(self.settings['Security']) + 1):
+                        print('Contingency %d :' %(k))
+                        for ii in range(self.ENetwork.get_NoBra()):
+                            for j in range(self.settings['NoTime']):
+                                print("%f" %(self.solver.get_col_prim(\
+                                    str(self.ActivePowerLosses[i, j, k][0]),\
+                                        ii) * self.ENetwork.get_Base()),\
+                                            end = ' ')
+                            print('')
+                        print('')
+                print('\n\n')
+            else:
+            # Economic dispatch
+                print('Load Curtailment:')
+                for j in range(self.settings['NoTime']):
+                    print("%f" %(self.solver.get_col_prim(\
+                                str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+                                    self.ENetwork.get_Base()), end = ' ')
+                print('\n\n')
+                print('')
 
-        # for i in range(self.NumberTrees):
-        #     print("vector %d:" %(i))
-        #     for j in range(self.TreeNodes):
-        #          print("%f %f" %(self.solver.get_col_prim(str(\
-        #              self.Partialstorage[i][0]), j), \
-        #                 self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
-        #                 j)))
+        for i in range(self.NumberTrees):
+            print("vector %d:" %(i))
+            for j in range(self.TreeNodes):
+                 print("%f %f" %(self.solver.get_col_prim(str(\
+                     self.Partialstorage[i][0]), j), \
+                        self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
+                        j)))
 
     def EnergyandEconomicDispatchModels(self):
         """ This class method builds the optimisation model
