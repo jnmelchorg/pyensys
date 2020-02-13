@@ -16,6 +16,13 @@ GLP_DIR = {
     'max': GLP_MAX, 'maximise': GLP_MAX,
 }
 
+
+GLP_METH = {
+    'primal': GLP_PRIMAL,  # use primal simplex
+    'dualprimal': GLP_DUALP,   # use dual; if it fails, use primal
+    'dual': GLP_DUAL,   # use dual simplex
+}
+
 cdef class GLPKSolver:
     cdef glp_prob* prob
     cdef glp_smcp smcp
@@ -30,7 +37,9 @@ cdef class GLPKSolver:
         self.row_ids = {}
         self.col_ids = {}
 
-    def __init__(self, time_limit=None, iteration_limit=None, message_level='error'):
+    def __init__(self, time_limit=None, iteration_limit=None, \
+        message_level='error', simplex_method='dualprimal'):
+
         self.stats = None
 
         # Set solver options
@@ -40,6 +49,8 @@ cdef class GLPKSolver:
             self.smcp.tm_lim = time_limit  # 5 second limit
         if iteration_limit is not None:
             self.smcp.it_lim = iteration_limit
+        
+        self.smcp.meth = GLP_METH[simplex_method]
 
         glp_term_hook(term_hook, NULL)
 
