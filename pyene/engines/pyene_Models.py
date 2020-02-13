@@ -2156,6 +2156,18 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                      self.Partialstorage[i][0]), j), \
                         self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
                         j)))
+        
+        print('')
+
+        for i in range(self.NumberTrees):
+            print("Hydro generation at node %d:" \
+                %(self.Gen.Hydro[i].get_Bus()))
+            for j in self.connections['set']:
+                 print("%f" %(self.solver.get_col_prim(str(\
+                    self.OutputsTree[i][0]), self.p['pyeneE'][j])), \
+                    end = ' ')
+            print('')
+        print('\n\n')
 
     def EnergyandEconomicDispatchModels(self):
         """ This class method builds the optimisation model
