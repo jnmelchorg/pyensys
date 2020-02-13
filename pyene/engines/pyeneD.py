@@ -1112,6 +1112,10 @@ class RES(GenClass):
         ''' Generation ramps (down)'''
         return Constraint.Skip
 
+    def get_Bin(self):
+        ''' get binaries for UC '''
+        return None
+
     def get_Cost(self):
         ''' Return linear costs '''
         return self.cost['COST'][3]

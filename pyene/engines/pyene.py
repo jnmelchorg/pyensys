@@ -84,6 +84,9 @@ class pyeneClass():
         m = self.HM.addCon(m)
         m = self.addCon(m)
 
+        # IEEE paper control variables.
+        m.pEeee = self.EM.Print['IEEE']
+
         return m
 
     def _Calculate_OFaux(self):
