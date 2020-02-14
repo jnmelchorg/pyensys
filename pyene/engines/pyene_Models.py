@@ -627,41 +627,41 @@ class Networkmodel():
                 # Generation variables
                 if len(self.Gen.Conv) > 0:
                     self.thermalgenerators[i, j] = (\
-                        'ThermalGen'+str(i)+str(j),\
-                        self.solver.add_cols('ThermalGen'+str(i)+str(j),\
+                        'ThermalGen'+str(i)+','+str(j),\
+                        self.solver.add_cols('ThermalGen'+str(i)+','+str(j),\
                         len(self.Gen.Conv)))
                 if len(self.Gen.RES) > 0:
                     self.RESgenerators[i, j] = (\
-                        'RESGen'+str(i)+str(j),\
-                        self.solver.add_cols('RESGen'+str(i)+str(j),\
+                        'RESGen'+str(i)+','+str(j),\
+                        self.solver.add_cols('RESGen'+str(i)+','+str(j),\
                         len(self.Gen.RES)))
                 if len(self.Gen.Hydro) > 0:
                     self.Hydrogenerators[i, j] = (\
-                        'HydroGen'+str(i)+str(j),\
-                        self.solver.add_cols('HydroGen'+str(i)+str(j),\
+                        'HydroGen'+str(i)+','+str(j),\
+                        self.solver.add_cols('HydroGen'+str(i)+','+str(j),\
                         len(self.Gen.Hydro)))
                 # Generation cost variables
                 if len(self.Gen.Conv) > 0:
-                    self.thermalCG[i, j] = ('ThermalCG'+str(i)+str(j),\
-                        self.solver.add_cols('ThermalCG'+str(i)+str(j),\
+                    self.thermalCG[i, j] = ('ThermalCG'+str(i)+','+str(j),\
+                        self.solver.add_cols('ThermalCG'+str(i)+','+str(j),\
                         len(self.Gen.Conv)))
                 if len(self.Gen.RES) > 0:
-                    self.RESCG[i, j] = ('RESCG'+str(i)+str(j),\
-                        self.solver.add_cols('RESCG'+str(i)+str(j),\
+                    self.RESCG[i, j] = ('RESCG'+str(i)+','+str(j),\
+                        self.solver.add_cols('RESCG'+str(i)+','+str(j),\
                         len(self.Gen.RES)))
                 if len(self.Gen.Hydro) > 0:
-                    self.HydroCG[i, j] = ('HydroCG'+str(i)+str(j),\
-                        self.solver.add_cols('HydroCG'+str(i)+str(j),\
+                    self.HydroCG[i, j] = ('HydroCG'+str(i)+','+str(j),\
+                        self.solver.add_cols('HydroCG'+str(i)+','+str(j),\
                         len(self.Gen.Hydro)))
                 # TODO: Change this with a flag for batteries
                 if self.Storage['Number'] > 0:
-                    self.ESS[i, j] = ('ESS'+str(i)+str(j),\
-                        self.solver.add_cols('ESS'+str(i)+str(j),\
+                    self.ESS[i, j] = ('ESS'+str(i)+','+str(j),\
+                        self.solver.add_cols('ESS'+str(i)+','+str(j),\
                         self.Storage['Number']))
                 # TODO: Change this with a flag for pumps
                 if self.pumps['Number'] > 0:
-                    self.pumpsvar[i, j] = ('Pumps'+str(i)+str(j),\
-                        self.solver.add_cols('Pumps'+str(i)+str(j),\
+                    self.pumpsvar[i, j] = ('Pumps'+str(i)+','+str(j),\
+                        self.solver.add_cols('Pumps'+str(i)+','+str(j),\
                         self.pumps['Number']))
 
 
@@ -758,9 +758,9 @@ class Networkmodel():
                 if len(self.Gen.Conv) > 0:
                     for k in range(len(self.Gen.Conv)):
                         self.thermalpiecewisecost[i, j, k] =\
-                            ('ThermalPWC'+str(i)+str(j)+str(k),\
+                            ('ThermalPWC'+str(i)+','+str(j)+','+str(k),\
                             self.solver.add_rows(\
-                                'ThermalPWC'+str(i)+str(j)+str(k), \
+                                'ThermalPWC'+str(i)+','+str(j)+','+str(k), \
                                 self.Gen.Conv[k].get_NoPieces()))
                             # Number of columns (constraints) in matrix A 
                             # for the piecewise linearisation constraints 
@@ -769,9 +769,9 @@ class Networkmodel():
                 if len(self.Gen.RES) > 0:
                     for k in range(len(self.Gen.RES)):
                         self.RESpiecewisecost[i, j, k] =\
-                            ('RESPWC'+str(i)+str(j)+str(k),\
+                            ('RESPWC'+str(i)+','+str(j)+','+str(k),\
                             self.solver.add_rows(\
-                                'RESPWC'+str(i)+str(j)+str(k), \
+                                'RESPWC'+str(i)+','+str(j)+','+str(k), \
                                 self.Gen.RES[k].get_NoPieces()))
                             # Number of columns (constraints) in matrix A 
                             # for the piecewise linearisation constraints 
@@ -780,9 +780,9 @@ class Networkmodel():
                 if len(self.Gen.Hydro) > 0:
                     for k in range(len(self.Gen.Hydro)):
                         self.Hydropiecewisecost[i, j, k] =\
-                            ('HydroPWC'+str(i)+str(j)+str(k),\
+                            ('HydroPWC'+str(i)+','+str(j)+','+str(k),\
                             self.solver.add_rows(\
-                                'HydroPWC'+str(i)+str(j)+str(k), \
+                                'HydroPWC'+str(i)+','+str(j)+','+str(k), \
                                 self.Gen.Hydro[k].get_NoPieces()))
                             # Number of columns (constraints) in matrix A 
                             # for the piecewise linearisation constraints 
@@ -791,8 +791,8 @@ class Networkmodel():
                 if j > 0:
                     if len(self.Gen.Conv) > 0:
                         self.thermalgenerationramps[i, j - 1] = \
-                            ('ThermalGR'+str(i)+str(j),\
-                            self.solver.add_rows('ThermalGR'+str(i)+str(j),\
+                            ('ThermalGR'+str(i)+','+str(j),\
+                            self.solver.add_rows('ThermalGR'+str(i)+','+str(j),\
                                 len(self.Gen.Conv)))  # Number of 
                                 # columns (constraints) in matrix A for the 
                                 # generation ramps constraints for each 
@@ -800,13 +800,14 @@ class Networkmodel():
                                 # thermal generator
                     if len(self.Gen.Hydro) > 0:
                         self.Hydrogenerationramps[i, j - 1] = \
-                            ('HydroGR'+str(i)+str(j),\
-                            self.solver.add_rows('HydroGR'+str(i)+str(j),\
+                            ('HydroGR'+str(i)+','+str(j),\
+                            self.solver.add_rows('HydroGR'+str(i)+','+str(j),\
                                 len(self.Gen.Hydro)))  # Number of 
                                 # columns (constraints) in matrix A for the 
                                 # generation ramps constraints for each 
                                 # period, for each tree node and for each 
                                 # thermal generator
+
 
     def piecewiselinearisationcost(self):
         """ This class method writes the piecewise linearisarion of
@@ -1099,8 +1100,8 @@ class Networkmodel():
         # Reserving space in glpk for ED variables
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+str(j),\
-                    self.solver.add_cols('LCS'+str(i)+str(j), 1))
+                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+','+str(j),\
+                    self.solver.add_cols('LCS'+str(i)+','+str(j), 1))
 
     # Constraints ED
 
@@ -1128,8 +1129,8 @@ class Networkmodel():
 
         for i in self.connections['set']:
             for j in range(self.settings['NoTime']):
-                self.powerbalance[i, j] = ('PB'+str(i)+str(j),\
-                    self.solver.add_rows('PB'+str(i)+str(j), 1))  # Number of 
+                self.powerbalance[i, j] = ('PB'+str(i)+','+str(j),\
+                    self.solver.add_rows('PB'+str(i)+','+str(j), 1))  # Number of 
                         # columns (constraints) in matrix A for the active 
                         # power balance constraints fo each period and each 
                         # tree node
@@ -1371,25 +1372,25 @@ class Networkmodel():
             for j in range(self.settings['NoTime']):
                 for k in range(len(self.settings['Security']) + 1):
                     self.ActivePowerFlow[i, j, k] = \
-                        ('ActivePowerFlow'+str(i)+str(j)+str(k),\
+                        ('ActivePowerFlow'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_cols(\
-                        'ActivePowerFlow'+str(i)+str(j)+str(k),\
+                        'ActivePowerFlow'+str(i)+','+str(j)+','+str(k),\
                         self.ENetwork.get_NoBra()))
                     if self.settings['Losses']:
                          self.ActivePowerLosses[i, j, k] = \
-                            ('ActivePowerLosses'+str(i)+str(j)+str(k),\
+                            ('ActivePowerLosses'+str(i)+','+str(j)+','+str(k),\
                             self.solver.add_cols(\
-                            'ActivePowerLosses'+str(i)+str(j)+str(k),\
+                            'ActivePowerLosses'+str(i)+','+str(j)+','+str(k),\
                             self.ENetwork.get_NoBra()))
                     self.LoadCurtailmentNode[i, j, k] = \
-                        ('LoadCurtailmentNode'+str(i)+str(j)+str(k),\
+                        ('LoadCurtailmentNode'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_cols(\
-                        'LoadCurtailmentNode'+str(i)+str(j)+str(k),\
+                        'LoadCurtailmentNode'+str(i)+','+str(j)+','+str(k),\
                         self.ENetwork.get_NoBus()))
                     self.VoltageAngle[i, j, k] = \
-                        ('VoltageAngle'+str(i)+str(j)+str(k),\
+                        ('VoltageAngle'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_cols(\
-                        'VoltageAngle'+str(i)+str(j)+str(k),\
+                        'VoltageAngle'+str(i)+','+str(j)+','+str(k),\
                         self.ENetwork.get_NoBus()))
         
         # Defining the limits of the variables
@@ -1499,28 +1500,29 @@ class Networkmodel():
             for j in range(self.settings['NoTime']):
                 for k in range(len(self.settings['Security']) + 1):
                     self.activepowerbalancenode[i, j, k] = \
-                        ('activepowerbalancenode'+str(i)+str(j)+str(k),\
+                        ('activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_rows(\
-                        'activepowerbalancenode'+str(i)+str(j)+str(k),\
+                        'activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
                         self.ENetwork.get_NoBus()))  # Number of 
                             # rows (constraints) in matrix A for the active 
                             # power balance constraints per node
                     # Pre-contingency
                     if k == 0:
                         self.activepowerflowconstraint[i, j, k] = \
-                            ('activepowerflowconstraint'+str(i)+str(j)+str(k),\
-                            self.solver.add_rows(\
-                            'activepowerflowconstraint'+str(i)+str(j)+str(k),\
-                            self.ENetwork.get_NoBra()))  # Number of 
+                            ('activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k), self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.ENetwork.get_NoBra()))  # Number of
                                 # rows (constraints) in matrix A for the active 
                                 # power flow constraints per line
                     # Post-contingency
                     else:
                         self.activepowerflowconstraint[i, j, k] = \
-                            ('activepowerflowconstraint'+str(i)+str(j)+str(k),\
-                            self.solver.add_rows(\
-                            'activepowerflowconstraint'+str(i)+str(j)+str(k),\
-                            self.ENetwork.get_NoBra() - 1))  # Number of 
+                            ('activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.ENetwork.get_NoBra() - 1))  
+                                # Number of 
                                 # rows (constraints) in matrix A for the active 
                                 # power flow constraints per line
                     if self.settings['Losses']:
@@ -1528,10 +1530,12 @@ class Networkmodel():
                         if k == 0:
                             for ii in range(self.ENetwork.get_NoBra()):
                                 self.activepowerlosses1[i, j, k, ii] = \
-                                    ('activepowerlosses1'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.solver.add_rows(\
-                                    'activepowerlosses1'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.Number_LossCon))
+                                    ('activepowerlosses1'+str(i)+','+str(j)\
+                                    +','+str(k)+','+str(ii), \
+                                    self.solver.add_rows(\
+                                    'activepowerlosses1'+str(i)+','+str(j)\
+                                    +','+str(k)+','+str(ii), \
+                                    self.Number_LossCon))
                                     # Number of rows (constraints) in matrix A 
                                     # for the active power losses constraints 
                                     # per line and per piece
@@ -1542,10 +1546,11 @@ class Networkmodel():
                                 # then reserve the space
                                 if self.ENetwork.Branch[ii].is_active(k):
                                     self.activepowerlosses1[i, j, k, ii] = \
-                                        ('activepowerlosses1'+str(i)+str(j)+ \
-                                        str(k) +str(ii), self.solver.add_rows(\
-                                        'activepowerlosses1'+str(i)+str(j) \
-                                        +str(k)+str(ii), \
+                                        ('activepowerlosses1'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii),\
+                                        self.solver.add_rows(\
+                                        'activepowerlosses1'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii), \
                                         self.Number_LossCon)) # Number
                                             # of rows (constraints) in matrix A 
                                             # for the active power losses 
@@ -1555,8 +1560,9 @@ class Networkmodel():
                                 # contingency then do not reserve space
                                 else:
                                      self.activepowerlosses1[i, j, k, ii] = \
-                                        ('activepowerlosses1'+str(i)+str(j)+ \
-                                        str(k) +str(ii), 0) # Number
+                                        ('activepowerlosses1'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii), 0)
+                                            # Number
                                             # of rows (constraints) in matrix A 
                                             # for the active power losses 
                                             # constraints per line 
@@ -1565,10 +1571,12 @@ class Networkmodel():
                         if k == 0:
                             for ii in range(self.ENetwork.get_NoBra()):
                                 self.activepowerlosses2[i, j, k, ii] = \
-                                    ('activepowerlosses2'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.solver.add_rows(\
-                                    'activepowerlosses2'+str(i)+str(j)+str(k) \
-                                    +str(ii), self.Number_LossCon))
+                                    ('activepowerlosses2'+str(i)+','\
+                                    +str(j)+','+str(k)+','+str(ii),\
+                                    self.solver.add_rows(\
+                                    'activepowerlosses2'+str(i)+','\
+                                    +str(j)+','+str(k)+','+str(ii),\
+                                        self.Number_LossCon))
                             #         # Number of rows (constraints) in matrix A 
                             #         # for the active power losses constraints 
                             #         # per line and per piece
@@ -1579,10 +1587,11 @@ class Networkmodel():
                                 # then reserve the space
                                 if self.ENetwork.Branch[ii].is_active(k):
                                     self.activepowerlosses2[i, j, k, ii] = \
-                                        ('activepowerlosses2'+str(i)+str(j)+ \
-                                        str(k) +str(ii), self.solver.add_rows(\
-                                        'activepowerlosses2'+str(i)+str(j) \
-                                        +str(k)+str(ii), \
+                                        ('activepowerlosses2'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii), \
+                                        self.solver.add_rows(\
+                                        'activepowerlosses2'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii), \
                                         self.Number_LossCon)) # Number
                                             # of rows (constraints) in matrix A 
                                             # for the active power losses 
@@ -1592,8 +1601,9 @@ class Networkmodel():
                                 # contingency then do not reserve space
                                 else:
                                      self.activepowerlosses2[i, j, k, ii] = \
-                                        ('activepowerlosses2'+str(i)+str(j)+ \
-                                        str(k) +str(ii), 0) # Number
+                                        ('activepowerlosses2'+str(i)+','\
+                                        +str(j)+','+str(k)+','+str(ii), 0)
+                                            # Number
                                             # of rows (constraints) in matrix A 
                                             # for the active power losses 
                                             # constraints per line 
@@ -2037,137 +2047,137 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
         print('Objective Function: %.10f' %(self.solver.get_obj_val()))
 
-        for i in self.connections['set']:
-            print('Case %d :' %(i))
-            print('')
-            print('Generation:')
-            for k in range(len(self.Gen.Conv)):
-                for j in range(self.settings['NoTime']):
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.thermalgenerators[i, j][0]), k) * \
-                            self.ENetwork.get_Base()), end = ' ')
-                print('')
-            for k in range(len(self.Gen.RES)):
-                for j in range(self.settings['NoTime']):                
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.RESgenerators[i, j][0]), k) * \
-                            self.ENetwork.get_Base()), end = ' ')
-                print('')
-            for k in range(len(self.Gen.Hydro)):
-                for j in range(self.settings['NoTime']):
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.Hydrogenerators[i, j][0]), k) * \
-                            self.ENetwork.get_Base()), end = ' ')
-                print('')
-            print('')
-            if self.pumps['Number'] > 0:
-                print('Pumps:')
-                for k in range(self.pumps['Number']):
-                    for j in range(self.settings['NoTime']):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.pumpsvar[i, j][0]), k) * \
-                                self.ENetwork.get_Base()), end = ' ')
-                    print('')
-                print('')
-            if len(self.Gen.Conv) > 0:
-                print('Thermal Generation cost:')
-                for k in range(len(self.Gen.Conv)):
-                    for j in range(self.settings['NoTime']):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.thermalCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
-            if len(self.Gen.RES) > 0:
-                print('RES Generation cost:')
-                for k in range(len(self.Gen.RES)):
-                    for j in range(self.settings['NoTime']):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.RESCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
-            if len(self.Gen.Hydro) > 0:
-                print('Hydro Generation cost:')
-                for k in range(len(self.Gen.Hydro)):
-                    for j in range(self.settings['NoTime']):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.HydroCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
+        # for i in self.connections['set']:
+        #     print('Case %d :' %(i))
+        #     print('')
+        #     print('Generation:')
+        #     for k in range(len(self.Gen.Conv)):
+        #         for j in range(self.settings['NoTime']):
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.thermalgenerators[i, j][0]), k) * \
+        #                     self.ENetwork.get_Base()), end = ' ')
+        #         print('')
+        #     for k in range(len(self.Gen.RES)):
+        #         for j in range(self.settings['NoTime']):                
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.RESgenerators[i, j][0]), k) * \
+        #                     self.ENetwork.get_Base()), end = ' ')
+        #         print('')
+        #     for k in range(len(self.Gen.Hydro)):
+        #         for j in range(self.settings['NoTime']):
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.Hydrogenerators[i, j][0]), k) * \
+        #                     self.ENetwork.get_Base()), end = ' ')
+        #         print('')
+        #     print('')
+        #     if self.pumps['Number'] > 0:
+        #         print('Pumps:')
+        #         for k in range(self.pumps['Number']):
+        #             for j in range(self.settings['NoTime']):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.pumpsvar[i, j][0]), k) * \
+        #                         self.ENetwork.get_Base()), end = ' ')
+        #             print('')
+        #         print('')
+        #     if len(self.Gen.Conv) > 0:
+        #         print('Thermal Generation cost:')
+        #         for k in range(len(self.Gen.Conv)):
+        #             for j in range(self.settings['NoTime']):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.thermalCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
+        #     if len(self.Gen.RES) > 0:
+        #         print('RES Generation cost:')
+        #         for k in range(len(self.Gen.RES)):
+        #             for j in range(self.settings['NoTime']):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.RESCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
+        #     if len(self.Gen.Hydro) > 0:
+        #         print('Hydro Generation cost:')
+        #         for k in range(len(self.Gen.Hydro)):
+        #             for j in range(self.settings['NoTime']):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.HydroCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
 
-            if self.settings['Flag']:
-            # Optimal Power Flow
-                print('Voltage angle:')
-                for k in range(len(self.settings['Security']) + 1):
-                    print('Contingency %d :' %(k))
-                    for ii in range(self.ENetwork.get_NoBus()):
-                        for j in range(self.settings['NoTime']):
-                            print("%f" %(self.solver.get_col_prim(\
-                                str(self.VoltageAngle[i, j, k][0]), ii)),\
-                                    end = ' ')
-                        print('')
-                    print('')
-                print('Load Curtailment:')
-                for k in range(len(self.settings['Security']) + 1):
-                    print('Contingency %d :' %(k))
-                    for ii in range(self.ENetwork.get_NoBus()):
-                        for j in range(self.settings['NoTime']):
-                            print("%f" %(self.solver.get_col_prim(\
-                                str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-                                    * self.ENetwork.get_Base()), end = ' ')
-                        print('')
-                    print('')
-                print('Active Power Flow:')
-                for k in range(len(self.settings['Security']) + 1):
-                    print('Contingency %d :' %(k))
-                    for ii in range(self.ENetwork.get_NoBra()):
-                        for j in range(self.settings['NoTime']):
-                            print("%f" %(self.solver.get_col_prim(\
-                                str(self.ActivePowerFlow[i, j, k][0]), ii)\
-                                    * self.ENetwork.get_Base()), end = ' ')
-                        print('')
-                    print('')
-                if self.settings['Losses']:
-                    print('Active Power Losses:')
-                    for k in range(len(self.settings['Security']) + 1):
-                        print('Contingency %d :' %(k))
-                        for ii in range(self.ENetwork.get_NoBra()):
-                            for j in range(self.settings['NoTime']):
-                                print("%f" %(self.solver.get_col_prim(\
-                                    str(self.ActivePowerLosses[i, j, k][0]),\
-                                        ii) * self.ENetwork.get_Base()),\
-                                            end = ' ')
-                            print('')
-                        print('')
-                print('\n\n')
-            else:
-            # Economic dispatch
-                print('Load Curtailment:')
-                for j in range(self.settings['NoTime']):
-                    print("%f" %(self.solver.get_col_prim(\
-                                str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-                                    self.ENetwork.get_Base()), end = ' ')
-                print('\n\n')
-                print('')
+        #     if self.settings['Flag']:
+        #     # Optimal Power Flow
+        #         print('Voltage angle:')
+        #         for k in range(len(self.settings['Security']) + 1):
+        #             print('Contingency %d :' %(k))
+        #             for ii in range(self.ENetwork.get_NoBus()):
+        #                 for j in range(self.settings['NoTime']):
+        #                     print("%f" %(self.solver.get_col_prim(\
+        #                         str(self.VoltageAngle[i, j, k][0]), ii)),\
+        #                             end = ' ')
+        #                 print('')
+        #             print('')
+        #         print('Load Curtailment:')
+        #         for k in range(len(self.settings['Security']) + 1):
+        #             print('Contingency %d :' %(k))
+        #             for ii in range(self.ENetwork.get_NoBus()):
+        #                 for j in range(self.settings['NoTime']):
+        #                     print("%f" %(self.solver.get_col_prim(\
+        #                         str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
+        #                             * self.ENetwork.get_Base()), end = ' ')
+        #                 print('')
+        #             print('')
+        #         print('Active Power Flow:')
+        #         for k in range(len(self.settings['Security']) + 1):
+        #             print('Contingency %d :' %(k))
+        #             for ii in range(self.ENetwork.get_NoBra()):
+        #                 for j in range(self.settings['NoTime']):
+        #                     print("%f" %(self.solver.get_col_prim(\
+        #                         str(self.ActivePowerFlow[i, j, k][0]), ii)\
+        #                             * self.ENetwork.get_Base()), end = ' ')
+        #                 print('')
+        #             print('')
+        #         if self.settings['Losses']:
+        #             print('Active Power Losses:')
+        #             for k in range(len(self.settings['Security']) + 1):
+        #                 print('Contingency %d :' %(k))
+        #                 for ii in range(self.ENetwork.get_NoBra()):
+        #                     for j in range(self.settings['NoTime']):
+        #                         print("%f" %(self.solver.get_col_prim(\
+        #                             str(self.ActivePowerLosses[i, j, k][0]),\
+        #                                 ii) * self.ENetwork.get_Base()),\
+        #                                     end = ' ')
+        #                     print('')
+        #                 print('')
+        #         print('\n\n')
+        #     else:
+        #     # Economic dispatch
+        #         print('Load Curtailment:')
+        #         for j in range(self.settings['NoTime']):
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                         str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+        #                             self.ENetwork.get_Base()), end = ' ')
+        #         print('\n\n')
+        #         print('')
 
-        for i in range(self.NumberTrees):
-            print("vector %d:" %(i))
-            for j in range(self.TreeNodes):
-                 print("%f %f" %(self.solver.get_col_prim(str(\
-                     self.Partialstorage[i][0]), j), \
-                        self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
-                        j)))
+        # for i in range(self.NumberTrees):
+        #     print("vector %d:" %(i))
+        #     for j in range(self.TreeNodes):
+        #          print("%f %f" %(self.solver.get_col_prim(str(\
+        #              self.Partialstorage[i][0]), j), \
+        #                 self.solver.get_col_prim(str(self.Totalstorage[i][0]),\
+        #                 j)))
         
-        print('')
+        # print('')
 
-        for i in range(self.NumberTrees):
-            print("Hydro generation at node %d:" \
-                %(self.Gen.Hydro[i].get_Bus()))
-            for j in self.connections['set']:
-                 print("%f" %(self.solver.get_col_prim(str(\
-                    self.OutputsTree[i][0]), self.p['pyeneE'][j])), \
-                    end = ' ')
-            print('')
-        print('\n\n')
+        # for i in range(self.NumberTrees):
+        #     print("Hydro generation at node %d:" \
+        #         %(self.Gen.Hydro[i].get_Bus()))
+        #     for j in self.connections['set']:
+        #          print("%f" %(self.solver.get_col_prim(str(\
+        #             self.OutputsTree[i][0]), self.p['pyeneE'][j])), \
+        #             end = ' ')
+        #     print('')
+        # print('\n\n')
 
     def EnergyandEconomicDispatchModels(self):
         """ This class method builds the optimisation model
