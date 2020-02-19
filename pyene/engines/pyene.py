@@ -84,6 +84,9 @@ class pyeneClass():
         m = self.HM.addCon(m)
         m = self.addCon(m)
 
+        # IEEE paper control variables.
+        m.pEeee = self.EM.Print['IEEE']
+
         return m
 
     def _Calculate_OFaux(self):
@@ -413,7 +416,8 @@ class pyeneClass():
                 acu = 0
                 for xt in auxtime:
                     acu += auxweight[xt] * \
-                        m.vNFea[self.NM.get_ConFea(xh)+bus, xt].value
+                        m.vNFea[self.NM.get_ConFea(xh) + \
+                                self.NM.p['LLFea2'][bus], xt].value
                 value += acu*auxOF[xh]
             value *= self.NM.ENetwork.get_Base()
 

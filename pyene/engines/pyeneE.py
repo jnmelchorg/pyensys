@@ -70,7 +70,8 @@ class pyeneEConfig:
                 'Nodes': []  # Number of nodes
                 }
         self.Print = {
-                'SoC': True
+                'SoC': True,
+                'IEEE':[0]  # Info for IEEE paper
                 }
 
 

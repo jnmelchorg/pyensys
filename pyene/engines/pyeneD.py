@@ -46,8 +46,12 @@ class BusConfig:
         if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
-        if 'LT' in mpc.keys():
-            self.settings['Load_Type'] = mpc['Load_Type'][No]
+        if 'Load_type' in mpc.keys():
+            self.settings['Load_Type'] = mpc['Load_type'][No]
+        if 'Loss_Fix' in mpc.keys():
+            self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
+        else:
+            self.settings['Loss_Fix'] = 0
 
 
 class BranchConfig:
@@ -55,7 +59,8 @@ class BranchConfig:
     def __init__(self):
         # Basic settings
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
-               'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP', 'T_BUS']
+               'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP',
+               'T_BUS', 'Loss_Fix']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -70,6 +75,11 @@ class BranchConfig:
                'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS']
         for x in aux:
             self.settings[x] = mpc[x][No]
+
+        if 'Loss_Fix' in mpc.keys():
+            self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
+        else:
+            self.settings['Loss_Fix'] = 0
 
 
 class ConventionalConfig:
@@ -218,7 +228,7 @@ class Branch:
         '''
 
         aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
-               'BR_B']
+               'BR_B', 'Loss_Fix']
 
         # Get settings
         self.data = {}
@@ -232,15 +242,17 @@ class Branch:
         self.pyomo = {}
         self.pyomo['N-1'] = None
 
-    def cNDCLossA_rule(self, m, xt, xL, ConF, ConL, A, B):
+    def cNDCLossA_rule(self, m, xt, xL, ConF, ConL, A, B, Bse):
         ''' Power losses estimation - Positive '''
         return m.vNLoss[ConL+self.get_Pos(), xt] >= \
+            self.data['Loss_Fix']/Bse + \
             (A[xL]+B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
             self.data['BR_R']
 
-    def cNDCLossB_rule(self, m, xt, xL, ConF, ConL, A, B):
+    def cNDCLossB_rule(self, m, xt, xL, ConF, ConL, A, B, Bse):
         ''' Power losses estimation - Negative '''
         return m.vNLoss[ConL+self.get_Pos(), xt] >= \
+            self.data['Loss_Fix']/Bse + \
             (A[xL]-B[xL]*m.vNFlow[ConF+self.get_Pos(), xt]) * \
             self.data['BR_R']
 
@@ -373,7 +385,7 @@ class Bus:
         # Parameters currently in use
         aux = ['BUS_X', 'BUS_Y', 'Demand', 'PeakP', 'PeakQ', 'Position',
                'Name', 'Number', 'BUS_TYPE', 'BASE_KV', 'VMAX', 'VMIN', 'VM',
-               'Load_Type']
+               'Load_Type', 'Loss_Fix']
 
         # Get settings
         self.data = {}
@@ -429,6 +441,10 @@ class Bus:
     def get_LossT(self):
         ''' Get list of branches connected to the bus - Losses'''
         return self.data['T_Loss']
+
+    def getLoss(self):
+        ''' Return non technical losses in the bus '''
+        return self.data['Loss_Fix']
 
     def get_LT(self):
         ''' Get load type (1:Urban, 2:Rural) '''
@@ -517,12 +533,14 @@ class ElectricityNetwork:
     def cNDCLossA_rule(self, m, xt, xb, xL, ConF, ConL):
         ''' Power losses estimation - Positive '''
         return self.Branch[xb].cNDCLossA_rule(m, xt, xL, ConF, ConL,
-                                              self.loss['A'], self.loss['B'])
+                                              self.loss['A'], self.loss['B'],
+                                              self.get_Base())
 
     def cNDCLossB_rule(self, m, xt, xb, xL, ConF, ConL):
         ''' Power losses estimation - Negative '''
         return self.Branch[xb].cNDCLossB_rule(m, xt, xL, ConF, ConL,
-                                              self.loss['A'], self.loss['B'])
+                                              self.loss['A'], self.loss['B'],
+                                              self.get_Base())
 
     def cNEFlow_rule(self, m, xt, xb, xs, ConF, ConV):
         ''' Branch flows constraint '''
@@ -1111,6 +1129,10 @@ class RES(GenClass):
     def cNGenRampUp_rule(self, m, xt, xt0, ConG):
         ''' Generation ramps (down)'''
         return Constraint.Skip
+
+    def get_Bin(self):
+        ''' get binaries for UC '''
+        return None
 
     def get_Cost(self):
         ''' Return linear costs '''
