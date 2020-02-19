@@ -876,7 +876,10 @@ class ENetworkClass:
         # Adjust demand profiles
         busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
         for xn in range(self.ENetwork.get_NoBus()):
-            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.get_Base()
+            print(self.ENetwork.Bus[xn].getLoss())
+            busData[xn] = (self.ENetwork.Bus[xn].getLoss() +
+                           self.demandE['PD'][xn])/self.ENetwork.get_Base()
+
         # Auxiliar to find demand profiles
         busScenario = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
@@ -977,26 +980,6 @@ class ENetworkClass:
         self.p['LLFea1'] = LLFea1
         self.p['LLFea2'] = LLFea2
         self.NoFea = NoFea
-#        print  ('To be deleted')
-#        print ()
-#        print (LLFea1)
-#        print (LLFea2)
-#        print (NoFea)
-#        print ()
-#        aux[1000]
-#
-#        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
-#        if self.settings['Feasibility']:
-#            NoFea = self.ENetwork.get_NoBus()
-#            for xn in range(1, NoFea):
-#                LLFea[xn] = xn
-#        else:
-#            NoFea = 1
-#        self.LL = {}
-#        self.NoLL = {}
-#        self.iLL = {}
-#        self.p['LLFea'] = LLFea
-#        self.NoFea = NoFea
 
     def Read(self):
         ''' Read input data '''
