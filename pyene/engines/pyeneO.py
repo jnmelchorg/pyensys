@@ -338,8 +338,14 @@ class pyeneHDF5Settings():
                                 EN.NM.ENetwork.get_Base()
                 HDF5row['RES'] = auxvar
                 HDF5row['spill'] = 0
-                HDF5row['demand'] = EN.get_AllDemand(m, 'snapshot',
-                                                     times=[xt], scens=[xs])
+                m = 0
+                auxvar = 0
+                for k in range(EN.NM.ENetwork.get_NoBus()):
+                    auxvar += EN.NM.busData[k] * \
+                        EN.NM.scenarios['Demand']\
+                            [EN.NM.busScenario[k][xs]] * \
+                                EN.NM.ENetwork.get_Base()
+                HDF5row['demand'] = auxvar
                 auxvar = 0
                 if len(EN.NM.pumps['Number']) > 0:
                     for k in range(len(EN.NM.pumps['Number'])):
