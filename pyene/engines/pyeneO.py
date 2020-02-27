@@ -262,6 +262,110 @@ class pyeneHDF5Settings():
                 HDF5row.append()
             HDF5table.flush()
 
+    def saveResultsGLPK(self, EN, GLPKobj, SimNo):
+        ''' Save results of each iteration '''
+
+        # Accumulate data
+        # self.Accumulate(EN, m)
+
+        if self.settings['Directory1'] is None:
+            return
+
+        HDF5group = \
+            self.fileh.create_group(self.fileh.root,
+                                    'Simulation_{:05d}'.format(SimNo))
+        HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
+                            EN.NM.settings['NoTime']), dtype=float)
+
+        xp = 0
+        for xs in range(EN.NM.scenarios['NoDem']):
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5aux[xs][xt] = EN.NM.scenarios['Demand'][xp]
+                xp += 1
+
+        self.fileh.create_array(HDF5group, "Demand_profiles", HDF5aux)
+
+        HDF5aux = np.zeros((EN.NM.scenarios['NoRES'],
+                            EN.NM.settings['NoTime']), dtype=float)
+        xp = 0
+        for xs in range(EN.NM.scenarios['NoRES']):
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
+                    EN.NM.ENetwork.get_Base()
+                xp += 1
+        self.fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
+
+        # Hydropower allowance
+        aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
+        if EN.EM.settings['Vectors'] == 1:
+            aux[0] = EN.EM.Weight['In'][1]
+        else:
+            for xv in EN.EM.s['Vec']:
+                aux[xv] = GLPKobj.IntakeTree[1, xv]
+
+        self.fileh.create_array(HDF5group, "Hydro_Allowance", aux)
+
+        hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
+        for xi in range(EN.EM.settings['Vectors']):
+            hp_marginal[xi] = 0.0
+        self.fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
+
+        for xs in range(EN.NM.scenarios['Number']):
+            HDF5table = \
+                self.fileh.create_table(HDF5group,
+                                        "Scenario_{:02d}".format(xs),
+                                        self.PyeneHDF5Results)
+            HDF5row = HDF5table.row
+            for xt in range(EN.NM.settings['NoTime']):
+                HDF5row['time'] = xt
+                auxvar = 0
+                for k in range(len(EN.NM.Gen.Conv)):
+                    auxvar += GLPKobj.solver.get_col_prim(\
+                        str(GLPKobj.thermalgenerators[xs, xt][0]), k) * \
+                            EN.NM.ENetwork.get_Base()
+                HDF5row['generation'] = auxvar
+                auxvar = 0
+                for k in range(len(EN.NM.Gen.Hydro)):
+                    auxvar += GLPKobj.solver.get_col_prim(\
+                        str(GLPKobj.Hydrogenerators[xs, xt][0]), k) * \
+                            EN.NM.ENetwork.get_Base()
+                HDF5row['hydropower'] = auxvar
+                auxvar = 0
+                if len(EN.NM.Gen.RES) > 0:
+                    for k in range(len(EN.NM.Gen.RES)):
+                        auxvar += GLPKobj.solver.get_col_prim(\
+                            str(GLPKobj.RESgenerators[xs, xt][0]), k) * \
+                                EN.NM.ENetwork.get_Base()
+                HDF5row['RES'] = auxvar
+                HDF5row['spill'] = 0
+                HDF5row['demand'] = EN.get_AllDemand(m, 'snapshot',
+                                                     times=[xt], scens=[xs])
+                auxvar = 0
+                if len(EN.NM.pumps['Number']) > 0:
+                    for k in range(len(EN.NM.pumps['Number'])):
+                        auxvar += GLPKobj.solver.get_col_prim(\
+                            str(GLPKobj.pumpsvar[xs, xt][0]), k) * \
+                                EN.NM.ENetwork.get_Base()
+                HDF5row['pump'] = auxvar
+                auxvar = 0
+                if EN.NM.settings['Losses']:
+                    for k in range(len(EN.NM.settings['Security']) + 1):
+                        for ii in range(EN.NM.ENetwork.get_NoBra()):
+                            auxvar += GLPKobj.solver.get_col_prim(\
+                                str(GLPKobj.ActivePowerLosses[xs, xt, k][0]), \
+                                    ii) * EN.NM.ENetwork.get_Base()
+                HDF5row['loss'] = auxvar
+                auxvar = 0
+                for k in range(len(EN.NM.settings['Security']) + 1):
+                    for ii in range(EN.NM.ENetwork.get_NoBus()):
+                        auxvar += GLPKobj.solver.get_col_prim(\
+                            str(GLPKobj.LoadCurtailmentNode[xs, xt, k][0]), ii)\
+                                * EN.NM.ENetwork.get_Base()
+                HDF5row['curtailment'] = auxvar
+                HDF5row.append()
+            HDF5table.flush()
+
+
     def terminate(self):
 
         if self.settings['Directory1'] is None:
