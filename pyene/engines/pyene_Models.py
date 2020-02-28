@@ -1745,15 +1745,27 @@ class Networkmodel():
                         # TODO: Change the inputs of losses and demand scenarios
                         # for parameters
                         if self.scenarios['NoDem'] == 0:
-                            totaldemand = totaldemand + \
-                                self.busData[ii] * \
-                                self.scenarios['Demand']\
-                                    [self.busScenario[ii][i]]
+                            if self.settings['Loss'] is None:
+                                totaldemand = totaldemand + \
+                                    self.busData[ii] * \
+                                    self.scenarios['Demand']\
+                                        [self.busScenario[ii][i]]
+                            else:
+                                totaldemand = totaldemand + \
+                                    self.busData[ii] * \
+                                    self.scenarios['Demand']\
+                                        [self.busScenario[ii][i]] * \
+                                    (1 + self.settings['Loss'])
                         else:
-                            totaldemand = totaldemand + \
-                                self.busData[ii] * \
-                                self.scenarios['Demand']\
-                                    [j+self.busScenario[ii][i]]
+                            if self.settings['Loss'] is None:
+                                totaldemand = totaldemand + self.busData[ii] * \
+                                    self.scenarios['Demand']\
+                                        [j+self.busScenario[ii][i]]
+                            else:
+                                totaldemand = totaldemand + self.busData[ii] * \
+                                    self.scenarios['Demand'] \
+                                        [j+self.busScenario[ii][i]] * \
+                                    (1 + self.settings['Loss'])
 
                         self.solver.set_row_bnds(\
                             str(self.activepowerbalancenode[i, j, k][0]), ii,\
