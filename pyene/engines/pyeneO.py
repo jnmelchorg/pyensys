@@ -251,14 +251,14 @@ class pyeneHDF5Settings():
                 HDF5row['spill'] = EN.get_AllRES(m, 'snapshot', times=[xt],
                                                  scens=[xs])
                 HDF5row['demand'] = EN.get_AllDemand(m, 'snapshot',
-                                                     times=[xt], scens=[xs])
+                                                     times=[xt], scens=[xs])[0]
                 HDF5row['pump'] = EN.get_AllPumps(m, 'snapshot', times=[xt],
                                                   scens=[xs])
                 HDF5row['loss'] = EN.get_AllLoss(m, 'snapshot', times=[xt],
                                                  scens=[xs])
                 HDF5row['curtailment'] = \
                     EN.get_AllDemandCurtailment(m, 'snapshot', times=[xt],
-                                                scens=[xs])
+                                                scens=[xs])[0]
                 HDF5row.append()
             HDF5table.flush()
 
@@ -300,7 +300,7 @@ class pyeneHDF5Settings():
         if EN.EM.settings['Vectors'] == 1:
             aux[0] = EN.EM.Weight['In'][1]
         else:
-            for xv in EN.EM.s['Vec']:
+            for xv in range(EN.EM.settings['Vectors']):
                 aux[xv] = GLPKobj.IntakeTree[1, xv]
 
         self.fileh.create_array(HDF5group, "Hydro_Allowance", aux)
@@ -347,7 +347,7 @@ class pyeneHDF5Settings():
                                 EN.NM.ENetwork.get_Base()
                 HDF5row['demand'] = auxvar
                 auxvar = 0
-                if len(EN.NM.pumps['Number']) > 0:
+                if EN.NM.pumps['Number'] > 0:
                     for k in range(len(EN.NM.pumps['Number'])):
                         auxvar += GLPKobj.solver.get_col_prim(\
                             str(GLPKobj.pumpsvar[xs, xt][0]), k) * \
