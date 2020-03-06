@@ -34,7 +34,7 @@ class Energymodel():
             Information of the energy tree
         """
         # Storing data input - Parameters
-        assert obj is None   # If the object is empty then raise an error
+        assert obj is not None   # If the object is empty then raise an error
         self.TreeNodes = obj.LL['NosBal'] + 1  # Number of nodes in the 
                                                 # temporal tree
         self.NumberTrees = obj.size['Vectors'] # Number of temporal trees
@@ -47,10 +47,10 @@ class Energymodel():
                                                 # temporal tree
         self.WeightNodes = obj.p['WghtFull']   # Weight of node (number of
                                                 # days, weeks, etc.)
-
-
-        for pars in obj.__dict__.keys():
-            setattr(self, pars, getattr(obj, pars))
+        self.NumberNodesUnc = obj.LL['NosUnc'] # Number of nodes considered
+                                # for uncertainty in the temporal tree
+        self.LLNodesUnc = obj.p['LLTS3'] # Link List to connect the nodes
+                                # with uncertainty in the temporal tree
 
     def optimisationEM(self):
         """ This class method solve the optimisation problem """
@@ -100,8 +100,8 @@ class Energymodel():
         self.number_constraintsEM += (self.TreeNodes - 1) * self.NumberTrees
         self.number_constraintsEM += (self.TreeNodes - 1) * self.NumberTrees
         # TODO: create a case for uncertainty
-        # if self.LL['NosUnc'] != 0:
-        #     self.number_constraintsEM += (self.LL['NosUnc']+1) \
+        # if self.NumberNodesUnc != 0:
+        #     self.number_constraintsEM += (self.NumberNodesUnc+1) \
         #         * self.NumberTrees
 
     def coeffmatrixEM(self):
@@ -120,7 +120,7 @@ class Energymodel():
         self.constraintsEM()
         self.Energybalance()
         self.Aggregation()
-        # if self.LL['NosUnc'] != 0:
+        # if self.NumberNodesUnc != 0:
         #     self.AggregationStochastic()
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
 
@@ -357,54 +357,57 @@ class Energymodel():
         # Generating the matrix A for the aggregation contraints
         # TODO review this constraint
         for vectors in range(self.NumberTrees):
-            for nodes in range(2, self.LL['NosUnc']+2): # TODO, does it start from position 2??
+            for nodes in range(2, self.NumberNodesUnc+2): # TODO, does it start from position 2??
                 # Storing the first variable of each constraint
                 self.ia[self.ne] = self.Agg_Sto_row_number + (vectors * \
                     (self.TreeNodes - 1)) + nodes - 2
                 self.ja[self.ne] = (vectors * \
                     (self.TreeNodes)) + \
                     (self.NumberTrees * (self.TreeNodes)) + \
-                    self.p['LLTS3'][nodes - 1, 0] + 1
+                    self.LLNodesUnc[nodes - 1, 0] + 1
                 self.ar[self.ne] = 1
                 # Storing the second variable of each constraint
-                if(1-self.WeightNodes[self.p['LLTS3'][nodes - 1, 0]] != 0):
+                if(1-self.WeightNodes[self.LLNodesUnc[nodes - 1, 0]] != 0):
                     self.ne += 1
                     self.ia[self.ne] = self.Agg_Sto_row_number + (vectors * \
                         (self.TreeNodes - 1)) + nodes - 2
-                    self.ar[self.ne] = -(1-self.WeightNodes[self.p['LLTS3'][nodes - 1, 0]])
-                    if(self.LLEB[self.p['LLTS3'][nodes - 1, 0], 1] == 0):
+                    self.ar[self.ne] = -(1-self.WeightNodes[self.LLNodesUnc[nodes - 1, 0]])
+                    if(self.LLEB[self.LLNodesUnc[nodes - 1, 0], 1] == 0):
                         self.ja[self.ne] = (vectors * \
-                            (self.TreeNodes)) + self.LLEB[self.p['LLTS3'][nodes - 1, 0], 0] + 1
-                    elif(self.LLEB[self.p['LLTS3'][nodes - 1, 0], 1] == 1):
+                            (self.TreeNodes)) + \
+                            self.LLEB[self.LLNodesUnc[nodes - 1, 0], 0] + 1
+                    elif(self.LLEB[self.LLNodesUnc[nodes - 1, 0], 1] == 1):
                         self.ja[self.ne] = (vectors * \
                             (self.TreeNodes)) + (self.NumberTrees * \
-                            (self.TreeNodes)) + self.LLEB[self.p['LLTS3'][nodes - 1, 0], 0] + 1
+                            (self.TreeNodes)) + self.LLEB[self.LLNodesUnc[nodes - 1, 0], 0] + 1
                 # Storing the third variable
                 self.ne += 1
                 self.ia[self.ne] = self.Agg_Sto_row_number + (vectors * \
                     (self.TreeNodes - 1)) + nodes - 2
-                self.ar[self.ne] = -(self.WeightNodes[self.p['LLTS3'][nodes - 1, 0]] * \
-                    -self.p['LLTS3'][nodes - 1, 2])
+                self.ar[self.ne] = -(\
+                    self.WeightNodes[self.LLNodesUnc[nodes - 1, 0]] * \
+                    -self.LLNodesUnc[nodes - 1, 2])
                 self.ja[self.ne] = (vectors * \
-                    (self.TreeNodes)) + self.p['LLTS3'][nodes - 1, 0] + 1
+                    (self.TreeNodes)) + self.LLNodesUnc[nodes - 1, 0] + 1
                 # Storing variables in the summation
-                for aux1 in range(self.p['LLTS3'][nodes - 1, 2] + 1):
+                for aux1 in range(self.LLNodesUnc[nodes - 1, 2] + 1):
                     self.ne += 1
                     self.ia[self.ne] = self.Agg_Sto_row_number + (vectors * \
                         (self.TreeNodes - 1)) + nodes - 2
-                    self.ar[self.ne] = -(self.WeightNodes[self.p['LLTS3'][nodes - 1, 0]] * \
-                        -self.p['LLTS3'][nodes - 1, 2])
+                    self.ar[self.ne] = -(self.WeightNodes[self.LLNodesUnc[nodes - 1, 0]] * \
+                        -self.LLNodesUnc[nodes - 1, 2])
                     self.ja[self.ne] = (vectors * \
                             (self.TreeNodes)) + (self.NumberTrees * \
-                            (self.TreeNodes)) + self.p['LLTS3'][nodes, 1] + aux1 + 1
+                            (self.TreeNodes)) + self.LLNodesUnc[nodes, 1] + aux1 + 1
                 self.ne += 1
 
                     
 
         # Defining the limits for the aggregation constraints
         for vectors in range(self.NumberTrees):
-            for nodes in range(1, self.LL['NosUnc']+1):
-                self.solver.set_row_bnds('AggStoch', (vectors *  (self.TreeNodes - 1)) + nodes - 1, 'fixed', \
+            for nodes in range(1, self.NumberNodesUnc+1):
+                self.solver.set_row_bnds('AggStoch', (vectors *  \
+                    (self.TreeNodes - 1)) + nodes - 1, 'fixed', \
                     0.0, 0.0)
 
     # Objective function EM
@@ -422,29 +425,39 @@ class Energymodel():
     # Data inputs of Energy model
 
     def SetTreeNodes(self, number_nodes=None):
-        assert number_nodes is None, \
+        assert number_nodes is not None, \
             "No value for the number of nodes per tree" 
         self.TreeNodes = number_nodes + 1
     
     def SetNumberTrees(self, number_trees=None):
-        assert number_trees is None, \
+        assert number_trees is not None, \
             "No value for the number of trees to be optimised" 
         self.NumberTrees = number_trees
 
     def SetIntakeTree(self, intake_nodes=None):
-        assert intake_nodes is None, \
+        assert intake_nodes is not None, \
             "No value for the intake of water/energy for all nodes"
         self.IntakeTree = intake_nodes
 
     def SetOutputTree(self, output_nodes=None):
-        assert output_nodes is None, \
+        assert output_nodes is not None, \
             "No value for the output of water/energy for all nodes"
         self.OutputTree = output_nodes
 
     def SetWeightNodes(self, weight_nodes=None):
-        assert weight_nodes is None, \
+        assert weight_nodes is not None, \
             "No value for the weights of all nodes"
         self.WeightNodes = weight_nodes
+
+    def SetNumberNodesUnc(self, number_nodes_unc=None):
+        assert number_nodes_unc is not None, \
+            "No value for the number of nodes for uncertainty analysis"
+        self.NumberNodesUnc = number_nodes_unc
+    
+    def SetLLNodesUnc(self, LL_nodes_unc=None):
+        assert LL_nodes_unc is not None, \
+            "No value for the number of nodes for uncertainty analysis"
+        self.LLNodesUnc = LL_nodes_unc
 
     # TODO: Redefine link list
 
@@ -480,6 +493,26 @@ class Energymodel():
                     self.Totalstorage[i][0]), j)
         return TotalStorageSolution
 
+    def GetInputsTree(self):
+        InputsTreeSolution = \
+            np.empty((self.NumberTrees, self.TreeNodes))
+        for i in range(self.NumberTrees):
+            for j in range(self.TreeNodes):
+                InputsTreeSolution[i, j] = \
+                    self.solver.get_col_prim(str(\
+                    self.InputsTree[i][0]), j)
+        return InputsTreeSolution
+
+    def GetOutputsTree(self):
+        OutputsTreeSolution = \
+            np.empty((self.NumberTrees, self.TreeNodes))
+        for i in range(self.NumberTrees):
+            for j in range(self.TreeNodes):
+                OutputsTreeSolution[i, j] = \
+                    self.solver.get_col_prim(str(\
+                    self.OutputsTree[i][0]), j)
+        return OutputsTreeSolution
+
 
 class Networkmodel():
     """ This class builds and solve the network model(NM) using the gplk wrapper.
@@ -497,7 +530,7 @@ class Networkmodel():
         """
 
         # Storing data input - Parameters
-        assert obj is None  # If the object is empty then raise an error
+        assert obj is not None  # If the object is empty then raise an error
         self.LongTemporalConnections = obj.connections['set'] # Temporal
                             # interconnection of different instances of
                             # network problems (last nodes of the temporal
@@ -535,9 +568,13 @@ class Networkmodel():
                             # losses are included in the mathematical
                             # formulation
         
+        self.FlagProblem = obj.settings['Flag'] # Flag that indicates
+                            # if the problem to solve is the economic
+                            # dispatch or the optimal power flow
+        
         # TODO: Generalise inputs as a list of values
         if self.NumberConvGen > 0:
-            self.PWConvGen = np.empty(self.NumberConvGen) # Number of pieces of
+            self.PWConvGen = np.empty((self.NumberConvGen), dtype=np.int_) # Number of pieces of
                                 # the piecewise linearisation of the conventional 
                                 # generation cost
             for i in range(self.NumberConvGen):
@@ -569,10 +606,17 @@ class Networkmodel():
                                     # for conventional generators
             for i in range(self.NumberConvGen):
                 self.RampConvGen[i] = obj.Gen.Conv[i].data['Ramp']
+            self.OriginalNumberConvGen = \
+                np.empty((self.NumberConvGen)) # Original numeration of 
+                                # the conventional generators in the 
+                                # power system
+            for i in range(self.NumberConvGen):
+                self.OriginalNumberConvGen[i] = \
+                    obj.Gen.Conv[i].get_Bus()
 
 
         if self.NumberRESGen > 0:
-            self.PWRESGen = np.empty(self.NumberRESGen) # Number of pieces of
+            self.PWRESGen = np.empty((self.NumberRESGen), dtype=np.int_) # Number of pieces of
                                 # the piecewise linearisation of the RES 
                                 # generation cost
             for i in range(self.NumberRESGen):
@@ -601,17 +645,24 @@ class Networkmodel():
             for i in range(self.NumberRESGen):
                 for j in range(self.PWRESGen[i]):
                     self.ACoeffPWRESGen[i, j] = \
-                        self.Gen.RES[i].cost['LCost'][j][0]
+                        obj.Gen.RES[i].cost['LCost'][j][0]
             self.BCoeffPWRESGen = np.empty((self.NumberRESGen,\
                 self.PWRESGen[0]))  # Coefficient b of the piece Ax + b for
                                     # RES generation
             for i in range(self.NumberRESGen):
                 for j in range(self.PWRESGen[i]):
                     self.BCoeffPWRESGen[i, j] = \
-                        self.Gen.RES[i].cost['LCost'][j][1]
+                        obj.Gen.RES[i].cost['LCost'][j][1]
+            self.OriginalNumberRESGen = \
+                np.empty((self.NumberRESGen)) # Original numeration of 
+                                # the RES generators in the 
+                                # power system
+            for i in range(self.NumberRESGen):
+                self.OriginalNumberRESGen[i] = \
+                    obj.Gen.RES[i].get_Bus()
         
         if self.NumberHydroGen > 0:
-            self.PWHydroGen = np.empty(self.NumberHydroGen) # Number of pieces of
+            self.PWHydroGen = np.empty((self.NumberHydroGen), dtype=np.int_) # Number of pieces of
                                 # the piecewise linearisation of the Hydro 
                                 # generation cost
             for i in range(self.NumberHydroGen):
@@ -632,18 +683,25 @@ class Networkmodel():
             for i in range(self.NumberHydroGen):
                 for j in range(self.PWHydroGen[i]):
                     self.ACoeffPWHydroGen[i, j] = \
-                        self.Gen.Hydro[i].cost['LCost'][j][0]
+                        obj.Gen.Hydro[i].cost['LCost'][j][0]
             self.BCoeffPWHydroGen = np.empty((self.NumberHydroGen,\
                 self.PWHydroGen[0]))  # Coefficient b of the piece Ax + b for
                                     # RES generation
             for i in range(self.NumberHydroGen):
                 for j in range(self.PWHydroGen[i]):
                     self.BCoeffPWHydroGen[i, j] = \
-                        self.Gen.Hydro[i].cost['LCost'][j][1]
+                        obj.Gen.Hydro[i].cost['LCost'][j][1]
             self.RampHydroGen = np.empty(self.NumberHydroGen) # On/Off ramps
                                     # for hydro generators
             for i in range(self.NumberHydroGen):
                 self.RampHydroGen[i] = obj.Gen.Hydro[i].data['Ramp']
+            self.OriginalNumberHydroGen = \
+                np.empty((self.NumberHydroGen)) # Original numeration of 
+                                # the Hydro generators in the 
+                                # power system
+            for i in range(self.NumberHydroGen):
+                self.OriginalNumberHydroGen[i] = \
+                    obj.Gen.Hydro[i].get_Bus()
 
         if self.NumberPumps > 0:
             self.MaxPowerPumps = np.empty(self.NumberPumps) # Minimum 
@@ -653,7 +711,7 @@ class Networkmodel():
             self.CostOperPumps = np.empty(self.NumberPumps) # Operational 
                             # cost of hydro generators
             for i in range(self.NumberPumps):
-                self.CostOperPumps[i] = obj.pumps['Value'][k]
+                self.CostOperPumps[i] = obj.pumps['Value'][i]
 
         if self.NumberStorageDevices > 0:
             self.EffStorage = np.empty(self.NumberStorageDevices) # Efficiency 
@@ -675,7 +733,7 @@ class Networkmodel():
             for i in self.LongTemporalConnections:
                 for j in range(self.NumberNodesPS):
                     self.MultScenariosDemand[i, j] = \
-                        self.scenarios['Demand'][self.busScenario[j][i]]
+                        obj.scenarios['Demand'][obj.busScenario[j][i]]
         else:
             self.MultScenariosDemand = np.empty(\
                 (len(self.LongTemporalConnections),\
@@ -687,12 +745,12 @@ class Networkmodel():
                 for j in range(self.ShortTemporalConnections):
                     for k in range(self.NumberNodesPS):
                         self.MultScenariosDemand[i, j, k] = \
-                            self.scenarios['Demand']\
-                                [j+self.busScenario[k][i]]
+                            obj.scenarios['Demand']\
+                                [j+obj.busScenario[k][i]]
 
         self.ActiveBranches = np.empty(\
                 ((self.NumberContingencies + 1),\
-                self.NumberLinesPS))    # Falg to indicate if the 
+                self.NumberLinesPS))    # Flag to indicate if the 
                             # transmission line or transformer is active 
                             # on each contingency
         for i in range(self.NumberContingencies + 1):
@@ -704,17 +762,89 @@ class Networkmodel():
                             # transformers
         for i in range(self.NumberLinesPS):
             self.PowerRateLimitTL[i] = \
-                self.ENetwork.Branch[i].get_Rate()
+                obj.ENetwork.Branch[i].get_Rate()
         self.PowerDemandNode = np.empty((self.NumberNodesPS)) # Active
                             # Power demand at each node
         for i in range(self.NumberNodesPS):
             self.PowerDemandNode[i] = \
-                self.busData[i]
+                obj.busData[i]
+        
+        self.TypeNode = np.empty((self.NumberNodesPS)) # Type
+                            # of node
+        for i in range(self.NumberNodesPS):
+            self.TypeNode[i] = \
+                obj.ENetwork.Bus[i].get_Type()
+        
+        self.OriginalNumberNodes = \
+                np.empty((self.NumberNodesPS)) # Original numeration of 
+                                # the nodes in the power system
+        for i in range(self.NumberNodesPS):
+            self.OriginalNumberNodes[i] = \
+                obj.ENetwork.Bus[i].get_Number()
+        
+        self.OriginalNumberBranchFrom = \
+            np.empty((self.NumberLinesPS)) # Original numeration of 
+                                # the transmission lines and transformers
+                                # in the power system in the from end
+        for i in range(self.NumberLinesPS):
+            self.OriginalNumberBranchFrom[i] = \
+                obj.ENetwork.Branch[i].get_BusF()
+        self.OriginalNumberBranchTo = \
+            np.empty((self.NumberLinesPS)) # Original numeration of 
+                                # the transmission lines and transformers
+                                # in the power system in the to end
+        for i in range(self.NumberLinesPS):
+            self.OriginalNumberBranchTo[i] = \
+                obj.ENetwork.Branch[i].get_BusT()
+        
+        self.PosNumberBranchFrom = \
+            np.empty((self.NumberLinesPS)) # Position of the from end of
+                                # the transmission lines and transformers
+                                # in the vector that stores the node data.
+                                # The position start from zero in the node
+                                # data
+        for i in range(self.NumberLinesPS):
+            self.PosNumberBranchFrom[i] = \
+                obj.ENetwork.Branch[i].get_PosF()
+        self.PosNumberBranchTo = \
+            np.empty((self.NumberLinesPS)) # Position of the to end of
+                                # the transmission lines and transformers
+                                # in the vector that stores the node data.
+                                # The position start from zero in the node
+                                # data
+        for i in range(self.NumberLinesPS):
+            self.PosNumberBranchTo[i] = \
+                obj.ENetwork.Branch[i].get_PosT()
+        self.ReactanceBranch = \
+            np.empty((self.NumberLinesPS)) # Reactance of the transmission 
+                                # lines and transformers
+        for i in range(self.NumberLinesPS):
+            self.ReactanceBranch[i] = \
+                obj.ENetwork.Branch[i].get_X()
+        self.ResistanceBranch = \
+            np.empty((self.NumberLinesPS)) # Resistance of the transmission 
+                                # lines and transformers
+        for i in range(self.NumberLinesPS):
+            self.ResistanceBranch[i] = \
+                obj.ENetwork.Branch[i].get_R()
 
+        self.ACoeffPWBranchLosses = \
+            np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
+                                # piece Ax + b for the piecewise 
+                                # linearisation of the nonlinear branch
+                                # Losses
+        for i in range(self.NumberPiecesTLLosses):
+            self.ACoeffPWBranchLosses[i] = \
+                obj.ENetwork.loss['A'][i]
+        self.BCoeffPWBranchLosses = \
+            np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
+                                # piece Ax + b for the piecewise 
+                                # linearisation of the nonlinear branch
+                                # Losses
+        for i in range(self.NumberPiecesTLLosses):
+            self.BCoeffPWBranchLosses[i] = \
+                obj.ENetwork.loss['B'][i]
 
-        # Copy attributes
-        for pars in obj.__dict__.keys():
-            setattr(self, pars, getattr(obj, pars))
 
     def optimisationNM(self):
         """ This class method solve the optimisation problem """
@@ -974,7 +1104,7 @@ class Networkmodel():
                     for k in range(self.NumberRESGen):
                         self.solver.set_col_bnds(\
                             str(self.RESgenerators[i, j][0]), k,\
-                            'bounded', MinRESGen[k],\
+                            'bounded', self.MinRESGen[k],\
                             self.RESScenarios[i, j, k] * \
                                 self.MaxRESGen[k])
 
@@ -1280,7 +1410,7 @@ class Networkmodel():
                                 * self.BaseUnitPower \
                                     * self.CostOperPumps[k])
             # Punitive cost for load curtailment
-                if self.settings['Flag']:
+                if self.FlagProblem:
                 # Optimal Power Flow
                     for k in range(self.NumberContingencies + 1):
                         for ii in range(self.NumberNodesPS):
@@ -1722,7 +1852,7 @@ class Networkmodel():
                                 str(self.LoadCurtailmentNode[i, j, k][0]), ii,\
                                 'fixed', 0, 0)
                     for ii in range(self.NumberNodesPS):
-                        if self.ENetwork.Bus[ii].get_Type() is not 3:
+                        if self.TypeNode[ii] is not 3:
                             self.solver.set_col_bnds(\
                                 str(self.VoltageAngle[i, j, k][0]),\
                                     ii,'free', 0, 0)
@@ -1906,8 +2036,8 @@ class Networkmodel():
                     # Storing the thermal generation variables
                         if self.NumberConvGen > 0:
                             for jj in range(self.NumberConvGen):
-                                if self.Gen.Conv[jj].get_Bus() == \
-                                    self.ENetwork.Bus[ii].get_Number():
+                                if self.OriginalNumberConvGen[jj] == \
+                                    self.OriginalNumberNodes[ii]:
                                     self.ia[self.ne] = \
                                         self.activepowerbalancenode\
                                         [i, j, k][1] + ii
@@ -1918,8 +2048,8 @@ class Networkmodel():
                     # Storing the RES generation variables
                         if self.NumberRESGen > 0:
                             for jj in range(self.NumberRESGen):
-                                if self.Gen.RES[jj].get_Bus() == \
-                                    self.ENetwork.Bus[ii].get_Number():
+                                if self.OriginalNumberRESGen[jj] == \
+                                    self.OriginalNumberNodes[ii]:
                                     self.ia[self.ne] = \
                                         self.activepowerbalancenode\
                                         [i, j, k][1] + ii
@@ -1930,8 +2060,8 @@ class Networkmodel():
                     # Storing the Hydroelectric generation variables
                         if self.NumberHydroGen > 0:
                             for jj in range(self.NumberHydroGen):
-                                if self.Gen.Hydro[jj].get_Bus() == \
-                                    self.ENetwork.Bus[ii].get_Number():
+                                if self.OriginalNumberHydroGen[jj] == \
+                                    self.OriginalNumberNodes[ii]:
                                     self.ia[self.ne] = \
                                         self.activepowerbalancenode\
                                         [i, j, k][1] + ii
@@ -1970,7 +2100,7 @@ class Networkmodel():
                     # Link List
                         if self.NumberPumps > 0:
                             for jj in range(self.NumberPumps):
-                                if self.pumps['Max'][jj] > 0:
+                                if self.MaxPowerPumps[jj] > 0:
                                     self.ia[self.ne] = \
                                         self.activepowerbalancenode\
                                             [i, j, k][1] + ii
@@ -1980,8 +2110,8 @@ class Networkmodel():
                                     self.ne += 1
                     # Storing the variables for active power flows
                         for jj in range(self.NumberLinesPS):
-                            if self.ENetwork.Branch[jj].get_BusF() ==\
-                                self.ENetwork.Bus[ii].get_Number():
+                            if self.OriginalNumberBranchFrom[jj] ==\
+                                self.OriginalNumberNodes[ii]:
                                 self.ia[self.ne] = \
                                     self.activepowerbalancenode\
                                         [i, j, k][1] + ii
@@ -1989,8 +2119,8 @@ class Networkmodel():
                                     self.ActivePowerFlow[i, j, k][1] + jj
                                 self.ar[self.ne] = -1.0
                                 self.ne += 1
-                            if self.ENetwork.Branch[jj].get_BusT() ==\
-                                self.ENetwork.Bus[ii].get_Number():
+                            if self.OriginalNumberBranchTo[jj] ==\
+                                self.OriginalNumberNodes[ii]:
                                 self.ia[self.ne] = \
                                     self.activepowerbalancenode\
                                         [i, j, k][1] + ii
@@ -2001,10 +2131,10 @@ class Networkmodel():
                     # Storing the variables for active power losses
                         if self.LossesFlag:
                             for jj in range(self.NumberLinesPS):
-                                if self.ENetwork.Branch[jj].get_BusF() ==\
-                                    self.ENetwork.Bus[ii].get_Number() or \
-                                    self.ENetwork.Branch[jj].get_BusT() ==\
-                                    self.ENetwork.Bus[ii].get_Number():
+                                if self.OriginalNumberBranchFrom[jj] ==\
+                                    self.OriginalNumberNodes[ii] or \
+                                    self.OriginalNumberBranchTo[jj] ==\
+                                    self.OriginalNumberNodes[ii]:
                                     self.ia[self.ne] = \
                                         self.activepowerbalancenode\
                                             [i, j, k][1] + ii
@@ -2076,18 +2206,18 @@ class Networkmodel():
                                 self.activepowerflowconstraint[i, j, k][1] + ii
                             self.ja[self.ne] = \
                                 self.VoltageAngle[i, j, k][1] + \
-                                    self.ENetwork.Branch[ii].get_PosF()
+                                    self.PosNumberBranchFrom[ii]
                             self.ar[self.ne] = \
-                                -1.0/self.ENetwork.Branch[ii].get_X()
+                                -1.0/self.ReactanceBranch[ii]
                             self.ne += 1
                         # Storing the voltage angle variables at end "to"
                             self.ia[self.ne] = \
                                 self.activepowerflowconstraint[i, j, k][1] + ii
                             self.ja[self.ne] = \
                                 self.VoltageAngle[i, j, k][1] + \
-                                    self.ENetwork.Branch[ii].get_PosT()
+                                    self.PosNumberBranchTo[ii]
                             self.ar[self.ne] = \
-                                1.0/self.ENetwork.Branch[ii].get_X()
+                                1.0/self.ReactanceBranch[ii]
                             self.ne += 1
 
                         # Defining the resources (b) for the constraints
@@ -2113,9 +2243,9 @@ class Networkmodel():
                                         + counter
                                 self.ja[self.ne] = \
                                     self.VoltageAngle[i, j, k][1] + \
-                                        self.ENetwork.Branch[ii].get_PosF()
+                                        self.PosNumberBranchFrom[ii]
                                 self.ar[self.ne] = \
-                                    -1.0/self.ENetwork.Branch[ii].get_X()
+                                    -1.0/self.ReactanceBranch[ii]
                                 self.ne += 1
                             # Storing the voltage angle variables at end "to"
                                 self.ia[self.ne] = \
@@ -2123,9 +2253,9 @@ class Networkmodel():
                                         + counter
                                 self.ja[self.ne] = \
                                     self.VoltageAngle[i, j, k][1] + \
-                                        self.ENetwork.Branch[ii].get_PosT()
+                                        self.PosNumberBranchTo[ii]
                                 self.ar[self.ne] = \
-                                    1.0/self.ENetwork.Branch[ii].get_X()
+                                    1.0/self.ReactanceBranch[ii]
                                 self.ne += 1
                                 
                             # Defining the resources (b) for the constraints
@@ -2165,22 +2295,22 @@ class Networkmodel():
                                 self.ja[self.ne] = \
                                     self.ActivePowerFlow[i, j, k][1] \
                                         + ii
-                                self.ar[self.ne] = -self.ENetwork.loss['B'][jj]\
-                                    * self.ENetwork.Branch[ii].get_R()
+                                self.ar[self.ne] = -self.BCoeffPWBranchLosses[jj]\
+                                    * self.ResistanceBranch[ii]
                                 self.ne += 1
 
                             # Defining the resources (b) for the constraints
                                 self.solver.set_row_bnds(\
                                     str(self.activepowerlosses1\
                                         [i, j, k, ii][0]), jj, 'lower', \
-                                        self.ENetwork.loss['A'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R(), 0)
+                                        self.ACoeffPWBranchLosses[jj]\
+                                        * self.ResistanceBranch[ii], 0)
                                 # print("{} ≤ {} - ({})*{} ≤ ∞".format(\
-                                #     self.ENetwork.loss['A'][jj]\
-                                #     * self.ENetwork.Branch[ii].get_R(), \
+                                #     self.ACoeffPWBranchLosses[jj]\
+                                #     * self.ResistanceBranch[ii], \
                                 #     str(self.ActivePowerLosses[i, j, k][0]+\
-                                #     ","+str(ii)),-self.ENetwork.loss['B'][jj]\
-                                #     * self.ENetwork.Branch[ii].get_R(),\
+                                #     ","+str(ii)),-self.BCoeffPWBranchLosses[jj]\
+                                #     * self.ResistanceBranch[ii],\
                                 #     str(self.ActivePowerFlow[i, j, k][0]+\
                                 #     ","+str(ii))))
                     # Post-contingency
@@ -2205,16 +2335,16 @@ class Networkmodel():
                                         self.ActivePowerFlow[i, j, k][1] \
                                             + ii
                                     self.ar[self.ne] = \
-                                        -self.ENetwork.loss['B'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R()
+                                        -self.BCoeffPWBranchLosses[jj]\
+                                        * self.ResistanceBranch[ii]
                                     self.ne += 1
 
                                 # Defining the resources (b) for the constraints
                                     self.solver.set_row_bnds(\
                                         str(self.activepowerlosses1\
                                             [i, j, k, ii][0]), jj, 'lower', \
-                                            self.ENetwork.loss['A'][jj]\
-                                            * self.ENetwork.Branch[ii].get_R(), 0)
+                                            self.ACoeffPWBranchLosses[jj]\
+                                            * self.ResistanceBranch[ii], 0)
 
     def activepowerlosses2constraints(self):
         """ This class method writes the active power losses constraints in glpk
@@ -2247,16 +2377,16 @@ class Networkmodel():
                                 self.ja[self.ne] = \
                                     self.ActivePowerFlow[i, j, k][1] \
                                         + ii
-                                self.ar[self.ne] = self.ENetwork.loss['B'][jj]\
-                                    * self.ENetwork.Branch[ii].get_R()
+                                self.ar[self.ne] = self.BCoeffPWBranchLosses[jj]\
+                                    * self.ResistanceBranch[ii]
                                 self.ne += 1
 
                             # Defining the resources (b) for the constraints
                                 self.solver.set_row_bnds(\
                                     str(self.activepowerlosses2\
                                         [i, j, k, ii][0]), jj, 'lower', \
-                                        self.ENetwork.loss['A'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R(), 0)
+                                        self.ACoeffPWBranchLosses[jj]\
+                                        * self.ResistanceBranch[ii], 0)
                     # Post-contingency
                     else:
                         for ii in range(self.NumberLinesPS):
@@ -2279,16 +2409,16 @@ class Networkmodel():
                                         self.ActivePowerFlow[i, j, k][1] \
                                             + ii
                                     self.ar[self.ne] = \
-                                        self.ENetwork.loss['B'][jj]\
-                                        * self.ENetwork.Branch[ii].get_R()
+                                        self.BCoeffPWBranchLosses[jj]\
+                                        * self.ResistanceBranch[ii]
                                     self.ne += 1
 
                                 # Defining the resources (b) for the constraints
                                     self.solver.set_row_bnds(\
                                         str(self.activepowerlosses2\
                                             [i, j, k, ii][0]), jj, 'lower', \
-                                            self.ENetwork.loss['A'][jj]\
-                                            * self.ENetwork.Branch[ii].get_R(), 0)
+                                            self.ACoeffPWBranchLosses[jj]\
+                                            * self.ResistanceBranch[ii], 0)
 
 
 class EnergyandNetwork(Energymodel, Networkmodel):
@@ -2314,14 +2444,17 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
         # Storing data input - Parameters
         self.LLNodesAfter = obj1.tree['After']
+        self.ConnectionTreeGen = obj3.p['pyeneE']   # Connections
+                        # between the energy model and the network
+                        # model. This parameters connects the inputs 
+                        # of each tree with the outputs of its 
+                        # related hydro generator
+        self.PenaltyLoadCurtailment = obj3.Penalty # Penalty for
+                        # load curtailment in the power system
 
         # Storing the data of other objects
         Energymodel.__init__(self, obj1)
         Networkmodel.__init__(self, obj2)
-
-                # Copy attributes
-        for pars in obj3.__dict__.keys():
-            setattr(self, pars, getattr(obj3, pars))
 
 
     def optimisationENM(self):
@@ -2332,7 +2465,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation
-        self.EnergyandEconomicDispatchModels()
+        self.EnergyandNetworkModels()
         ret = self.solver.simplex()
         assert ret == 0
 
@@ -2395,7 +2528,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         #             print('')
         #         print('')
 
-        #     if self.settings['Flag']:
+        #     if self.FlagProblem:
         #     # Optimal Power Flow
         #         print('Voltage angle:')
         #         for k in range(self.NumberContingencies + 1):
@@ -2462,7 +2595,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
         # for i in range(self.NumberTrees):
         #     print("Hydro generation at node %d:" \
-        #         %(self.Gen.Hydro[i].get_Bus()))
+        #         %(self.OriginalNumberHydroGen[i]))
         #     for j in self.LongTemporalConnections:
         #          print("%f" %(self.solver.get_col_prim(str(\
         #             self.OutputsTree[i][0]), self.p['pyeneE'][j])), \
@@ -2470,9 +2603,9 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         #     print('')
         # print('\n\n')
 
-    def EnergyandEconomicDispatchModels(self):
+    def EnergyandNetworkModels(self):
         """ This class method builds the optimisation model
-        for the energy and economic dispatch problem """
+        for the energy and network related problems """
         # Function to determine de number of variables in the energy model
         self.dnvariablesEM()
         # Function to determine de number of constraints in the energy 
@@ -2483,7 +2616,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         self.variablesEM()
 
 
-        if self.settings['Flag']:
+        if self.FlagProblem:
             # Function to determine de number of variables in the optimal
             # power flow
             self.dnvariablesOPF()
@@ -2539,10 +2672,10 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         self.constraintsEM()
         self.Energybalance()
         self.Aggregation()
-        # if self.LL['NosUnc'] != 0:
+        # if self.NumberNodesUnc != 0:
         #     self.AggregationStochastic()
 
-        if self.settings['Flag']:
+        if self.FlagProblem:
             self.constraintsOPF()
             self.activepowerbalancepernode()
             self.activepowerflowconstraints()
@@ -2577,8 +2710,8 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         for i in range(self.NumberTrees):
             for j in self.LongTemporalConnections:
                 self.solver.set_col_bnds(\
-                    str(self.OutputsTree[i][0]), self.p['pyeneE'][j], 'lower', \
-                        0, sys.float_info.max)      
+                    str(self.OutputsTree[i][0]), self.ConnectionTreeGen[j],\
+                        'lower', 0, sys.float_info.max)      
 
     # Constraints ENM
 
@@ -2622,7 +2755,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 # Storing the variables for the total storage of the tree
                 self.ia[self.ne] = self.connectionNetworkandEnergy[i, j][1]
                 self.ja[self.ne] = self.OutputsTree[i][1] + \
-                    self.p['pyeneE'][j]
+                    self.ConnectionTreeGen[j]
                 self.ar[self.ne] = 1.0
                 self.ne += 1
                 for k in range(self.ShortTemporalConnections):
@@ -2685,20 +2818,20 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                             str(self.pumpsvar[i, j][0]),\
                             k, -OFaux[i] * self.TotalHoursPerPeriod[j] \
                                 * self.BaseUnitPower \
-                                    * self.pumps['Value'][k])
+                                    * self.CostOperPumps[k])
             # Punitive cost for load curtailment
-                if self.settings['Flag']:
+                if self.FlagProblem:
                 # Optimal Power Flow
                     for k in range(self.NumberContingencies + 1):
                         for ii in range(self.NumberNodesPS):
                             self.solver.set_obj_coef(\
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, OFaux[i] * self.TotalHoursPerPeriod[j] \
-                                    * self.Penalty)
+                                    * self.PenaltyLoadCurtailment)
                 else:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\
                                 str(self.loadcurtailmentsystem[i, j][0]),\
                                 0, OFaux[i] * self.TotalHoursPerPeriod[j] \
-                                    * self.Penalty)
+                                    * self.PenaltyLoadCurtailment)
