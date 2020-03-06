@@ -39,6 +39,26 @@ class pyeneRConfig():
         self.wind['Model'] = 1  # 1: Linear, 2: Parabolic, 3: Cubic
         self.wind['tower'] = 50  # Height of the turbines
 
+        # Water for cooling
+        self.cooling = {
+                'Flag': False,  # Consider cooling
+                'Types': ['Nuclear', 'Coal','CCGT'],
+                'Gen2Temp': [],  # Link generators to temp_w profiles
+                'GenType': [],  # Generation types
+                'temp_w': [[13.3876, 12.6934, 12.2074, 12.1380, 12.1380,
+                           12.4851, 12.7628, 13.6652, 14.9148, 15.8173,
+                           16.5809, 17.1362, 17.2057, 17.6222, 17.4833,
+                           17.4833, 17.2057, 16.7891, 16.3726, 15.8173,
+                           14.8454, 14.2206, 13.1793, 13.2487]],
+                'TempThres': [15.0, 15.0, 15.0],  # Temp not affect CF
+                'TempShut': [32.0, 32.0, 32.0],  # Tempe that leads to shutdown
+                'TempMax': [35.0, 35.0, 35.0],  # Max outlet temperature
+                'Delta': [10.0, 10.0, 10.0],  # Max temp intake and outlet
+                'Scarcity': 1,  # Ratio available/required
+                'Lambda': [0.00444, 0.0097, 0.0097]  # Derating factor
+                }
+        
+
 
 class RESprofiles():
     ''' Produce time series for different RES '''
@@ -51,6 +71,12 @@ class RESprofiles():
         # Copy attributes
         for pars in obj.__dict__.keys():
             setattr(self, pars, getattr(obj, pars))
+
+    def buildCF(self):
+        ''' Build parameters for generator's CF '''
+        aux = len(self.cooling['Gen2Temp'])
+
+            
 
     def buildPV(self, direct, diffuse):
         ''' Produce PV generation multiplier '''
@@ -98,6 +124,58 @@ class RESprofiles():
                          self.wind['CutIN']**self.wind['Model'])
 
         return windMultiplier
+
+    def get_CF(self, **kwargs):
+        ''' Calculate capacity factor '''
+
+        if 'temp_w' in kwargs:
+            temp_w = kwargs.pop('temp_w')
+        else:
+            temp_w = self.cooling['temp_w']
+
+        if 'type' in kwargs:
+            index = self.cooling['Types'].index(kwargs.pop('type'))
+        elif 'index' in kwargs:
+            index = kwargs.pop('index')
+        else:
+            index = self.cooling['Types'].index('Coal')
+
+        # Select generator data
+        temp_w_health = self.cooling['TempThres'][index]
+        temp_w_shutdown = self.cooling['TempShut'][index]
+        temp_w_max = self.cooling['TempMax'][index]
+        delta_temp_w_max = self.cooling['Delta'][index]
+        w_scarcity_factor = self.cooling['Scarcity']
+        lambda_derating4temp = self.cooling['Lambda'][index]
+
+        #  Temperature over which the CF would be affected severely
+        temp_w_risk = temp_w_max-(delta_temp_w_max/w_scarcity_factor)
+        
+        #  calculate the derating factor relates to the cooling water scarcity
+        lambda_derating4scarcity = \
+            (1.0-lambda_derating4temp*(temp_w_max - delta_temp_w_max /
+                                       w_scarcity_factor - temp_w_health)) / \
+            (delta_temp_w_max/w_scarcity_factor)
+
+        #  create the output parameter
+        s = len(temp_w)
+        capacity_factor = np.zeros(s, dtype=float)
+
+        #  capacity factor is equal to 1.0, if temp_w < temp_w_health
+        for x in range(s):
+            if temp_w[x] <= temp_w_health:
+                capacity_factor[x] = 1.0
+            elif temp_w[x] < temp_w_shutdown:
+                if temp_w[x] <= temp_w_risk:
+                    capacity_factor[x] = 1.0-lambda_derating4temp * \
+                        (temp_w[x]-temp_w_health)
+                else:
+                    capacity_factor[x] = lambda_derating4scarcity * \
+                        (temp_w_max-temp_w[x])
+            if capacity_factor[x] > 1:
+                capacity_factor[x] = 1
+
+        return capacity_factor
 
     def getPVAngles(self, xd, xh, latitude, face, tilt):
         ''' Calculate solar angles '''
