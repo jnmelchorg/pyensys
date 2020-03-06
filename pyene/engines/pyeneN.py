@@ -26,15 +26,16 @@ class pyeneNConfig:
                 'SecurityFlag': False,  # Enable all security constraints
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
-                'Feasibility': True,  # Feasibility constraints
+                'Feasibility': True,  # Feasibility constraints (curtailment)
+                'Load_type': [],  # 0 Urban, 1 Rural
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
-                'UC': False  # Model UC
+                'UC': False,  # Model UC
                 }
         # Connections
         self.connections = {
-                'set': range(1),  # Connections between nodes in the tree (last layer of the tree)
+                'set': range(1),  # Connections between nodes
                 'Branches': 0,  # Real number of branches (including parallel)
                 'Flow': [0],  # Power flow through the lines
                 'Voltage': [0],  # Voltages in each node
@@ -62,8 +63,10 @@ class pyeneNConfig:
                 'Number': None,  # Number of conventional generators
                 'Ancillary': [True],  # Can it provide ancillary services?
                 'Baseload': [0],  # 0-1 for the use of conv for baseload
-                'Ramp': [None],  # Set ramps for conventional generators
-                'RES': [True]  # Can it support RES integration?
+                'Ramp': [],  # Set ramps for conventional generators
+                'RES': [True],  # Can it support RES integration?
+                'MUT': [],  # MInimum up time
+                'MDT': []  # Minimum down time
                 }
         # Hydropower
         self.hydropower = {
@@ -107,6 +110,10 @@ class pyeneNConfig:
                 'Services': True,
                 'GenBus': True,
                 'UC': True,
+                }
+        # TODO: Remove reference
+        self.Aux = {
+                'shift': 1
                 }
 
 
@@ -160,7 +167,8 @@ class ENetworkClass:
 
     def addCon(self, m):
         ''' Add pyomo constraints '''
-
+        # Currently using the same feasibility variable as the generators
+        # TODO: Assign dedicated curtailment/spilling variable
         if self.scenarios['NoDem'] == 0:
             self.p['daux'] = 0
         else:
@@ -209,7 +217,6 @@ class ENetworkClass:
             m.cNEBalance0 = Constraint(self.s['Tim'], self.s['Sec2'],
                                        self.s['Con'],
                                        rule=self.cNEBalance0_rule)
-
         # Is there baseload
         if sum(self.hydropower['Baseload']) > 0:
             self.scenarios['WSum'] = sum(self.scenarios['Weights'])
@@ -223,6 +230,27 @@ class ENetworkClass:
             # Minimum generation
             m.cNEGMin = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
                                    rule=self.cNEGMinUC_rule)
+            self.LLUC = np.zeros(self.settings['NoTime']*2, dtype=int)
+            x1 = 1
+            for x in range(self.settings['NoTime']*2):
+                self.LLUC[x] = x1
+                x1 += 1
+                if x1 == self.settings['NoTime']:
+                    x1 = 0
+
+            # Minimum down time
+            m.cNEGMinDT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT1_rule)
+            # Minimum up time
+            m.cNEGMinUT1 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT1_rule)
+            # Minimum down time
+            m.cNEGMinDT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinDT2_rule)
+            # Minimum up time
+            m.cNEGMinUT2 = Constraint(self.s['Gen'], self.s['Tim'],
+                                      self.s['Con'], rule=self.cNEGMinUT2_rule)
+
         else:
             # Maximum generation
             m.cNEGMax = Constraint(self.s['Gen'], self.s['Tim'], self.s['Con'],
@@ -242,9 +270,7 @@ class ENetworkClass:
         # Dinamic load (pump) initialisation
         m.cNDLIni = Constraint(self.s['Tim'], self.s['Con'],
                                rule=self.cNLDIni_rule)
-        # Feasibility constraints
-        m.cNsetFea = Constraint(self.s['Tim'], self.s['Con'],
-                                rule=self.cNsetFea_rule)
+
         # Adding RES limits
         if self.RES['Number'] > 0:
             m.cNRESMax = Constraint(self.s['Tim'], self.s['RES'],
@@ -342,8 +368,15 @@ class ENetworkClass:
                            domain=NonNegativeReals, initialize=0.0)
         # Add Unit commitment constraints
         if self.settings['UC']:
-            m.vNGen_Bin = Var(range(Noh*(self.Gen.get_NoBin()+1)),
-                              self.s['Tim'], domain=Binary, initialize=0.0)
+            m.vNGen_Bin = \
+                Var(range(Noh*(self.Gen.get_NoBin()+1)), self.s['Tim'],
+                    domain=Binary, initialize=1.0)
+            m.vNGen_MUT = \
+                Var(range(Noh*(self.Gen.get_NoMUT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
+            m.vNGen_MDT = \
+                Var(range(Noh*(self.Gen.get_NoMDT()+1)), self.s['Tim'],
+                    domain=NonNegativeReals, bounds=(0.0, 1.0), initialize=0.0)
 
         return m
 
@@ -352,7 +385,8 @@ class ENetworkClass:
         return m.vNServ[xh*self.p['GServices'], xt] >= \
             self.settings['Ancillary'] * \
             sum(m.vNGen[self.connections['Generation'][xh]+x, xt]
-                for x in self.Gen.get_GenAll())-m.vNFea[xh*self.p['faux'], xt]
+                for x in self.Gen.get_GenAll()) - \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
     def cNDCLossA_rule(self, m, xb, xL, xt, xh):
         ''' Power losses (Positive) '''
@@ -388,8 +422,9 @@ class ENetworkClass:
                 (m.vNStore[self.LLStor[xn, xh], xt] -
                  m.vNStore[self.LLStor[xn, xh], self.LLTime[xt]])*aux /
                 self.scenarios['Weights'][xt] -
-                m.vNFea[self.connections['Feasibility'][xh] +
-                        self.p['LLFea'][xn+1], xt] +
+                sum(m.vNFea[self.connections['Feasibility'][xh] +
+                            self.p['LLFea2'][xn], xt] for x1 in
+                    range(self.p['LLFea1'][xn])) +
                 m.vNPump[self.connections['Pump'][xh]+self.p['LLPump'][xn],
                          xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
@@ -404,7 +439,7 @@ class ENetworkClass:
                      for xn in self.s['Bus']))*self.p['LossM'] + \
             + sum(m.vNPump[xh*(self.pumps['Number']+1)+xp+1, xt]
                   for xp in self.s['Pump']) == \
-            m.vNFea[xh*self.p['faux'], xt] + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
             sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
                 for xg in self.Gen.get_GenAll()) - \
             sum((m.vNStore[xh*(self.Storage['Number']+1)+xn+1, xt] -
@@ -457,10 +492,30 @@ class ENetworkClass:
         return self.Gen.cNEGMaxUC_rule(m, xg, xt,
                                        self.connections['Generation'][xh])
 
+    def cNEGMinDT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinDT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinDT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
+
     def cNEGMinUC_rule(self, m, xg, xt, xh):
         ''' Minimum generation '''
         return self.Gen.cNEGMinUC_rule(m, xg, xt,
                                        self.connections['Generation'][xh])
+
+    def cNEGMinUT1_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT1_rule(m, xg, xt, self.LLTime[xt],
+                                        self.connections['Generation'][xh])
+
+    def cNEGMinUT2_rule(self, m, xg, xt, xh):
+        ''' Minimum generation '''
+        return self.Gen.cNEGMinUT2_rule(m, xg, xt, self.LLUC,
+                                        self.connections['Generation'][xh])
 
     def cNGenRampDown_rule(self, m, xg, xt, xh):
         ''' Generation ramps (down)'''
@@ -508,10 +563,6 @@ class ENetworkClass:
         return sum(m.vNGen[aux+x, xt] for x in self.Gen.get_GenAll()) >= \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
-    def cNsetFea_rule(self, m, xt, xh):
-        ''' Positions without feasibility constraints '''
-        return m.vNFea[self.connections['Feasibility'][xh], xt] == 0
-
     def cNStore0_rule(self, m, xt):
         ''' Reference storage '''
         return m.vNStore[0, xt] == 0
@@ -533,7 +584,8 @@ class ENetworkClass:
                    for xg in self.Gen.get_GenAllR()) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt] + \
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux'])) + \
             m.vNServ[self.p['GServices']*(xh+1)-1, xt]
 
     def cNUncRES0_rule(self, m, xt, xh):
@@ -543,7 +595,8 @@ class ENetworkClass:
                    for xg in self.Gen.get_GenAllR()) <= \
             sum(self.scenarios['RES'][self.resScenario[xg][xh]+xt] *
                 self.RES['Max'][xg] for xg in self.s['RES']) * \
-            (1-self.RES['Uncertainty'][0])+m.vNFea[xh*self.p['faux']+1, xt]
+            (1-self.RES['Uncertainty'][0]) + \
+            sum(m.vNFea[xh, xt] for xf in range(self.p['faux']))
 
     def get_ConB(self):
         ''' Get connections between branches '''
@@ -588,7 +641,7 @@ class ENetworkClass:
         aux = self.connections['Generation'][xh]+self.Gen.get_vNGenH(xg)
         return m.vNGen[aux, xt]*self.ENetwork.get_Base()/Eff
 
-    def initialise(self):
+    def initialise(self, RM):
         ''' Initialize externally '''
         # Setting additional constraints (Security, losses and feasibilty)
         # Read network data
@@ -599,7 +652,7 @@ class ENetworkClass:
         (self.busData, self.busScenario,
          self.resScenario) = self.ProcessEDem(self.demandE)
 
-        self.Gen.initialise(self.ENetwork, self.settings)
+        self.Gen.initialise(self.ENetwork, self.settings, RM)
 
         self.NoBuses = self.ENetwork.get_NoBus()*(1+self.NoSec2)
         self.NoBranch = self.ENetwork.get_NoBra() + \
@@ -741,8 +794,11 @@ class ENetworkClass:
                 for xn in range(self.Gen.get_NoGen()):
                     for x2 in self.s['Tim']:
                         if self.settings['UC']:
-                            aux = (m.vNGen_Bin[self.connections['Generation']
-                                   [xh]+xn, x2].value)
+                            aux1 = self.Gen.get_Bin(xn)
+                            if aux1 is not None:
+                                aux = (m.vNGen_Bin[self.connections
+                                                   ['Generation'][xh]+aux1,
+                                                   x2].value)
                         print("%2.0f " % aux, end='')
                     print()
                 print("];")
@@ -793,10 +849,14 @@ class ENetworkClass:
 
             if self.Print['Feasibility']:
                 print("\nFeas=[")
-                for xf in self.s['Fea']:
+                for xn in range(self.ENetwork.get_NoBus()):
                     for xt in self.s['Tim']:
-                        aux = m.vNFea[self.connections['Feasibility'][xh]+xf,
-                                      xt].value*self.ENetwork.get_Base()
+                        if self.p['LLFea1'][xn] == 0:
+                            aux = 0
+                        else:
+                            aux = m.vNFea[self.connections['Feasibility'][xh] +
+                                          self.p['LLFea2'][xn], xt].value * \
+                                self.ENetwork.get_Base()
                         print("%8.4f " % aux, end='')
                     print()
                 print("];")
@@ -816,7 +876,10 @@ class ENetworkClass:
         # Adjust demand profiles
         busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
         for xn in range(self.ENetwork.get_NoBus()):
-            busData[xn] = self.demandE['PD'][xn]/self.ENetwork.get_Base()
+            print(self.ENetwork.Bus[xn].getLoss())
+            busData[xn] = (self.ENetwork.Bus[xn].getLoss() +
+                           self.demandE['PD'][xn])/self.ENetwork.get_Base()
+
         # Auxiliar to find demand profiles
         busScenario = np.zeros((self.ENetwork.get_NoBus(),
                                 self.scenarios['Number']), dtype=int)
@@ -905,18 +968,17 @@ class ENetworkClass:
             LLDL[self.pumps['Bus'][xdl]-1] = xdl+1
         self.p['LLPump'] = LLDL
 
-        # Add LL for feasibility constraints (Nodes)
-        LLFea = np.zeros(self.ENetwork.get_NoBus()+1, dtype=int)
-        if self.settings['Feasibility']:
-            NoFea = self.ENetwork.get_NoBus()+1 # why is it the number of nodes + 1??
-            for xn in range(1, NoFea):
-                LLFea[xn] = xn
-        else:
-            NoFea = 1
-        self.LL = {}
-        self.NoLL = {}
-        self.iLL = {}
-        self.p['LLFea'] = LLFea
+        # Add LL for feasibility constraints only in nodes with demand
+        NoFea = 0
+        LLFea1 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        LLFea2 = np.zeros(self.ENetwork.get_NoBus(), dtype=int)
+        for xn in range(self.ENetwork.get_NoBus()):
+            if self.demandE['PD'][xn] > 0:
+                LLFea1[xn] = 1
+                LLFea2[xn] = NoFea
+                NoFea += 1
+        self.p['LLFea1'] = LLFea1
+        self.p['LLFea2'] = LLFea2
         self.NoFea = NoFea
 
     def Read(self):
