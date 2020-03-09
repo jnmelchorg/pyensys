@@ -2421,6 +2421,126 @@ class Networkmodel():
                                             * self.ResistanceBranch[ii], 0)
 
 
+    # Data inputs of Network model
+
+    def SetLongTemporalConnections(self, \
+        long_temporal_connections=None):
+        assert long_temporal_connections is not None, \
+            "No value for the nodes of the temporal tree to be \
+            analised" 
+        self.LongTemporalConnections = \
+            long_temporal_connections
+
+    def SetShortTemporalConnections(self, \
+        short_temporal_connections=None):
+        assert short_temporal_connections is not None, \
+            "No value for the number of subperiods in a 24h period" 
+        self.ShortTemporalConnections = \
+            short_temporal_connections
+
+    def SetNumberConvGen(self, \
+        number_conv_gen=None):
+        assert number_conv_gen is not None, \
+            "No value for the number of conventional generators" 
+        self.NumberConvGen = \
+            number_conv_gen
+
+    def SetNumberRESGen(self, \
+        number_RES_gen=None):
+        assert number_RES_gen is not None, \
+            "No value for the number of RES generators" 
+        self.NumberRESGen = \
+            number_RES_gen
+
+    def SetNumberHydroGen(self, \
+        number_Hydro_gen=None):
+        assert number_Hydro_gen is not None, \
+            "No value for the number of Hydro generators" 
+        self.NumberHydroGen = \
+            number_Hydro_gen
+
+    def SetNumberPumps(self, \
+        number_pumps=None):
+        assert number_pumps is not None, \
+            "No value for the number of pumps" 
+        self.NumberPumps = \
+            number_pumps
+
+    def SetNumberStorageDevices(self, \
+        number_storage_devices=None):
+        assert number_storage_devices is not None, \
+            "No value for the number of storage elements" 
+        self.NumberStorageDevices = \
+            number_storage_devices
+    
+    def SetNumberDemScenarios(self, \
+        number_dem_scenarios=None):
+        assert number_dem_scenarios is not None, \
+            "No value for the number of demand scenarios" 
+        self.NumberDemScenarios = \
+            number_dem_scenarios
+    
+    def SetNumberNodesPS(self, \
+        number_nodes_PS=None):
+        assert number_nodes_PS is not None, \
+            "No value for the number of nodes in the power system" 
+        self.NumberNodesPS = \
+            number_nodes_PS
+
+    def SetNumberContingencies(self, \
+        number_contingencies=None):
+        assert number_contingencies is not None, \
+            "No value for the number of contingencies" 
+        self.NumberContingencies = \
+            number_contingencies
+    
+    def SetNumberLinesPS(self, \
+        number_lines_PS=None):
+        assert number_lines_PS is not None, \
+            "No value for the number of transmission lines and/or \
+                transformers in the power system" 
+        self.NumberLinesPS = \
+            number_lines_PS
+    
+    def SetNumberPiecesTLLosses(self, \
+        number_pieces_TL_losses=None):
+        assert number_pieces_TL_losses is not None, \
+            "No value for the number of pieces in the piecewise \
+                linearisation of transmission lines and \
+                transformers losses" 
+        self.NumberPiecesTLLosses = \
+            number_pieces_TL_losses
+    
+    def SetBaseUnitPower(self, \
+        base_unit_power=None):
+        assert base_unit_power is not None, \
+            "No value for the base power" 
+        self.BaseUnitPower = \
+            base_unit_power
+    
+    def SetPercentageLosses(self, \
+        percentage_losses=None):
+        assert percentage_losses is not None, \
+            "No value for the percentage of losses" 
+        self.PercentageLosses = \
+            percentage_losses
+    
+    def SetLossesFlag(self, \
+        losses_flag=None):
+        assert losses_flag is not None, \
+            "No value for the flag to consider transmission losses" 
+        self.LossesFlag = \
+            losses_flag
+
+    def SetFlagProblem(self, \
+        flag_problem=None):
+        assert flag_problem is not None, \
+            "No value for the flag that indicates the problem to be \
+                solved"
+        self.FlagProblem = \
+            flag_problem
+
+
 class EnergyandNetwork(Energymodel, Networkmodel):
     """ This class builds and solve the energy and network models(NM) 
     using the gplk wrapper.
