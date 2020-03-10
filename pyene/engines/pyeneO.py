@@ -274,12 +274,12 @@ class pyeneHDF5Settings():
         HDF5group = \
             self.fileh.create_group(self.fileh.root,
                                     'Simulation_{:05d}'.format(SimNo))
-        HDF5aux = np.zeros((EN.NM.scenarios['NoDem'],
-                            EN.NM.settings['NoTime']), dtype=float)
+        HDF5aux = np.zeros((GLPKobj.NumberDemScenarios,
+                            GLPKobj.ShortTemporalConnections), dtype=float)
 
         xp = 0
-        for xs in range(EN.NM.scenarios['NoDem']):
-            for xt in range(EN.NM.settings['NoTime']):
+        for xs in range(GLPKobj.NumberDemScenarios):
+            for xt in range(GLPKobj.ShortTemporalConnections):
                 HDF5aux[xs][xt] = EN.NM.scenarios['Demand'][xp]
                 xp += 1
 
