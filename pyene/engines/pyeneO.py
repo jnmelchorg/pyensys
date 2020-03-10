@@ -310,6 +310,13 @@ class pyeneHDF5Settings():
             hp_marginal[xi] = 0.0
         self.fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
+        # Getting the solution from GLPK
+
+        ThermalGeneration = GLPKobj.GetThermalGeneration()
+        RESGeneration = GLPKobj.GetRESGeneration()
+        HydroGeneration = GLPKobj.GetHydroGeneration()
+        
+
         for xs in range(EN.NM.scenarios['Number']):
             HDF5table = \
                 self.fileh.create_table(HDF5group,

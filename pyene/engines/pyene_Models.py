@@ -2858,99 +2858,120 @@ class Networkmodel():
     # Data outputs of Energy model
 
     def GetThermalGeneration(self):
-        ThermalGenerationSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberConvGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberConvGen):
-                    ThermalGenerationSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.thermalgenerators[i, j][0]), k) * \
-                                self.BaseUnitPower
-        return ThermalGenerationSolution
+        if self.NumberConvGen > 0:
+            ThermalGenerationSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberConvGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberConvGen):
+                        ThermalGenerationSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.thermalgenerators[i, j][0]), k) * \
+                                    self.BaseUnitPower
+            return ThermalGenerationSolution
+        else:
+            return None
     
     def GetRESGeneration(self):
-        RESGenerationSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberRESGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberRESGen):
-                    RESGenerationSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.RESgenerators[i, j][0]), k) * \
-                                self.BaseUnitPower
-        return RESGenerationSolution
+        if self.NumberRESGen > 0:
+            RESGenerationSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberRESGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberRESGen):
+                        RESGenerationSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.RESgenerators[i, j][0]), k) * \
+                                    self.BaseUnitPower
+            return RESGenerationSolution
+        else:
+            return None
     
     def GetHydroGeneration(self):
-        HydroGenerationSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberHydroGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberHydroGen):
-                    HydroGenerationSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.Hydrogenerators[i, j][0]), k) * \
-                                self.BaseUnitPower
-        return HydroGenerationSolution
+        if self.NumberHydroGen > 0:
+            HydroGenerationSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberHydroGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberHydroGen):
+                        HydroGenerationSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.Hydrogenerators[i, j][0]), k) * \
+                                    self.BaseUnitPower
+            return HydroGenerationSolution
+        else:
+            return None
     
     def GetPumpOperation(self):
-        pumpsvarSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberPumps))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberPumps):
-                    pumpsvarSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.pumpsvar[i, j][0]), k) * \
-                                self.BaseUnitPower
-        return pumpsvarSolution
+        if self.NumberPumps > 0:
+            pumpsvarSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberPumps))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberPumps):
+                        pumpsvarSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.pumpsvar[i, j][0]), k) * \
+                                    self.BaseUnitPower
+            return pumpsvarSolution
+        else:
+            return None
 
     def GetThermalGenerationCost(self):
-        ThermalGenerationCostSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberConvGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberConvGen):
-                    ThermalGenerationCostSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.thermalCG[i, j][0]), k)
-        return ThermalGenerationCostSolution
+        if self.NumberConvGen > 0:
+            ThermalGenerationCostSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberConvGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberConvGen):
+                        ThermalGenerationCostSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.thermalCG[i, j][0]), k)
+            return ThermalGenerationCostSolution
+        else:
+            return None
     
     def GetRESGenerationCost(self):
-        RESGenerationCostSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberRESGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberRESGen):
-                    RESGenerationCostSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.RESCG[i, j][0]), k)
-        return RESGenerationCostSolution
+        if self.NumberRESGen > 0:
+            RESGenerationCostSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberRESGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberRESGen):
+                        RESGenerationCostSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.RESCG[i, j][0]), k)
+            return RESGenerationCostSolution
+        else:
+            return None
     
     def GetHydroGenerationCost(self):
-        HydroGenerationCostSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                    self.NumberHydroGen))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberHydroGen):
-                    HydroGenerationCostSolution[i, j, k] = \
-                        self.solver.get_col_prim(\
-                            str(self.HydroCG[i, j][0]), k)
-        return HydroGenerationCostSolution
+        if self.NumberHydroGen > 0:
+            HydroGenerationCostSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                        self.NumberHydroGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberHydroGen):
+                        HydroGenerationCostSolution[i, j, k] = \
+                            self.solver.get_col_prim(\
+                                str(self.HydroCG[i, j][0]), k)
+            return HydroGenerationCostSolution
+        else:
+            return None
     
     def GetVoltageAngle(self):
         VoltageAngleSolution = \
