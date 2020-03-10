@@ -353,7 +353,6 @@ class Energymodel():
         self.Agg_Sto_row_number = self.solver.add_rows('AggStoch', (self.NumberTrees - 1) * \
             self.TreeNodes)   # Number of columns (constraints) in matrix A
                                     # for aggregation        
-        nep = self.ne
         # Generating the matrix A for the aggregation contraints
         # TODO review this constraint
         for vectors in range(self.NumberTrees):
@@ -583,7 +582,7 @@ class Networkmodel():
                                 # limit for conventional generators
             for i in range(self.NumberConvGen):
                 self.MinConvGen[i] = obj.Gen.Conv[i].get_Min()
-            self.MaxConvGen = np.empty(self.NumberConvGen) # Minimum generation
+            self.MaxConvGen = np.empty(self.NumberConvGen) # Maximum generation
                                 # limit for conventional generators
             for i in range(self.NumberConvGen):
                 self.MaxConvGen[i] = obj.Gen.Conv[i].get_Max()
@@ -704,25 +703,21 @@ class Networkmodel():
                     obj.Gen.Hydro[i].get_Bus()
 
         if self.NumberPumps > 0:
-            self.MaxPowerPumps = np.empty(self.NumberPumps) # Minimum 
-                            # generation limit for hydro generators
+            self.MaxPowerPumps = np.empty(self.NumberPumps) # Maximum 
+                            # power capacity of pumps
             for i in range(self.NumberPumps):
                 self.MaxPowerPumps[i] = obj.pumps['Max'][i]/self.BaseUnitPower
-            self.CostOperPumps = np.empty(self.NumberPumps) # Operational 
-                            # cost of hydro generators
-            for i in range(self.NumberPumps):
-                self.CostOperPumps[i] = obj.pumps['Value'][i]
+            self.CostOperPumps = obj.pumps['Value'] # Operational 
+                            # cost of pumps
 
         if self.NumberStorageDevices > 0:
-            self.EffStorage = np.empty(self.NumberStorageDevices) # Efficiency 
+            self.EffStorage = obj.Storage['Efficiency'] # Efficiency 
                             # of storage elements
-            for i in range(self.NumberStorageDevices):
-                self.EffStorage[i] = obj.Storage['Efficiency'][i]
  
 
-        self.TotalHoursPerPeriod = np.empty(self.ShortTemporalConnections)
-        for i in range(self.ShortTemporalConnections):
-            self.TotalHoursPerPeriod[i] = obj.scenarios['Weights'][i]
+        self.TotalHoursPerPeriod = obj.scenarios['Weights'] # Number
+                            # of hours per sub-period in a 24-hour period
+
 
         if self.NumberDemScenarios == 0:
             self.MultScenariosDemand = np.empty(\
@@ -763,25 +758,6 @@ class Networkmodel():
         for i in range(self.NumberLinesPS):
             self.PowerRateLimitTL[i] = \
                 obj.ENetwork.Branch[i].get_Rate()
-        self.PowerDemandNode = np.empty((self.NumberNodesPS)) # Active
-                            # Power demand at each node
-        for i in range(self.NumberNodesPS):
-            self.PowerDemandNode[i] = \
-                obj.busData[i]
-        
-        self.TypeNode = np.empty((self.NumberNodesPS)) # Type
-                            # of node
-        for i in range(self.NumberNodesPS):
-            self.TypeNode[i] = \
-                obj.ENetwork.Bus[i].get_Type()
-        
-        self.OriginalNumberNodes = \
-                np.empty((self.NumberNodesPS)) # Original numeration of 
-                                # the nodes in the power system
-        for i in range(self.NumberNodesPS):
-            self.OriginalNumberNodes[i] = \
-                obj.ENetwork.Bus[i].get_Number()
-        
         self.OriginalNumberBranchFrom = \
             np.empty((self.NumberLinesPS)) # Original numeration of 
                                 # the transmission lines and transformers
@@ -844,6 +820,23 @@ class Networkmodel():
         for i in range(self.NumberPiecesTLLosses):
             self.BCoeffPWBranchLosses[i] = \
                 obj.ENetwork.loss['B'][i]
+        
+        self.PowerDemandNode = np.empty((self.NumberNodesPS)) # Active
+                            # Power demand at each node
+        for i in range(self.NumberNodesPS):
+            self.PowerDemandNode[i] = \
+                obj.busData[i]        
+        self.TypeNode = np.empty((self.NumberNodesPS)) # Type
+                            # of node
+        for i in range(self.NumberNodesPS):
+            self.TypeNode[i] = \
+                obj.ENetwork.Bus[i].get_Type()        
+        self.OriginalNumberNodes = \
+                np.empty((self.NumberNodesPS)) # Original numeration of 
+                                # the nodes in the power system
+        for i in range(self.NumberNodesPS):
+            self.OriginalNumberNodes[i] = \
+                obj.ENetwork.Bus[i].get_Number()
 
 
     def optimisationNM(self):
@@ -2541,6 +2534,502 @@ class Networkmodel():
             flag_problem
 
 
+    def SetPWConvGen(self, \
+        PW_conv_gen=None):
+        assert PW_conv_gen is not None, \
+            "No value for the number of pieces of the piecewise linearisation\
+                of the generation cost for conventional generators"
+        self.PWConvGen = \
+            PW_conv_gen
+    
+    def SetMinConvGen(self, \
+        min_conv_gen=None):
+        assert min_conv_gen is not None, \
+            "No value for the minimum limit of power generation for \
+                conventional generators"
+        self.MinConvGen = \
+            min_conv_gen
+
+    def SetMaxConvGen(self, \
+        max_conv_gen=None):
+        assert max_conv_gen is not None, \
+            "No value for the maximum limit of power generation for \
+                conventional generators"
+        self.MaxConvGen = \
+            max_conv_gen
+
+    def SetACoeffPWConvGen(self, \
+        A_coeff_PW_conv_gen=None):
+        assert A_coeff_PW_conv_gen is not None, \
+            "No value for the coefficient A of the piece Ax + b for \
+                conventional generators"
+        self.ACoeffPWConvGen = \
+            A_coeff_PW_conv_gen
+    
+    def SetBCoeffPWConvGen(self, \
+        B_coeff_PW_conv_gen=None):
+        assert B_coeff_PW_conv_gen is not None, \
+            "No value for the coefficient b of the piece Ax + b for \
+                conventional generators"
+        self.BCoeffPWConvGen = \
+            B_coeff_PW_conv_gen
+
+    def SetRampConvGen(self, \
+        ramp_conv_gen=None):
+        assert ramp_conv_gen is not None, \
+            "No value for the On/Off ramps for conventional generators"
+        self.RampConvGen = \
+            ramp_conv_gen
+    
+    def SetOriginalNumberConvGen(self, \
+        original_number_conv_gen=None):
+        assert original_number_conv_gen is not None, \
+            "No value for the original numeration of conventional generators"
+        self.OriginalNumberConvGen = \
+            original_number_conv_gen
+
+
+    def SetPWRESGen(self, \
+        PW_RES_gen=None):
+        assert PW_RES_gen is not None, \
+            "No value for the number of pieces of the piecewise linearisation\
+                of the generation cost for RES generators"
+        self.PWRESGen = \
+            PW_RES_gen
+    
+    def SetMinRESGen(self, \
+        min_RES_gen=None):
+        assert min_RES_gen is not None, \
+            "No value for the minimum limit of power generation for \
+                RES generators"
+        self.MinRESGen = \
+            min_RES_gen
+
+    def SetMaxRESGen(self, \
+        max_RES_gen=None):
+        assert max_RES_gen is not None, \
+            "No value for the maximum limit of power generation for \
+                RES generators"
+        self.MaxRESGen = \
+            max_RES_gen
+
+    def SetACoeffPWRESGen(self, \
+        A_coeff_PW_RES_gen=None):
+        assert A_coeff_PW_RES_gen is not None, \
+            "No value for the coefficient A of the piece Ax + b for \
+                RES generators"
+        self.ACoeffPWRESGen = \
+            A_coeff_PW_RES_gen
+    
+    def SetBCoeffPWRESGen(self, \
+        B_coeff_PW_RES_gen=None):
+        assert B_coeff_PW_RES_gen is not None, \
+            "No value for the coefficient b of the piece Ax + b for \
+                RES generators"
+        self.BCoeffPWRESGen = \
+            B_coeff_PW_RES_gen
+    
+    def SetOriginalNumberRESGen(self, \
+        original_number_RES_gen=None):
+        assert original_number_RES_gen is not None, \
+            "No value for the original numeration of RES generators"
+        self.OriginalNumberRESGen = \
+            original_number_RES_gen
+    
+    def SetRESScenarios(self, \
+        RES_scenarios=None):
+        assert RES_scenarios is not None, \
+            "No value for scenarios of generation for RES"
+        self.RESScenarios = \
+            RES_scenarios
+    
+
+    def SetPWHydroGen(self, \
+        PW_hydro_gen=None):
+        assert PW_hydro_gen is not None, \
+            "No value for the number of pieces of the piecewise linearisation\
+                of the generation cost for conventional generators"
+        self.PWHydroGen = \
+            PW_hydro_gen
+
+    def SetMinHydroGen(self, \
+        min_hydro_gen=None):
+        assert min_hydro_gen is not None, \
+            "No value for the minimum limit of power generation for \
+                hydro generators"
+        self.MinHydroGen = \
+            min_hydro_gen
+
+    def SetMaxHydroGen(self, \
+        max_hydro_gen=None):
+        assert max_hydro_gen is not None, \
+            "No value for the maximum limit of power generation for \
+                hydro generators"
+        self.MaxHydroGen = \
+            max_hydro_gen
+
+    def SetACoeffPWHydroGen(self, \
+        A_coeff_PW_hydro_gen=None):
+        assert A_coeff_PW_hydro_gen is not None, \
+            "No value for the coefficient A of the piece Ax + b for \
+                hydro generators"
+        self.ACoeffPWHydroGen = \
+            A_coeff_PW_hydro_gen
+    
+    def SetBCoeffPWHydroGen(self, \
+        B_coeff_PW_hydro_gen=None):
+        assert B_coeff_PW_hydro_gen is not None, \
+            "No value for the coefficient b of the piece Ax + b for \
+                hydro generators"
+        self.BCoeffPWHydroGen = \
+            B_coeff_PW_hydro_gen
+
+    def SetRampHydroGen(self, \
+        ramp_hydro_gen=None):
+        assert ramp_hydro_gen is not None, \
+            "No value for the On/Off ramps for hydro generators"
+        self.RampHydroGen = \
+            ramp_hydro_gen
+    
+    def SetOriginalNumberHydroGen(self, \
+        original_number_hydro_gen=None):
+        assert original_number_hydro_gen is not None, \
+            "No value for the original numeration of hydro generators"
+        self.OriginalNumberHydroGen = \
+            original_number_hydro_gen
+
+
+    def SetMaxPowerPumps(self, \
+        max_power_pumps=None):
+        assert max_power_pumps is not None, \
+            "No value for the maximum power capacity of pumps"
+        self.MaxPowerPumps = \
+            max_power_pumps
+    
+    def SetCostOperPumps(self, \
+        cost_oper_pumps=None):
+        assert cost_oper_pumps is not None, \
+            "No value for the operational cost of pumps"
+        self.CostOperPumps = \
+            cost_oper_pumps
+
+
+    def SetEffStorage(self, \
+        eff_storage=None):
+        assert eff_storage is not None, \
+            "No value for the efficiency of storage"
+        self.EffStorage = \
+            eff_storage
+    
+    def SetTotalHoursPerPeriod(self, \
+        total_hours_per_period=None):
+        assert total_hours_per_period is not None, \
+            "No value for the number of hours per sub-period in \
+                a 24-hour period"
+        self.TotalHoursPerPeriod = \
+            total_hours_per_period
+
+    def SetMultScenariosDemand(self, \
+        mult_scenarios_demand=None):
+        assert mult_scenarios_demand is not None, \
+            "No value for the Multiplier to adjust the demand \
+                on each node for each temporal representative \
+                day and for each sub-period in the 24h period"
+        self.MultScenariosDemand = \
+            mult_scenarios_demand
+
+
+    def SetActiveBranches(self, \
+        active_branches=None):
+        assert active_branches is not None, \
+            "No value for the Flag that indicates if the \
+                transmission line or transformer is active \
+                on each contingency"
+        self.ActiveBranches = \
+            active_branches
+    
+    def SetPowerRateLimitTL(self, \
+        power_rate_limit_TL=None):
+        assert power_rate_limit_TL is not None, \
+            "No value for the Thermal \
+                limit of power transmission lines and \
+                transformers"
+        self.PowerRateLimitTL = \
+            power_rate_limit_TL
+    
+    def SetOriginalNumberBranchFrom(self, \
+        original_number_branch_from=None):
+        assert original_number_branch_from is not None, \
+            "No value for the Original numeration of \
+                the transmission lines and transformers \
+                in the power system in the from end"
+        self.OriginalNumberBranchFrom = \
+            original_number_branch_from
+
+    def SetOriginalNumberBranchTo(self, \
+        original_number_branch_to=None):
+        assert original_number_branch_to is not None, \
+            "No value for the Original numeration of \
+                the transmission lines and transformers \
+                in the power system in the to end"
+        self.OriginalNumberBranchTo = \
+            original_number_branch_to
+
+    def SetPosNumberBranchFrom(self, \
+        pos_number_branch_from=None):
+        assert pos_number_branch_from is not None, \
+            "No value for the Position of the from end of \
+                the transmission lines and transformers \
+                in the vector that stores the node data. \
+                The position start from zero in the node \
+                data"
+        self.PosNumberBranchFrom = \
+            pos_number_branch_from
+    
+    def SetPosNumberBranchTo(self, \
+        pos_number_branch_to=None):
+        assert pos_number_branch_to is not None, \
+            "No value for the Position of the to end of \
+                the transmission lines and transformers \
+                in the vector that stores the node data. \
+                The position start from zero in the node \
+                data"
+        self.PosNumberBranchTo = \
+            pos_number_branch_to
+
+    def SetReactanceBranch(self, \
+        reactance_branch=None):
+        assert reactance_branch is not None, \
+            "No value for the Reactance of the transmission \
+                lines and transformers"
+        self.ReactanceBranch = \
+            reactance_branch
+
+    def SetResistanceBranch(self, \
+        resistance_branch=None):
+        assert resistance_branch is not None, \
+            "No value for the resistance of the transmission \
+                lines and transformers"
+        self.ResistanceBranch = \
+            resistance_branch
+    
+    def SetACoeffPWBranchLosses(self, \
+        A_coeff_PW_branch_losses=None):
+        assert A_coeff_PW_branch_losses is not None, \
+            "No value for the Coefficient A of the \
+                piece Ax + b for the piecewise \
+                linearisation of the nonlinear branch \
+                Losses"
+        self.ACoeffPWBranchLosses = \
+            A_coeff_PW_branch_losses
+    
+    def SetBCoeffPWBranchLosses(self, \
+        B_coeff_PW_branch_losses=None):
+        assert B_coeff_PW_branch_losses is not None, \
+            "No value for the Coefficient b of the \
+                piece Ax + b for the piecewise \
+                linearisation of the nonlinear branch \
+                Losses"
+        self.BCoeffPWBranchLosses = \
+            B_coeff_PW_branch_losses
+
+
+    def SetPowerDemandNode(self, \
+        power_demand_node=None):
+        assert power_demand_node is not None, \
+            "No value for the Active Power demand at each node"
+        self.PowerDemandNode = \
+            power_demand_node
+    
+    def SetTypeNode(self, \
+        type_node=None):
+        assert type_node is not None, \
+            "No value for the type of node"
+        self.TypeNode = \
+            type_node
+    
+    def SetOriginalNumberNodes(self, \
+        original_number_nodes=None):
+        assert original_number_nodes is not None, \
+            "No value for the type of node"
+        self.OriginalNumberNodes = \
+            original_number_nodes
+
+    # Data outputs of Energy model
+
+    def GetThermalGeneration(self):
+        ThermalGenerationSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberConvGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberConvGen):
+                    ThermalGenerationSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.thermalgenerators[i, j][0]), k) * \
+                                self.BaseUnitPower
+        return ThermalGenerationSolution
+    
+    def GetRESGeneration(self):
+        RESGenerationSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberRESGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberRESGen):
+                    RESGenerationSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.RESgenerators[i, j][0]), k) * \
+                                self.BaseUnitPower
+        return RESGenerationSolution
+    
+    def GetHydroGeneration(self):
+        HydroGenerationSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberHydroGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberHydroGen):
+                    HydroGenerationSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.Hydrogenerators[i, j][0]), k) * \
+                                self.BaseUnitPower
+        return HydroGenerationSolution
+    
+    def GetPumpOperation(self):
+        pumpsvarSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberPumps))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberPumps):
+                    pumpsvarSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.pumpsvar[i, j][0]), k) * \
+                                self.BaseUnitPower
+        return pumpsvarSolution
+
+    def GetThermalGenerationCost(self):
+        ThermalGenerationCostSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberConvGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberConvGen):
+                    ThermalGenerationCostSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.thermalCG[i, j][0]), k)
+        return ThermalGenerationCostSolution
+    
+    def GetRESGenerationCost(self):
+        RESGenerationCostSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberRESGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberRESGen):
+                    RESGenerationCostSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.RESCG[i, j][0]), k)
+        return RESGenerationCostSolution
+    
+    def GetHydroGenerationCost(self):
+        HydroGenerationCostSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                    self.NumberHydroGen))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberHydroGen):
+                    HydroGenerationCostSolution[i, j, k] = \
+                        self.solver.get_col_prim(\
+                            str(self.HydroCG[i, j][0]), k)
+        return HydroGenerationCostSolution
+    
+    def GetVoltageAngle(self):
+        VoltageAngleSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1), \
+                self.NumberNodesPS))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    for ii in range(self.NumberNodesPS):
+                        VoltageAngleSolution[i, j, k, ii] = \
+                            self.solver.get_col_prim(\
+                            str(self.VoltageAngle[i, j, k][0]), ii)
+        return VoltageAngleSolution
+    
+    def GetLoadCurtailmentNodes(self):
+        LoadCurtailmentNodesSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1), \
+                self.NumberNodesPS))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    for ii in range(self.NumberNodesPS):
+                        LoadCurtailmentNodesSolution[i, j, k, ii] = \
+                            self.solver.get_col_prim(\
+                            str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
+                                * self.BaseUnitPower
+        return LoadCurtailmentNodesSolution
+
+    def GetActivePowerFlow(self):
+        ActivePowerFlowSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1), \
+                self.NumberLinesPS))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    for ii in range(self.NumberLinesPS):
+                        ActivePowerFlowSolution[i, j, k, ii] = \
+                            self.solver.get_col_prim(\
+                            str(self.ActivePowerFlow[i, j, k][0]), ii)\
+                                * self.BaseUnitPower
+        return ActivePowerFlowSolution
+    
+    def GetActivePowerLosses(self):
+        ActivePowerLossesSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1), \
+                self.NumberLinesPS))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    for ii in range(self.NumberLinesPS):
+                        ActivePowerLossesSolution[i, j, k, ii] = \
+                            self.solver.get_col_prim(\
+                            str(self.ActivePowerLosses[i, j, k][0]), ii)\
+                                * self.BaseUnitPower
+        return ActivePowerLossesSolution
+
+    def GetLoadCurtailmentSystemED(self):
+        LoadCurtailmentSystemEDSolution = \
+            np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections))
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                LoadCurtailmentSystemEDSolution[i, j] = \
+                    self.solver.get_col_prim(\
+                    str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+                    self.BaseUnitPower
+        return LoadCurtailmentSystemEDSolution
+
+ 
+
+
 class EnergyandNetwork(Energymodel, Networkmodel):
     """ This class builds and solve the energy and network models(NM) 
     using the gplk wrapper.
@@ -2952,6 +3441,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\
-                                str(self.loadcurtailmentsystem[i, j][0]),\
-                                0, OFaux[i] * self.TotalHoursPerPeriod[j] \
-                                    * self.PenaltyLoadCurtailment)
+                        str(self.loadcurtailmentsystem[i, j][0]),\
+                        0, OFaux[i] * self.TotalHoursPerPeriod[j] \
+                            * self.PenaltyLoadCurtailment)
