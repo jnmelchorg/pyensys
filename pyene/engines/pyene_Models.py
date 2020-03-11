@@ -2974,79 +2974,94 @@ class Networkmodel():
             return None
     
     def GetVoltageAngle(self):
-        VoltageAngleSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberNodesPS))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberContingencies + 1):
-                    for ii in range(self.NumberNodesPS):
-                        VoltageAngleSolution[i, j, k, ii] = \
-                            self.solver.get_col_prim(\
-                            str(self.VoltageAngle[i, j, k][0]), ii)
-        return VoltageAngleSolution
+        if self.FlagProblem:
+            VoltageAngleSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberNodesPS))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberNodesPS):
+                            VoltageAngleSolution[i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.VoltageAngle[i, j, k][0]), ii)
+            return VoltageAngleSolution
+        else:
+            return None
     
     def GetLoadCurtailmentNodes(self):
-        LoadCurtailmentNodesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberNodesPS))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberContingencies + 1):
-                    for ii in range(self.NumberNodesPS):
-                        LoadCurtailmentNodesSolution[i, j, k, ii] = \
-                            self.solver.get_col_prim(\
-                            str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-                                * self.BaseUnitPower
-        return LoadCurtailmentNodesSolution
+        if self.FlagProblem:
+            LoadCurtailmentNodesSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberNodesPS))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberNodesPS):
+                            LoadCurtailmentNodesSolution[i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return LoadCurtailmentNodesSolution
+        else:
+            return None
 
     def GetActivePowerFlow(self):
-        ActivePowerFlowSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberLinesPS))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberContingencies + 1):
-                    for ii in range(self.NumberLinesPS):
-                        ActivePowerFlowSolution[i, j, k, ii] = \
-                            self.solver.get_col_prim(\
-                            str(self.ActivePowerFlow[i, j, k][0]), ii)\
-                                * self.BaseUnitPower
-        return ActivePowerFlowSolution
+        if self.FlagProblem:
+            ActivePowerFlowSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberLinesPS))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberLinesPS):
+                            ActivePowerFlowSolution[i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.ActivePowerFlow[i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return ActivePowerFlowSolution
+        else:
+            return None
     
     def GetActivePowerLosses(self):
-        ActivePowerLossesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberLinesPS))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberContingencies + 1):
-                    for ii in range(self.NumberLinesPS):
-                        ActivePowerLossesSolution[i, j, k, ii] = \
-                            self.solver.get_col_prim(\
-                            str(self.ActivePowerLosses[i, j, k][0]), ii)\
-                                * self.BaseUnitPower
-        return ActivePowerLossesSolution
+        if self.FlagProblem and self.LossesFlag:
+            ActivePowerLossesSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberLinesPS))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberLinesPS):
+                            ActivePowerLossesSolution[i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.ActivePowerLosses[i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return ActivePowerLossesSolution
+        else:
+            return None
 
     def GetLoadCurtailmentSystemED(self):
-        LoadCurtailmentSystemEDSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections))
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                LoadCurtailmentSystemEDSolution[i, j] = \
-                    self.solver.get_col_prim(\
-                    str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-                    self.BaseUnitPower
-        return LoadCurtailmentSystemEDSolution
+        if not self.FlagProblem:
+            LoadCurtailmentSystemEDSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    LoadCurtailmentSystemEDSolution[i, j] = \
+                        self.solver.get_col_prim(\
+                        str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+                        self.BaseUnitPower
+            return LoadCurtailmentSystemEDSolution
+        else:
+            return None
 
  
 
