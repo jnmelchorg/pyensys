@@ -448,7 +448,38 @@ class pyeneHDF5Settings():
         ActivePowerLosses = GLPKobj.GetActivePowerLosses()
         VoltageAngle = GLPKobj.GetVoltageAngle()
         ActivePowerFlow = GLPKobj.GetActivePowerFlow()
+
+        if ThermalGeneration is not None:
+            self.fileh.create_array(HDF5group, "Thermal_Generation", \
+                ThermalGeneration)
         
+        if RESGeneration is not None:
+            self.fileh.create_array(HDF5group, "RES_Generation", \
+                RESGeneration)
+        
+        if HydroGeneration is not None:
+            self.fileh.create_array(HDF5group, "Hydro_Generation", \
+                HydroGeneration)
+        
+        if PumpOperation is not None:
+            self.fileh.create_array(HDF5group, "Pump_Operation", \
+                PumpOperation)
+        
+        if LoadCurtailment is not None:
+            self.fileh.create_array(HDF5group, "Load_Curtailment", \
+                LoadCurtailment)
+        
+        if ActivePowerLosses is not None:
+            self.fileh.create_array(HDF5group, "Active_Power_Losses", \
+                ActivePowerLosses)
+        
+        if VoltageAngle is not None:
+            self.fileh.create_array(HDF5group, "Voltage_Angle", \
+                VoltageAngle)
+        
+        if ActivePowerFlow is not None:
+            self.fileh.create_array(HDF5group, "Active_Power_Flow", \
+                ActivePowerFlow)
 
         for xs in GLPKobj.LongTemporalConnections:
             HDF5table = \
