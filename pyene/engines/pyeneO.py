@@ -31,6 +31,7 @@ class pyeneOConfig:
         self.data['spill'] = 0
         self.data['OF'] = 0
         self.data['pyomodel'] = None
+        self.data['GLPKmodel'] = None
 
         self.time = {}
         self.time['All'] = 0
@@ -54,6 +55,8 @@ class pyeneHDF5Settings():
             self.settings['Name1'] = os.path.join(self.settings['Directory1'],
                                                   self.settings['Name1'])
             self.fileh = open_file(self.settings['Name1'], mode='w')
+            self.settings['Name3'] = os.path.join(self.settings['Directory1'],
+                                                  self.settings['Name3'])
             self.filedetailedinfo = open_file(self.settings['Name3'], mode='w')
 
 #        if self.settings['Directory2'] is not None:
@@ -302,7 +305,7 @@ class pyeneHDF5Settings():
         if EN.EM.settings['Vectors'] == 1:
             aux[0] = EN.EM.Weight['In'][1]
         else:
-            for xv in EN.EM.s['Vec']:
+            for xv in range(EN.EM.settings['Vectors']):
                 aux[xv] = GLPKobj.IntakeTree[1, xv]
 
         self.fileh.create_array(HDF5group, "Hydro_Allowance", aux)
@@ -335,7 +338,7 @@ class pyeneHDF5Settings():
                 HDF5row['time'] = xt
                 auxvar = 0
                 if ThermalGeneration is not None:
-                    for k in range(GLPKobj.NumberNodesPS):
+                    for k in range(GLPKobj.NumberConvGen):
                         auxvar += ThermalGeneration[xs, xt, k]
                 HDF5row['generation'] = auxvar
 
@@ -424,7 +427,7 @@ class pyeneHDF5Settings():
         if EN.EM.settings['Vectors'] == 1:
             aux[0] = EN.EM.Weight['In'][1]
         else:
-            for xv in EN.EM.s['Vec']:
+            for xv in range(EN.EM.settings['Vectors']):
                 aux[xv] = GLPKobj.IntakeTree[1, xv]
 
         self.filedetailedinfo.create_array(HDF5group, "Hydro_Allowance", aux)
@@ -491,7 +494,7 @@ class pyeneHDF5Settings():
                 HDF5row['time'] = xt
                 auxvar = 0
                 if ThermalGeneration is not None:
-                    for k in range(GLPKobj.NumberNodesPS):
+                    for k in range(GLPKobj.NumberConvGen):
                         auxvar += ThermalGeneration[xs, xt, k]
                 HDF5row['generation'] = auxvar
 
