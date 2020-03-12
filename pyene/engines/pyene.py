@@ -18,7 +18,7 @@ import numpy as np
 from .pyeneN import ENetworkClass as dn  # Network component
 from .pyeneE import EnergyClass as de  # Energy component
 from .pyeneH import HydrologyClass as hn  # Hydrology engine
-from .pyene_Models import Energymodel as EMod # Energy model in glpk
+# from .pyene_Models import Energymodel as EMod # Energy model in glpk
 import json
 import os
 import time
@@ -284,7 +284,7 @@ class pyeneClass():
 
         # Build LP model
         EModel = self.SingleLP(EM)
-        
+
         #                          Objective function                         #
         EModel.OF = Objective(rule=EM.OF_rule, sense=minimize)
 
