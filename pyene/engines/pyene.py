@@ -15,13 +15,12 @@ from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
                        NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
-from .pyeneN import ENetworkClass as dn  # Network component
-from .pyeneE import EnergyClass as de  # Energy component
+from .pyeneN import ENetworkClass as dn  # Network cengine
+from .pyeneE import EnergyClass as de  # Energy engine
 from .pyeneH import HydrologyClass as hn  # Hydrology engine
-# from .pyene_Models import Energymodel as EMod # Energy model in glpk
+from .pyeneR import RESprofiles as rn  # RES engine
 import json
 import os
-import time
 
 
 class pyeneConfig():
@@ -84,6 +83,9 @@ class pyeneClass():
         m = self.NM.addCon(m)
         m = self.HM.addCon(m)
         m = self.addCon(m)
+
+        # IEEE paper control variables.
+        m.pEeee = self.EM.Print['IEEE']
 
         return m
 
@@ -193,7 +195,7 @@ class pyeneClass():
         m = self.EM.addSets(m)
         m = self.NM.addSets(m)
         m = self.HM.addSets(m)
-        m = self.addSets(m) # This do nothing, it can be removed
+        m = self.addSets(m)
 
         # Model Variables
         m = self.EM.addVars(m)
@@ -305,10 +307,13 @@ class pyeneClass():
             auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         value = 0
+        values = [0, 0]
         for xn in auxbuses:
-            value += self.get_Demand(m, xn+1, *varg, **kwarg)
+            aux = self.get_Demand(m, xn+1, *varg, **kwarg)
+            values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+            value += aux
 
-        return value
+        return value, values
 
     def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
@@ -318,12 +323,15 @@ class pyeneClass():
         else:
             auxbuses = range(self.NM.ENetwork.get_NoBus())
 
+        values = [0, 0]
         value = 0
         if self.NM.settings['Feasibility']:
             for xn in auxbuses:
-                value += self.get_DemandCurtailment(m, xn+1, *varg, **kwarg)
+                aux = self.get_DemandCurtailment(m, xn, *varg, **kwarg)
+                values[self.NM.ENetwork.Bus[xn].get_LT()] += aux
+            value = values[0]+values[1]
 
-        return value
+        return value, values
 
     def get_AllGeneration(self, m, *varg, **kwarg):
         ''' Get kWh for all generators for the whole period '''
@@ -357,7 +365,7 @@ class pyeneClass():
         value = 0
         if self.NM.settings['Losses']:
             for xb in self.NM.s['Bra']:
-                value += self.get_Loss(m, xb+1, *varg, **kwarg)
+                value += self.get_Loss(m, xb, *varg, **kwarg)
 
         return value
 
@@ -396,6 +404,9 @@ class pyeneClass():
 
     def get_DemandCurtailment(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
+        if self.NM.p['LLFea1'][bus] == 0:
+            return 0
+
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
@@ -405,7 +416,8 @@ class pyeneClass():
                 acu = 0
                 for xt in auxtime:
                     acu += auxweight[xt] * \
-                        m.vNFea[self.NM.get_ConFea(xh)+bus, xt].value
+                        m.vNFea[self.NM.get_ConFea(xh) + \
+                                self.NM.p['LLFea2'][bus], xt].value
                 value += acu*auxOF[xh]
             value *= self.NM.ENetwork.get_Base()
 
@@ -505,7 +517,7 @@ class pyeneClass():
             value += self.get_AllLoss(m, *varg, **kwarg)
 
         if auxFlags[3]:  # Curtailment
-            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)
+            value += self.get_AllDemandCurtailment(m, *varg, **kwarg)[0]
 
         if auxFlags[4]:  # Spill
             value += self.get_AllRES(m, *varg, **kwarg)
@@ -695,9 +707,12 @@ class pyeneClass():
         self.NM.scenarios['Number'] = aux
 
         if self.NM.scenarios['NoDem'] > 0:
+            aux = self.NM.scenarios['Demand']
             self.NM.scenarios['Demand'] = \
-                np.ones(self.NM.settings['NoTime']*self.NM.scenarios['NoDem'],
-                        dtype=float)
+                np.ones(self.NM.settings['NoTime'] *
+                        self.NM.scenarios['NoDem'], dtype=float)
+            for x in range(len(aux)):
+                self.NM.scenarios['Demand'][x] = aux[x]
 
         # Initialise RES
         if self.NM.RES['Number'] > 0:
@@ -706,7 +721,7 @@ class pyeneClass():
                          dtype=float)
 
         # Initialise network model
-        self.NM.initialise()
+        self.NM.initialise(rn(conf.RM))
 
         # Add connections between energy balance and network models
         self.NM.set_ConS(range(NoNM))
@@ -832,13 +847,14 @@ class pyeneClass():
                 if xn2 != 0:
                     self.p['LLHPumpOut'][xn2-1][:] = [1, x]
 
+
     def NSim(self, conf):
         ''' Network only optimisation '''
         # Get network object
         NM = dn(conf.NM)
 
         # Initialise
-        NM.initialise()
+        NM.initialise(rn(conf.RM))
 
         # Build LP model
         NModel = self.SingleLP(NM)
@@ -875,6 +891,7 @@ class pyeneClass():
         ''' Print results '''
         self.EM.print(m)
         for xh in range(self.p['Number']):
+            self.EM.print(m)
             self.NM.print(m, [xh])
             self.HM.print(m, [xh])
             print()
@@ -1049,41 +1066,30 @@ class pyeneClass():
         raise NotImplementedError('Water prices not yet enabled')
         # Adjust self.NM.p['GenLCst']
 
-    def _set_LineCapacityAux(self, value, *argv):
+    def _set_LineCapacityAux(self, value, index, *argv):
         ''' Auxiliary for selecting line parameters '''
-        aux1 = value
         if 'BR_R' in argv:
-            aux2 = 0
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_R(value)
         elif 'BR_X' in argv:
-            aux2 = 1
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_X(value)
         elif 'BR_B' in argv:
-            aux2 = 2
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_B(value)
         else:
-            aux1 = value/self.NM.ENetwork.get_Base()
-            aux2 = 3
-        return aux1, aux2
+            value /= self.NM.ENetwork.get_Base()
+            for xb in index:
+                self.NM.ENetwork.Branch[xb].set_Rate(value)
 
     def set_LineCapacity(self, index, value, *argv):
         ''' Adjust maximum capacity of a line - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        aux3 = self.NM.Print['sequence'][index]
-        self.NM.p['branchData'][self.NM.p['LLESec1'][aux3][0]][aux2] = aux1
+        self._set_LineCapacityAux(value, index, *argv)
 
     def set_LineCapacityAll(self, value, *argv):
-        ''' Adjust capacity all lines - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        for xi in self.NM.p['LLESec1']:
-            self.NM.p['branchData'][self.NM.p['LLESec1']
-                                    [xi[0]][0]][aux2] = aux1
-
-    def set_LineCapacityMin(self, value, *argv):
-        ''' Adjust capacity all lines (Min) - pass BR_R for R/X/B'''
-        (aux1, aux2) = self._set_LineCapacityAux(value, *argv)
-        for xi in self.NM.p['LLESec1']:
-            if aux1 < self.NM.p['branchData'][self.NM.p['LLESec1']
-                                              [xi[0]][0]][aux2]:
-                self.NM.p['branchData'][self.NM.p['LLESec1']
-                                        [xi[0]][0]][aux2] = aux1
+        ''' Adjust capacity of all lines - pass BR_R for R/X/B'''
+        index = range(self.NM.ENetwork.get_NoBra())
+        self._set_LineCapacityAux(value, index, *argv)
 
     def set_PumpPrice(self, index, value):
         ''' Set value for water pumped '''
