@@ -282,18 +282,9 @@ class pyeneClass():
         # Initialise
         EM.initialise()
 
-        start = time.time()
-        Model = EMod(EM)
-        Model.optimisationEM()
-        end = time.time()
-        time1 = end - start
-        print(end - start)        
-        
-
-        start = time.time()
         # Build LP model
         EModel = self.SingleLP(EM)
-
+        
         #                          Objective function                         #
         EModel.OF = Objective(rule=EM.OF_rule, sense=minimize)
 
@@ -302,12 +293,6 @@ class pyeneClass():
 
         # Print
         results = opt.solve(EModel)
-
-        end = time.time()
-        time2 = end - start
-        print(end - start)
-
-        print('GLPK is %f times faster than pyomo' %(time2/time1))
 
         return (EM, EModel, results)
 
