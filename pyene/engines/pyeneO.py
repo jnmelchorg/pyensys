@@ -54,7 +54,7 @@ class pyeneHDF5Settings():
             self.settings['Name1'] = os.path.join(self.settings['Directory1'],
                                                   self.settings['Name1'])
             self.fileh = open_file(self.settings['Name1'], mode='w')
-            self.fileh = open_file(self.settings['Name3'], mode='w')
+            self.filedetailedinfo = open_file(self.settings['Name3'], mode='w')
 
 #        if self.settings['Directory2'] is not None:
 #            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
@@ -396,7 +396,7 @@ class pyeneHDF5Settings():
             return
 
         HDF5group = \
-            self.fileh.create_group(self.fileh.root,
+            self.filedetailedinfo.create_group(self.filedetailedinfo.root,
                                     'Simulation_{:05d}'.format(SimNo))
         HDF5aux = np.zeros((GLPKobj.NumberDemScenarios,
                             GLPKobj.ShortTemporalConnections), dtype=float)
@@ -407,7 +407,7 @@ class pyeneHDF5Settings():
                 HDF5aux[xs][xt] = EN.NM.scenarios['Demand'][xp]
                 xp += 1
 
-        self.fileh.create_array(HDF5group, "Demand_profiles", HDF5aux)
+        self.filedetailedinfo.create_array(HDF5group, "Demand_profiles", HDF5aux)
 
         HDF5aux = np.zeros((EN.NM.scenarios['NoRES'],
                             EN.NM.settings['NoTime']), dtype=float)
@@ -417,7 +417,7 @@ class pyeneHDF5Settings():
                 HDF5aux[xs][xt] = EN.NM.scenarios['RES'][xp] * \
                     EN.NM.ENetwork.get_Base()
                 xp += 1
-        self.fileh.create_array(HDF5group, "RES_profiles", HDF5aux)
+        self.filedetailedinfo.create_array(HDF5group, "RES_profiles", HDF5aux)
 
         # Hydropower allowance
         aux = np.zeros(EN.EM.settings['Vectors'], dtype=float)
@@ -427,12 +427,12 @@ class pyeneHDF5Settings():
             for xv in EN.EM.s['Vec']:
                 aux[xv] = GLPKobj.IntakeTree[1, xv]
 
-        self.fileh.create_array(HDF5group, "Hydro_Allowance", aux)
+        self.filedetailedinfo.create_array(HDF5group, "Hydro_Allowance", aux)
 
         hp_marginal = np.zeros(EN.EM.settings['Vectors'], dtype=float)
         for xi in range(EN.EM.settings['Vectors']):
             hp_marginal[xi] = 0.0
-        self.fileh.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
+        self.filedetailedinfo.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         # Getting the solution from GLPK
 
@@ -450,40 +450,40 @@ class pyeneHDF5Settings():
         ActivePowerFlow = GLPKobj.GetActivePowerFlow()
 
         if ThermalGeneration is not None:
-            self.fileh.create_array(HDF5group, "Thermal_Generation", \
+            self.filedetailedinfo.create_array(HDF5group, "Thermal_Generation", \
                 ThermalGeneration)
         
         if RESGeneration is not None:
-            self.fileh.create_array(HDF5group, "RES_Generation", \
+            self.filedetailedinfo.create_array(HDF5group, "RES_Generation", \
                 RESGeneration)
         
         if HydroGeneration is not None:
-            self.fileh.create_array(HDF5group, "Hydro_Generation", \
+            self.filedetailedinfo.create_array(HDF5group, "Hydro_Generation", \
                 HydroGeneration)
         
         if PumpOperation is not None:
-            self.fileh.create_array(HDF5group, "Pump_Operation", \
+            self.filedetailedinfo.create_array(HDF5group, "Pump_Operation", \
                 PumpOperation)
         
         if LoadCurtailment is not None:
-            self.fileh.create_array(HDF5group, "Load_Curtailment", \
+            self.filedetailedinfo.create_array(HDF5group, "Load_Curtailment", \
                 LoadCurtailment)
         
         if ActivePowerLosses is not None:
-            self.fileh.create_array(HDF5group, "Active_Power_Losses", \
+            self.filedetailedinfo.create_array(HDF5group, "Active_Power_Losses", \
                 ActivePowerLosses)
         
         if VoltageAngle is not None:
-            self.fileh.create_array(HDF5group, "Voltage_Angle", \
+            self.filedetailedinfo.create_array(HDF5group, "Voltage_Angle", \
                 VoltageAngle)
         
         if ActivePowerFlow is not None:
-            self.fileh.create_array(HDF5group, "Active_Power_Flow", \
+            self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
                 ActivePowerFlow)
 
         for xs in GLPKobj.LongTemporalConnections:
             HDF5table = \
-                self.fileh.create_table(HDF5group,
+                self.filedetailedinfo.create_table(HDF5group,
                                         "Scenario_{:02d}".format(xs),
                                         self.PyeneHDF5Results)
             HDF5row = HDF5table.row
