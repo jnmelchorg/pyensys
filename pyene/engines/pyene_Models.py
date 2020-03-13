@@ -3118,7 +3118,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         ret = self.solver.simplex()
         assert ret == 0
 
-        print('Objective Function: %.10f' %(self.solver.get_obj_val()))
+        # print('Objective Function: %.10f' %(self.solver.get_obj_val()))
 
         # for i in self.LongTemporalConnections:
         #     print('Case %d :' %(i))
@@ -3484,3 +3484,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         str(self.loadcurtailmentsystem[i, j][0]),\
                         0, OFaux[i] * self.TotalHoursPerPeriod[j] \
                             * self.PenaltyLoadCurtailment)
+        
+    def GetObjectiveFunctionENM(self):
+        return self.solver.get_obj_val()
