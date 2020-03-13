@@ -484,66 +484,6 @@ class pyeneHDF5Settings():
             self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
                 ActivePowerFlow)
 
-        for xs in GLPKobj.LongTemporalConnections:
-            HDF5table = \
-                self.filedetailedinfo.create_table(HDF5group,
-                                        "Scenario_{:02d}".format(xs),
-                                        self.PyeneHDF5Results)
-            HDF5row = HDF5table.row
-            for xt in range(GLPKobj.ShortTemporalConnections):
-                HDF5row['time'] = xt
-                auxvar = 0
-                if ThermalGeneration is not None:
-                    for k in range(GLPKobj.NumberConvGen):
-                        auxvar += ThermalGeneration[xs, xt, k]
-                HDF5row['generation'] = auxvar
-
-                
-                auxvar = 0
-                if HydroGeneration is not None:
-                    for k in range(GLPKobj.NumberHydroGen):
-                        auxvar += HydroGeneration[xs, xt, k]
-                HDF5row['hydropower'] = auxvar
-                
-                auxvar = 0
-                if RESGeneration is not None:
-                    for k in range(GLPKobj.NumberRESGen):
-                        auxvar += RESGeneration[xs, xt, k]
-                HDF5row['RES'] = auxvar
-
-                HDF5row['spill'] = 0
-
-                auxvar = 0
-                for k in range(EN.NM.ENetwork.get_NoBus()):
-                    auxvar += EN.NM.busData[k] * \
-                        EN.NM.scenarios['Demand']\
-                            [EN.NM.busScenario[k][xs]] * \
-                                EN.NM.ENetwork.get_Base()
-                HDF5row['demand'] = auxvar
-
-                auxvar = 0
-                if PumpOperation is not None:
-                    for k in range(GLPKobj.NumberPumps):
-                        auxvar += PumpOperation[xs, xt, k]
-                HDF5row['pump'] = auxvar
-
-                auxvar = 0
-                if EN.NM.settings['Losses']:
-                    for k in range(GLPKobj.NumberContingencies + 1):
-                        for ii in range(GLPKobj.NumberLinesPS):
-                            auxvar += ActivePowerLosses[xs, xt, k]
-                HDF5row['loss'] = auxvar
-
-                auxvar = 0
-                if GLPKobj.FlagProblem and LoadCurtailment is not None:
-                    for k in range(GLPKobj.NumberContingencies + 1):
-                        for ii in range(self.NumberNodesPS):
-                            auxvar += LoadCurtailment[xs, xt, k, ii]
-                if not GLPKobj.FlagProblem and LoadCurtailment is not None:
-                    auxvar += LoadCurtailment[xs, xt]
-                HDF5row['curtailment'] = auxvar
-                HDF5row.append()
-            HDF5table.flush()
 
 
     def terminate(self):
@@ -551,3 +491,4 @@ class pyeneHDF5Settings():
         if self.settings['Directory1'] is None:
             return
         self.fileh.close()
+        self.filedetailedinfo.close()
