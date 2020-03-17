@@ -42,5 +42,6 @@ caseGhana_Sim40_BSec_Manual.json
 # Ignoring unnecesary folders and files
 .mypy_cache/
 .vscode/
-UNKNOWN.egg-info/
-_glpk.cp37-win_amd64
+pyene/UNKNOWN.egg-info/
+pyene/_glpk.cp37-win_amd64
+pyene/build/
