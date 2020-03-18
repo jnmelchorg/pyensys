@@ -45,3 +45,4 @@ caseGhana_Sim40_BSec_Manual.json
 pyene/UNKNOWN.egg-info/
 pyene/_glpk.cp37-win_amd64
 pyene/build/
+pyene/engines/_glpk.c
