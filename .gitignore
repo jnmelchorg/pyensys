@@ -46,3 +46,5 @@ pyene/UNKNOWN.egg-info/
 pyene/_glpk.cp37-win_amd64
 pyene/build/
 pyene/engines/_glpk.c
+_glpk.cp37-win_amd64.pyd
+build/
