@@ -99,7 +99,9 @@ def parse_optional_arguments():
         sys.argv.remove("--enable-trace")
     return config
 
-def findglpkheaderpath():    
+def findglpkheaderpath():
+    print(numpy.get_include())
+    sys.exit()
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
     trypaths = [pythonpath+'\Library\include\glpk.h',\
