@@ -63,7 +63,7 @@ def setup_package():
     
     if config["glpk"]:
         metadata["ext_modules"] = ext_modules = [
-        Extension("_glpk", ["pyene/engines/_glpk.pyx"],
+        Extension("pyene.engines._glpk", ["pyene/engines/_glpk.pyx"],
         include_dirs=[findglpkheaderpath()],
         library_dirs=[findglpklibrarypath()], 
         libraries=["glpk"],),
