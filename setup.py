@@ -100,6 +100,7 @@ def parse_optional_arguments():
     return config
 
 def findglpkheaderpath():
+    import numpy
     print(numpy.get_include())
     sys.exit()
     # Finding glpk header path
