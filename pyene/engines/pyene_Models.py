@@ -622,11 +622,11 @@ class Networkmodel():
                                 # generation cost
             for i in range(self.NumberRESGen):
                 self.PWRESGen[i] = obj.Gen.RES[i].get_NoPieces()
-            self.MinRESGen = np.empty(obj.NumberRESGen) # Minimum generation
+            self.MinRESGen = np.empty(self.NumberRESGen) # Minimum generation
                                 # limit for RES generators
             for i in range(self.NumberRESGen):
                 self.MinRESGen[i] = obj.Gen.RES[i].get_Min()
-            self.MaxRESGen = np.empty(obj.NumberRESGen) # Minimum generation
+            self.MaxRESGen = np.empty(self.NumberRESGen) # Minimum generation
                                 # limit for RES generators
             for i in range(self.NumberRESGen):
                 self.MaxRESGen[i] = obj.RES['Max'][i]
