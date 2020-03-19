@@ -23,6 +23,7 @@ before_script:
 
   # Install the required utilties and pipenv
   - apt-get update -qq
+  - pip install --upgrade pip setuptools wheel
   - pip install pyomo click numpy pandas networkx pytest pytest-cov pypsa tables glpk
 
 test:test:
