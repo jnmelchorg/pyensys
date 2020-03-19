@@ -28,7 +28,7 @@ before_script:
 test:test:
   stage: test
   script:
-    - pip install .
+    - python setup.py develop --with-glpk
     - pytest tests --cov=pyene
 
 

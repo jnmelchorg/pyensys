@@ -36,7 +36,7 @@ def setup_package():
         description='Python Energy and Networks Engine - pyene.',
         url='git@gitlab.hydra.org.uk:futuredams/test-case/DAMSEnergy.git',
         author='Dr. Eduardo Alejandro Martínez Ceseña, \
-            Dr. Jose NicolasMelchor Gutierrez',
+            Dr. Jose Nicolas Melchor Gutierrez',
         author_email='Eduardo.MartinezCesena@manchester.ac.uk, \
             jose.melchorgutierrez@manchester.ac.uk',
         packages=find_packages(),
