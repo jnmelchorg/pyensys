@@ -100,11 +100,10 @@ def parse_optional_arguments():
     return config
 
 def findglpkheaderpath():
-    import numpy
-    print(numpy.get_include())
-    sys.exit()
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
+    print(pythonpath)
+    sys.exit()
     trypaths = [pythonpath+'\Library\include\glpk.h',\
                 pythonpath+'\include\glpk.h']
     glpkpath = None
