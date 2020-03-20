@@ -23,7 +23,12 @@ before_script:
 
   # Install the required utilties and pipenv
   - apt-get update -qq
-  - realpath setup.py
+  - apt-get install -y glpk-utils libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6 wget
+  - wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
+  - bash Anaconda3-2020.02-Linux-x86_64.sh -b
+  - source ~/.bashrc
+  - find .
+  - ls -a ~/
 
 test:test:
   stage: test
