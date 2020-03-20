@@ -102,12 +102,13 @@ def parse_optional_arguments():
 def findglpkheaderpath():
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
-    print(pythonpath)
-    print(pythonpath.rsplit(r'\b', 1)[0])
-    if pythonpath.rsplit(r'\b', 1)[1] is 'in':
-        pythonpath = pythonpath.rsplit(r'\b', 1)[0]
+    if len(pythonpath.rsplit(r'/b', 1)) is not 0:
+        if pythonpath.rsplit(r'/b', 1)[1] is 'in':
+            pythonpath = pythonpath.rsplit(r'/b', 1)[0]
     trypaths = [pythonpath+'\Library\include\glpk.h',\
-                pythonpath+'\include\glpk.h']
+                pythonpath+'\include\glpk.h', \
+                pythonpath+'/Library/include/glpk.h',\
+                pythonpath+'/include/glpk.h']
     glpkpath = None
     for paths in trypaths:
         if os.path.isfile(paths):
@@ -121,10 +122,13 @@ def findglpkheaderpath():
 def findglpklibrarypath():   
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
-    if pythonpath.rsplit('\b', 1)[1] is 'in':
-        pythonpath = pythonpath.rsplit('\b', 1)[0]
+    if len(pythonpath.rsplit(r'/b', 1)) is not 0:
+        if pythonpath.rsplit(r'/b', 1)[1] is 'in':
+            pythonpath = pythonpath.rsplit(r'/b', 1)[0]
     trypaths = [pythonpath+'\Library\lib\glpk.lib',\
-                pythonpath+'\libs\glpk.lib']
+                pythonpath+'\libs\glpk.lib',\
+                pythonpath+'/Library/lib/glpk.lib',\
+                pythonpath+'/libs/glpk.lib']
     glpkpath = None
     for paths in trypaths:
         if os.path.isfile(paths):
