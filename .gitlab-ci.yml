@@ -31,7 +31,7 @@ before_script:
   - source /root/.bashrc
   - conda install -c conda-forge pyomo pytest-cov pypsa glpk
   - conda install -c anaconda click numpy pandas networkx pytest pytables
-  - ls -a /root/anaconda3
+  - ls -a /root/anaconda3/include
 
 test:test:
   stage: test
