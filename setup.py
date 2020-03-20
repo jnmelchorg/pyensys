@@ -119,7 +119,8 @@ def findglpkheaderpath():
             glpkpath = paths[:-7]
             break
     if glpkpath is None:
-        sys.exit('Path for GLPK header has not been found')
+        print('Path for GLPK header has not been found in the predefined \
+            directories')
     
     return glpkpath
 
@@ -143,7 +144,8 @@ def findglpklibrarypath():
             glpkpath = paths[:-9]
             break
     if glpkpath is None:
-        sys.exit('Path for GLPK library has not been found')
+        print('Path for GLPK library has not been found in the predefined \
+            directories')
     
     return glpkpath
 
