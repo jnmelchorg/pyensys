@@ -102,8 +102,9 @@ def parse_optional_arguments():
 def findglpkheaderpath():
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
-    if pythonpath.rsplit('\b', 1)[1] is 'in':
-        pythonpath = pythonpath.rsplit('\b', 1)[0]
+    print(pythonpath.rsplit(r'\b', 1)[0])
+    if pythonpath.rsplit(r'\b', 1)[1] is 'in':
+        pythonpath = pythonpath.rsplit(r'\b', 1)[0]
     trypaths = [pythonpath+'\Library\include\glpk.h',\
                 pythonpath+'\include\glpk.h']
     glpkpath = None
