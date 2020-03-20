@@ -83,6 +83,12 @@ def _update_config_pyeneN(conf, kwargs):
     conf.NM.scenarios['Weights'] = None  # Weights for each time step
     conf.NM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
                                             kwargs.pop('network'))
+    # Use linear approximation of losses?
+    if 'linearloss' in kwargs.keys():
+        aux = kwargs.pop('linearloss')
+        if aux > 0:
+            conf.NM.settings['Losses'] = False
+            conf.NM.settings['Loss'] = aux
 
     return conf
 
@@ -135,6 +141,8 @@ def network_simulation_pyeneE(conf, **kwargs):
 @click.option('--feas', default=True, type=bool,
               help='Consider feasibility constraints')
 @click.option('--time', default=24, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
     """Prepare energy balance and network simulation """
