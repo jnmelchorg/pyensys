@@ -25,4 +25,8 @@ before_script:
   - apt-get update -qq
   - find .
 
-
+test:test:
+  stage: test
+  script:
+    - python setup.py develop --with-glpk
+    - pytest tests --cov=pyene
