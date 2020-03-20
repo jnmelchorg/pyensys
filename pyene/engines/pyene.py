@@ -544,29 +544,25 @@ class pyeneClass():
         if auxFlags[0]:  # Conventional generation
             for x in self.NM.Gen.Conv:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
             for x in self.NM.Gen.RES:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
             for x in self.NM.Gen.Hydro:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
                              self.NM.ENetwork.get_Base() *
                              sum(m.vNPump[self.NM.get_ConP(xh)+xdl+1,
-                                          xt].value *
-                                 self.NM.scenarios['Weights'][xt]
+                                          xt].value
                                  for xt in auxtime)
                              for xdl in self.NM.s['Pump']) *
                          auxOF[xh] for xh in auxscens)
