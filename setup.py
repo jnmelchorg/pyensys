@@ -103,9 +103,12 @@ def findglpkheaderpath():
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
     if len(pythonpath.rsplit('/b', 1)) > 1:
-        print(pythonpath.rsplit('/b', 1)[1])
-        if pythonpath.rsplit('/b', 1)[1] is 'in':
-            pythonpath = pythonpath.rsplit('/b', 1)[0]
+        aux1 = pythonpath.rsplit('/b', 1)[1]
+        aux2 = pythonpath.rsplit('/b', 1)[0]
+        print(aux1)
+        print(aux2)
+        if aux1 == 'in':
+            pythonpath = aux2
     print(pythonpath)
     trypaths = [pythonpath+'\Library\include\glpk.h',\
                 pythonpath+'\include\glpk.h', \
