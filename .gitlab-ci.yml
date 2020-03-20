@@ -23,7 +23,7 @@ before_script:
 
   # Install the required utilties and pipenv
   - apt-get update -qq
-  - find .
+  - realpath setup.py
 
 test:test:
   stage: test
