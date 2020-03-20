@@ -29,7 +29,8 @@ before_script:
   - eval "$(/root/anaconda3/bin/conda shell.bash hook)"
   - conda init
   - source /root/.bashrc
-  - ls -s /root/anaconda3
+  - conda install -c conda-forge pyomo pytest-cov pypsa glpk
+  - conda install -c anaconda click numpy pandas networkx pytest pytables
 
 test:test:
   stage: test
