@@ -136,7 +136,7 @@ def findglpklibrarypath():
     trypaths = [pythonpath+'\Library\lib\glpk.lib',\
                 pythonpath+'\libs\glpk.lib',\
                 pythonpath+'/Library/lib/glpk.lib',\
-                pythonpath+'/libs/glpk.lib']
+                pythonpath+'/lib/glpk.lib']
     glpkpath = None
     for paths in trypaths:
         if os.path.isfile(paths):
