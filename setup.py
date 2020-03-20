@@ -105,7 +105,7 @@ def findglpkheaderpath():
     if len(pythonpath.rsplit('/b', 1)) is not 0:
         if pythonpath.rsplit('/b', 1)[1] is 'in':
             pythonpath = pythonpath.rsplit('/b', 1)[0]
-    print(pythonpath)
+    print(pythonpath.rsplit('/b', 1)[0])
     trypaths = [pythonpath+'\Library\include\glpk.h',\
                 pythonpath+'\include\glpk.h', \
                 pythonpath+'/Library/include/glpk.h',\
