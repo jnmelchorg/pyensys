@@ -102,6 +102,7 @@ def parse_optional_arguments():
 def findglpkheaderpath():
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
+    print(pythonpath)
     print(pythonpath.rsplit(r'\b', 1)[0])
     if pythonpath.rsplit(r'\b', 1)[1] is 'in':
         pythonpath = pythonpath.rsplit(r'\b', 1)[0]
