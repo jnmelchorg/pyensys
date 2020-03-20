@@ -553,9 +553,6 @@ class Networkmodel():
                             # analysis
         self.NumberLinesPS = obj.ENetwork.get_NoBra() # Number of transmission
                             # lines in the power system
-        self.NumberPiecesTLLosses = obj.Number_LossCon # Number of pieces
-                            # in the piecewise linearisation of the
-                            # transmission line losses
 
         self.BaseUnitPower = obj.ENetwork.get_Base() # Base power for power
                             # system
@@ -570,6 +567,11 @@ class Networkmodel():
         self.FlagProblem = obj.settings['Flag'] # Flag that indicates
                             # if the problem to solve is the economic
                             # dispatch or the optimal power flow
+        if self.LossesFlag:
+            self.NumberPiecesTLLosses = obj.Number_LossCon # Number 
+                            # of pieces
+                            # in the piecewise linearisation of the
+                            # transmission line losses
         
         # TODO: Generalise inputs as a list of values
         if self.NumberConvGen > 0:
@@ -620,11 +622,11 @@ class Networkmodel():
                                 # generation cost
             for i in range(self.NumberRESGen):
                 self.PWRESGen[i] = obj.Gen.RES[i].get_NoPieces()
-            self.MinRESGen = np.empty(obj.NumberRESGen) # Minimum generation
+            self.MinRESGen = np.empty(self.NumberRESGen) # Minimum generation
                                 # limit for RES generators
             for i in range(self.NumberRESGen):
                 self.MinRESGen[i] = obj.Gen.RES[i].get_Min()
-            self.MaxRESGen = np.empty(obj.NumberRESGen) # Minimum generation
+            self.MaxRESGen = np.empty(self.NumberRESGen) # Minimum generation
                                 # limit for RES generators
             for i in range(self.NumberRESGen):
                 self.MaxRESGen[i] = obj.RES['Max'][i]
@@ -742,84 +744,86 @@ class Networkmodel():
                         self.MultScenariosDemand[i, j, k] = \
                             obj.scenarios['Demand']\
                                 [j+obj.busScenario[k][i]]
-
-        self.ActiveBranches = np.empty(\
-                ((self.NumberContingencies + 1),\
-                self.NumberLinesPS))    # Flag to indicate if the 
-                            # transmission line or transformer is active 
-                            # on each contingency
-        for i in range(self.NumberContingencies + 1):
-            for j in range(self.NumberLinesPS):
-                self.ActiveBranches[i, j] = \
-                    obj.ENetwork.Branch[j].is_active(i)
-        self.PowerRateLimitTL = np.empty((self.NumberLinesPS)) # Thermal
-                            # limit of power transmission lines and 
-                            # transformers
-        for i in range(self.NumberLinesPS):
-            self.PowerRateLimitTL[i] = \
-                obj.ENetwork.Branch[i].get_Rate()
-        self.OriginalNumberBranchFrom = \
-            np.empty((self.NumberLinesPS)) # Original numeration of 
-                                # the transmission lines and transformers
-                                # in the power system in the from end
-        for i in range(self.NumberLinesPS):
-            self.OriginalNumberBranchFrom[i] = \
-                obj.ENetwork.Branch[i].get_BusF()
-        self.OriginalNumberBranchTo = \
-            np.empty((self.NumberLinesPS)) # Original numeration of 
-                                # the transmission lines and transformers
-                                # in the power system in the to end
-        for i in range(self.NumberLinesPS):
-            self.OriginalNumberBranchTo[i] = \
-                obj.ENetwork.Branch[i].get_BusT()
         
-        self.PosNumberBranchFrom = \
-            np.empty((self.NumberLinesPS)) # Position of the from end of
-                                # the transmission lines and transformers
-                                # in the vector that stores the node data.
-                                # The position start from zero in the node
-                                # data
-        for i in range(self.NumberLinesPS):
-            self.PosNumberBranchFrom[i] = \
-                obj.ENetwork.Branch[i].get_PosF()
-        self.PosNumberBranchTo = \
-            np.empty((self.NumberLinesPS)) # Position of the to end of
-                                # the transmission lines and transformers
-                                # in the vector that stores the node data.
-                                # The position start from zero in the node
-                                # data
-        for i in range(self.NumberLinesPS):
-            self.PosNumberBranchTo[i] = \
-                obj.ENetwork.Branch[i].get_PosT()
-        self.ReactanceBranch = \
-            np.empty((self.NumberLinesPS)) # Reactance of the transmission 
-                                # lines and transformers
-        for i in range(self.NumberLinesPS):
-            self.ReactanceBranch[i] = \
-                obj.ENetwork.Branch[i].get_X()
-        self.ResistanceBranch = \
-            np.empty((self.NumberLinesPS)) # Resistance of the transmission 
-                                # lines and transformers
-        for i in range(self.NumberLinesPS):
-            self.ResistanceBranch[i] = \
-                obj.ENetwork.Branch[i].get_R()
+        if self.FlagProblem:
+            self.ActiveBranches = np.empty(\
+                    ((self.NumberContingencies + 1),\
+                    self.NumberLinesPS))    # Flag to indicate if the 
+                                # transmission line or transformer is active 
+                                # on each contingency
+            for i in range(self.NumberContingencies + 1):
+                for j in range(self.NumberLinesPS):
+                    self.ActiveBranches[i, j] = \
+                        obj.ENetwork.Branch[j].is_active(i)
+            self.PowerRateLimitTL = np.empty((self.NumberLinesPS)) # Thermal
+                                # limit of power transmission lines and 
+                                # transformers
+            for i in range(self.NumberLinesPS):
+                self.PowerRateLimitTL[i] = \
+                    obj.ENetwork.Branch[i].get_Rate()
+            self.OriginalNumberBranchFrom = \
+                np.empty((self.NumberLinesPS)) # Original numeration of 
+                                    # the transmission lines and transformers
+                                    # in the power system in the from end
+            for i in range(self.NumberLinesPS):
+                self.OriginalNumberBranchFrom[i] = \
+                    obj.ENetwork.Branch[i].get_BusF()
+            self.OriginalNumberBranchTo = \
+                np.empty((self.NumberLinesPS)) # Original numeration of 
+                                    # the transmission lines and transformers
+                                    # in the power system in the to end
+            for i in range(self.NumberLinesPS):
+                self.OriginalNumberBranchTo[i] = \
+                    obj.ENetwork.Branch[i].get_BusT()
 
-        self.ACoeffPWBranchLosses = \
-            np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
-                                # piece Ax + b for the piecewise 
-                                # linearisation of the nonlinear branch
-                                # Losses
-        for i in range(self.NumberPiecesTLLosses):
-            self.ACoeffPWBranchLosses[i] = \
-                obj.ENetwork.loss['A'][i]
-        self.BCoeffPWBranchLosses = \
-            np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
-                                # piece Ax + b for the piecewise 
-                                # linearisation of the nonlinear branch
-                                # Losses
-        for i in range(self.NumberPiecesTLLosses):
-            self.BCoeffPWBranchLosses[i] = \
-                obj.ENetwork.loss['B'][i]
+            self.PosNumberBranchFrom = \
+                np.empty((self.NumberLinesPS)) # Position of the from end of
+                                    # the transmission lines and transformers
+                                    # in the vector that stores the node data.
+                                    # The position start from zero in the node
+                                    # data
+            for i in range(self.NumberLinesPS):
+                self.PosNumberBranchFrom[i] = \
+                    obj.ENetwork.Branch[i].get_PosF()
+            self.PosNumberBranchTo = \
+                np.empty((self.NumberLinesPS)) # Position of the to end of
+                                    # the transmission lines and transformers
+                                    # in the vector that stores the node data.
+                                    # The position start from zero in the node
+                                    # data
+            for i in range(self.NumberLinesPS):
+                self.PosNumberBranchTo[i] = \
+                    obj.ENetwork.Branch[i].get_PosT()
+            self.ReactanceBranch = \
+                np.empty((self.NumberLinesPS)) # Reactance of the transmission 
+                                    # lines and transformers
+            for i in range(self.NumberLinesPS):
+                self.ReactanceBranch[i] = \
+                    obj.ENetwork.Branch[i].get_X()
+            self.ResistanceBranch = \
+                np.empty((self.NumberLinesPS)) # Resistance of the transmission 
+                                    # lines and transformers
+            for i in range(self.NumberLinesPS):
+                self.ResistanceBranch[i] = \
+                    obj.ENetwork.Branch[i].get_R()
+
+            if self.LossesFlag:
+                self.ACoeffPWBranchLosses = \
+                    np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
+                                        # piece Ax + b for the piecewise 
+                                        # linearisation of the nonlinear branch
+                                        # Losses
+                for i in range(self.NumberPiecesTLLosses):
+                    self.ACoeffPWBranchLosses[i] = \
+                        obj.ENetwork.loss['A'][i]
+                self.BCoeffPWBranchLosses = \
+                    np.empty((self.NumberPiecesTLLosses)) # Coefficient A of the 
+                                        # piece Ax + b for the piecewise 
+                                        # linearisation of the nonlinear branch
+                                        # Losses
+                for i in range(self.NumberPiecesTLLosses):
+                    self.BCoeffPWBranchLosses[i] = \
+                        obj.ENetwork.loss['B'][i]
         
         self.PowerDemandNode = np.empty((self.NumberNodesPS)) # Active
                             # Power demand at each node
@@ -3114,7 +3118,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         ret = self.solver.simplex()
         assert ret == 0
 
-        print('Objective Function: %.10f' %(self.solver.get_obj_val()))
+        # print('Objective Function: %.10f' %(self.solver.get_obj_val()))
 
         # for i in self.LongTemporalConnections:
         #     print('Case %d :' %(i))
@@ -3480,3 +3484,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         str(self.loadcurtailmentsystem[i, j][0]),\
                         0, OFaux[i] * self.TotalHoursPerPeriod[j] \
                             * self.PenaltyLoadCurtailment)
+        
+    def GetObjectiveFunctionENM(self):
+        return self.solver.get_obj_val()

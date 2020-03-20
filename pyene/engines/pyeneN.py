@@ -876,7 +876,7 @@ class ENetworkClass:
         # Adjust demand profiles
         busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
         for xn in range(self.ENetwork.get_NoBus()):
-            print(self.ENetwork.Bus[xn].getLoss())
+            # print(self.ENetwork.Bus[xn].getLoss())
             busData[xn] = (self.ENetwork.Bus[xn].getLoss() +
                            self.demandE['PD'][xn])/self.ENetwork.get_Base()
 
