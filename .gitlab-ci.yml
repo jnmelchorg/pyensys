@@ -37,3 +37,11 @@ test:test:
   script:
     - python setup.py develop --with-glpk
     - pytest tests --cov=pyene
+
+test:run:
+  stage: test
+  script:
+    - python setup.py develop --with-glpk
+    - pyene run-e
+    - pyene run-n
+    - pyene run-en
