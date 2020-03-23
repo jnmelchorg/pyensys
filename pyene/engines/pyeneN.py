@@ -412,16 +412,23 @@ class ENetworkClass:
 
         # Get losses
         if self.settings['Losses']:
+            # The model estimates the losses
             LossF = sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
                         for x1 in self.ENetwork.Bus[xn].get_LossF())
             LossT = sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
                         for x2 in self.ENetwork.Bus[xn].get_LossT())
             LossM = 1
         else:
+            # The losses are pre-calculated
             LossF = sum(self.ENetwork.Bus[x1].get_LossF()/2
-                        for x1 in self.ENetwork.Bus[xn].get_LossF())
+                        for x1 in self.ENetwork.Bus[xn].get_LossF()) + 0.5 * \
+                sum(self.ENetwork.Branch[xb].getLoss() for xb in
+                    self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
             LossT = sum(self.ENetwork.Bus[x2].get_LossF()/2
-                        for x2 in self.ENetwork.Bus[xn].get_LossT())
+                        for x2 in self.ENetwork.Bus[xn].get_LossT()) + 0.5 * \
+                sum(self.ENetwork.Branch[xb].getLoss() for xb in
+                    self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
+
             if self.settings['Loss'] is None:
                 LossM = 1
             else:
@@ -918,12 +925,17 @@ class ENetworkClass:
                 for xn in self.s['Bus']:
                     FullLoss[xt] -= self.busData[xn]*self.scenarios['Demand'] \
                         [xt*self.p['daux']+self.busScenario[xn][xh]]
+
                     # Substract curtailment
                     if self.p['LLFea1'][xn] != 0:
                             FullLoss[xt] -= \
                                 m.vNFea[self.connections['Feasibility'][xh] +
                                         self.p['LLFea2'][xn], xt].value
                 FullLoss[xt] *= self.ENetwork.get_Base()
+
+                # Substract non-technical losses
+                for xb in range(self.ENetwork.get_NoBra()):
+                    FullLoss[xt] -= self.ENetwork.Branch[xb].getLoss()
 
             # Allocate losses per line
             for xt in self.s['Tim']:
@@ -934,7 +946,8 @@ class ENetworkClass:
                 for xb in range(self.ENetwork.get_NoBra()):
                     aux = abs(m.vNFlow[self.connections['Flow'][xh]+xb,
                                        xt].value) / FullFlow
-                    LossesDt[xb][xt] = FullLoss[xt] * aux
+                    LossesDt[xb][xt] = FullLoss[xt] * aux + \
+                        self.ENetwork.Branch[xb].getLoss()
 
         return LossesDt
         
