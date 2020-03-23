@@ -477,25 +477,30 @@ class pyeneClass():
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
+        value = 0
         if self.NM.settings['Flag']:
             # If the electricity network has been modelled
-            value = 0
-            for xh in auxscens:
-                acu = 0
-                for xt in auxtime:
-                    acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
-                        auxweight[xt]
-                value += acu*auxOF[xh]
-            value *= self.NM.ENetwork.get_Base()
+            if self.NM.settings['Losses']:
+                value = 0
+                for xh in auxscens:
+                    acu = 0
+                    for xt in auxtime:
+                        acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
+                            auxweight[xt]
+                    value += acu*auxOF[xh]
+                value *= self.NM.ENetwork.get_Base()
+            elif self.NM.settings['Loss'] is not None:
+                # TODO: Enable option
+                import sys
+                sys.exit('Options with network and predefined losses not yet enabled')
 
         elif self.NM.settings['Loss'] is not None:
             # If losses have been estimated
-            aux = self.NM.settings['Loss']/(1+self.NM.settings['Loss'])
-            value = self.get_AllGeneration(m, *varg, **kwarg)*aux
-        else:
-            # If losses have been neglected
-            value = 0
+            import sys
+            sys.exit('Options without network and predefined losses not yet enabled')
 
+        import sys
+        sys.exit('Just stop')
         return value
 
     def get_MeanHydroMarginal(self, m):
