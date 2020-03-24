@@ -943,11 +943,12 @@ class ENetworkClass:
                 for xb in range(self.ENetwork.get_NoBra()):
                     FullFlow += abs(m.vNFlow[self.connections['Flow'][xh]+xb,
                                              xt].value)
-                for xb in range(self.ENetwork.get_NoBra()):
-                    aux = abs(m.vNFlow[self.connections['Flow'][xh]+xb,
-                                       xt].value) / FullFlow
-                    LossesDt[xb][xt] = FullLoss[xt] * aux + \
-                        self.ENetwork.Branch[xb].getLoss()
+                if FullFlow > 0:
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        aux = abs(m.vNFlow[self.connections['Flow'][xh]+xb,
+                                           xt].value) / FullFlow
+                        LossesDt[xb][xt] = FullLoss[xt] * aux + \
+                            self.ENetwork.Branch[xb].getLoss()
 
         return LossesDt
         
