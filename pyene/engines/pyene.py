@@ -477,25 +477,30 @@ class pyeneClass():
         (auxtime, auxweight, auxscens,
          auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
 
+        value = 0
         if self.NM.settings['Flag']:
             # If the electricity network has been modelled
-            value = 0
-            for xh in auxscens:
-                acu = 0
-                for xt in auxtime:
-                    acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
-                        auxweight[xt]
-                value += acu*auxOF[xh]
-            value *= self.NM.ENetwork.get_Base()
+            if self.NM.settings['Losses']:
+                value = 0
+                for xh in auxscens:
+                    acu = 0
+                    for xt in auxtime:
+                        acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
+                            auxweight[xt]
+                    value += acu*auxOF[xh]
+                value *= self.NM.ENetwork.get_Base()
+            elif self.NM.settings['Loss'] is not None:
+                # TODO: Enable option
+                import sys
+                sys.exit('Options with network and predefined losses not yet enabled')
 
         elif self.NM.settings['Loss'] is not None:
             # If losses have been estimated
-            aux = self.NM.settings['Loss']/(1+self.NM.settings['Loss'])
-            value = self.get_AllGeneration(m, *varg, **kwarg)*aux
-        else:
-            # If losses have been neglected
-            value = 0
+            import sys
+            sys.exit('Options without network and predefined losses not yet enabled')
 
+        import sys
+        sys.exit('Just stop')
         return value
 
     def get_MeanHydroMarginal(self, m):
@@ -544,29 +549,25 @@ class pyeneClass():
         if auxFlags[0]:  # Conventional generation
             for x in self.NM.Gen.Conv:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
             for x in self.NM.Gen.RES:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
             for x in self.NM.Gen.Hydro:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
                              self.NM.ENetwork.get_Base() *
                              sum(m.vNPump[self.NM.get_ConP(xh)+xdl+1,
-                                          xt].value *
-                                 self.NM.scenarios['Weights'][xt]
+                                          xt].value
                                  for xt in auxtime)
                              for xdl in self.NM.s['Pump']) *
                          auxOF[xh] for xh in auxscens)

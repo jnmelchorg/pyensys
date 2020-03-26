@@ -295,6 +295,10 @@ class Branch:
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
 
+    def getLoss(self):
+        ''' Return non technical losses in the bus '''
+        return self.data['Loss_Fix']
+
     def get_N1(self, x=':'):
         ''' Get values for a single N-1 condition '''
         return self.pyomo['N-1'][x]
