@@ -410,13 +410,36 @@ class ENetworkClass:
         else:
             aux = self.Storage['Efficiency'][self.LLStor[xn, 0]-1]
 
+        # Get losses
+        if self.settings['Losses']:
+            # The model estimates the losses
+            LossF = sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
+                        for x1 in self.ENetwork.Bus[xn].get_LossF())
+            LossT = sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
+                        for x2 in self.ENetwork.Bus[xn].get_LossT())
+            LossM = 1
+        else:
+            # The losses are pre-calculated
+            LossF = sum(self.ENetwork.Bus[x1].get_LossF()/2
+                        for x1 in self.ENetwork.Bus[xn].get_LossF()) + 0.5 * \
+                sum(self.ENetwork.Branch[xb].getLoss() for xb in
+                    self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
+            LossT = sum(self.ENetwork.Bus[x2].get_LossF()/2
+                        for x2 in self.ENetwork.Bus[xn].get_LossT()) + 0.5 * \
+                sum(self.ENetwork.Branch[xb].getLoss() for xb in
+                    self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
+
+            if self.settings['Loss'] is None:
+                LossM = 1
+            else:
+                LossM = 1+self.settings['Loss']
+                
+
         return (sum(m.vNGen[self.connections['Generation'][xh]+xg, xt]
                     for xg in self.Gen.get_GenInBus(self.ENetwork.Bus[xn])) +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x2, xt]
-                    for x2 in self.ENetwork.get_FlowT(xn, xs)) -
-                sum(m.vNLoss[self.connections['Loss'][xh]+x2, xt]/2
-                    for x2 in self.ENetwork.Bus[xn].get_LossT()) ==
-                self.busData[xn]*self.scenarios['Demand']
+                    for x2 in self.ENetwork.get_FlowT(xn, xs))-LossT ==
+                LossM*self.busData[xn]*self.scenarios['Demand']
                                                [xt*self.p['daux'] +
                                                 self.busScenario[xn][xh]] -
                 (m.vNStore[self.LLStor[xn, xh], xt] -
@@ -429,8 +452,7 @@ class ENetworkClass:
                          xt] +
                 sum(m.vNFlow[self.connections['Flow'][xh]+x1, xt]
                     for x1 in self.ENetwork.get_FlowF(xn, xs)) +
-                sum(m.vNLoss[self.connections['Loss'][xh]+x1, xt]/2
-                    for x1 in self.ENetwork.Bus[xn].get_LossF()))
+                LossF)
 
     def cNEBalance0_rule(self, m, xt, xs, xh):
         ''' Nodal balance without networks '''
@@ -825,17 +847,23 @@ class ENetworkClass:
                 print("];")
 
             if self.Print['Losses'] and self.settings['Flag']:
-                aux = 0
                 print("\nEPower_Loss=[")
+                LossDt = self.printLosses(m, xh)
                 for xb in range(self.ENetwork.get_NoBra()):
                     for xt in self.s['Tim']:
-                        if self.settings['Losses']:
-                            aux = m.vNLoss[self.connections['Loss'][xh]+xb,
-                                           xt].value * \
-                                self.ENetwork.get_Base()
-                        print("%8.4f " % aux, end='')
+                        print("%8.4f " % LossDt[xb][xt], end='')
                     print()
                 print("];")
+
+#            print("\nEDemand=[")            
+#            for xn in self.s['Bus']:
+#                for xt in self.s['Tim']:
+#                    aux = self.busData[xn]*self.scenarios['Demand'] \
+#                        [xt*self.p['daux']+self.busScenario[xn][xh]]* \
+#                        self.ENetwork.get_Base()
+#                    print("%8.4f " % aux, end='')
+#                print()
+#            print("];")
 
             if self.Print['Curtailment']:
                 print("\nPumps=[")
@@ -871,12 +899,64 @@ class ENetworkClass:
                     print()
                 print("];")
 
+    def printLosses(self, m, xh):
+        ''' Get losses data to be printed '''
+        LossesDt = np.zeros((self.ENetwork.get_NoBra(),
+                             self.settings['NoTime']), dtype=float)
+        
+        if self.settings['Loss'] is None:
+            aux = 0
+            for xb in range(self.ENetwork.get_NoBra()):
+                for xt in self.s['Tim']:
+                    if self.settings['Losses']:
+                        aux = m.vNLoss[self.connections['Loss'][xh]+xb,
+                                       xt].value * \
+                            self.ENetwork.get_Base()
+                    LossesDt[xb][xt] = aux
+        else:
+            # Get all losses
+            FullLoss = np.zeros(self.settings['NoTime'], dtype=float)
+            for xt in self.s['Tim']:
+                # Get all power generation
+                for xn in range(self.Gen.get_NoGen()):
+                    FullLoss[xt] += m.vNGen[self.connections['Generation'][xh]
+                                            +xn, xt].value
+                # Substract demand
+                for xn in self.s['Bus']:
+                    FullLoss[xt] -= self.busData[xn]*self.scenarios['Demand'] \
+                        [xt*self.p['daux']+self.busScenario[xn][xh]]
+
+                    # Substract curtailment
+                    if self.p['LLFea1'][xn] != 0:
+                            FullLoss[xt] -= \
+                                m.vNFea[self.connections['Feasibility'][xh] +
+                                        self.p['LLFea2'][xn], xt].value
+                FullLoss[xt] *= self.ENetwork.get_Base()
+
+                # Substract non-technical losses
+                for xb in range(self.ENetwork.get_NoBra()):
+                    FullLoss[xt] -= self.ENetwork.Branch[xb].getLoss()
+
+            # Allocate losses per line
+            for xt in self.s['Tim']:
+                FullFlow = 0
+                for xb in range(self.ENetwork.get_NoBra()):
+                    FullFlow += abs(m.vNFlow[self.connections['Flow'][xh]+xb,
+                                             xt].value)
+                if FullFlow > 0:
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        aux = abs(m.vNFlow[self.connections['Flow'][xh]+xb,
+                                           xt].value) / FullFlow
+                        LossesDt[xb][xt] = FullLoss[xt] * aux + \
+                            self.ENetwork.Branch[xb].getLoss()
+
+        return LossesDt
+        
     def ProcessEDem(self, ENetDem):
         ''' Process demand and generation parameters '''
         # Adjust demand profiles
         busData = np.zeros(self.ENetwork.get_NoBus(), dtype=float)
         for xn in range(self.ENetwork.get_NoBus()):
-            # print(self.ENetwork.Bus[xn].getLoss())
             busData[xn] = (self.ENetwork.Bus[xn].getLoss() +
                            self.demandE['PD'][xn])/self.ENetwork.get_Base()
 
