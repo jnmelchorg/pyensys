@@ -288,3 +288,252 @@ class EInterfaceClass:
     def pypower2pyene(self):
         '''Convert pyene files to pypsa format'''
         print('To be finalised pypower2pyene')
+
+class PSSErawInterface:
+    ''' This class provides functionalities to read raw files from psse'''
+    def __init__(self, pathpsseraw = None):
+        ''' The init function open the psse raw file if the path \
+            is provided'''
+        if pathpsseraw != None:
+            self.file = open(pathpsseraw, 'r')
+        else:
+            self.file = None
+    
+    def detectpsseversion(self):
+        ''' This function determines the psse version used to store \
+            the raw data '''
+        self.psseversion = None
+        aux1 = self.filecontent[0].split(',')
+        aux1 = int(aux1[2])
+        if  aux1 == 31 or aux1 == 33 or aux1 == 34:
+            self.psseversion = aux1
+        else:
+            logging.warning('PSSE version not supported')
+
+    def parsesystemdata(self):
+        ''' This function parse the information that corresponds to \
+            the whole power system '''
+        aux1 = self.filecontent[0].split(',')
+        aux2 = aux1[5].split('/')
+        print(aux1[1])
+        self.BaseUnitPower = float(aux1[1])
+        self.BaseFrequency = float(aux2[0])
+        self.UnitsTrafosRatings = int(aux1[3]) #  value <= 0 for MVA
+                            # value > 0 for current expressed as MVA
+        self.UnitsnonTrafosRatings = int(aux1[4]) #  value <= 0 for MVA
+                            # value > 0 for current expressed as MVA
+    
+    def parsenodedata(self):
+        ''' This function parse the information that corresponds to \
+            the nodes of the power system '''
+        aux2 = self.filecontent[3].split(',')
+        self.BusNumber = np.array(int(aux2[0]))
+        self.BusNomV = np.array(float(aux2[2]))
+        aux1 = 4
+        while self.filecontent[aux1][0:3] != '0 /':
+            aux2 = self.filecontent[aux1].split(',')
+            self.BusNumber = np.append(self.BusNumber, int(aux2[0]))
+            self.BusNomV = np.append(self.BusNomV, float(aux2[2]))
+            aux1 += 1
+        self.NumberNodes = len(self.BusNumber)
+
+    
+    def parsetrafodata(self):
+        ''' This function parse the information that corresponds to \
+            the transformers of the power system '''
+        aux1 = 14553
+        aux3 = 0
+        aux4 = 0
+        self.ThreeWindingR = np.empty(1)
+        self.ThreeWindingX = np.empty(1)
+        self.ThreeWindingFrom = np.empty(1)
+        self.ThreeWindingTo = np.empty(1)
+        self.ConvTrafoR = np.empty(1)
+        self.ConvTrafoX = np.empty(1)
+        self.ConvTrafoFrom = np.empty(1)
+        self.ConvTrafoTo = np.empty(1)        
+        while self.filecontent[aux1][0:3] != '0 /':
+            aux2 = self.filecontent[aux1].split(',')
+            if int(aux2[2]) == 0:
+                aux4 += 1
+                Bus1 = int(aux2[0])
+                Bus2 = int(aux2[1])
+                CW = int(aux2[4])
+                CZ = int(aux2[5])
+                CM = int(aux2[6])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                R12 = float(aux2[0])
+                X12 = float(aux2[1])
+                SBase12 = float(aux2[2])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                NOMV1 = float(aux2[1])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                NOMV2 = float(aux2[1])
+                aux1 += 1
+                # Verifying and adapting impedances to base power
+                if CZ == 2:
+                    if SBase12 != self.BaseUnitPower:
+                        R12 = R12 * (self.BaseUnitPower/SBase12)
+                        X12 = X12 * (self.BaseUnitPower/SBase12)
+                elif CZ == 3:
+                    R12 = R12/(self.BaseUnitPower * 1e6)
+                    X12 = math.sqrt(X12**2 - R12**2) 
+                if aux4 == 1:
+                    self.ConvTrafoR[0] = R12
+                    self.ConvTrafoX[0] = X12
+                    self.ConvTrafoFrom[0] = Bus1
+                    self.ConvTrafoTo[0] = Bus2
+                else:
+                    self.ConvTrafoR = np.append(self.ConvTrafoR, R12)
+                    self.ConvTrafoX = np.append(self.ConvTrafoX, X12)
+                    self.ConvTrafoFrom = np.append(\
+                        self.ConvTrafoFrom, Bus1)
+                    self.ConvTrafoTo = np.append(\
+                        self.ConvTrafoTo, Bus2)
+            else:
+                aux3 += 1
+                Bus1 = int(aux2[0])
+                Bus2 = int(aux2[1])
+                Bus3 = int(aux2[2])
+                CW = int(aux2[4])
+                CZ = int(aux2[5])
+                CM = int(aux2[6])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                R12 = float(aux2[0])
+                X12 = float(aux2[1])
+                SBase12 = float(aux2[2])
+                R23 = float(aux2[3])
+                X23 = float(aux2[4])
+                SBase23 = float(aux2[5])
+                R31 = float(aux2[6])
+                X31 = float(aux2[7])
+                SBase31 = float(aux2[8])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                NOMV1 = float(aux2[1])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                NOMV2 = float(aux2[1])
+                aux1 += 1
+                aux2 = self.filecontent[aux1].split(',')
+                NOMV3 = float(aux2[1])
+                aux1 += 1
+                # Verifying and adapting impedances to base power
+                if CZ == 2:
+                    if SBase12 != self.BaseUnitPower:
+                        R12 = R12 * (self.BaseUnitPower/SBase12)
+                        X12 = X12 * (self.BaseUnitPower/SBase12)
+                    if SBase23 != self.BaseUnitPower:
+                        R23 = R23 * (self.BaseUnitPower/SBase23)
+                        X23 = X23 * (self.BaseUnitPower/SBase23)
+                    if SBase31 != self.BaseUnitPower:
+                        R31 = R31 * (self.BaseUnitPower/SBase31)
+                        X31 = X31 * (self.BaseUnitPower/SBase31)
+                elif CZ == 3:
+                    R12 = R12/(self.BaseUnitPower * 1e6)
+                    X12 = math.sqrt(X12**2 - R12**2)
+                    R23 = R23/(self.BaseUnitPower * 1e6)
+                    X23 = math.sqrt(X23**2 - R23**2)
+                    R31 = R31/(self.BaseUnitPower * 1e6)
+                    X31 = math.sqrt(X31**2 - R31**2)
+
+                # Verifying inconsistent reactances and resistances
+                minX = min(X12, X23, X31)
+                if (X12/minX) > 100:
+                    X12 = 100 * minX
+                if (X23/minX) > 100:
+                    X23 = 100 * minX
+                if (X31/minX) > 100:
+                    X31 = 100 * minX
+
+                # From delta to star
+                R1 = (1/2)*(R12 + R31 - R23)
+                R2 = (1/2)*(R12 + R23 - R31)
+                R3 = (1/2)*(R31 + R23 - R12)
+                X1 = (1/2)*(X12 + X31 - X23)
+                X2 = (1/2)*(X12 + X23 - X31)
+                X3 = (1/2)*(X31 + X23 - X12)
+                if aux3 == 1:
+                    self.ThreeWindingR[0] = R1
+                    self.ThreeWindingR = np.append(self.ThreeWindingR, R2)
+                    self.ThreeWindingR = np.append(self.ThreeWindingR, R3)
+                    self.ThreeWindingX[0] = X1
+                    self.ThreeWindingX = np.append(self.ThreeWindingX, X2)
+                    self.ThreeWindingX = np.append(self.ThreeWindingX, X3)
+                    self.ThreeWindingFrom[0] = Bus1
+                    self.ThreeWindingFrom = np.append(\
+                        self.ThreeWindingFrom, Bus2)
+                    self.ThreeWindingFrom = np.append(\
+                        self.ThreeWindingFrom, Bus3)
+                    self.ThreeWindingTo[0] = 1000000 + aux3
+                    self.ThreeWindingTo = np.append(\
+                        self.ThreeWindingTo, 1000000 + aux3)
+                    self.ThreeWindingTo = np.append(\
+                        self.ThreeWindingTo, 1000000 + aux3)
+                else:
+                    self.ThreeWindingR = np.append(self.ThreeWindingR, R1)
+                    self.ThreeWindingR = np.append(self.ThreeWindingR, R2)
+                    self.ThreeWindingR = np.append(self.ThreeWindingR, R3)
+                    self.ThreeWindingX = np.append(self.ThreeWindingX, X1)
+                    self.ThreeWindingX = np.append(self.ThreeWindingX, X2)
+                    self.ThreeWindingX = np.append(self.ThreeWindingX, X3)
+                    self.ThreeWindingFrom = np.append(\
+                        self.ThreeWindingFrom, Bus1)
+                    self.ThreeWindingFrom = np.append(\
+                        self.ThreeWindingFrom, Bus2)
+                    self.ThreeWindingFrom = np.append(\
+                        self.ThreeWindingFrom, Bus3)
+                    self.ThreeWindingTo = np.append(\
+                        self.ThreeWindingTo, 1000000 + aux3)
+                    self.ThreeWindingTo = np.append(\
+                        self.ThreeWindingTo, 1000000 + aux3)
+                    self.ThreeWindingTo = np.append(\
+                        self.ThreeWindingTo, 1000000 + aux3)  
+        self.NumberThreeWindingTrafos = len(self.ThreeWindingTo)
+        self.NumberConvTrafos = len(self.ConvTrafoR)
+
+    def pssedataparser(self):
+        ''' This function parse the psse data per device '''
+        self.parsesystemdata()
+
+    
+    def readpsserawfile(self):
+        if self.file == None:
+            logging.warning('No PSSE raw file to read')
+            return
+        self.filecontent = self.file.readlines()
+        self.detectpsseversion()
+        self.parsesystemdata()
+        self.parsenodedata()
+        self.parsetrafodata()
+        self.file.close()
+        with open('pyene/externaldata/datatrafos3.dat', 'w') as f:
+            for aux1 in range(self.NumberConvTrafos):
+                f.write("%d\t%d\t%.9f\t%.9f\n" %(self.ConvTrafoFrom[aux1], \
+                    self.ConvTrafoTo[aux1], self.ConvTrafoR[aux1], \
+                    self.ConvTrafoX[aux1]))
+            for aux1 in range(self.NumberThreeWindingTrafos):
+                f.write("%d\t%d\t%.9f\t%.9f\n" %(self.ThreeWindingFrom[aux1], \
+                    self.ThreeWindingTo[aux1], self.ThreeWindingR[aux1], \
+                    self.ThreeWindingX[aux1]))
+        
+
+
+
+        print(self.filecontent[0].split(','))
+        print(type(self.filecontent))
+        print(type(self.filecontent[0]))
+
+    def openpsserawfile(self, pathpsseraw = None):
+        ''' This definition allows opening a psse raw file without passing the \
+            path when the object is created'''
+        if pathpsseraw != None:
+            self.file = open(pathpsseraw, 'r')
+        else:
+            logging.warning('No path has been pass to the PSSE raw reader\
+                therefore none file has been opened')
+
