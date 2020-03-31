@@ -567,6 +567,11 @@ class Networkmodel():
         self.FlagProblem = obj.settings['Flag'] # Flag that indicates
                             # if the problem to solve is the economic
                             # dispatch or the optimal power flow
+        
+        self.FlagFeasibility = obj.settings['Feasibility'] # Flag that 
+                            # indicates if the problem should include
+                            # load curtailment variables
+
         if self.LossesFlag:
             self.NumberPiecesTLLosses = obj.Number_LossCon # Number 
                             # of pieces
@@ -846,79 +851,82 @@ class Networkmodel():
     def optimisationNM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='all')       
+        self.solver = GLPKSolver(message_level='all', \
+            simplex_method='primal')      
         # Definition of minimisation problem
         self.solver.set_dir('min')
-        print(dir(self))
         # Definition of the mathematical formulation
-        self.EconomicDispatchModel()
+        if self.FlagProblem:
+            self.OptimalPowerFlowModel()
+        else:
+            self.EconomicDispatchModel()
         ret = self.solver.simplex()
         assert ret == 0
 
 
-        for i in self.LongTemporalConnections:
-            print('Case %d :' %(i))
-            print('')
-            print('Generation:')
-            for k in range(self.NumberConvGen):
-                for j in range(self.ShortTemporalConnections):
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.thermalgenerators[i, j][0]), k) * \
-                            self.BaseUnitPower), end = ' ')
-                print('')
-            for k in range(self.NumberRESGen):
-                for j in range(self.ShortTemporalConnections):                
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.RESgenerators[i, j][0]), k) * \
-                            self.BaseUnitPower), end = ' ')
-                print('')
-            for k in range(self.NumberHydroGen):
-                for j in range(self.ShortTemporalConnections):
-                    print("%f" %(self.solver.get_col_prim(\
-                        str(self.Hydrogenerators[i, j][0]), k) * \
-                            self.BaseUnitPower), end = ' ')
-                print('')
-            print('')
-            if self.NumberPumps > 0:
-                print('Pumps:')
-                for k in range(self.NumberPumps):
-                    for j in range(self.ShortTemporalConnections):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.pumpsvar[i, j][0]), k) * \
-                                self.BaseUnitPower), end = ' ')
-                    print('')
-                print('')
-            print('LC:')
-            for j in range(self.ShortTemporalConnections):
-                print("%f" %(self.solver.get_col_prim(\
-                            str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-                                self.BaseUnitPower), end = ' ')
-            print('\n\n')
-            if self.NumberConvGen > 0:
-                print('Thermal Generation cost:')
-                for k in range(self.NumberConvGen):
-                    for j in range(self.ShortTemporalConnections):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.thermalCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
-            if self.NumberRESGen > 0:
-                print('RES Generation cost:')
-                for k in range(self.NumberRESGen):
-                    for j in range(self.ShortTemporalConnections):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.RESCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
-            if self.NumberHydroGen > 0:
-                print('Hydro Generation cost:')
-                for k in range(self.NumberHydroGen):
-                    for j in range(self.ShortTemporalConnections):
-                        print("%f" %(self.solver.get_col_prim(\
-                            str(self.HydroCG[i, j][0]), k)), end = ' ')
-                    print('')
-                print('')
-        print('')
+        # for i in self.LongTemporalConnections:
+        #     print('Case %d :' %(i))
+        #     print('')
+        #     print('Generation:')
+        #     for k in range(self.NumberConvGen):
+        #         for j in range(self.ShortTemporalConnections):
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.thermalgenerators[i, j][0]), k) * \
+        #                     self.BaseUnitPower), end = ' ')
+        #         print('')
+        #     for k in range(self.NumberRESGen):
+        #         for j in range(self.ShortTemporalConnections):                
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.RESgenerators[i, j][0]), k) * \
+        #                     self.BaseUnitPower), end = ' ')
+        #         print('')
+        #     for k in range(self.NumberHydroGen):
+        #         for j in range(self.ShortTemporalConnections):
+        #             print("%f" %(self.solver.get_col_prim(\
+        #                 str(self.Hydrogenerators[i, j][0]), k) * \
+        #                     self.BaseUnitPower), end = ' ')
+        #         print('')
+        #     print('')
+        #     if self.NumberPumps > 0:
+        #         print('Pumps:')
+        #         for k in range(self.NumberPumps):
+        #             for j in range(self.ShortTemporalConnections):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.pumpsvar[i, j][0]), k) * \
+        #                         self.BaseUnitPower), end = ' ')
+        #             print('')
+        #         print('')
+        #     print('LC:')
+        #     for j in range(self.ShortTemporalConnections):
+        #         print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.loadcurtailmentsystem[i, j][0]), 0) * \
+        #                         self.BaseUnitPower), end = ' ')
+        #     print('\n\n')
+        #     if self.NumberConvGen > 0:
+        #         print('Thermal Generation cost:')
+        #         for k in range(self.NumberConvGen):
+        #             for j in range(self.ShortTemporalConnections):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.thermalCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
+        #     if self.NumberRESGen > 0:
+        #         print('RES Generation cost:')
+        #         for k in range(self.NumberRESGen):
+        #             for j in range(self.ShortTemporalConnections):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.RESCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
+        #     if self.NumberHydroGen > 0:
+        #         print('Hydro Generation cost:')
+        #         for k in range(self.NumberHydroGen):
+        #             for j in range(self.ShortTemporalConnections):
+        #                 print("%f" %(self.solver.get_col_prim(\
+        #                     str(self.HydroCG[i, j][0]), k)), end = ' ')
+        #             print('')
+        #         print('')
+        # print('')
 
 
     ############################################
@@ -1407,7 +1415,7 @@ class Networkmodel():
                                 * self.BaseUnitPower \
                                     * self.CostOperPumps[k])
             # Punitive cost for load curtailment
-                if self.FlagProblem:
+                if self.FlagProblem and self.FlagFeasibility:
                 # Optimal Power Flow
                     for k in range(self.NumberContingencies + 1):
                         for ii in range(self.NumberNodesPS):
@@ -1415,7 +1423,25 @@ class Networkmodel():
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, self.TotalHoursPerPeriod[j] \
                                     * 100000000)
-                else:
+                        if self.NumberConvGen > 0:
+                            for ii in range(self.NumberConvGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.ThermalGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    self.TotalHoursPerPeriod[j] * 100000000)
+                        if self.NumberRESGen > 0:
+                            for ii in range(self.NumberRESGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.RESGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    self.TotalHoursPerPeriod[j] * 100000000)
+                        if self.NumberHydroGen > 0:
+                            for ii in range(self.NumberHydroGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.HydroGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    self.TotalHoursPerPeriod[j] * 100000000)
+                elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\
@@ -1446,9 +1472,13 @@ class Networkmodel():
         self.number_variablesED = 0
         self.dnvariablesCommon()
         self.number_variablesED = self.number_variablesCommon
-        # Load curtailment variables
-        self.number_variablesED += len(self.LongTemporalConnections) \
-            * self.ShortTemporalConnections
+        if self.FlagFeasibility:
+            # Load curtailment variables
+            self.number_variablesED += len(self.LongTemporalConnections) \
+                * self.ShortTemporalConnections
+            # Generation curtailment variables
+            self.number_variablesED += len(self.LongTemporalConnections) \
+                * self.ShortTemporalConnections
 
     def dnconstraintsED(self):
         """ This class method determines the number of constraints for the 
@@ -1489,12 +1519,19 @@ class Networkmodel():
         variables for the ED problem """
 
         self.PosvariablesCommon()
-
-        self.loadcurtailmentsystem = np.empty((len(self.LongTemporalConnections),\
-            self.ShortTemporalConnections),\
-            dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
-            # in matrix A (rows) of variables
-            # for load curtailment in the system for each tree node
+        if self.FlagFeasibility:
+            self.loadcurtailmentsystem = np.empty((\
+                len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections),\
+                dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                # in matrix A (rows) of variables
+                # for load curtailment in the system for each tree node
+            self.generationcurtailmentsystem = np.empty((\
+                len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections),\
+                dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                # in matrix A (rows) of variables
+                # for generation curtailment in the system for each tree node
 
     def variablesED(self):
         """ This class method defines the variables and their limits for the
@@ -1504,10 +1541,16 @@ class Networkmodel():
         self.variablesCommon()
         
         # Reserving space in glpk for ED variables
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                self.loadcurtailmentsystem[i, j] = ('LCS'+str(i)+','+str(j),\
-                    self.solver.add_cols('LCS'+str(i)+','+str(j), 1))
+        if self.FlagFeasibility:
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    self.loadcurtailmentsystem[i, j] = (\
+                        'LCS'+str(i)+','+str(j),\
+                        self.solver.add_cols('LCS'+str(i)+','+str(j), 1))
+                    self.generationcurtailmentsystem[i, j] = (\
+                        'GCS'+str(i)+','+str(j),\
+                        self.solver.add_cols('GCS'+str(i)+','+str(j), 1))    
+
 
     # Constraints ED
 
@@ -1593,11 +1636,16 @@ class Networkmodel():
                                 -self.EffStorage[k] \
                                 / self.TotalHoursPerPeriod[j - 1]
                             self.ne += 1
-            # Storing the variables for load curtailment
-                self.ia[self.ne] = self.powerbalance[i, j][1]
-                self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
-                self.ar[self.ne] = 1.0
-                self.ne += 1
+            # Storing the variables for load and generation curtailment
+                if self.FlagFeasibility:
+                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                    self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
+                    self.ar[self.ne] = 1.0
+                    self.ne += 1
+                    self.ia[self.ne] = self.powerbalance[i, j][1]
+                    self.ja[self.ne] = self.generationcurtailmentsystem[i, j][1]
+                    self.ar[self.ne] = -1.0
+                    self.ne += 1
             # Storing the variables for pumps
                 if self.NumberPumps > 0:
                     for k in range(self.NumberPumps):
@@ -1670,11 +1718,30 @@ class Networkmodel():
                 len(self.LongTemporalConnections) * \
                 (self.NumberContingencies + 1) \
                 * self.ShortTemporalConnections
-        # load curtailment variables
-        self.number_variablesOPF += self.NumberNodesPS * \
-            len(self.LongTemporalConnections) * \
-            (self.NumberContingencies + 1) \
-            * self.ShortTemporalConnections
+        if self.FlagFeasibility:
+            # load curtailment variables
+            self.number_variablesOPF += self.NumberNodesPS * \
+                len(self.LongTemporalConnections) * \
+                (self.NumberContingencies + 1) \
+                * self.ShortTemporalConnections
+            # Thermal generation curtailment
+            if self.NumberConvGen > 0:
+                self.number_variablesOPF += self.NumberConvGen * \
+                    len(self.LongTemporalConnections) * \
+                    (self.NumberContingencies + 1) \
+                    * self.ShortTemporalConnections
+            # RES generation curtailment
+            if self.NumberRESGen > 0:
+                self.number_variablesOPF += self.NumberRESGen * \
+                    len(self.LongTemporalConnections) * \
+                    (self.NumberContingencies + 1) \
+                    * self.ShortTemporalConnections
+            # Hydro generation curtailment
+            if self.NumberHydroGen > 0:
+                self.number_variablesOPF += self.NumberHydroGen * \
+                    len(self.LongTemporalConnections) * \
+                    (self.NumberContingencies + 1) \
+                    * self.ShortTemporalConnections
         # Voltage angle variables
         self.number_variablesOPF += self.NumberNodesPS * \
             len(self.LongTemporalConnections) * \
@@ -1731,7 +1798,7 @@ class Networkmodel():
         self.generationrampsconstraints()
 
         self.activepowerbalancepernode()
-        self.activepowerflowconstraints()
+        # self.activepowerflowconstraints()
         if self.LossesFlag:
             self.activepowerlosses1constraints()
             self.activepowerlosses2constraints()
@@ -1755,11 +1822,38 @@ class Networkmodel():
                 self.ShortTemporalConnections, (self.NumberContingencies + 1)),\
                 dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
                 # in matrix A (rows) of variables for the active power losses
-        self.LoadCurtailmentNode = np.empty((len(self.LongTemporalConnections),\
-            self.ShortTemporalConnections, (self.NumberContingencies + 1)),\
-            dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
-            # in matrix A (rows) of variables for the load curtailment per
-            # node
+        if self.FlagFeasibility:
+            self.LoadCurtailmentNode = np.empty((\
+                len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1)),\
+                dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                # in matrix A (rows) of variables for load curtailment per
+                # node
+            if self.NumberConvGen > 0:
+                self.ThermalGenerationCurtailmentNode = np.empty((\
+                    len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1)),\
+                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                    # in matrix A (rows) of variables for thermal generation 
+                    # curtailment per node
+            if self.NumberRESGen > 0:
+                self.RESGenerationCurtailmentNode = np.empty((\
+                    len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1)),\
+                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                    # in matrix A (rows) of variables for RES generation 
+                    # curtailment per node
+            if self.NumberHydroGen > 0:
+                self.HydroGenerationCurtailmentNode = np.empty((\
+                    len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1)),\
+                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                    # in matrix A (rows) of variables for RES generation 
+                    # curtailment per node
         self.VoltageAngle = np.empty((len(self.LongTemporalConnections),\
             self.ShortTemporalConnections, (self.NumberContingencies + 1)),\
             dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
@@ -1788,16 +1882,38 @@ class Networkmodel():
                             self.solver.add_cols(\
                             'ActivePowerLosses'+str(i)+','+str(j)+','+str(k),\
                             self.NumberLinesPS))
-                    self.LoadCurtailmentNode[i, j, k] = \
-                        ('LoadCurtailmentNode'+str(i)+','+str(j)+','+str(k),\
-                        self.solver.add_cols(\
-                        'LoadCurtailmentNode'+str(i)+','+str(j)+','+str(k),\
-                        self.NumberNodesPS))
+                    if self.FlagFeasibility:
+                        self.LoadCurtailmentNode[i, j, k] = \
+                            ('LoadCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k),\
+                            self.solver.add_cols(\
+                            'LoadCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k),\
+                            self.NumberNodesPS))
+                        if self.NumberConvGen > 0:
+                            self.ThermalGenerationCurtailmentNode[i, j, k] = \
+                                ('ThermalGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k), self.solver.add_cols(\
+                                'ThermalGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k),self.NumberConvGen))
+                        if self.NumberRESGen > 0:
+                            self.RESGenerationCurtailmentNode[i, j, k] = \
+                                ('RESGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k), self.solver.add_cols(\
+                                'RESGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k),self.NumberRESGen))
+                        if self.NumberHydroGen > 0:
+                            self.HydroGenerationCurtailmentNode[i, j, k] = \
+                                ('HydroGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k), self.solver.add_cols(\
+                                'HydroGenerationCurtailmentNode'+str(i)+',\
+                                '+str(j)+','+str(k),self.NumberHydroGen))
                     self.VoltageAngle[i, j, k] = \
                         ('VoltageAngle'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_cols(\
                         'VoltageAngle'+str(i)+','+str(j)+','+str(k),\
                         self.NumberNodesPS))
+
         
         # Defining the limits of the variables
         for i in self.LongTemporalConnections:
@@ -1806,7 +1922,8 @@ class Networkmodel():
                     for ii in range(self.NumberLinesPS):
                         # If the line is active in the current contingency then
                         # define the limits
-                        if self.ActiveBranches[k, ii]:
+                        if self.ActiveBranches[k, ii] and \
+                            self.PowerRateLimitTL[ii] > 0:
                             self.solver.set_col_bnds(\
                                 str(self.ActivePowerFlow[i, j, k][0]), ii,\
                                 'bounded', \
@@ -1826,28 +1943,61 @@ class Networkmodel():
                                 self.solver.set_col_bnds(\
                                     str(self.ActivePowerLosses[i, j, k][0]),\
                                         ii, 'fixed', 0, 0)
-                    for ii in range(self.NumberNodesPS):
-                        # If the demand in the node is greater than zero then
-                        # define the limits
-                        if self.PowerDemandNode[ii] > 0:
-                            if self.NumberDemScenarios == 0:
-                                self.solver.set_col_bnds(\
-                                    str(self.LoadCurtailmentNode[i, j, k][0]),\
-                                    ii,'bounded', 0, \
-                                    self.PowerDemandNode[ii] * \
-                                    self.MultScenariosDemand[i, ii])
+                    if self.FlagFeasibility:
+                        for ii in range(self.NumberNodesPS):
+                            # If the demand in the node is greater than zero
+                            # then define the limits
+                            if self.PowerDemandNode[ii] > 0:
+                                if self.NumberDemScenarios == 0:
+                                    self.solver.set_col_bnds(\
+                                        str(\
+                                        self.LoadCurtailmentNode[i, j, k][0]),\
+                                        ii,'bounded', 0, \
+                                        self.PowerDemandNode[ii] * \
+                                        self.MultScenariosDemand[i, ii])
+                                else:
+                                    self.solver.set_col_bnds(\
+                                        str(\
+                                        self.LoadCurtailmentNode[i, j, k][0]),\
+                                        ii,'bounded', 0, \
+                                        self.PowerDemandNode[ii] * \
+                                        self.MultScenariosDemand[i, j, ii])                        
+                            # If the demand in the node is zero then
+                            # fix the load curtailment to zero
                             else:
                                 self.solver.set_col_bnds(\
                                     str(self.LoadCurtailmentNode[i, j, k][0]),\
-                                    ii,'bounded', 0, \
-                                    self.PowerDemandNode[ii] * \
-                                    self.MultScenariosDemand[i, j, ii])
-                        # If the demand in the node is zero then
-                        # fix the load curtailment to zero
-                        else:
-                            self.solver.set_col_bnds(\
-                                str(self.LoadCurtailmentNode[i, j, k][0]), ii,\
-                                'fixed', 0, 0)
+                                    ii, 'fixed', 0, 0)
+                        if self.NumberConvGen > 0:
+                            for ii in range(self.NumberConvGen):
+                                if self.MinConvGen[ii] > 0:
+                                    self.solver.set_col_bnds(\
+                                    str(self.ThermalGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'lower', 0, 0)
+                                else:
+                                    self.solver.set_col_bnds(\
+                                    str(self.ThermalGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'fixed', 0, 0)
+                        if self.NumberRESGen > 0:
+                            for ii in range(self.NumberRESGen):
+                                if self.MinRESGen[ii] > 0:
+                                    self.solver.set_col_bnds(\
+                                    str(self.RESGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'lower', 0, 0)
+                                else:
+                                    self.solver.set_col_bnds(\
+                                    str(self.RESGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'fixed', 0, 0)
+                        if self.NumberHydroGen > 0:
+                            for ii in range(self.NumberHydroGen):
+                                if self.MinHydroGen[ii] > 0:
+                                    self.solver.set_col_bnds(\
+                                    str(self.HydroGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'lower', 0, 0)
+                                else:
+                                    self.solver.set_col_bnds(\
+                                    str(self.HydroGenerationCurtailmentNode\
+                                        [i, j, k][0]), ii, 'fixed', 0, 0)
                     for ii in range(self.NumberNodesPS):
                         if self.TypeNode[ii] is not 3:
                             self.solver.set_col_bnds(\
@@ -1857,7 +2007,7 @@ class Networkmodel():
                             self.solver.set_col_bnds(\
                                 str(self.VoltageAngle[i, j, k][0]),\
                                     ii,'fixed', 0, 0)
-                    
+
     # Constraints OPF
 
     def posconstraintsOPF(self):
@@ -1868,12 +2018,6 @@ class Networkmodel():
 
             self.posconstraintsCommon()
 
-            self.activepowerbalancenode = np.empty(\
-                (len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1)), dtype=[('napos', 'U80'),\
-                ('nupos', 'i4')]) # Start position of active power balance 
-                                  # constraints (rows) per node
             self.activepowerflowconstraint = np.empty(\
                 (len(self.LongTemporalConnections),\
                 self.ShortTemporalConnections, \
@@ -1907,13 +2051,6 @@ class Networkmodel():
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
                 for k in range(self.NumberContingencies + 1):
-                    self.activepowerbalancenode[i, j, k] = \
-                        ('activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
-                        self.solver.add_rows(\
-                        'activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
-                        self.NumberNodesPS))  # Number of 
-                            # rows (constraints) in matrix A for the active 
-                            # power balance constraints per node
                     # Pre-contingency
                     if k == 0:
                         self.activepowerflowconstraint[i, j, k] = \
@@ -2024,6 +2161,26 @@ class Networkmodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
+
+        # Creating the matrices to store the position of constraints in
+        # matrix A
+        self.activepowerbalancenode = np.empty(\
+            (len(self.LongTemporalConnections),\
+            self.ShortTemporalConnections, \
+            (self.NumberContingencies + 1)), dtype=[('napos', 'U80'),\
+            ('nupos', 'i4')]) # Start position of active power balance 
+                              # constraints (rows) per node
+        
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    self.activepowerbalancenode[i, j, k] = \
+                        ('activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
+                        self.solver.add_rows(\
+                        'activepowerbalancenode'+str(i)+','+str(j)+','+str(k),\
+                        self.NumberNodesPS))  # Number of 
+                            # rows (constraints) in matrix A for the active 
+                            # power balance constraints per node
 
         # Generating the matrix A for the active power balance constraints
         for i in self.LongTemporalConnections:
@@ -2141,12 +2298,55 @@ class Networkmodel():
                                     self.ar[self.ne] = -0.5
                                     self.ne += 1
                     # Storing the variables for load curtailment
-                        self.ia[self.ne] = \
-                            self.activepowerbalancenode[i, j, k][1] + ii
-                        self.ja[self.ne] = \
-                            self.LoadCurtailmentNode[i, j, k][1] + ii
-                        self.ar[self.ne] = 1.0
-                        self.ne += 1
+                        if self.FlagFeasibility:
+                            self.ia[self.ne] = \
+                                self.activepowerbalancenode[i, j, k][1] + ii
+                            self.ja[self.ne] = \
+                                self.LoadCurtailmentNode[i, j, k][1] + ii
+                            self.ar[self.ne] = 1.0
+                            self.ne += 1
+                            # Storing the thermal generation curtailment 
+                            # variables
+                            if self.NumberConvGen > 0:
+                                for jj in range(self.NumberConvGen):
+                                    if self.OriginalNumberConvGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        self.ia[self.ne] = \
+                                            self.activepowerbalancenode\
+                                            [i, j, k][1] + ii
+                                        self.ja[self.ne] = \
+                                            self.ThermalGenerationCurtailmentNode\
+                                            [i, j, k][1] + jj
+                                        self.ar[self.ne] = -1.0
+                                        self.ne += 1
+                            # Storing the RES generation curtailment 
+                            # variables
+                            if self.NumberRESGen > 0:
+                                for jj in range(self.NumberRESGen):
+                                    if self.OriginalNumberRESGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        self.ia[self.ne] = \
+                                            self.activepowerbalancenode\
+                                            [i, j, k][1] + ii
+                                        self.ja[self.ne] = \
+                                            self.RESGenerationCurtailmentNode\
+                                            [i, j, k][1] + jj
+                                        self.ar[self.ne] = -1.0
+                                        self.ne += 1
+                            # Storing the Hydro generation curtailment 
+                            # variables
+                            if self.NumberHydroGen > 0:
+                                for jj in range(self.NumberHydroGen):
+                                    if self.OriginalNumberHydroGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        self.ia[self.ne] = \
+                                            self.activepowerbalancenode\
+                                            [i, j, k][1] + ii
+                                        self.ja[self.ne] = \
+                                            self.HydroGenerationCurtailmentNode\
+                                            [i, j, k][1] + jj
+                                        self.ar[self.ne] = -1.0
+                                        self.ne += 1
 
                     # Defining the resources (b) for the constraints
                         totaldemand = 0                
@@ -2996,7 +3196,7 @@ class Networkmodel():
             return None
     
     def GetLoadCurtailmentNodes(self):
-        if self.FlagProblem:
+        if self.FlagProblem and self.FlagFeasibility:
             LoadCurtailmentNodesSolution = \
                 np.empty((len(self.LongTemporalConnections),\
                     self.ShortTemporalConnections, \
@@ -3011,6 +3211,69 @@ class Networkmodel():
                                 str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
                                     * self.BaseUnitPower
             return LoadCurtailmentNodesSolution
+        else:
+            return None
+
+    def GetThermalGenerationCurtailmentNodes(self):
+        if self.FlagProblem and self.FlagFeasibility:
+            ThermalGenerationCurtailmentNodesSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberConvGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberConvGen):
+                            ThermalGenerationCurtailmentNodesSolution\
+                                [i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.ThermalGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return ThermalGenerationCurtailmentNodesSolution
+        else:
+            return None
+    
+    def GetRESGenerationCurtailmentNodes(self):
+        if self.FlagProblem and self.FlagFeasibility:
+            RESGenerationCurtailmentNodesSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberRESGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberRESGen):
+                            RESGenerationCurtailmentNodesSolution\
+                                [i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.RESGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return RESGenerationCurtailmentNodesSolution
+        else:
+            return None
+    
+    def GetHydroGenerationCurtailmentNodes(self):
+        if self.FlagProblem and self.FlagFeasibility:
+            HydroGenerationCurtailmentNodesSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections, \
+                    (self.NumberContingencies + 1), \
+                    self.NumberHydroGen))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    for k in range(self.NumberContingencies + 1):
+                        for ii in range(self.NumberHydroGen):
+                            HydroGenerationCurtailmentNodesSolution\
+                                [i, j, k, ii] = \
+                                self.solver.get_col_prim(\
+                                str(self.HydroGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii)\
+                                    * self.BaseUnitPower
+            return HydroGenerationCurtailmentNodesSolution
         else:
             return None
 
@@ -3053,7 +3316,7 @@ class Networkmodel():
             return None
 
     def GetLoadCurtailmentSystemED(self):
-        if not self.FlagProblem:
+        if not self.FlagProblem and self.FlagFeasibility:
             LoadCurtailmentSystemEDSolution = \
                 np.empty((len(self.LongTemporalConnections),\
                     self.ShortTemporalConnections))
@@ -3066,8 +3329,21 @@ class Networkmodel():
             return LoadCurtailmentSystemEDSolution
         else:
             return None
-
- 
+    
+    def GetGenerationCurtailmentSystemED(self):
+        if not self.FlagProblem and self.FlagFeasibility:
+            GenerationCurtailmentSystemEDSolution = \
+                np.empty((len(self.LongTemporalConnections),\
+                    self.ShortTemporalConnections))
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    GenerationCurtailmentSystemEDSolution[i, j] = \
+                        self.solver.get_col_prim(\
+                        str(self.generationcurtailmentsystem[i, j][0]), 0) * \
+                        self.BaseUnitPower
+            return GenerationCurtailmentSystemEDSolution
+        else:
+            return None
 
 
 class EnergyandNetwork(Energymodel, Networkmodel):
@@ -3117,8 +3393,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         self.EnergyandNetworkModels()
         ret = self.solver.simplex()
         assert ret == 0
-
-        # print('Objective Function: %.10f' %(self.solver.get_obj_val()))
 
         # for i in self.LongTemporalConnections:
         #     print('Case %d :' %(i))
@@ -3311,12 +3585,13 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # The coefficient matrix is stored in CSR format (sparse matrix) 
         # to be later added to glpk
         self.ia = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 3), dtype=int) # Position in rows
+            1000), dtype=int) # Position in rows
         self.ja = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 3), dtype=int) # Position in columns
+            1000 ), dtype=int) # Position in columns
         self.ar = np.empty(math.ceil(self.number_constraintsENM * \
-            self.number_variablesENM / 3), dtype=float) # Value
+            1000), dtype=float) # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
+
 
         self.constraintsEM()
         self.Energybalance()
@@ -3336,7 +3611,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.activepowerbalancesystem()
 
         if self.NumberHydroGen > 0:
-            self.constraintsENM()
             self.releaselimitsvariables()
             self.EnergyandNetworkRelation()
 
@@ -3364,21 +3638,20 @@ class EnergyandNetwork(Energymodel, Networkmodel):
 
     # Constraints ENM
 
-    def posconstraintsENM(self):
-        """ This class method creates the vectors that store the positions
-        of contraints that links the energy and ED problems """
+    def EnergyandNetworkRelation(self):
+        """ This class method writes the constraint that links the energy
+        model with the network model in glpk.
+    
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
         # Creating the matrices to store the position of constraints in
         # matrix A
         self.connectionNetworkandEnergy = np.empty((self.NumberTrees,\
             len(self.LongTemporalConnections)), dtype=[('napos', 'U80'),\
                 ('nupos', 'i4')]) # Start position 
-                    # of energy and economic dispatch constraints (rows)             
-    
-    def constraintsENM(self):
-        """ This class method reserves the space in glpk for the constraints of
-        that links the energy and economic dispatch problems """
-
-        self.posconstraintsENM()
+                    # of energy and economic dispatch constraints (rows)
 
         for i in range(self.NumberTrees):
             for j in self.LongTemporalConnections:
@@ -3388,15 +3661,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         # constraints that links the energy and economic 
                         # dispatch model
 
-    def EnergyandNetworkRelation(self):
-        """ This class method writes the constraint that links the energy
-        model with the network model in glpk.
-    
-        First, it is reserved space in memory to store the constraints.
-        Second, the coefficients of the constraints are introduced
-        in the matrix of coefficients (matrix A).
-        Third, the bounds of the constraints are defined """
-        # Generating the matrix A for the active power balance constraints
+        # Generating the matrix A for energy and network constraints
         for i in range(self.NumberTrees): # Vectors is equal to the number
             # of hydro generators (rivers) TODO: Explain this better and 
             # separate the data for this
@@ -3422,8 +3687,8 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     # Objective function ENM
 
     def Objective_functionENM(self):
-        """ This class method defines the objective function of the economic
-        dispatch in glpk """
+        """ This class method defines the objective function of the network and
+        energy model in glpk """
 
         # Calculating the aggregated weights for the last nodes in the tree
         # TODO: explain the aggregated weights better
@@ -3469,7 +3734,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                                 * self.BaseUnitPower \
                                     * self.CostOperPumps[k])
             # Punitive cost for load curtailment
-                if self.FlagProblem:
+                if self.FlagProblem and self.FlagFeasibility:
                 # Optimal Power Flow
                     for k in range(self.NumberContingencies + 1):
                         for ii in range(self.NumberNodesPS):
@@ -3477,7 +3742,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, OFaux[i] * self.TotalHoursPerPeriod[j] \
                                     * self.PenaltyLoadCurtailment)
-                else:
+                elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\

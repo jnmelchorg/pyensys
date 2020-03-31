@@ -42,7 +42,8 @@ class BusConfig:
 
         #  Optional data - not included in all files
         if 'BUS_NAME' in mpc.keys():
-            self.settings['Name'] = mpc['BUS_NAME'][No]
+            if mpc['BUS_NAME'] != []:
+                self.settings['Name'] = mpc['BUS_NAME'][No]
         if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]

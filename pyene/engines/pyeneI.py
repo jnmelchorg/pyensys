@@ -9,10 +9,14 @@ external tools, such as pypsa and pypower
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
 import numpy as np
+import logging
+import math
 try:
     import pypsa
 except ImportError:
     print('pypsa has not been installed - functionalities unavailable')
+
+from pyene.engines.pyeneD import ElectricityNetwork, Generators
 
 
 class EInterfaceClass:
