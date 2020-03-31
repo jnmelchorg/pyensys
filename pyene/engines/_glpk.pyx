@@ -23,6 +23,14 @@ GLP_METH = {
     'dual': GLP_DUAL,   # use dual simplex
 }
 
+GLP_STATUS = {
+    'basic': GLP_BS, # basic variable
+    'nonbasiclower': GLP_NL, # non-basic variable having active lower bound
+    'nonbasicupper': GLP_NU, # non-basic variable having active upper bound
+    'nonbasicfree': GLP_NF, # non-basic free variable
+    'nonbasicfixed': GLP_NS, # non-basic fixed variable
+}
+
 cdef class GLPKSolver:
     cdef glp_prob* prob
     cdef glp_smcp smcp
@@ -156,5 +164,10 @@ cdef class GLPKSolver:
     cpdef double get_obj_val(self):
         # retrieve objective value
         return glp_get_obj_val(self.prob)
+    
+    cpdef set_col_stat(self, str name, int col_offset, type):
+        # Declare variables as basic or non-basic
+        cdef int col = self.col_ids[name] + col_offset
+        glp_set_col_stat(self.prob, col, GLP_STATUS[type])
 
 
