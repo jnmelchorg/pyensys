@@ -926,9 +926,9 @@ class ENetworkClass:
                     FullLoss[xt] -= self.busData[xn]*self.scenarios['Demand'] \
                         [xt*self.p['daux']+self.busScenario[xn][xh]]
 
-                    # Substract curtailment
+                    # Adding curtailment (dummy generators)
                     if self.p['LLFea1'][xn] != 0:
-                            FullLoss[xt] -= \
+                            FullLoss[xt] += \
                                 m.vNFea[self.connections['Feasibility'][xh] +
                                         self.p['LLFea2'][xn], xt].value
                 FullLoss[xt] *= self.ENetwork.get_Base()
