@@ -59,10 +59,10 @@ class pyeneHDF5Settings():
                                                   self.settings['Name3'])
             self.filedetailedinfo = open_file(self.settings['Name3'], mode='w')
 
-#        if self.settings['Directory2'] is not None:
-#            self.settings['Name2'] = os.path.join(self.settings['Directory2'],
-#                                                  self.settings['Name2'])
-#            self.file2 = open_file(self.settings['Name2'], mode='a')
+        # if self.settings['Directory2'] is not None:
+        #     self.settings['Name2'] = os.path.join(self.settings['Directory2'],
+        #                                           self.settings['Name2'])
+        #     self.file2 = open_file(self.settings['Name2'], mode='a')
 
     '''pytables auxiliary'''
     class PyeneHDF5Flags:
@@ -321,10 +321,10 @@ class pyeneHDF5Settings():
         RESGeneration = GLPKobj.GetRESGeneration()
         HydroGeneration = GLPKobj.GetHydroGeneration()
         PumpOperation = GLPKobj.GetPumpOperation()
-        if GLPKobj.FlagProblem:
-            LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
+        if GLPKobj.FlagProblem and GLPKobj.FlagFeasibility:
+            LoadCurtailment = GLPKobj.GetLoadCurtailmentNodes()
         else:
-            LoadCurtailment = GLPKobj.GLPKobj.GetLoadCurtailmentNodes()
+            LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
         ActivePowerLosses = GLPKobj.GetActivePowerLosses()
         
 
@@ -381,7 +381,7 @@ class pyeneHDF5Settings():
                 auxvar = 0
                 if GLPKobj.FlagProblem and LoadCurtailment is not None:
                     for k in range(GLPKobj.NumberContingencies + 1):
-                        for ii in range(self.NumberNodesPS):
+                        for ii in range(GLPKobj.NumberNodesPS):
                             auxvar += LoadCurtailment[xs, xt, k, ii]
                 if not GLPKobj.FlagProblem and LoadCurtailment is not None:
                     auxvar += LoadCurtailment[xs, xt]
@@ -443,7 +443,7 @@ class pyeneHDF5Settings():
         RESGeneration = GLPKobj.GetRESGeneration()
         HydroGeneration = GLPKobj.GetHydroGeneration()
         PumpOperation = GLPKobj.GetPumpOperation()
-        if GLPKobj.FlagProblem:
+        if GLPKobj.FlagProblem and GLPK.FlagFeasibility:
             LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
 
         else:
@@ -492,3 +492,285 @@ class pyeneHDF5Settings():
             return
         self.fileh.close()
         self.filedetailedinfo.close()
+
+class PrintinScreen():
+    '''This class contains all definitions that allows printing on the screen any 
+    information requiested by the users'''
+    def __init__(self, obj=None):
+        if obj is None:
+            assert('No information has been passed to this class')
+        # Copy attributes
+        for pars in obj.__dict__.keys():
+            setattr(self, pars, getattr(obj, pars))
+        self.PrintinScreenOptions = {
+                'Generation': True,
+                'Flows': True,
+                'Voltages': True,
+                'Losses': True,
+                'Curtailment': True,
+                'Feasibility': True,
+                'Services': True,
+                'GenBus': True,
+                'UC': True,
+                'SoC': True,
+                }
+        self.lossesresultsOPF = None
+    def printlosses(self):
+        if self.PrintinScreenOptions['Losses'] and self.settings['Flag']:
+            for xh in sh:
+                print("\nEPower_Loss=[")
+                LossDt = self.printLosses(m, xh)
+                for xb in range(self.ENetwork.get_NoBra()):
+                    for xt in self.s['Tim']:
+                        print("%8.4f " % LossDt[xb][xt], end='')
+                    print()
+                print("];")
+
+    def printallNetworkResult(self, obj=None):
+        ''' This class method prints on the screen all results for the \
+            network model'''
+        if obj is None:
+            print('No object with GLPK results has been passed - Aborting \
+                printing of results')
+            return
+
+        Generator = self.NM.Gen
+        Branches = self.NM.ENetwork.Branch
+        ThermalGeneration = obj.GetThermalGeneration()
+        RESGeneration = obj.GetRESGeneration()
+        HydroGeneration = obj.GetHydroGeneration()
+        PumpOperation = obj.GetPumpOperation()
+        if not obj.FlagProblem and obj.FlagFeasibility:
+            LoadCurtailment = obj.GetLoadCurtailmentSystemED()
+        elif obj.FlagProblem and obj.FlagFeasibility:
+            LoadCurtailment = obj.GetLoadCurtailmentNodes()
+        ThermalGenerationCurtailment = obj.GetThermalGenerationCurtailmentNodes()
+        RESGenerationCurtailment = obj.GetRESGenerationCurtailmentNodes()
+        HydroGenerationCurtailment = obj.GetHydroGenerationCurtailmentNodes()
+        VoltageAngle = obj.GetVoltageAngle()
+        ActivePowerFlow = obj.GetActivePowerFlow()
+
+        if obj.FlagProblem and obj.LossesFlag:
+            ActivePowerLosses = obj.GetActivePowerLosses()
+        elif not obj.LossesFlag and self.PercentageLosses is not None and \
+            obj.FlagProblem:
+            # Interpolation of losses
+            ActivePowerLosses = \
+                np.empty((len(obj.LongTemporalConnections),\
+                    obj.ShortTemporalConnections, \
+                    (obj.NumberContingencies + 1), \
+                    obj.NumberLinesPS))
+            for xh in obj.LongTemporalConnections:
+                for xt in range(obj.ShortTemporalConnections):
+                    FullLoss = 0
+                    # Add all power generation
+                    if obj.NumberConvGen > 0:
+                        for xn in range(obj.NumberConvGen):
+                            FullLoss += ThermalGeneration[xh, xt, xn]
+                    if obj.NumberRESGen > 0:
+                        for xn in range(obj.NumberRESGen):
+                            FullLoss += RESGeneration[xh, xt, xn]
+                    if obj.NumberHydroGen > 0:
+                        for xn in range(obj.NumberHydroGen):
+                            FullLoss += HydroGeneration[xh, xt, xn]
+                    
+                    # Substract all power generation curtailment
+                    if obj.NumberConvGen > 0:
+                        for xn in range(obj.NumberConvGen):
+                            for xco in range(obj.NumberContingencies + 1):
+                                FullLoss -= ThermalGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if obj.NumberRESGen > 0:
+                        for xn in range(obj.NumberRESGen):
+                            for xco in range(obj.NumberContingencies + 1):
+                                FullLoss -= RESGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if obj.NumberHydroGen > 0:
+                        for xn in range(obj.NumberHydroGen):
+                            for xco in range(obj.NumberContingencies + 1):
+                                FullLoss -= HydroGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+
+                    # Substract demand
+                    for xn in range(obj.NumberNodesPS):
+                        if obj.NumberDemScenarios == 0:
+                            FullLoss -= demand.PowerDemandNode[xn] * \
+                                obj.MultScenariosDemand[xh, xn] * \
+                                (1 + obj.PercentageLosses) * \
+                                obj.BaseUnitPower
+                        else:
+                            FullLoss -= obj.PowerDemandNode[xn] * \
+                                obj.MultScenariosDemand[xh, xt, xn] * \
+                                (1 + obj.PercentageLosses) * \
+                                obj.BaseUnitPower
+
+                        # Curtailment
+                        if obj.FlagFeasibility:
+                            # Add load curtailment
+                            for xco in range(self.NumberContingencies + 1):
+                                FullLoss += LoadCurtailment[xh, xt, xco, xn]
+
+                    # Substract non-technical losses
+                    for xb in range(obj.NumberLinesPS):
+                        FullLoss[xt] -= Branches[xb].getLoss()
+
+                    # Allocate losses per line
+                    FullFlow = 0
+                    for xb in range(obj.NumberLinesPS):
+                        for xco in range(self.NumberContingencies + 1):
+                            FullFlow += abs(ActivePowerFlow[xh, xt, xco, xb])
+                    if FullFlow > 0:
+                        for xb in range(obj.NumberLinesPS):
+                            for xco in range(self.NumberContingencies + 1):
+                                aux = abs(ActivePowerFlow[xh, xt, xco, xb]) / FullFlow
+                            ActivePowerLosses[xh, xt, xco, xb] = FullLoss * aux + \
+                                Branches[xb].getLoss()
+
+        # Printing results
+
+        for xh in obj.LongTemporalConnections:
+            self.printallEnergyResults(obj)
+            print("\n% CASE:", xh)
+
+            if self.PrintinScreenOptions['GenBus']:
+                print('\nFlow_EGen_Bus=', Generator.get_GenDataAll(), ';')
+
+            if self.PrintinScreenOptions['Generation']:
+                print("\nFlow_EGen=[")
+                if obj.NumberConvGen > 0:
+                    for xn in range(obj.NumberConvGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % ThermalGeneration[xh, xt, xn], \
+                                end='')
+                        print()
+                if obj.NumberRESGen > 0:
+                    for xn in range(obj.NumberRESGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % RESGeneration[xh, xt, xn], \
+                                end='')
+                        print()
+                if obj.NumberHydroGen > 0:
+                    for xn in range(obj.NumberHydroGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % HydroGeneration[xh, xt, xn], \
+                                end='')
+                        print()
+                print("];")
+
+            if self.PrintinScreenOptions['UC']:
+                print("\nBin_EGen=[")
+                aux = 1
+                if obj.NumberConvGen > 0:
+                    for xn in range(obj.NumberConvGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%2.0f " % aux, end='')
+                        print()
+                if obj.NumberRESGen > 0:
+                    for xn in range(obj.NumberRESGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%2.0f " % aux, end='')
+                        print()
+                if obj.NumberHydroGen > 0:
+                    for xn in range(obj.NumberHydroGen):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%2.0f " % aux, end='')
+                        print()
+                print("];")
+
+            if self.PrintinScreenOptions['Flows'] and obj.FlagProblem:
+                print("\nFlow_EPower=[")
+                for xb in range(obj.NumberLinesPS):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % ActivePowerFlow[xh, xt, xco, xb], \
+                                end='')
+                        print()
+                print("];")
+
+            if self.PrintinScreenOptions['Voltages'] and obj.FlagProblem:
+                print("\nVoltage_Angle=[")
+                for xn in range(obj.NumberNodesPS):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % VoltageAngle[xh, xt, xco, xn], \
+                                end='')
+                        print()
+                print("];")
+
+            if self.PrintinScreenOptions['Losses'] and obj.FlagProblem:
+                print("\nEPower_Loss=[")
+                for xb in range(obj.NumberLinesPS):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % ActivePowerLosses[xh, xt, xco, xb]\
+                                , end='')
+                    print()
+                print("];")
+
+            if self.PrintinScreenOptions['Curtailment']:
+                print("\nPumps=[")
+                if obj.NumberPumps > 0:
+                    for xpu in range(obj.NumberPumps):
+                        for xt in range(obj.ShortTemporalConnections):
+                            print("%8.4f " % PumpOperation[xh, xt, xpu], end='')
+                        print()
+                print("];")
+
+            if self.PrintinScreenOptions['Feasibility']:
+                print("\nFeas=[")
+                for xn in range(obj.NumberNodesPS):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            if not obj.FlagFeasibility:
+                                aux = 0
+                            else:
+                                aux = LoadCurtailment[xh, xt, xco, xn]
+                            print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+            print()
+
+    def printallEnergyResults(self, obj=None):
+        ''' This class method prints on the screen all results for the \
+            energy model'''
+        if obj is None:
+            print('No object with GLPK results has been passed - Aborting \
+                printing of results')
+            return
+        
+        PartialStorage = obj.GetPartialStorage()
+        TotalStorage = obj.GetTotalStorage()
+
+        if self.PrintinScreenOptions['SoC']:
+            for xv in range(obj.NumberTrees):
+                print('Vector No:', xv)
+                for xtr in range(obj.TreeNodes):
+                    print("SoC[%3.0f" % xtr, "][0:1]=[%10.2f"
+                          % PartialStorage[xv, xtr], ", %10.2f"
+                          % TotalStorage[xv, xtr], "]")
+    
+    #TODO: This is not well printed with plenty of repetitions, to be discussed 
+    # with Alex and Paul
+    def PrintallResults(self, obj=None):
+        ''' This class method prints on the screen all results for the \
+            energy and network model'''
+        if obj is None:
+            print('No object with GLPK results has been passed - Aborting \
+                printing of results')
+            return
+        
+        self.printallEnergyResults(obj)
+        self.printallNetworkResult(obj)
+
+        InputsTree = obj.GetInputsTree()
+        OutputsTree = obj.GetOutputsTree()
+        print('Water outputs:')
+        for xn in range(obj.TreeNodes):
+            for xv in range(obj.NumberTrees):
+                print("%8.4f " % OutputsTree[xv, xn], end='')
+            print('')
+        print('Water inputs:')
+        for xn in range(obj.TreeNodes):
+            for xv in range(obj.NumberTrees):
+                print("%8.4f " % InputsTree[xv, xn], end='')
+            print('')
