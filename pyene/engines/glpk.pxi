@@ -180,6 +180,8 @@ cdef extern from "glpk.h":
 
     double glp_get_obj_val(glp_prob *P)
 
+    double glp_get_row_dual(glp_prob *P, int i)
+
 message_levels = {
     'off': GLP_MSG_OFF,
     'error': GLP_MSG_ERR,

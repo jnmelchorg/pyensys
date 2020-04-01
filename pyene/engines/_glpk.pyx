@@ -169,5 +169,10 @@ cdef class GLPKSolver:
         # Declare variables as basic or non-basic
         cdef int col = self.col_ids[name] + col_offset
         glp_set_col_stat(self.prob, col, GLP_STATUS[type])
+    
+    cpdef double get_row_dual(self, str name, int row_offset):
+        # Calculate the dual value of a contraint
+        cdef int row = self.row_ids[name] + row_offset
+        return glp_get_row_dual(self.prob, row)
 
 
