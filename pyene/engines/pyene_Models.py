@@ -511,6 +511,17 @@ class Energymodel():
                     self.solver.get_col_prim(str(\
                     self.OutputsTree[i][0]), j)
         return OutputsTreeSolution
+    
+    def GetEnergybalanceDual(self):
+        EnergybalanceDualSolution = \
+            np.empty((self.NumberTrees, self.TreeNodes))
+        for i in range(self.NumberTrees):
+            EnergybalanceDualSolution[i, 0] = 0
+            for j in range(1, self.TreeNodes):
+                EnergybalanceDualSolution[i, j] = \
+                    self.solver.get_row_dual(str(\
+                    self.treebalance[i][0]), j - 1)
+        return EnergybalanceDualSolution
 
 
 class Networkmodel():
@@ -3374,7 +3385,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         # model. This parameters connects the inputs 
                         # of each tree with the outputs of its 
                         # related hydro generator
-        self.PenaltyLoadCurtailment = obj3.Penalty # Penalty for
+        self.PenaltyCurtailment = obj3.Penalty # Penalty for
                         # load curtailment in the power system
 
         # Storing the data of other objects
@@ -3741,14 +3752,14 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                             self.solver.set_obj_coef(\
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, OFaux[i] * self.TotalHoursPerPeriod[j] \
-                                    * self.PenaltyLoadCurtailment)
+                                    * self.PenaltyCurtailment)
                 elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\
                         str(self.loadcurtailmentsystem[i, j][0]),\
                         0, OFaux[i] * self.TotalHoursPerPeriod[j] \
-                            * self.PenaltyLoadCurtailment)
+                            * self.PenaltyCurtailment)
         
     def GetObjectiveFunctionENM(self):
         return self.solver.get_obj_val()
