@@ -48,3 +48,7 @@ pyene/build/
 pyene/engines/_glpk.c
 _glpk.cp37-win_amd64.pyd
 build/
+pyene/externaldata/datatrafos3.dat
+tests/json/EAPP1.json
+tests/json/EAPP2.json
+tests/json/EAPP3.json

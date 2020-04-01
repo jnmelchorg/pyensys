@@ -855,15 +855,15 @@ class ENetworkClass:
                     print()
                 print("];")
 
-#            print("\nEDemand=[")            
-#            for xn in self.s['Bus']:
-#                for xt in self.s['Tim']:
-#                    aux = self.busData[xn]*self.scenarios['Demand'] \
-#                        [xt*self.p['daux']+self.busScenario[xn][xh]]* \
-#                        self.ENetwork.get_Base()
-#                    print("%8.4f " % aux, end='')
-#                print()
-#            print("];")
+        #    print("\nEDemand=[")            
+        #    for xn in self.s['Bus']:
+        #        for xt in self.s['Tim']:
+        #            aux = self.busData[xn]*self.scenarios['Demand'] \
+        #                [xt*self.p['daux']+self.busScenario[xn][xh]]* \
+        #                self.ENetwork.get_Base()
+        #            print("%8.4f " % aux, end='')
+        #        print()
+        #    print("];")
 
             if self.Print['Curtailment']:
                 print("\nPumps=[")
