@@ -84,11 +84,16 @@ def _update_config_pyeneN(conf, kwargs):
     conf.NM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
                                             kwargs.pop('network'))
     # Use linear approximation of losses?
-    if 'linearloss' in kwargs.keys():
-        aux = kwargs.pop('linearloss')
+    if 'Linearloss' in kwargs.keys():
+        aux = kwargs.pop('Linearloss')
         if aux > 0:
             conf.NM.settings['Losses'] = False
             conf.NM.settings['Loss'] = aux
+    
+    # By default pyene will run using glpk
+    if 'Usepyomo' in kwargs.keys():
+        conf.EN.solverselection['pyomo'] = kwargs.pop('Usepyomo')
+        conf.EN.solverselection['glpk'] = False
 
     return conf
 
@@ -143,6 +148,8 @@ def network_simulation_pyeneE(conf, **kwargs):
 @click.option('--time', default=24, help='Number of time steps')
 @click.option('--Linearloss', default=0, type=float,
               help='Fraction assigned to losses')
+@click.option('--Usepyomo', default=False, type=bool,
+              help='Use pyomo for optimisation')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
     """Prepare energy balance and network simulation """

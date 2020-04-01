@@ -855,15 +855,15 @@ class ENetworkClass:
                     print()
                 print("];")
 
-#            print("\nEDemand=[")            
-#            for xn in self.s['Bus']:
-#                for xt in self.s['Tim']:
-#                    aux = self.busData[xn]*self.scenarios['Demand'] \
-#                        [xt*self.p['daux']+self.busScenario[xn][xh]]* \
-#                        self.ENetwork.get_Base()
-#                    print("%8.4f " % aux, end='')
-#                print()
-#            print("];")
+        #    print("\nEDemand=[")            
+        #    for xn in self.s['Bus']:
+        #        for xt in self.s['Tim']:
+        #            aux = self.busData[xn]*self.scenarios['Demand'] \
+        #                [xt*self.p['daux']+self.busScenario[xn][xh]]* \
+        #                self.ENetwork.get_Base()
+        #            print("%8.4f " % aux, end='')
+        #        print()
+        #    print("];")
 
             if self.Print['Curtailment']:
                 print("\nPumps=[")
@@ -928,7 +928,7 @@ class ENetworkClass:
 
                     # Substract curtailment
                     if self.p['LLFea1'][xn] != 0:
-                            FullLoss[xt] -= \
+                            FullLoss[xt] += \
                                 m.vNFea[self.connections['Feasibility'][xh] +
                                         self.p['LLFea2'][xn], xt].value
                 FullLoss[xt] *= self.ENetwork.get_Base()

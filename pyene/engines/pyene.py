@@ -57,6 +57,10 @@ class ENEConfig():
                 'HydroL': [],  # Link position-->profile
                 'Hydro': []  # New hydropower time-series
                 }
+        self.solverselection = {
+            'pyomo': False,
+            'glpk': True
+        }
 
 
 class pyeneClass():
