@@ -420,14 +420,13 @@ class ENetworkClass:
             LossM = 1
         else:
             # The losses are pre-calculated
-            LossF = sum(self.ENetwork.Bus[x1].get_LossF()/2
-                        for x1 in self.ENetwork.Bus[xn].get_LossF()) + 0.5 * \
+            LossF = 0.5 * \
                 sum(self.ENetwork.Branch[xb].getLoss() for xb in
                     self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
-            LossT = sum(self.ENetwork.Bus[x2].get_LossF()/2
-                        for x2 in self.ENetwork.Bus[xn].get_LossT()) + 0.5 * \
+            LossT = 0.5 * \
                 sum(self.ENetwork.Branch[xb].getLoss() for xb in
                     self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
+            print(LossF, LossT)
 
             if self.settings['Loss'] is None:
                 LossM = 1
