@@ -10,7 +10,6 @@ from .engines.pyene import pyeneClass, pyeneConfig
 from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 from .engines.pyeneO import PrintinScreen as PSc
-from .engines.pyene_Models import EnergyandNetwork as ENMod # Energy model in glpk
 
 
 def get_pyene(conf=None):
@@ -152,6 +151,8 @@ def test_pyene(conf):
         print('Total curtailment:', curAll.value)
 
     if conf.EN.solverselection['glpk']:
+        # Energy model in glpk
+        from .engines.pyene_Models import EnergyandNetwork as ENMod
         Model = ENMod(EN.EM, EN.NM, EN)
         Model.optimisationENM()
         # Print results
