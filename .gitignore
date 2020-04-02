@@ -52,3 +52,4 @@ pyene/externaldata/datatrafos3.dat
 tests/json/EAPP1.json
 tests/json/EAPP2.json
 tests/json/EAPP3.json
+tests/json/caseGhana_Sim40_BSec_ManualLoss.json
