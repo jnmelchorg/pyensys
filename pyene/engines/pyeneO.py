@@ -552,7 +552,7 @@ class PrintinScreen():
 
         if obj.FlagProblem and obj.LossesFlag:
             ActivePowerLosses = obj.GetActivePowerLosses()
-        elif not obj.LossesFlag and self.PercentageLosses is not None and \
+        elif not obj.LossesFlag and obj.PercentageLosses is not None and \
             obj.FlagProblem:
             # Interpolation of losses
             ActivePowerLosses = \
@@ -607,21 +607,21 @@ class PrintinScreen():
                         # Curtailment
                         if obj.FlagFeasibility:
                             # Add load curtailment
-                            for xco in range(self.NumberContingencies + 1):
+                            for xco in range(obj.NumberContingencies + 1):
                                 FullLoss += LoadCurtailment[xh, xt, xco, xn]
 
                     # Substract non-technical losses
                     for xb in range(obj.NumberLinesPS):
-                        FullLoss[xt] -= Branches[xb].getLoss()
+                        FullLoss -= Branches[xb].getLoss()
 
                     # Allocate losses per line
                     FullFlow = 0
                     for xb in range(obj.NumberLinesPS):
-                        for xco in range(self.NumberContingencies + 1):
+                        for xco in range(obj.NumberContingencies + 1):
                             FullFlow += abs(ActivePowerFlow[xh, xt, xco, xb])
                     if FullFlow > 0:
                         for xb in range(obj.NumberLinesPS):
-                            for xco in range(self.NumberContingencies + 1):
+                            for xco in range(obj.NumberContingencies + 1):
                                 aux = abs(ActivePowerFlow[xh, xt, xco, xb]) / FullFlow
                             ActivePowerLosses[xh, xt, xco, xb] = FullLoss * aux + \
                                 Branches[xb].getLoss()
