@@ -84,16 +84,18 @@ def _update_config_pyeneN(conf, kwargs):
     conf.NM.settings['File'] = os.path.join(os.path.dirname(__file__), 'json',
                                             kwargs.pop('network'))
     # Use linear approximation of losses?
-    if 'Linearloss' in kwargs.keys():
-        aux = kwargs.pop('Linearloss')
+    if 'linearloss' in kwargs.keys():
+        aux = kwargs.pop('linearloss')
         if aux > 0:
             conf.NM.settings['Losses'] = False
             conf.NM.settings['Loss'] = aux
     
     # By default pyene will run using glpk
-    if 'Usepyomo' in kwargs.keys():
-        conf.EN.solverselection['pyomo'] = kwargs.pop('Usepyomo')
-        conf.EN.solverselection['glpk'] = False
+    if 'usepyomo' in kwargs.keys():
+        aux = kwargs.pop('usepyomo')
+        if aux:
+            conf.EN.solverselection['pyomo'] = aux
+            conf.EN.solverselection['glpk'] = False        
 
     return conf
 
