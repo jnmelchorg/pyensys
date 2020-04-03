@@ -573,7 +573,7 @@ class PrintinScreen():
                     if obj.NumberHydroGen > 0:
                         for xn in range(obj.NumberHydroGen):
                             FullLoss += HydroGeneration[xh, xt, xn]
-                    
+                                        
                     # Substract all power generation curtailment
                     if obj.NumberConvGen > 0:
                         for xn in range(obj.NumberConvGen):
@@ -594,14 +594,12 @@ class PrintinScreen():
                     # Substract demand
                     for xn in range(obj.NumberNodesPS):
                         if obj.NumberDemScenarios == 0:
-                            FullLoss -= demand.PowerDemandNode[xn] * \
+                            FullLoss -= obj.PowerDemandNode[xn] * \
                                 obj.MultScenariosDemand[xh, xn] * \
-                                (1 + obj.PercentageLosses) * \
                                 obj.BaseUnitPower
                         else:
                             FullLoss -= obj.PowerDemandNode[xn] * \
                                 obj.MultScenariosDemand[xh, xt, xn] * \
-                                (1 + obj.PercentageLosses) * \
                                 obj.BaseUnitPower
 
                         # Curtailment
@@ -729,6 +727,54 @@ class PrintinScreen():
                     print()
                 print("];")
             print()
+
+            # if self.PrintinScreenOptions['Feasibility']:
+            #     print("\nFeasTGC=[")
+            #     for xn in range(obj.NumberConvGen):
+            #         for xco in range(obj.NumberContingencies + 1):
+            #             for xt in range(obj.ShortTemporalConnections):
+            #                 if not obj.FlagFeasibility and \
+            #                     self.NumberConvGen > 0:
+            #                     aux = 0
+            #                 else:
+            #                     aux = ThermalGenerationCurtailment\
+            #                         [xh, xt, xco, xn]
+            #                 print("%8.4f " % aux, end='')
+            #         print()
+            #     print("];")
+            # print()
+
+            # if self.PrintinScreenOptions['Feasibility']:
+            #     print("\nFeasReGC=[")
+            #     for xn in range(obj.NumberRESGen):
+            #         for xco in range(obj.NumberContingencies + 1):
+            #             for xt in range(obj.ShortTemporalConnections):
+            #                 if not obj.FlagFeasibility and \
+            #                     self.NumberRESGen > 0:
+            #                     aux = 0
+            #                 else:
+            #                     aux = RESGenerationCurtailment\
+            #                         [xh, xt, xco, xn]
+            #                 print("%8.4f " % aux, end='')
+            #         print()
+            #     print("];")
+            # print()
+
+            # if self.PrintinScreenOptions['Feasibility']:
+            #     print("\nFeasHGC=[")
+            #     for xn in range(obj.NumberHydroGen):
+            #         for xco in range(obj.NumberContingencies + 1):
+            #             for xt in range(obj.ShortTemporalConnections):
+            #                 if not obj.FlagFeasibility and \
+            #                     self.NumberHydroGen > 0:
+            #                     aux = 0
+            #                 else:
+            #                     aux = HydroGenerationCurtailment\
+            #                         [xh, xt, xco, xn]
+            #                 print("%8.4f " % aux, end='')
+            #         print()
+            #     print("];")
+            # print()
 
     def printallEnergyResults(self, obj=None):
         ''' This class method prints on the screen all results for the \
