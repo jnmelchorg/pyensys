@@ -2391,6 +2391,8 @@ class Networkmodel():
                                     self.PowerDemandNode[ii] * \
                                     self.MultScenariosDemand[i, j, ii] * \
                                     (1 + self.PercentageLosses)
+                        
+                        totalresource = totaldemand
                                     
                         if not self.LossesFlag:
                             totalnontechnicallosses = 0
@@ -2402,9 +2404,8 @@ class Networkmodel():
                                 if self.OriginalNumberBranchTo[jj] ==\
                                     self.OriginalNumberNodes[ii]:
                                     totalnontechnicallosses += \
-                                        0.5*self.NontechnicalLosses[jj]
-                        
-                        totalresource = totaldemand + totalnontechnicallosses
+                                        0.5*self.NontechnicalLosses[jj]                        
+                            totalresource += totalnontechnicallosses
 
                         self.solver.set_row_bnds(\
                             str(self.activepowerbalancenode[i, j, k][0]), ii,\
