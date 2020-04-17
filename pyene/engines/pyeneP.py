@@ -17,6 +17,7 @@ class PrintClass:
                 'GenerationP': None,
                 'GenerationQ': None,
                 'GenerationUC': None,
+                'GenerationCost': None,
                 'Line_FlowP0': None,
                 'Line_FlowP1': None,
                 'Line_FlowQ0': None,
@@ -27,7 +28,8 @@ class PrintClass:
                 'Voltage_ang': None,
                 'Pumps': None,
                 'Curtailment': None,
-                'Services': None
+                'Services': None,
+                'OF': None
                 }
         
         from pyomo.core import ConcreteModel
@@ -44,16 +46,21 @@ class PrintClass:
         from .pyene import pyeneClass
         from .pyeneN import ENetworkClass
         if isinstance(EN, pyeneClass):
-            self.initializeNM(m, EN.NM)
+            OFaux = EN._Calculate_OFaux()
+            self.initializeNM(m, EN.NM, OFaux)
         elif isinstance(EN, ENetworkClass):
-            self.initializeNM(m, EN)
+            OFaux = np.ones(len(EN.connections['set']),dtype=float)
+            self.initializeNM(m, EN, OFaux)
 
-    def initializeNM(self, m, NM):
+    def initializeNM(self, m, NM, OFaux):
         Noh = len(NM.connections['set'])
         self.data['GenerationP'] = \
             np.zeros((Noh*NM.Gen.get_NoGen(), NM.settings['NoTime']),
                      dtype=float)
         self.data['GenerationQ'] = \
+            np.zeros((Noh*NM.Gen.get_NoGen(), NM.settings['NoTime']),
+                     dtype=float)
+        self.data['GenerationCost'] = \
             np.zeros((Noh*NM.Gen.get_NoGen(), NM.settings['NoTime']),
                      dtype=float)
         self.data['GenerationUC'] = \
@@ -142,6 +149,9 @@ class PrintClass:
                         self.data['Line_LossP'][x1][x2] = \
                         m.vNLoss[x1, x2].value*NM.ENetwork.get_Base()
 
+            # OF
+            self.data['OF'] = m.OF.expr()
+
         elif self.type ==2:
             # pypsa - AC model
             for xh in range(Noh):
@@ -153,6 +163,24 @@ class PrintClass:
                     self.data['GenerationQ'][x1][:] = \
                         getattr(m[xh].generators_t.q, 'Gen{}'.format(xg+1))
 
+                # Generation costs
+                NM.s['Gen'] = range(NM.Gen.get_NoGen()) # xg
+                range(NM.Gen.get_NoPieces()) # xc
+                NM.s['Tim'] = range(NM.settings['NoTime']) # xt
+                NM.s['Con'] = NM.connections['set'] # xh
+                ConC = NM.connections['Cost'][xh]
+                ConG = NM.connections['Generation'][xh]
+                for xg in range(NM.Gen.get_NoGen()):
+                    for xc in range(NM.Gen.get_NoPieces()):
+                        (flg, x1, x2, M1, M2) = \
+                        NM.Gen.cNEGenC_Auxrule(xg, xc, ConC, ConG)
+                        if flg:
+                            for xt in range(NM.settings['NoTime']):
+                                w = NM.scenarios['Weights'][xt]
+                                self.data['GenerationCost'][x1][xt] = \
+                                    max(self.data['GenerationCost'][x1][xt],
+                                        self.data['GenerationQ'][x1][xt] *
+                                        M1*w+M2)
                 # Buses
                 for xn in range(NM.ENetwork.get_NoBus()):
                     x1 = NM.connections['Voltage'][xh]+xn
@@ -187,6 +215,17 @@ class PrintClass:
                     self.data['Line_LossQ'][x1][:] = Q0+Q1
                     xb += 1
 
+            # OF
+            self.data['OF'] = 0
+            for xh in range(Noh):
+                for xg in range(NM.Gen.get_NoGen()):
+                    x1 = NM.connections['Generation'][xh]+xg
+                    self.data['OF'] += self.data['GenerationCost'][x1][xt] * \
+                        OFaux[xh]
+
+    def get_Curtailment(self, x1, x2):
+        return self.data['Curtailment'][x1][x2]
+
     def get_GenerationP(self, x1, x2):
         return self.data['GenerationP'][x1][x2]
 
@@ -214,17 +253,18 @@ class PrintClass:
     def get_Line_LossQ(self, x1, x2):
         return self.data['Line_LossQ'][x1][x2]
 
+    def get_OF(self):
+        return self.data['OF']
+
+    def get_Pumps(self, x1, x2):
+        return self.data['Pumps'][x1][x2]
+
+    def get_Services(self, x1, x2):
+        return self.data['Services'][x1][x2]
+
     def get_Voltage_pu(self, x1, x2):
         return self.data['Voltage_pu'][x1][x2]
 
     def get_Voltage_ang(self, x1, x2):
         return self.data['Voltage_ang'][x1][x2]
 
-    def get_Pumps(self, x1, x2):
-        return self.data['Pumps'][x1][x2]
-
-    def get_Curtailment(self, x1, x2):
-        return self.data['Curtailment'][x1][x2]
-
-    def get_Services(self, x1, x2):
-        return self.data['Services'][x1][x2]

@@ -786,7 +786,7 @@ class ENetworkClass:
         for pars in self.Print.keys():
             self.Print[pars] = False
 
-    def print(self, m, sh=None, prnt=None):#):
+    def print(self, m, sh=None, prnt=None, Flg=False):
         ''' Print results '''
         if sh is None:
             sh = self.s['Con']
@@ -794,6 +794,9 @@ class ENetworkClass:
         if prnt is None:
             from pyene.engines.pyeneP import PrintClass
             prnt = PrintClass(m, self)
+
+        if Flg:
+            print('\n\nOF: ', prnt.get_OF())
         
         for xh in sh:
             print("\n% CASE:", xh)

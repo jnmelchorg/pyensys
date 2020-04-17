@@ -714,11 +714,26 @@ class GenClass:
 
     def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w):
         ''' Piece wise cost estimation '''
-        if xc < self.pyomo['NoPieces']:
-            return m.vNGCost[ConC+self.pyomo['vNGen'], xt]/w >= \
-                m.vNGen[ConG+self.pyomo['vNGen'], xt] * \
-                self.cost['LCost'][xc][0]+self.cost['LCost'][xc][1]
+        (flg, x1,  x2, M1, M2) = self.cNEGenC_Auxrule(xc, ConC, ConG)
+        if flg:
+            return m.vNGCost[x1, xt]/w >= m.vNGen[x2, xt]*M1 + M2
         return Constraint.Skip
+
+    def cNEGenC_Auxrule(self, xc, ConC, ConG):
+        ''' Auxiliary for cNEGenC_rule '''
+        flg = xc < self.pyomo['NoPieces']
+        if flg:
+            x1 = ConC+self.pyomo['vNGen']
+            x2 = ConG+self.pyomo['vNGen']
+            M1 = self.cost['LCost'][xc][0]
+            M2 = self.cost['LCost'][xc][1]
+        else:
+            x1 = 0
+            x2 = 0
+            M1 = 0
+            M2 = 0
+
+        return flg, x1, x2, M1, M2
 
     def cNEGMax_rule(self, m, xt, ConG):
         ''' Maximum generation capacity '''
@@ -1208,6 +1223,11 @@ class Generators:
         ''' Generation costs - Piece-wise estimation '''
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGenC_rule(m, xc, xt, ConC, ConG, w)
+
+    def cNEGenC_Auxrule(self, xg, xc, ConC, ConG):
+        ''' Auxiliar for Generation costs - Piece-wise estimation '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGenC_Auxrule(xc, ConC, ConG)
 
     def cNEGMax_rule(self, m, xg, xt, ConG):
         ''' Maximum generation capacity '''

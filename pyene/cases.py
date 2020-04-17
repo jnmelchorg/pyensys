@@ -34,15 +34,23 @@ def test_pyeneAC(config):
     # Initialise with selected configuration
     EN.initialise(config)
 
+    # Fake weather engine
+    FileName = 'TimeSeries.json'
+    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+     Nohr) = EN.ReadTimeS(FileName)
+    
     # Profiles
-    import os
-    import json
-    from pyene.fixtures import json_directory
-    fileName = os.path.join(json_directory(), 'UKElectricityProfiles.json')
-    Eprofiles = json.load(open(fileName))
-    EN.set_Demand(1, Eprofiles['Winter']['Weekday'])
-    if config.NM.scenarios['NoDem'] ==2:
-        EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
+    demandNode = _node()
+    demandNode.value = DemandProfiles[0][:]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # Second scenario
+    demandNode = _node()
+    demandNode.value = DemandProfiles[1][:]
+    demandNode.index = 2
+    EN.set_Demand(demandNode.index, demandNode.value)
     
     EN_Interface = EN.getClassInterfaces()
 
@@ -52,7 +60,7 @@ def test_pyeneAC(config):
     for xscen in range(config.NM.scenarios['NoDem']):
         Model_Pypsa[xscen].pf()
 
-    EN.NM.print(Model_Pypsa, range(config.NM.scenarios['NoDem']))
+    EN.NM.print(Model_Pypsa, range(config.NM.scenarios['NoDem']), None, True)
 
 def test_pyeneE(config):
     """ Execute pyene to access pyeneE - Full json based simulation."""
