@@ -822,6 +822,13 @@ class Networkmodel():
             for i in range(self.NumberLinesPS):
                 self.ResistanceBranch[i] = \
                     obj.ENetwork.Branch[i].get_R()
+            
+            self.NontechnicalLosses = \
+                np.empty((self.NumberLinesPS)) # Non-technical losses of the 
+                                    # transmission lines and transformers
+            for i in range(self.NumberLinesPS):
+                self.NontechnicalLosses[i] = \
+                    obj.ENetwork.Branch[i].getLoss()/self.BaseUnitPower
 
             if self.LossesFlag:
                 self.ACoeffPWBranchLosses = \
@@ -2308,6 +2315,7 @@ class Networkmodel():
                                             + jj
                                     self.ar[self.ne] = -0.5
                                     self.ne += 1
+                        
                     # Storing the variables for load curtailment
                         if self.FlagFeasibility:
                             self.ia[self.ne] = \
@@ -2383,10 +2391,25 @@ class Networkmodel():
                                     self.PowerDemandNode[ii] * \
                                     self.MultScenariosDemand[i, j, ii] * \
                                     (1 + self.PercentageLosses)
+                        
+                        totalresource = totaldemand
+                                    
+                        if not self.LossesFlag:
+                            totalnontechnicallosses = 0
+                            for jj in range(self.NumberLinesPS):
+                                if self.OriginalNumberBranchFrom[jj] ==\
+                                    self.OriginalNumberNodes[ii]:
+                                    totalnontechnicallosses += \
+                                        0.5*self.NontechnicalLosses[jj]
+                                if self.OriginalNumberBranchTo[jj] ==\
+                                    self.OriginalNumberNodes[ii]:
+                                    totalnontechnicallosses += \
+                                        0.5*self.NontechnicalLosses[jj]                        
+                            totalresource += totalnontechnicallosses
 
                         self.solver.set_row_bnds(\
                             str(self.activepowerbalancenode[i, j, k][0]), ii,\
-                            'fixed', totaldemand, totaldemand)
+                            'fixed', totalresource, totalresource)
 
     def activepowerflowconstraints(self):
         """ This class method writes the active power flow constraints in glpk
@@ -3753,6 +3776,27 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, OFaux[i] * self.TotalHoursPerPeriod[j] \
                                     * self.PenaltyCurtailment)
+                        if self.NumberConvGen > 0:
+                            for ii in range(self.NumberConvGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.ThermalGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.PenaltyCurtailment)
+                        if self.NumberRESGen > 0:
+                            for ii in range(self.NumberRESGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.RESGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.PenaltyCurtailment)
+                        if self.NumberHydroGen > 0:
+                            for ii in range(self.NumberHydroGen):
+                                self.solver.set_obj_coef(\
+                                    str(self.HydroGenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, \
+                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.PenaltyCurtailment)
                 elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN

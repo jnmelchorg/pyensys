@@ -392,7 +392,7 @@ class pyeneClass():
     def get_Demand(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         xb = bus-1
@@ -412,7 +412,7 @@ class pyeneClass():
             return 0
 
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         if self.NM.settings['Feasibility']:
@@ -430,7 +430,7 @@ class pyeneClass():
     def get_Generation(self, m, index, *varg, **kwarg):
         ''' Get kWh for a single generator '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         for xh in auxscens:
@@ -479,7 +479,7 @@ class pyeneClass():
     def get_Loss(self, m, xb, *varg, **kwarg):
         '''Get losses for a given branch'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         if self.NM.settings['Flag']:
@@ -536,7 +536,7 @@ class pyeneClass():
     def get_OFpart(self, m, xg, *varg, **kwarg):
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg, xt].value
                         for xt in auxtime)*auxOF[xh] for xh in auxscens)
@@ -547,7 +547,7 @@ class pyeneClass():
         # TODO: Validate
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         if auxFlags[0]:  # Conventional generation
@@ -587,7 +587,7 @@ class pyeneClass():
     def get_Pump(self, m, index, *varg, **kwarg):
         ''' Get kWh consumed by a specific pump '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
         value = 0
         for xh in auxscens:
             acu = 0
@@ -602,7 +602,7 @@ class pyeneClass():
     def get_RES(self, m, index, *varg, **kwarg):
         ''' Spilled kWh of RES for the whole period'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         xg = index-1
         value = 0
@@ -619,7 +619,7 @@ class pyeneClass():
 
         return value
 
-    def get_timeAndScenario(self, m, *varg, **kwarg):
+    def get_timeAndScenario(self, *varg, **kwarg):
         # Specify times
         if 'times' in kwarg:
             auxtime = kwarg.pop('times')

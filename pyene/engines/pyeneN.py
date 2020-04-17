@@ -422,7 +422,7 @@ class ENetworkClass:
             # The losses are pre-calculated
             LossF = 0.5 * \
                 sum(self.ENetwork.Branch[xb].getLoss() for xb in
-                    self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
+                    self.ENetwork.get_FlowF(xn, xs))/self.ENetwork.get_Base()
             LossT = 0.5 * \
                 sum(self.ENetwork.Branch[xb].getLoss() for xb in
                     self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
