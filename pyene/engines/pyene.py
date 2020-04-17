@@ -894,10 +894,13 @@ class pyeneClass():
 
     def Print_ENSim(self, m):
         ''' Print results '''
+        
+        from pyene.engines.pyeneP import PrintClass
+        prnt = PrintClass(m, self)
+        
         self.EM.print(m)
         for xh in range(self.p['Number']):
-            self.EM.print(m)
-            self.NM.print(m, [xh])
+            self.NM.print(m, [xh], prnt)
             self.HM.print(m, [xh])
             print()
 
