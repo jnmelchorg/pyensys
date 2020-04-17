@@ -349,7 +349,7 @@ class ENetworkClass:
             m.vNVolt = Var(range(Noh*(self.NoBuses)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
             if self.settings['Losses']:
-                m.vNLoss = Var(range(Noh*(self.connections['Branches'])),
+                m.vNLoss = Var(range(Noh*self.connections['Branches']),
                                self.s['Tim'], domain=NonNegativeReals,
                                initialize=0.0)
 
@@ -788,10 +788,8 @@ class ENetworkClass:
 
     def print(self, m, sh=None, prnt=None):#):
         ''' Print results '''
-#        if sh is None:
-#            sh = self.s['Con']
-
-        sh = self.s['Con']
+        if sh is None:
+            sh = self.s['Con']
 
         if prnt is None:
             from pyene.engines.pyeneP import PrintClass
@@ -910,10 +908,15 @@ class ENetworkClass:
             if self.Print['Curtailment']:
                 print("\nFeas=[")
                 for xn in range(self.ENetwork.get_NoBus()):
-                    x1 = self.connections['Feasibility'][xh] + \
-                        self.p['LLFea2'][xn]
-                    for x2 in range(self.settings['NoTime']):
-                        print("%8.4f " % prnt.get_Curtailment(x1, x2), end='')
+                    if self.p['LLFea1'][xn] == 0:
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % 0, end='')
+                    else:
+                        x1 = self.connections['Feasibility'][xh] + \
+                            self.p['LLFea2'][xn]
+                        for x2 in range(self.settings['NoTime']):                                                                        
+                            print("%8.4f " % prnt.get_Curtailment(x1, x2),
+                                  end='')
                     print()
                 print("];")
 

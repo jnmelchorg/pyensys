@@ -24,6 +24,36 @@ def get_pyeneConfig():
     return pyeneConfig()
 
 
+def test_pyeneAC(config):
+    """ Run pypsa based AC power flow """
+    config.NM.hydropower['Number'] = 0  # Number of hydropower plants
+    
+    # Create object
+    EN = pyeneClass(config.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(config)
+
+    # Profiles
+    import os
+    import json
+    from pyene.fixtures import json_directory
+    fileName = os.path.join(json_directory(), 'UKElectricityProfiles.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Winter']['Weekday'])
+    if config.NM.scenarios['NoDem'] ==2:
+        EN.set_Demand(2, Eprofiles['Winter']['Weekend'])
+    
+    EN_Interface = EN.getClassInterfaces()
+
+    Model_Pypsa = [EN_Interface.pyene2pypsa(EN.NM, x)[0]
+                   for x in range(config.NM.scenarios['NoDem'])]
+
+    for xscen in range(config.NM.scenarios['NoDem']):
+        Model_Pypsa[xscen].pf()
+
+    EN.NM.print(Model_Pypsa, range(config.NM.scenarios['NoDem']))
+
 def test_pyeneE(config):
     """ Execute pyene to access pyeneE - Full json based simulation."""
     EN = pyeneClass(config.EN)

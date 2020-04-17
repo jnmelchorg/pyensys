@@ -60,16 +60,15 @@ class PrintClass:
             np.ones((Noh*NM.Gen.get_NoGen(), NM.settings['NoTime']),
                      dtype=bool)
         self.data['Voltage_pu'] = \
-            np.ones((Noh*NM.ENetwork.get_NoBus(), NM.settings['NoTime']),
+            np.ones((Noh*NM.NoBuses, NM.settings['NoTime']),
                      dtype=float)
         self.data['Voltage_ang'] = \
-            np.ones((Noh*NM.ENetwork.get_NoBus(), NM.settings['NoTime']),
+            np.ones((Noh*NM.NoBuses, NM.settings['NoTime']),
                      dtype=float)
         self.data['Pumps'] = np.zeros((Noh*(NM.pumps['Number']+1),
                                       NM.settings['NoTime']), dtype=float)
         self.data['Curtailment'] = \
-            np.zeros((Noh*NM.ENetwork.get_NoBus(), NM.settings['NoTime']),
-                     dtype=float)
+            np.zeros((Noh*NM.NoFea, NM.settings['NoTime']), dtype=float)
         self.data['Services'] = np.zeros((Noh*NM.p['GServices'],
                                         NM.settings['NoTime']), dtype=float)
         self.data['Line_FlowP0'] = \
@@ -81,9 +80,11 @@ class PrintClass:
         self.data['Line_FlowQ1'] = \
             np.zeros((Noh*NM.NoBranch, NM.settings['NoTime']), dtype=float)
         self.data['Line_LossP'] = \
-            np.zeros((Noh*NM.NoBranch, NM.settings['NoTime']), dtype=float)
+            np.zeros((Noh*NM.connections['Branches'], NM.settings['NoTime']),
+                     dtype=float)
         self.data['Line_LossQ'] = \
-            np.zeros((Noh*NM.NoBranch, NM.settings['NoTime']), dtype=float)
+            np.zeros((Noh*NM.connections['Branches'], NM.settings['NoTime']),
+                     dtype=float)
 
         if self.type == 1:
             # Pyomo - DC model
@@ -101,7 +102,7 @@ class PrintClass:
 
             # Voltage angle
             if 'vNVolt' in m.__dir__():
-                for x1 in range(Noh*NM.ENetwork.get_NoBus()):
+                for x1 in range(Noh*NM.NoBuses):
                     for x2 in range(NM.settings['NoTime']):
                         self.data['Voltage_ang'][x1][x2] = \
                                 m.vNVolt[x1, x2].value
@@ -115,7 +116,7 @@ class PrintClass:
 
             # Dummy genertors / curtailment / feasibility constraints
             if 'vNFea' in m.__dir__():
-                for x1 in range(Noh*NM.ENetwork.get_NoBus()):
+                for x1 in range(Noh*NM.NoFea):
                     for x2 in range(NM.settings['NoTime']):
                         self.data['Curtailment'][x1][x2] = \
                                 m.vNFea[x1, x2].value*NM.ENetwork.get_Base()
@@ -136,7 +137,7 @@ class PrintClass:
 
             # Losses
             if 'vNLoss' in m.__dir__():
-                for x1 in range(Noh*NM.NoBranch):
+                for x1 in range(Noh*NM.connections['Branches']):
                     for x2 in range(NM.settings['NoTime']):
                         self.data['Line_LossP'][x1][x2] = \
                         m.vNLoss[x1, x2].value*NM.ENetwork.get_Base()
