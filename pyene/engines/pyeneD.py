@@ -47,8 +47,8 @@ class BusConfig:
         if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
-        if 'Load_type' in mpc.keys():
-            self.settings['Load_Type'] = mpc['Load_type'][No]
+        if 'Load_Type' in mpc.keys():
+            self.settings['Load_Type'] = mpc['Load_Type'][No]
         if 'Loss_Fix' in mpc.keys():
             self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
         else:
@@ -87,7 +87,7 @@ class ConventionalConfig:
     ''' Conventnional generator '''
     def __init__(self):
         # Basic settings
-        aux = ['Ancillary', 'APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
+        aux = ['Ancillary', 'APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
                'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
                'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
                'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT']
@@ -106,7 +106,7 @@ class ConventionalConfig:
 
         # Generator settings - from mat power file
         self.settings['Position'] = No
-        aux = ['APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
+        aux = ['APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
                'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX', 'QG', 'QMAX',
                'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG']
         for x in aux:
@@ -652,16 +652,16 @@ class ElectricityNetwork:
             ob.set_N1(ob.get_Pos(), 0)
 
         # Are all the loads the same type?
-        aux = len(sett['Load_type'])
+        aux = len(sett['Load_Type'])
         if aux == 1:
-            if sett['Load_type'][0] == 1:
+            if sett['Load_Type'][0] == 1:
                 # An update is only needed if the loads are rural
                 for ob in self.Bus:
-                    ob.set_LT(sett['Load_type'])
+                    ob.set_LT(sett['Load_Type'])
         elif aux > 1:
             # Update a set of the buses
             xb = 0
-            for val in sett['Load_type']:
+            for val in sett['Load_Type']:
                 self.Bus[xb].set_LT(val)
                 xb += 1
 
@@ -994,7 +994,7 @@ class Conventional(GenClass):
         ''' Initialise generator class
 
         The class can use the following parameters:
-        ['APF', 'GEN', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
+        ['APF', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
         'QC2MIN', 'QC2MAX', 'QG', 'QMAX', 'QMIN', 'RAMP_AGC',
         'RAMP_10', 'RAMP_30', 'RAMP_Q', 'RES', 'VG']
         However, only the ones that are currently used are passed
