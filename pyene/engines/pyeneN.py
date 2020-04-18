@@ -27,7 +27,7 @@ class pyeneNConfig:
                 'Security': [],  # Security constraints (lines)
                 'Losses': True,  # Consideration of losses
                 'Feasibility': True,  # Feasibility constraints (curtailment)
-                'Load_type': [],  # 0 Urban, 1 Rural
+                'Load_Type': [],  # 0 Urban, 1 Rural
                 'Pieces': [],  # Size of pieces (MW) for piece-wise estimations
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
@@ -106,7 +106,7 @@ class pyeneNConfig:
                 'Voltages': True,
                 'Losses': True,
                 'Curtailment': True,
-                'Feasibility': True,
+                'Pump': True,
                 'Services': True,
                 'GenBus': True,
                 'UC': True,
@@ -349,7 +349,7 @@ class ENetworkClass:
             m.vNVolt = Var(range(Noh*(self.NoBuses)), self.s['Tim'],
                            domain=Reals, initialize=0.0)
             if self.settings['Losses']:
-                m.vNLoss = Var(range(Noh*(self.connections['Branches'])),
+                m.vNLoss = Var(range(Noh*self.connections['Branches']),
                                self.s['Tim'], domain=NonNegativeReals,
                                initialize=0.0)
 
@@ -426,7 +426,6 @@ class ENetworkClass:
             LossT = 0.5 * \
                 sum(self.ENetwork.Branch[xb].getLoss() for xb in
                     self.ENetwork.get_FlowT(xn, xs))/self.ENetwork.get_Base()
-            # print(LossF, LossT)
 
             if self.settings['Loss'] is None:
                 LossM = 1
@@ -787,11 +786,18 @@ class ENetworkClass:
         for pars in self.Print.keys():
             self.Print[pars] = False
 
-    def print(self, m, sh=None):
+    def print(self, m, sh=None, prnt=None, Flg=False):
         ''' Print results '''
         if sh is None:
             sh = self.s['Con']
 
+        if prnt is None:
+            from pyene.engines.pyeneP import PrintClass
+            prnt = PrintClass(m, self)
+
+        if Flg:
+            print('\n\nOF: ', prnt.get_OF())
+        
         for xh in sh:
             print("\n% CASE:", xh)
 
@@ -801,136 +807,165 @@ class ENetworkClass:
             if self.Print['Generation']:
                 print("\nFlow_EGen=[")
                 for xn in range(self.Gen.get_NoGen()):
-                    for x2 in self.s['Tim']:
-                        aux = (m.vNGen[self.connections['Generation'][xh]+xn,
-                                       x2].value *
-                               self.ENetwork.get_Base())
-                        print("%8.4f " % aux, end='')
+                    x1 = self.connections['Generation'][xh]+xn
+                    for x2 in range(self.settings['NoTime']):
+                        print("%8.4f " % prnt.get_GenerationP(x1, x2), end='')
                     print()
                 print("];")
+                if prnt.type == 2:
+                    print("\nFlow_EGenQ=[")
+                    for xn in range(self.Gen.get_NoGen()):
+                        x1 = self.connections['Generation'][xh]+xn
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % prnt.get_GenerationQ(x1, x2), end='')
+                        print()
+                    print("];")
+                    
 
             if self.Print['UC']:
                 print("\nBin_EGen=[")
-                aux = 1
                 for xn in range(self.Gen.get_NoGen()):
-                    for x2 in self.s['Tim']:
-                        if self.settings['UC']:
-                            aux1 = self.Gen.get_Bin(xn)
-                            if aux1 is not None:
-                                aux = (m.vNGen_Bin[self.connections
-                                                   ['Generation'][xh]+aux1,
-                                                   x2].value)
-                        print("%2.0f " % aux, end='')
+                    if self.Gen.get_Bin(xn) is None:
+                        x1 = self.connections['Generation'][xh]
+                    else:
+                        x1 = self.Gen.get_Bin(xn) + \
+                            self.connections['Generation'][xh]
+                    for x2 in range(self.settings['NoTime']):
+                        print("%2.0f " % prnt.get_GenerationUC(x1, x2), end='')
                     print()
                 print("];")
 
             if self.Print['Flows'] and self.settings['Flag']:
                 print("\nFlow_EPower=[")
                 for xb in range(self.ENetwork.get_NoBra()):
-                    for x2 in self.s['Tim']:
-                        aux = (m.vNFlow[self.connections['Flow'][xh] +
-                                        xb, x2].value *
-                               self.ENetwork.get_Base())
-                        print("%8.4f " % aux, end='')
+                    x1 = self.connections['Flow'][xh]+xb
+                    for x2 in range(self.settings['NoTime']):
+                        print("%8.4f " % prnt.get_Line_FlowP0(x1, x2), end='')
                     print()
                 print("];")
+                if prnt.type == 2:
+                    print("\nFlow_EPowerP1=[")
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        x1 = self.connections['Flow'][xh]+xb
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % prnt.get_Line_FlowP1(x1, x2), end='')
+                        print()
+                    print("];")
+                    print("\nFlow_EPowerQ0=[")
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        x1 = self.connections['Flow'][xh]+xb
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % prnt.get_Line_FlowQ0(x1, x2), end='')
+                        print()
+                    print("];")
+                    print("\nFlow_EPowerQ1=[")
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        x1 = self.connections['Flow'][xh]+xb
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % prnt.get_Line_FlowQ1(x1, x2), end='')
+                        print()
+                    print("];")
 
             if self.Print['Voltages'] and self.settings['Flag']:
                 print("\nVoltage_Angle=[")
-                for xn in self.s['Buses']:
-                    for xt in self.s['Tim']:
-                        aux = self.connections['Voltage'][xh]
-                        aux = m.vNVolt[aux+xn, xt].value
-                        print("%8.4f " % aux, end='')
+                for xn in range(self.NoBuses):
+                    x1 = self.connections['Voltage'][xh]+xn
+                    for x2 in range(self.settings['NoTime']):
+                        print("%8.4f " % prnt.get_Voltage_ang(x1, x2), end='')
                     print()
                 print("];")
+                if prnt.type == 2:
+                    print("\nVoltage_Magnitude=[")
+                    for xn in range(self.NoBuses):
+                        x1 = self.connections['Voltage'][xh]+xn
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % prnt.get_Voltage_pu(x1, x2), end='')
+                        print()
+                    print("];")
 
             if self.Print['Losses'] and self.settings['Flag']:
                 print("\nEPower_Loss=[")
-                LossDt = self.printLosses(m, xh)
+                (LossDt, LossDtQ) = self.printLosses(prnt, xh)
                 for xb in range(self.ENetwork.get_NoBra()):
-                    for xt in self.s['Tim']:
+                    for xt in range(self.settings['NoTime']):
                         print("%8.4f " % LossDt[xb][xt], end='')
                     print()
                 print("];")
+                if prnt.type == 2:
+                    print("\nEPower_LossQ=[")
+                    for xb in range(self.ENetwork.get_NoBra()):
+                        for xt in range(self.settings['NoTime']):
+                            print("%8.4f " % LossDtQ[xb][xt], end='')
+                        print()
+                    print("];")
 
-        #    print("\nEDemand=[")            
-        #    for xn in self.s['Bus']:
-        #        for xt in self.s['Tim']:
-        #            aux = self.busData[xn]*self.scenarios['Demand'] \
-        #                [xt*self.p['daux']+self.busScenario[xn][xh]]* \
-        #                self.ENetwork.get_Base()
-        #            print("%8.4f " % aux, end='')
-        #        print()
-        #    print("];")
-
-            if self.Print['Curtailment']:
+            if self.Print['Pump']:
                 print("\nPumps=[")
-                for xdl in self.s['Pump']:
-                    for xt in self.s['Tim']:
-                        aux = m.vNPump[self.connections['Pump'][xh]+xdl+1,
-                                       xt].value*self.ENetwork.get_Base()
-                        print("%8.4f " % aux, end='')
+                for xp in range(self.pumps['Number']):
+                    x1 = self.connections['Pump'][xh]+xp
+                    for x2 in range(self.settings['NoTime']):
+                        print("%8.4f " % prnt.get_Pumps(x1, x2), end='')
                     print()
                 print("];")
 
-            if self.Print['Feasibility']:
+            if self.Print['Curtailment']:
                 print("\nFeas=[")
                 for xn in range(self.ENetwork.get_NoBus()):
-                    for xt in self.s['Tim']:
-                        if self.p['LLFea1'][xn] == 0:
-                            aux = 0
-                        else:
-                            aux = m.vNFea[self.connections['Feasibility'][xh] +
-                                          self.p['LLFea2'][xn], xt].value * \
-                                self.ENetwork.get_Base()
-                        print("%8.4f " % aux, end='')
+                    if self.p['LLFea1'][xn] == 0:
+                        for x2 in range(self.settings['NoTime']):
+                            print("%8.4f " % 0, end='')
+                    else:
+                        x1 = self.connections['Feasibility'][xh] + \
+                            self.p['LLFea2'][xn]
+                        for x2 in range(self.settings['NoTime']):                                                                        
+                            print("%8.4f " % prnt.get_Curtailment(x1, x2),
+                                  end='')
                     print()
                 print("];")
 
             if self.Print['Services'] and len(self.s['GServices']) > 0:
                 print("\nServ=[")
                 for xs in range(self.p['GServices']):
-                    for xt in self.s['Tim']:
-                        aux = m.vNServ[self.p['GServices']*xh+xs,
-                                       xt].value*self.ENetwork.get_Base()
-                        print("%8.4f " % aux, end='')
+                    x1 = self.p['GServices']*xh+xs
+                    for xt in range(self.settings['NoTime']):
+                        print("%8.4f " % prnt.get_Services(x1, x2), end='')
                     print()
                 print("];")
 
-    def printLosses(self, m, xh):
+    def printLosses(self, prnt, xh):
         ''' Get losses data to be printed '''
         LossesDt = np.zeros((self.ENetwork.get_NoBra(),
+                             self.settings['NoTime']), dtype=float)
+        LossesDtQ = np.zeros((self.ENetwork.get_NoBra(),
                              self.settings['NoTime']), dtype=float)
         
         if self.settings['Loss'] is None:
             aux = 0
             for xb in range(self.ENetwork.get_NoBra()):
-                for xt in self.s['Tim']:
-                    if self.settings['Losses']:
-                        aux = m.vNLoss[self.connections['Loss'][xh]+xb,
-                                       xt].value * \
-                            self.ENetwork.get_Base()
-                    LossesDt[xb][xt] = aux
+                x1 = self.connections['Loss'][xh]+xb
+                for x2 in range(self.settings['NoTime']):
+                    LossesDt[xb][x2] = prnt.get_Line_LossP(x1, x2)
+                    if prnt.type == 2:
+                        LossesDtQ[xb][x2] = prnt.get_Line_LossQ(x1, x2)
         else:
             # Get all losses
             FullLoss = np.zeros(self.settings['NoTime'], dtype=float)
             for xt in self.s['Tim']:
                 # Get all power generation
                 for xn in range(self.Gen.get_NoGen()):
-                    FullLoss[xt] += m.vNGen[self.connections['Generation'][xh]
-                                            +xn, xt].value
+                    x1 = self.connections['Generation'][xh]+xn
+                    FullLoss[xt] += prnt.get_GenerationP(x1, xt)
+
                 # Substract demand
                 for xn in self.s['Bus']:
                     FullLoss[xt] -= self.busData[xn]*self.scenarios['Demand'] \
-                        [xt*self.p['daux']+self.busScenario[xn][xh]]
+                        [xt*self.p['daux']+self.busScenario[xn][xh]] * \
+                        self.ENetwork.get_Base()
 
                     # Adding curtailment (dummy generators)
-                    if self.p['LLFea1'][xn] != 0:
-                            FullLoss[xt] += \
-                                m.vNFea[self.connections['Feasibility'][xh] +
-                                        self.p['LLFea2'][xn], xt].value
-                FullLoss[xt] *= self.ENetwork.get_Base()
+                    x1 = self.connections['Feasibility'][xh] + \
+                        self.p['LLFea2'][xn]
+                    FullLoss[xt] += prnt.get_Curtailment(x1, xt)
 
                 # Substract non-technical losses
                 for xb in range(self.ENetwork.get_NoBra()):
@@ -940,16 +975,16 @@ class ENetworkClass:
             for xt in self.s['Tim']:
                 FullFlow = 0
                 for xb in range(self.ENetwork.get_NoBra()):
-                    FullFlow += abs(m.vNFlow[self.connections['Flow'][xh]+xb,
-                                             xt].value)
+                    FullFlow += prnt.get_Line_FlowP0(self.connections['Flow'][xh]+xb, xt)
+
                 if FullFlow > 0:
                     for xb in range(self.ENetwork.get_NoBra()):
-                        aux = abs(m.vNFlow[self.connections['Flow'][xh]+xb,
-                                           xt].value) / FullFlow
+                        aux = abs(prnt.get_Line_FlowP0(self.connections['Flow']
+                                                       [xh]+xb, xt))/FullFlow
                         LossesDt[xb][xt] = FullLoss[xt] * aux + \
                             self.ENetwork.Branch[xb].getLoss()
 
-        return LossesDt
+        return LossesDt, LossesDtQ
         
     def ProcessEDem(self, ENetDem):
         ''' Process demand and generation parameters '''

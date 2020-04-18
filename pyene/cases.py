@@ -24,6 +24,44 @@ def get_pyeneConfig():
     return pyeneConfig()
 
 
+def test_pyeneAC(config):
+    """ Run pypsa based AC power flow """
+    config.NM.hydropower['Number'] = 0  # Number of hydropower plants
+    
+    # Create object
+    EN = pyeneClass(config.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(config)
+
+    # Fake weather engine
+    FileName = 'TimeSeries.json'
+    (DemandProfiles, NoDemPeriod, BusDem, LinkDem, NoRES, NoRESP,
+     LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink, NoLink,
+     Nohr) = EN.ReadTimeS(FileName)
+    
+    # Profiles
+    demandNode = _node()
+    demandNode.value = DemandProfiles[0][:]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # Second scenario
+    demandNode = _node()
+    demandNode.value = DemandProfiles[1][:]
+    demandNode.index = 2
+    EN.set_Demand(demandNode.index, demandNode.value)
+    
+    EN_Interface = EN.getClassInterfaces()
+
+    Model_Pypsa = [EN_Interface.pyene2pypsa(EN.NM, x)[0]
+                   for x in range(config.NM.scenarios['NoDem'])]
+
+    for xscen in range(config.NM.scenarios['NoDem']):
+        Model_Pypsa[xscen].pf()
+
+    EN.NM.print(Model_Pypsa, range(config.NM.scenarios['NoDem']), None, True)
+
 def test_pyeneE(config):
     """ Execute pyene to access pyeneE - Full json based simulation."""
     EN = pyeneClass(config.EN)
