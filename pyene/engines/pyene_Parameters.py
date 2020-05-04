@@ -101,6 +101,12 @@ class Branch:
         ''' Set branch number '''
         assert val is not None, "No value passed for the number of the line"
         self.__data['Number'] = val
+    
+    def set_pos(self, val=None):
+        ''' Set Position of Bus on the list of branches - starting from zero'''
+        assert val is not None, "No value passed for the position of the branch"
+        self.__data['Position'] = val
+
 
     def set_pos_from(self, val=None):
         ''' Set bus position at beginning (from) of the branch '''
@@ -163,8 +169,8 @@ class Bus:
         aux = ['BASE_KV', 'BS', 'BUS_AREA', 'BUS_TYPE', 'BUS_X', 'BUS_Y',
                'Demand', 'GS', 'PeakP', 'PeakQ', 'Position', 'Name', 'Number',
                'VM', 'VA', 'VMAX', 'VMIN', 'ZONE', 'Load_Type', 'Loss_Fix',
-               'NoFB', 'NoTB', 'GenType', 'NoFTW', 'NoTTW', 'NoF1ThW',
-               'NoT1ThW', 'NoF2ThW', 'NoT2ThW', 'NoF3ThW', 'NoT3ThW']
+               'NoFB', 'NoTB', 'GenType', 'NoFTW', 'NoTTW', 'NoThWEnd1',
+               'NoThWEnd2', 'NoThWEnd3']
         self.__data = {}
         for x in aux:
             self.__data[x] = None
@@ -699,6 +705,10 @@ class ElectricityNetwork:
     def update_all_positions(self):
         ''' Update the position of all nodes, transmission lines, etc. '''
         self.__update_pos_nodes()
+        self.__update_pos_generators()
+        self.__update_pos_transmission_lines()
+        self.__update_pos_two_winding_trafos()
+        self.__update_pos_three_winding_trafos()
 
     def __set_no_buses(self, val=None):
         ''' Set Number of NoBuses '''
@@ -753,8 +763,10 @@ class ElectricityNetwork:
     def __update_bus_pos_generators(self):
         '''Update the position of the nodes in all generators'''
         for xn in self.__data['bus']:
-            for xg, xp in zip(xn.get_gen_type(), xn.get_gen_pos()):
-               self.__data[xg][xp].set_bus_pos(xn.get_pos())
+            for xgt in self.__data['GenTypes']:
+                for xg in self.__data[xgt]:
+                    if xn.get_number() == xg.get_bus():
+                        xg.set_pos(xn.get_pos())
     
     def __update_generator_pos_buses(self):
         '''Update the position of the generators in all buses'''
@@ -769,19 +781,49 @@ class ElectricityNetwork:
             xn.set_gen_type(aux)
             xn.set_gen_pos(aux1)
     
+    def __update_three_winding_trafos_pos_buses(self):
+        '''Update the position of three winding transformers in all buses'''
+        for xn in self.__data['bus']:
+            aux = []
+            aux1 = []
+            aux2 = []
+            for xthwt in self.__data['threewindingtrafo']:
+                if xn.get_pos() == xthwt.get_pos_bus1():
+                    aux.append(xthwt.get_pos())
+                elif xn.get_pos() == xthwt.get_pos_bus2():
+                    aux1.append(xthwt.get_pos())
+                elif xn.get_pos() == xthwt.get_pos_bus3():
+                    aux2.append(xthwt.get_pos())
+            xn.set_three_trafo_end1(aux)
+            xn.set_three_trafo_end2(aux1)
+            xn.set_three_trafo_end3(aux2)
+    
     def __update_transmission_lines_pos_buses(self):
-        '''Update the position of the transmission lines in all buses'''
+        '''Update the position of  transmission lines in all buses'''
         for xn in self.__data['bus']:
             aux = []
             aux1 = []
             for xl in self.__data['transmissionline']:
                 if xn.get_pos() == xl.get_pos_from():
                     aux.append(xl.get_pos())
-                if xn.get_pos() == xl.get_pos_to():
+                elif xn.get_pos() == xl.get_pos_to():
                     aux1.append(xl.get_pos())
-            xn.set_gen_type(aux)
-            xn.set_gen_pos(aux1)
+            xn.set_transmission_line_from(aux)
+            xn.set_transmission_line_to(aux1)
     
+    def __update_two_winding_trafos_pos_buses(self):
+        '''Update the position of two winding trafos in all buses'''
+        for xn in self.__data['bus']:
+            aux = []
+            aux1 = []
+            for xtwt in self.__data['twowindingtrafo']:
+                if xn.get_pos() == xtwt.get_pos_from():
+                    aux.append(xtwt.get_pos())
+                elif xn.get_pos() == xtwt.get_pos_to():
+                    aux1.append(xtwt.get_pos())
+            xn.set_two_trafo_from(aux)
+            xn.set_two_trafo_to(aux1)
+        
     def __update_pos_ends_three_winding_trafos(self):
         '''Update the position of the nodes in both ends of the three winding
         transformer'''
@@ -834,13 +876,29 @@ class ElectricityNetwork:
         self.__update_pos_ends_three_winding_trafos()
         self.__update_bus_pos_generators()
     
+    def __update_pos_three_winding_trafos(self):
+        ''' Update the position of three winding trafos - starting from zero '''
+        aux=0
+        for xl in self.__data['threewindingtrafo']:
+            xl.set_pos(aux)
+            aux += 1
+        self.__update_three_winding_trafos_pos_buses()
+    
     def __update_pos_transmission_lines(self):
         ''' Update the position of transmission lines - starting from zero '''
         aux=0
         for xl in self.__data['transmissionline']:
             xl.set_pos(aux)
             aux += 1
-
+        self.__update_transmission_lines_pos_buses()
+    
+    def __update_pos_two_winding_trafos(self):
+        ''' Update the position of two winding trafos - starting from zero '''
+        aux=0
+        for xl in self.__data['twowindingtrafo']:
+            xl.set_pos(aux)
+            aux += 1
+        self.__update_two_winding_trafos_pos_buses()
 
 class GenClass:
     ''' Core generation class '''
@@ -978,7 +1036,7 @@ class ThreeWindingTrafo():
             'ANGMIN2', "TAP3", 'VBase3', 'ANG3', 'ANGMAX3', 'ANGMIN3',
             'RATE_A1', 'RATE_B1', 'RATE_C1', 'RATE_A2', 'RATE_B2', 'RATE_C2',
             'RATE_A3', 'RATE_B3', 'RATE_C3', 'Loss_Fix', 
-            'N-1', 'STATUS1', 'STATUS2', 'STATUS3', 'YMag']
+            'N-1', 'STATUS1', 'STATUS2', 'STATUS3', 'YMag', 'Position']
         self.__data = {}
         for x in aux:
             self.__data[x] = None
@@ -995,6 +1053,10 @@ class ThreeWindingTrafo():
         ''' Get number position at end 3 of the trafo '''
         return self.__data['Bus3']
     
+    def get_pos(self):
+        ''' Get position of the trafo - starting from zero'''
+        return self.__data['Position']
+    
     def get_pos_bus1(self):
         ''' Get bus position at end 1 of the trafo '''
         return self.__data['Bus1_Position']
@@ -1006,6 +1068,12 @@ class ThreeWindingTrafo():
     def get_pos_bus3(self):
         ''' Get bus position at end 3 of the trafo '''
         return self.__data['Bus3_Position']
+    
+    def set_pos(self, val=None):
+        ''' Set Position of the trafo on the list of trafos - starting from zero'''
+        assert val is not None, "No value passed for the position of the \
+            three winding trafo"
+        self.__data['Position'] = val
     
     def set_pos_bus1(self, val=None):
         ''' Set bus position at end 1 of the trafo '''
