@@ -40,36 +40,42 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         ''' This class method load all edges in the graph'''
         auxp = "No edge data has been loaded in the \
                 class PowerSystemIslandsIsolations"
-        assert self.transmissionline != [] or self.twowindingtrafo != [] or \
-            self.threewindingtrafo != [], " ".join(auxp.split())
+        assert self.get_objects(obj='transmissionline') != [] or \
+            self.get_objects(obj='twowindingtrafo') != [] or \
+            self.get_objects(obj='threewindingtrafo') != [], \
+            " ".join(auxp.split())
         assert graph.is_multigraph(), "graph is not a graph"
         # Edges for transmission lines
+        aux = self.get_objects(obj='transmissionline')
         for edges in range(self.get_no_transmission_lines()):
-            graph.add_edge(self.transmissionline[edges].get_pos_from(), \
-                self.transmissionline[edges].get_pos_to())
+            graph.add_edge(aux[edges].get_pos_from(), \
+                aux[edges].get_pos_to())
         # Edges for two winding transformers
+        aux = self.get_objects(obj='twowindingtrafo')
         for edges in range(self.get_no_two_winding_trafos()):
-            graph.add_edge(self.twowindingtrafo[edges].get_pos_from(), \
-                self.twowindingtrafo[edges].get_pos_to())
+            graph.add_edge(aux[edges].get_pos_from(), \
+                aux[edges].get_pos_to())
         # Edges for three winding transformers
+        aux = self.get_objects(obj='threewindingtrafo')
         for edges in range(self.get_no_two_winding_trafos()):
-            graph.add_edge(self.threewindingtrafo[edges].get_pos_bus1(), \
-                self.threewindingtrafo[edges].get_pos_bus2())
-            graph.add_edge(self.threewindingtrafo[edges].get_pos_bus2(), \
-                self.threewindingtrafo[edges].get_pos_bus3())
-            graph.add_edge(self.threewindingtrafo[edges].get_pos_bus3(), \
-                self.threewindingtrafo[edges].get_pos_bus1())
+            graph.add_edge(aux[edges].get_pos_bus1(), \
+                aux[edges].get_pos_bus2())
+            graph.add_edge(aux[edges].get_pos_bus2(), \
+                aux[edges].get_pos_bus3())
+            graph.add_edge(aux[edges].get_pos_bus3(), \
+                aux[edges].get_pos_bus1())
         return graph
     
     def nodes_graph(self, graph=None):
         ''' This class method load all nodes in the graph'''
         auxp = "No bus data has been loaded in the class \
             PowerSystemIslandsIsolations"
-        assert self.bus != [], " ".join(auxp.split())
+        assert self.get_objects(obj='bus') != [], " ".join(auxp.split())
         assert graph.is_multigraph(), "graph is not a graph"
 
+        aux = self.get_objects(obj='bus')
         for nodes in range(self.get_no_buses()):
-            graph.add_node(self.bus[nodes].get_pos(), obj=self.bus[nodes])
+            graph.add_node(aux[nodes].get_pos(), obj=aux[nodes])
         return graph
     
     def find_islands(self):
@@ -88,6 +94,12 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             self.__add_hydro_to_island()
             self.__add_renewables_to_island()
             self.__add_transmission_lines_to_island()
+            self.__add_two_winding_trafos_to_island()
+            self.__add_three_winding_trafos_to_island()
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} islands'.format(\
+                str(self.get_no_islands()))
+            logging.info(" ".join(auxp.split()))
         else:
             auxp = 'Network analyser message - the power system under \
                 analysis does not have islands'
@@ -114,9 +126,21 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
                 analysis does not have isolated nodes'
             logging.info(" ".join(auxp.split()))
     
+    def get_islands(self):
+        ''' Get islands - list of ElectricityNetwork objects'''
+        return self.__data['Islands']
+    
+    def get_isolated_nodes(self):
+        ''' Get isolated nodes - list of Bus objects'''
+        return self.__data['IsolatedNodes']
+
     def get_no_islands(self):
         ''' Get number of islands '''
         return self.__data['NoIslands']
+    
+    def get_no_isolated_nodes(self):
+        ''' Get number of isolated nodes '''
+        return self.__data['NoIsolatedNodes']
 
     def __add_conv_to_island(self):
         ''' This class method add the nodes to the islands '''
@@ -125,11 +149,10 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
                 "List of islands does not have the necessary format - conv"
         for aux1 in range(self.get_no_islands()):
             aux_conv = []
-            for aux2 in self.__data['Islands'][aux1].bus:
+            for aux2 in self.__data['Islands'][aux1].get_objects(obj='bus'):
                 for aux3, aux4 in zip(aux2.get_gen_type(), aux2.get_gen_pos()):
                     if aux3 == 'conv':
-                        aux_conv.append(getattr(self,aux3)[aux4])
-                        print(getattr(self,aux3)[aux4])
+                        aux_conv.append(self.get_objects(obj=aux3, pos=aux4))
             if aux_conv != []:
                 self.__data['Islands'][aux1].set_conv_data(aux_conv)
     
@@ -140,11 +163,10 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
                 "List of islands does not have the necessary format - hydro"
         for aux1 in range(self.get_no_islands()):
             aux_hydro = []
-            for aux2 in self.__data['Islands'][aux1].bus:
+            for aux2 in self.__data['Islands'][aux1].get_objects(obj='bus'):
                 for aux3, aux4 in zip(aux2.get_gen_type(), aux2.get_gen_pos()):
                     if aux3 == 'hydro':
                         aux_hydro.append(getattr(self,aux3)[aux4])
-                        print(getattr(self,aux3)[aux4])
             if aux_hydro != []:
                 self.__data['Islands'][aux1].set_hydro_data(aux_hydro)
 
@@ -176,7 +198,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
                 "List of islands does not have the necessary format - RES"
         for aux1 in range(self.get_no_islands()):
             aux_renewables = []
-            for aux2 in self.__data['Islands'][aux1].bus:
+            for aux2 in self.__data['Islands'][aux1].get_objects(obj='bus'):
                 for aux3, aux4 in zip(aux2.get_gen_type(), aux2.get_gen_pos()):
                     if aux3 == 'RES':
                         aux_renewables.append(getattr(self,aux3)[aux4])
@@ -192,14 +214,77 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             " ".join(auxp.split())
         for aux1 in range(self.get_no_islands()):
             aux_transmission_lines = []
-            for aux2 in self.__data['Islands'][aux1].bus:
+            aux_tranmission_lines_list = []
+            for aux2 in self.__data['Islands'][aux1].get_objects(obj='bus'):
                 for aux3 in aux2.get_transmission_line_from():
                     aux_transmission_lines.append(aux3)
                 for aux3 in aux2.get_transmission_line_to():
                     aux_transmission_lines.append(aux3)
             aux_transmission_lines = list(dict.fromkeys(aux_transmission_lines))
-            print(aux_transmission_lines)
-                
+            for aux2 in aux_transmission_lines:
+                aux_tranmission_lines_list.append(\
+                    self.get_objects(obj='transmissionline', pos=aux2))
+            if aux_tranmission_lines_list != []:
+                self.__data['Islands'][aux1].set_transmission_line_data(\
+                    aux_tranmission_lines_list)
+    
+    def __add_two_winding_trafos_to_island(self):
+        ''' This class method add the two winding transformers to the islands '''
+        auxp = "List of islands does not have the necessary format - \
+            Two winding transformers"
+        assert isinstance(self.__data['Islands'], list) and \
+            isinstance(self.__data['Islands'][0], ElectricityNetwork), \
+            " ".join(auxp.split())
+        for aux1 in range(self.get_no_islands()):
+            aux_two_winding_trafos = []
+            aux_two_winding_trafos_list = []
+            for aux2 in self.__data['Islands'][aux1].get_objects(obj='bus'):
+                for aux3 in aux2.get_two_trafo_from():
+                    aux_two_winding_trafos.append(aux3)
+                for aux3 in aux2.get_two_trafo_to():
+                    aux_two_winding_trafos.append(aux3)
+            aux_two_winding_trafos = list(dict.fromkeys(aux_two_winding_trafos))
+            for aux2 in aux_two_winding_trafos:
+                aux_two_winding_trafos_list.append(\
+                    self.get_objects(obj='twowindingtrafo', pos=aux2))
+            if aux_two_winding_trafos_list != []:
+                self.__data['Islands'][aux1].set_two_winding_trafos_data(\
+                    aux_two_winding_trafos_list)
+
+    def __add_three_winding_trafos_to_island(self):
+        ''' This class method add the three winding transformers to the islands '''
+        auxp = "List of islands does not have the necessary format - \
+            Three winding transformers"
+        assert isinstance(self.__data['Islands'], list) and \
+            isinstance(self.__data['Islands'][0], ElectricityNetwork), \
+            " ".join(auxp.split())
+        for aux1 in range(self.get_no_islands()):
+            aux_three_winding_trafos_list = []
+            aux_three_winding_trafos = \
+                self.__get_three_winding_trafos_from_nodes(\
+                self.__data['Islands'][aux1])
+            for aux2 in aux_three_winding_trafos:
+                aux_three_winding_trafos_list.append(\
+                    self.get_objects(obj='threewindingtrafo', pos=aux2))
+            if aux_three_winding_trafos_list != []:
+                self.__data['Islands'][aux1].set_three_winding_trafos_data(\
+                    aux_three_winding_trafos_list)
+    
+    def __get_three_winding_trafos_from_nodes(self, obj=None):
+        ''' Get the three winding transformers end nodes '''
+        assert isinstance(obj, ElectricityNetwork), \
+            "Object is not an ElectricityNetwork"
+        aux_three_winding_trafos = []
+        for aux2 in obj.get_objects(obj='bus'):
+            for aux3 in aux2.get_three_trafo_end1():
+                aux_three_winding_trafos.append(aux3)
+            for aux3 in aux2.get_three_trafo_end2():
+                aux_three_winding_trafos.append(aux3)
+            for aux3 in aux2.get_three_trafo_end3():
+                aux_three_winding_trafos.append(aux3)
+        aux_three_winding_trafos = list(\
+            dict.fromkeys(aux_three_winding_trafos))
+        return aux_three_winding_trafos
 
     def __delete_nodes_graph(self, nodes=None):
         ''' This class method remove the isolated nodes from the graph. The 
@@ -208,7 +293,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         aux = range(len(nodes))
         isolated_nodes = [Bus() for _ in aux]
         for aux1 in aux:
-            isolated_nodes[aux1] = self.bus[nodes[aux1]]
+            isolated_nodes[aux1] = self.get_objects(obj='bus', pos=nodes[aux1])
         self.del_nodes(nodes)
         return isolated_nodes
 
