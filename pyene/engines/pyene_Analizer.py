@@ -29,7 +29,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     
     def IslandsIsolations(self):
-        ''' This class method calls and controls all methods in this class'''
+        ''' This class method calls and controls all main methods in this class'''
         auxp = 'Running network analyser - Determining islands and \
             isolated nodes in the power system'
         logging.info(" ".join(auxp.split()))
@@ -96,6 +96,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             self.__add_transmission_lines_to_island()
             self.__add_two_winding_trafos_to_island()
             self.__add_three_winding_trafos_to_island()
+            self.__update_all_pos_islands()
             auxp = 'Network analyser message - the power system under \
                 analysis has {0} islands'.format(\
                 str(self.get_no_islands()))
@@ -302,6 +303,11 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         assert val is not None, "No value passed for the number of islands"
         self.__data['NoIslands'] = val
 
+    def __update_all_pos_islands(self):
+        ''' Update the position of all nodes, transmission lines, etc. on 
+        each island '''
+        for xisl in range(self.get_no_islands()):
+            self.__data['Islands'][xisl].update_all_positions()
 
 
 class PowerSystemReduction(ElectricityNetwork):
@@ -316,8 +322,11 @@ class PowerSystemReduction(ElectricityNetwork):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
     
-    def Networkreduction(self):
-        ''' This class method controls the network reduction '''
+    def Networkreduction(self, opt=None):
+        ''' This class method calls and controls all main methods in this class'''
+        auxp = "No option has been passed to reduce the network"
+        assert opt is not None, " ".join(auxp.split())
+        
         self.G = nx.MultiGraph()
         
 
