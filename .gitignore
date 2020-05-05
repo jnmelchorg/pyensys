@@ -33,7 +33,12 @@ pyeneT.py
 *.log
 
 # Json files used for development
-pyene/json/
+pyene/json/caseGhana_Sim40_BSec_ManualLoss.json
+pyene/json/caseGhana_Sim40_BSec_ManualV02.json
+pyene/json/EAPP1.json
+pyene/json/EAPP2.json
+pyene/json/EAPP3.json
+pyene/json/EAPP1aa.json
 
 # Confidential files
 caseGhana_Full.json
@@ -53,3 +58,4 @@ tests/json/EAPP1.json
 tests/json/EAPP2.json
 tests/json/EAPP3.json
 tests/json/caseGhana_Sim40_BSec_ManualLoss.json
+tests/json/caseGhana_Sim40_BSec_ManualV02.json
