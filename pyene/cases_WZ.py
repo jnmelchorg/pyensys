@@ -24,6 +24,7 @@ def get_pyeneConfig():
     return pyeneConfig()
 
 
+
 def test_pyeneAC(config):
     """ Run pypsa based AC power flow """
     config.NM.hydropower['Number'] = 0  # Number of hydropower plants
@@ -277,52 +278,6 @@ def test_pyene(conf):
         curAll.value = value, values
         print('Total curtailment:', curAll.value)
 
-def test_pyeneRES(conf):
-    '''
-    A case study with 2 PV generators located at two buses for 2 representative winter days
-    '''
-
-    # Initialise simulation methods
-    conf.NM.settings['Flag'] = True
-    conf.NM.settings['Losses'] = False
-    conf.NM.settings['Feasibility'] = True
-    conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
-    conf.NM.settings['NoTime'] = 24
-    conf.NM.scenarios['Weights'] = [1 for _ in range(conf.NM.settings['NoTime'])]
-
-    # RES generators
-    conf.NM.RES['Number'] = 2  # Number of RES generators
-    conf.NM.RES['Bus'] = [1, 4]  # Location (bus) of generators
-    conf.NM.RES['Max'] = [10, 15]  # Generation capacity
-    conf.NM.RES['Cost'] = [0.001, 0.001]  # Costs
-
-    # Create object
-    EN = pe(conf.EN)
-
-    # Initialise with selected configuration
-    EN.initialise(conf)
-
-    # Demand profile
-    fileName = os.path.join(json_directory(), 'TimeSeries.json')
-    Eprofiles = json.load(open(fileName))
-    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
-    if conf.NM.scenarios['NoDem'] == 2:
-        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
-
-    # RES profile
-    resInNode = _node()
-    for xr in range(conf.NM.RES['Number']):
-        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
-        resInNode.index = xr + 1
-        EN.set_RES(resInNode.index, resInNode.value)
-
-    # Solve the model and generate results
-    m = ConcreteModel()
-    m = EN.run(m)
-    EN.Print_ENSim(m)
-    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
-    print('Spill ', EN.get_AllRES(m))
-    print('OF   : ', m.OF.expr())
 
 def hydro_example_tobeerased(conf):
     """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
@@ -381,3 +336,103 @@ def test_pyenetest(mthd):
     txt = 'test' + str(mthd)
     method_to_call = getattr(TestClass, txt)
     method_to_call(TestClass)
+
+def test_pyeneRES(conf):
+    '''
+    A case study with 2 PV generators located at two buses for 2 representative winter days
+    '''
+
+    # Initialise simulation methods
+    conf.NM.settings['Flag'] = True
+    conf.NM.settings['Losses'] = False
+    conf.NM.settings['Feasibility'] = True
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
+    conf.NM.settings['NoTime'] = 24
+    conf.NM.scenarios['Weights'] = [1 for _ in range(conf.NM.settings['NoTime'])]
+
+    # RES generators
+    conf.NM.RES['Number'] = 2  # Number of RES generators
+    conf.NM.RES['Bus'] = [1, 4]  # Location (bus) of generators
+    conf.NM.RES['Max'] = [10, 15]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.001, 0.001]  # Costs
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Demand profile
+    fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    if conf.NM.scenarios['NoDem'] == 2:
+        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+
+    # RES profile
+    resInNode = _node()
+    for xr in range(conf.NM.RES['Number']):
+        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+        resInNode.index = xr + 1
+        EN.set_RES(resInNode.index, resInNode.value)
+
+    # Solve the model and generate results
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    print('Spill ', EN.get_AllRES(m))
+    print('OF   : ', m.OF.expr())
+
+def test_pyeneRES(conf):
+    '''
+    A case study with 2 PV generators located at two buses for 2 representative winter days
+    '''
+
+    conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+    conf.NM.settings['Flag'] = False
+    conf.NM.settings['NoTime'] = 24
+    conf.NM.scenarios['Weights'] = [1 for _ in range (conf.NM.settings['NoTime'])]
+
+    # Conventional generators
+    conf.NM.conventional['Number'] = 15  # Number of conventional generators
+    conf.NM.conventional['Bus'] = [55, 2, 3, 8, 55, 3, 55, 18, 55, 55, 55, 55, 55, 55,
+                                   34]  # Location (bus) of conventional generators
+    conf.NM.conventional['Max'] = [220, 946, 120.8, 880, 289.6, 320, 360, 350, 245.5, 360, 490, 110, 276, 276,
+                                   155]  # Generation capacity
+    conf.NM.conventional['Cost'] = [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+                                    0.01, 0.01]  # Costs
+
+    # RES generators
+    conf.NM.RES['Number'] = 2  # Number of RES generators
+    conf.NM.RES['Bus'] = [1, 4]  # Location (bus) of generators
+    conf.NM.RES['Max'] = [10, 15]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.0001, 0.0001]  # Costs
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+    fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    if conf.NM.scenarios['NoDem'] == 2:
+        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+
+    # RES profile
+    resInNode = _node()
+    for xr in range(conf.NM.RES['Number']):
+        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+        resInNode.index = xr + 1
+        EN.set_RES(resInNode.index, resInNode.value)
+
+    #Solve the model
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    print('Spill ', EN.get_AllRES(m))
+    print('OF   : ', m.OF.expr())

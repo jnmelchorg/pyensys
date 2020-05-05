@@ -3,7 +3,11 @@ import numpy as np
 import cProfile
 import os
 from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
-    test_pyenetest, hydro_example_tobeerased, test_pyeneRES
+
+    test_pyenetest, test_pyeneRES
+
+    test_pyenetest, hydro_example_tobeerased
+
 from .engines.pyene import pyeneConfig
 
 
@@ -116,11 +120,13 @@ def _update_config_pyeneN(conf, kwargs):
             conf.EN.solverselection['pyomo'] = aux
             conf.EN.solverselection['glpk'] = False        
 
+
     # TODO: THIS NEED TO BE REMOVED - IT'S COMPLETELY HARDCODED AND CAN CAUSE 
     # THAT THE CODE CRASHES IN THE FUTURE
     if 'baseline' in kwargs.keys():
         aux = kwargs.pop('baseline')
         conf.NM.hydropower['Baseload'] = [aux, aux]
+
 
     return conf
 
@@ -188,23 +194,31 @@ def network_simulation_pyeneEN(conf, **kwargs):
 
     test_pyene(conf)
 
+
+@cli.command('run-ac')
+@click.option('--tree', default='ResolutionTreeMonth01.json',
+              help='Time resolution tree file')
+@click.option('--network', default='case14_con.json',
+              help='Network model file')
+@click.option('--time', default=24, help='Number of time steps')
+@pass_conf
+def network_simulation_pypsa(conf, **kwargs):
+    ''' AC power flow '''
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    test_pyeneAC(conf)
+
 @cli.command('run-res')
 @click.option('--tree', default='ResolutionTreeMonth01.json',
               help='Time resolution tree file')
-@click.option('--network', default='case14.json',
+@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json',
               help='Network model file')
-@click.option('--res', default=2,
-              help='Number of RES generators')
-@click.option('--time', default=24,
-              help='Number of time steps')
-@click.option('--loss', default=False,
-              type=bool, help='Estimate losses')
-@click.option('--feas', default=True, type=bool,
-              help='Consider feasibility constraints')
-
+@click.option('--res', default=2, help='Number of RES generators')
+@click.option('--time', default=24, help='Number of time steps')
 @pass_conf
 def network_simulation_pypsa(conf, **kwargs):
-    ''' Prepare Network Simulation '''
+    ''' RES study '''
     conf = _update_config_pyeneE(conf, kwargs)
     conf = _update_config_pyeneN(conf, kwargs)
 
@@ -249,6 +263,7 @@ def network_simulation_pypsa(conf, **kwargs):
     conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyeneAC(conf)
+
 
 @cli.command('test')
 @click.option('--test', default=0, help='Example to be executed')

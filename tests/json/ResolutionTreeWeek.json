@@ -1,0 +1,18 @@
+{
+    "0": {
+        "Title": "Week",
+        "Names": ["Day"],
+        "Weights": [1],
+        "Inputs": [0],
+        "Outputs": [0],
+        "Uncertainty": false
+    },
+    "1": {
+        "Title": "Days",
+        "Names": ["Weekday", "Weekend"],
+        "Weights": [5, 2],
+        "Inputs": [0, 0],
+        "Outputs": [0, 0],
+        "Uncertainty": false
+    }
+}

@@ -163,7 +163,7 @@ def test_pyene_Curtailment2Hydro():
     m = EN.run(m)
     print('Marginal ', EN.get_HydroMarginal(m, 1))
     # Get demand curtailment as required hydropower inputs
-    Needed_hydro = EN.get_AllDemandCurtailment(m)
+    Needed_hydro = EN.get_AllDemandCurtailment(m)[0]
     print('Required hydro:', Needed_hydro)
     print('Flaf: ', EN.get_HydroFlag(m, 1))
     # Add hydropower
@@ -174,7 +174,7 @@ def test_pyene_Curtailment2Hydro():
     print('Marginal ', EN.get_HydroMarginal(m, 1))
     print('Flaf: ', EN.get_HydroFlag(m, 1))
     # Get updated demand curtailment
-    Demand_curtailed = EN.get_AllDemandCurtailment(m)
+    Demand_curtailed = EN.get_AllDemandCurtailment(m)[0]
     print('Total curtailment:', Demand_curtailed)
 
     # 4.25*(7*1 + 2*1) = 29.75
@@ -316,7 +316,7 @@ def test_pyene_RESPump():
     Pumps_Use = EN.get_AllPumps(m)
     print('Energy used by pumps', Pumps_Use)
     # Get demand curtailed
-    Demand_Curtailed = EN.get_AllDemandCurtailment(m)
+    Demand_Curtailed = EN.get_AllDemandCurtailment(m)[0]
     print('Demand curtailed', Demand_Curtailed)
     # Add hydro to replace conventional generation
     Conv_Generation = EN.get_AllGeneration(m, 'Conv')
@@ -326,7 +326,7 @@ def test_pyene_RESPump():
     m = ConcreteModel()
     m = EN.run(m)
     # Get new curtailment
-    New_Curtailed = EN.get_AllDemandCurtailment(m)
+    New_Curtailed = EN.get_AllDemandCurtailment(m)[0]
     print('New demand curtailment ', New_Curtailed)
     # Get use of conventional generation
     Use_ConvGeneration = EN.get_AllGeneration(m, 'Conv')
@@ -340,7 +340,7 @@ def test_pyene_RESPump():
     Final_Pump = EN.get_AllPumps(m)
     print('Energy used by pumps', Final_Pump)
     # Get new curtailment
-    Final_Curtailed = EN.get_AllDemandCurtailment(m)
+    Final_Curtailed = EN.get_AllDemandCurtailment(m)[0]
     print('New demand curtailment ', Final_Curtailed)
     # Get use of conventional generation
     Final_ConvGeneration = EN.get_AllGeneration(m, 'Conv')
@@ -785,4 +785,3 @@ def test_pyene_Baseline():
     print(m.OF.expr())
     
     assert 0.0001 >= abs(m.OF.expr()-15736042.8742)
-

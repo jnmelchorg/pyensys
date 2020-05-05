@@ -14,19 +14,38 @@ Running this code will require,
 
 - pyomo
 - pypsa (optional)
+- glpk
 
+### Recommended package management and environment management systems
+
+For most users it will be easier to install the binary packages made available 
+for the Anaconda Python distribution. The use of Anaconda is recommended for
+the automatic installation of pyene and all its cython related dependencies.
 
 ### Installing
 
-Using a console (e.g., Cmder), check out the repository, and install the 
-package (in developer mode).
+If anaconda is used then open a console (e.g., Cmder, terminal), check out 
+the repository, and install the package (in developer mode).
 
 ```bash
 git checkout git@gitlab.hydra.org.uk:futuredams/test-case/DAMSEnergy.git
 cd DAMSEnergy
-pip install -e . --user
+python setup.py develop --with-glpk
 ```
 
+If using another package management and environment management system then you
+will need to create a new .bat file (Windows) or a new .sh (linux) with the
+following content:
+
+```bash
+set LIBRARY_INC=path\to\glpk\include\folder
+set LIBRARY_LIB=path\to\glpk\lib\folder
+python setup.py build_ext -I"%LIBRARY_INC%" -L"%LIBRARY_LIB%" --inplace --with-glpk develop
+```
+
+LIBRARY_INC must contain the path to the folder that containts the file "glpk.h"
+and LIBRARY_LIB must contain the path to the folder that containts either
+"glpk.lib" or "libglpk.so".
 
 ### Running
 

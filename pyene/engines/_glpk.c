@@ -3,16 +3,24 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "depends": [],
+        "depends": [
+            "C:\\ProgramData\\Anaconda3\\Library\\include\\glpk.h"
+        ],
+        "include_dirs": [
+            "C:\\ProgramData\\Anaconda3\\Library\\include"
+        ],
         "libraries": [
             "glpk"
         ],
-        "name": "_glpk",
+        "library_dirs": [
+            "C:\\ProgramData\\Anaconda3\\Library\\lib"
+        ],
+        "name": "pyene.engines._glpk",
         "sources": [
-            "_glpk.pyx"
+            "pyene/engines/_glpk.pyx"
         ]
     },
-    "module_name": "_glpk"
+    "module_name": "pyene.engines._glpk"
 }
 END: Cython Metadata */
 
@@ -25,7 +33,7 @@ END: Cython Metadata */
 #else
 #define CYTHON_ABI "0_29_15"
 #define CYTHON_HEX_VERSION 0x001D0FF0
-#define CYTHON_FUTURE_DIVISION 0
+#define CYTHON_FUTURE_DIVISION 1
 #include <stddef.h>
 #ifndef offsetof
   #define offsetof(type, member) ( (size_t) & ((type*)0) -> member )
@@ -606,8 +614,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE___glpk
-#define __PYX_HAVE_API___glpk
+#define __PYX_HAVE__pyene__engines___glpk
+#define __PYX_HAVE_API__pyene__engines___glpk
 /* Early includes */
 #include <string.h>
 #include <stdlib.h>
@@ -821,24 +829,24 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "_glpk.pyx",
+  "pyene\\engines\\glpk.pxi",
+  "pyene\\engines\\_glpk.pyx",
   "stringsource",
-  "glpk.pxi",
 };
 
 /*--- Type declarations ---*/
-struct __pyx_obj_5_glpk_GLPKSolver;
+struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver;
 
-/* "_glpk.pyx":26
+/* "pyene/engines/_glpk.pyx":34
  * }
  * 
  * cdef class GLPKSolver:             # <<<<<<<<<<<<<<
  *     cdef glp_prob* prob
  *     cdef glp_smcp smcp
  */
-struct __pyx_obj_5_glpk_GLPKSolver {
+struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver {
   PyObject_HEAD
-  struct __pyx_vtabstruct_5_glpk_GLPKSolver *__pyx_vtab;
+  struct __pyx_vtabstruct_5pyene_7engines_5_glpk_GLPKSolver *__pyx_vtab;
   glp_prob *prob;
   glp_smcp smcp;
   PyObject *row_ids;
@@ -848,21 +856,23 @@ struct __pyx_obj_5_glpk_GLPKSolver {
 
 
 
-struct __pyx_vtabstruct_5_glpk_GLPKSolver {
-  PyObject *(*set_dir)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int __pyx_skip_dispatch);
-  int (*add_rows)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
-  int (*add_cols)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
-  PyObject *(*set_mat_row)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, PyObject *, int __pyx_skip_dispatch);
-  PyObject *(*load_matrix)(struct __pyx_obj_5_glpk_GLPKSolver *, int, PyObject *, PyObject *, PyObject *, int __pyx_skip_dispatch);
-  PyObject *(*set_row_bnds)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch);
-  PyObject *(*set_col_bnds)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch);
-  PyObject *(*set_obj_coef)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, double, int __pyx_skip_dispatch);
-  int (*simplex)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
-  int (*status)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
-  double (*get_col_prim)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
-  double (*get_obj_val)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
+struct __pyx_vtabstruct_5pyene_7engines_5_glpk_GLPKSolver {
+  PyObject *(*set_dir)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int __pyx_skip_dispatch);
+  int (*add_rows)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
+  int (*add_cols)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
+  PyObject *(*set_mat_row)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, PyObject *, int __pyx_skip_dispatch);
+  PyObject *(*load_matrix)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int, PyObject *, PyObject *, PyObject *, int __pyx_skip_dispatch);
+  PyObject *(*set_row_bnds)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch);
+  PyObject *(*set_col_bnds)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch);
+  PyObject *(*set_obj_coef)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, double, int __pyx_skip_dispatch);
+  int (*simplex)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
+  int (*status)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
+  double (*get_col_prim)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
+  double (*get_obj_val)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch);
+  PyObject *(*set_col_stat)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, int __pyx_skip_dispatch);
+  double (*get_row_dual)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch);
 };
-static struct __pyx_vtabstruct_5_glpk_GLPKSolver *__pyx_vtabptr_5_glpk_GLPKSolver;
+static struct __pyx_vtabstruct_5pyene_7engines_5_glpk_GLPKSolver *__pyx_vtabptr_5pyene_7engines_5_glpk_GLPKSolver;
 
 /* --- Runtime support code (head) --- */
 /* Refnanny.proto */
@@ -1131,27 +1141,8 @@ static CYTHON_INLINE int __Pyx_PyDict_ContainsTF(PyObject* item, PyObject* dict,
     return unlikely(result < 0) ? result : (result == (eq == Py_EQ));
 }
 
-/* PyObjectFormatSimple.proto */
-#if CYTHON_COMPILING_IN_PYPY
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
-#elif PY_MAJOR_VERSION < 3
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        likely(PyString_CheckExact(s)) ? PyUnicode_FromEncodedObject(s, NULL, "strict") :\
-        PyObject_Format(s, f))
-#elif CYTHON_USE_TYPE_SLOTS
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        likely(PyLong_CheckExact(s)) ? PyLong_Type.tp_str(s) :\
-        likely(PyFloat_CheckExact(s)) ? PyFloat_Type.tp_str(s) :\
-        PyObject_Format(s, f))
-#else
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
-#endif
+/* PyUnicode_Unicode.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyUnicode_Unicode(PyObject *obj);
 
 /* IncludeStringH.proto */
 #include <string.h>
@@ -1265,18 +1256,8 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
 
-/* Print.proto */
-static int __Pyx_Print(PyObject*, PyObject *, int);
-#if CYTHON_COMPILING_IN_PYPY || PY_MAJOR_VERSION >= 3
-static PyObject* __pyx_print = 0;
-static PyObject* __pyx_print_kwargs = 0;
-#endif
-
 /* CIntFromPy.proto */
 static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
-
-/* PrintOne.proto */
-static int __Pyx_PrintOne(PyObject* stream, PyObject *o);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
@@ -1303,18 +1284,20 @@ static int __Pyx_check_binary_version(void);
 /* InitStrings.proto */
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction, int __pyx_skip_dispatch); /* proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch); /* proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch); /* proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values, int __pyx_skip_dispatch); /* proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy, int __pyx_skip_dispatch); /* proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch); /* proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch); /* proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef, int __pyx_skip_dispatch); /* proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
-static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, int __pyx_skip_dispatch); /* proto*/
-static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction, int __pyx_skip_dispatch); /* proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch); /* proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef, int __pyx_skip_dispatch); /* proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_status(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, int __pyx_skip_dispatch); /* proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_stat(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, int __pyx_skip_dispatch); /* proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_row_dual(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, int __pyx_skip_dispatch); /* proto*/
 
 /* Module declarations from 'libc.string' */
 
@@ -1322,15 +1305,16 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
 
 /* Module declarations from 'libc.float' */
 
-/* Module declarations from '_glpk' */
-static PyTypeObject *__pyx_ptype_5_glpk_GLPKSolver = 0;
-static double __pyx_v_5_glpk_inf;
-static int __pyx_f_5_glpk_term_hook(void *, char const *); /*proto*/
-#define __Pyx_MODULE_NAME "_glpk"
-extern int __pyx_module_is_main__glpk;
-int __pyx_module_is_main__glpk = 0;
+/* Module declarations from 'pyene.engines._glpk' */
+static PyTypeObject *__pyx_ptype_5pyene_7engines_5_glpk_GLPKSolver = 0;
+static double __pyx_v_5pyene_7engines_5_glpk_inf;
+static int __pyx_f_5pyene_7engines_5_glpk_term_hook(void *, char const *); /*proto*/
+#define __Pyx_MODULE_NAME "pyene.engines._glpk"
+extern int __pyx_module_is_main_pyene__engines___glpk;
+int __pyx_module_is_main_pyene__engines___glpk = 0;
 
-/* Implementation of '_glpk' */
+/* Implementation of 'pyene.engines._glpk' */
+static PyObject *__pyx_builtin_print;
 static PyObject *__pyx_builtin_KeyError;
 static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_ValueError;
@@ -1340,17 +1324,16 @@ static const char __pyx_k_lb[] = "lb";
 static const char __pyx_k_ne[] = "ne";
 static const char __pyx_k_ub[] = "ub";
 static const char __pyx_k_all[] = "all";
-static const char __pyx_k_end[] = "end";
 static const char __pyx_k_inf[] = "inf";
 static const char __pyx_k_max[] = "max";
 static const char __pyx_k_min[] = "min";
 static const char __pyx_k_num[] = "num";
 static const char __pyx_k_off[] = "off";
+static const char __pyx_k_None[] = "None";
 static const char __pyx_k_arpy[] = "arpy";
 static const char __pyx_k_coef[] = "coef";
 static const char __pyx_k_cols[] = "cols";
 static const char __pyx_k_dual[] = "dual";
-static const char __pyx_k_file[] = "file";
 static const char __pyx_k_free[] = "free";
 static const char __pyx_k_iapy[] = "iapy";
 static const char __pyx_k_japy[] = "japy";
@@ -1359,6 +1342,7 @@ static const char __pyx_k_name[] = "name";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_type[] = "type";
 static const char __pyx_k_UTF_8[] = "UTF-8";
+static const char __pyx_k_basic[] = "basic";
 static const char __pyx_k_debug[] = "debug";
 static const char __pyx_k_error[] = "error";
 static const char __pyx_k_fixed[] = "fixed";
@@ -1391,6 +1375,7 @@ static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_GLPKSolver[] = "GLPKSolver";
+static const char __pyx_k_GLP_STATUS[] = "GLP_STATUS";
 static const char __pyx_k_ValueError[] = "ValueError";
 static const char __pyx_k_and_values[] = ") and `values` (";
 static const char __pyx_k_col_offset[] = "col_offset";
@@ -1404,13 +1389,19 @@ static const char __pyx_k_get_obj_val[] = "get_obj_val";
 static const char __pyx_k_load_matrix[] = "load_matrix";
 static const char __pyx_k_set_mat_row[] = "set_mat_row";
 static const char __pyx_k_get_col_prim[] = "get_col_prim";
+static const char __pyx_k_get_row_dual[] = "get_row_dual";
 static const char __pyx_k_invalid_data[] = "invalid data";
+static const char __pyx_k_nonbasicfree[] = "nonbasicfree";
 static const char __pyx_k_set_col_bnds[] = "set_col_bnds";
+static const char __pyx_k_set_col_stat[] = "set_col_stat";
 static const char __pyx_k_set_obj_coef[] = "set_obj_coef";
 static const char __pyx_k_set_row_bnds[] = "set_row_bnds";
 static const char __pyx_k_GLP_BND_TYPES[] = "GLP_BND_TYPES";
 static const char __pyx_k_invalid_basis[] = "invalid basis";
 static const char __pyx_k_message_level[] = "message_level";
+static const char __pyx_k_nonbasicfixed[] = "nonbasicfixed";
+static const char __pyx_k_nonbasiclower[] = "nonbasiclower";
+static const char __pyx_k_nonbasicupper[] = "nonbasicupper";
 static const char __pyx_k_reduce_cython[] = "__reduce_cython__";
 static const char __pyx_k_solver_failed[] = "solver failed";
 static const char __pyx_k_status_string[] = "status_string";
@@ -1449,90 +1440,97 @@ static const char __pyx_k_no_primal_dual_feasible_solution[] = "no primal/dual f
 static const char __pyx_k_relative_mip_gap_tolerance_reach[] = "relative mip gap tolerance reached";
 static const char __pyx_k_search_terminated_by_application[] = "search terminated by application";
 static PyObject *__pyx_kp_u_Column_name;
-static PyObject *__pyx_kp_s_Constructing_initial_basis;
+static PyObject *__pyx_kp_u_Constructing_initial_basis;
 static PyObject *__pyx_n_s_GLPKSolver;
 static PyObject *__pyx_n_s_GLP_BND_TYPES;
 static PyObject *__pyx_n_s_GLP_DIR;
 static PyObject *__pyx_n_s_GLP_METH;
+static PyObject *__pyx_n_s_GLP_STATUS;
 static PyObject *__pyx_n_s_KeyError;
+static PyObject *__pyx_kp_u_None;
 static PyObject *__pyx_kp_u_Row_name;
-static PyObject *__pyx_kp_s_Size_of_triangular_part_is;
+static PyObject *__pyx_kp_u_Size_of_triangular_part_is;
 static PyObject *__pyx_kp_u_The_length_of_the_cols;
 static PyObject *__pyx_n_s_TypeError;
-static PyObject *__pyx_kp_s_UTF_8;
+static PyObject *__pyx_kp_u_UTF_8;
 static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_n_s_add_cols;
 static PyObject *__pyx_n_s_add_rows;
-static PyObject *__pyx_n_s_all;
+static PyObject *__pyx_n_u_all;
 static PyObject *__pyx_kp_u_already_exists;
 static PyObject *__pyx_kp_u_and_values;
 static PyObject *__pyx_kp_u_arguments_mut_be_the_same;
 static PyObject *__pyx_n_s_arpy;
-static PyObject *__pyx_n_s_bounded;
+static PyObject *__pyx_n_u_basic;
+static PyObject *__pyx_n_u_bounded;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_coef;
 static PyObject *__pyx_n_s_col_offset;
 static PyObject *__pyx_n_s_cols;
-static PyObject *__pyx_n_s_debug;
+static PyObject *__pyx_n_u_debug;
 static PyObject *__pyx_n_s_decode;
-static PyObject *__pyx_n_s_dual;
-static PyObject *__pyx_n_s_dualprimal;
-static PyObject *__pyx_n_s_end;
+static PyObject *__pyx_n_u_dual;
+static PyObject *__pyx_n_u_dualprimal;
 static PyObject *__pyx_n_s_enumerate;
-static PyObject *__pyx_n_s_error;
-static PyObject *__pyx_n_s_file;
-static PyObject *__pyx_n_s_fixed;
-static PyObject *__pyx_n_s_free;
+static PyObject *__pyx_n_u_error;
+static PyObject *__pyx_n_u_fixed;
+static PyObject *__pyx_n_u_free;
 static PyObject *__pyx_n_s_get_col_prim;
 static PyObject *__pyx_n_s_get_obj_val;
+static PyObject *__pyx_n_s_get_row_dual;
 static PyObject *__pyx_n_s_getstate;
 static PyObject *__pyx_n_s_iapy;
-static PyObject *__pyx_kp_s_ill_conditioned_matrix;
-static PyObject *__pyx_n_s_inf;
-static PyObject *__pyx_kp_s_invalid_basis;
-static PyObject *__pyx_kp_s_invalid_bounds;
-static PyObject *__pyx_kp_s_invalid_data;
+static PyObject *__pyx_kp_u_ill_conditioned_matrix;
+static PyObject *__pyx_n_u_inf;
+static PyObject *__pyx_kp_u_invalid_basis;
+static PyObject *__pyx_kp_u_invalid_bounds;
+static PyObject *__pyx_kp_u_invalid_data;
 static PyObject *__pyx_n_s_iteration_limit;
-static PyObject *__pyx_kp_s_iteration_limit_exceeded;
+static PyObject *__pyx_kp_u_iteration_limit_exceeded;
 static PyObject *__pyx_n_s_japy;
 static PyObject *__pyx_n_s_lb;
 static PyObject *__pyx_n_s_load_matrix;
-static PyObject *__pyx_n_s_lower;
+static PyObject *__pyx_n_u_lower;
 static PyObject *__pyx_n_s_main;
-static PyObject *__pyx_n_s_max;
-static PyObject *__pyx_n_s_maximise;
+static PyObject *__pyx_n_u_max;
+static PyObject *__pyx_n_u_maximise;
 static PyObject *__pyx_n_s_message_level;
 static PyObject *__pyx_n_s_message_levels;
-static PyObject *__pyx_n_s_min;
-static PyObject *__pyx_n_s_minimise;
+static PyObject *__pyx_n_u_min;
+static PyObject *__pyx_n_u_minimise;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_name_2;
 static PyObject *__pyx_n_s_ne;
-static PyObject *__pyx_kp_s_no_convergence;
+static PyObject *__pyx_kp_u_no_convergence;
 static PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
-static PyObject *__pyx_kp_s_no_dual_feasible_solution;
-static PyObject *__pyx_kp_s_no_feasible_solution_exists;
-static PyObject *__pyx_kp_s_no_primal_dual_feasible_solution;
-static PyObject *__pyx_kp_s_no_primal_feasible_solution;
-static PyObject *__pyx_n_s_normal;
+static PyObject *__pyx_kp_u_no_dual_feasible_solution;
+static PyObject *__pyx_kp_u_no_feasible_solution_exists;
+static PyObject *__pyx_kp_u_no_primal_dual_feasible_solution;
+static PyObject *__pyx_kp_u_no_primal_feasible_solution;
+static PyObject *__pyx_n_u_nonbasicfixed;
+static PyObject *__pyx_n_u_nonbasicfree;
+static PyObject *__pyx_n_u_nonbasiclower;
+static PyObject *__pyx_n_u_nonbasicupper;
+static PyObject *__pyx_n_u_normal;
 static PyObject *__pyx_n_s_num;
-static PyObject *__pyx_kp_s_numerical_instability;
-static PyObject *__pyx_kp_s_objective_lower_limit_reached;
-static PyObject *__pyx_kp_s_objective_upper_limit_reached;
-static PyObject *__pyx_n_s_off;
-static PyObject *__pyx_n_s_primal;
+static PyObject *__pyx_kp_u_numerical_instability;
+static PyObject *__pyx_kp_u_objective_lower_limit_reached;
+static PyObject *__pyx_kp_u_objective_upper_limit_reached;
+static PyObject *__pyx_n_u_off;
+static PyObject *__pyx_n_u_primal;
 static PyObject *__pyx_n_s_print;
 static PyObject *__pyx_n_s_pyx_vtable;
 static PyObject *__pyx_n_s_range;
 static PyObject *__pyx_n_s_reduce;
 static PyObject *__pyx_n_s_reduce_cython;
 static PyObject *__pyx_n_s_reduce_ex;
-static PyObject *__pyx_kp_s_relative_mip_gap_tolerance_reach;
-static PyObject *__pyx_kp_s_result_out_of_range;
-static PyObject *__pyx_kp_s_root_LP_optimum_not_provided;
+static PyObject *__pyx_kp_u_relative_mip_gap_tolerance_reach;
+static PyObject *__pyx_kp_u_result_out_of_range;
+static PyObject *__pyx_kp_u_root_LP_optimum_not_provided;
 static PyObject *__pyx_n_s_row_offset;
-static PyObject *__pyx_kp_s_search_terminated_by_application;
+static PyObject *__pyx_kp_u_search_terminated_by_application;
 static PyObject *__pyx_n_s_set_col_bnds;
+static PyObject *__pyx_n_s_set_col_stat;
 static PyObject *__pyx_n_s_set_dir;
 static PyObject *__pyx_n_s_set_mat_row;
 static PyObject *__pyx_n_s_set_obj_coef;
@@ -1542,52 +1540,54 @@ static PyObject *__pyx_n_s_setstate_cython;
 static PyObject *__pyx_n_s_simplex;
 static PyObject *__pyx_n_s_simplex_method;
 static PyObject *__pyx_n_s_simplex_status_string;
-static PyObject *__pyx_kp_s_singular_matrix;
-static PyObject *__pyx_kp_s_solution_is_feasible;
-static PyObject *__pyx_kp_s_solution_is_infeasible;
-static PyObject *__pyx_kp_s_solution_is_optimal;
-static PyObject *__pyx_kp_s_solution_is_unbounded;
-static PyObject *__pyx_kp_s_solution_is_undefined;
-static PyObject *__pyx_kp_s_solver_failed;
+static PyObject *__pyx_kp_u_singular_matrix;
+static PyObject *__pyx_kp_u_solution_is_feasible;
+static PyObject *__pyx_kp_u_solution_is_infeasible;
+static PyObject *__pyx_kp_u_solution_is_optimal;
+static PyObject *__pyx_kp_u_solution_is_unbounded;
+static PyObject *__pyx_kp_u_solution_is_undefined;
+static PyObject *__pyx_kp_u_solver_failed;
 static PyObject *__pyx_n_s_startswith;
 static PyObject *__pyx_n_s_status;
 static PyObject *__pyx_n_s_status_string;
 static PyObject *__pyx_n_s_strip;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_time_limit;
-static PyObject *__pyx_kp_s_time_limit_exceeded;
+static PyObject *__pyx_kp_u_time_limit_exceeded;
 static PyObject *__pyx_n_s_type;
 static PyObject *__pyx_n_s_ub;
-static PyObject *__pyx_n_s_upper;
+static PyObject *__pyx_n_u_upper;
 static PyObject *__pyx_n_s_values;
-static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_time_limit, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_message_level, PyObject *__pyx_v_simplex_method); /* proto */
-static void __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_5stats___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_32__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_tp_new_5_glpk_GLPKSolver(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static int __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static int __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_time_limit, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_message_level, PyObject *__pyx_v_simplex_method); /* proto */
+static void __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_30set_col_stat(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_32get_row_dual(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_5stats___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_34__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_36__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_tp_new_5pyene_7engines_5_glpk_GLPKSolver(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_int_0;
 static PyObject *__pyx_int_1;
 static PyObject *__pyx_tuple_;
 static PyObject *__pyx_tuple__2;
 /* Late includes */
 
-/* "glpk.pxi":36
+/* "pyene/engines/glpk.pxi":36
  * ]
  * 
  * cdef int term_hook(void *info, const char *s):             # <<<<<<<<<<<<<<
@@ -1595,7 +1595,7 @@ static PyObject *__pyx_tuple__2;
  *     # TODO make this use logging.
  */
 
-static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const *__pyx_v_s) {
+static int __pyx_f_5pyene_7engines_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const *__pyx_v_s) {
   PyObject *__pyx_v_message = NULL;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -1606,16 +1606,16 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("term_hook", 0);
 
-  /* "glpk.pxi":39
+  /* "pyene/engines/glpk.pxi":39
  *     """ Callback function to print GLPK messages through Python's print function """
  *     # TODO make this use logging.
  *     message = s.strip().decode('UTF-8')             # <<<<<<<<<<<<<<
  *     if message.startswith("Constructing initial basis"):
  *         pass
  */
-  __pyx_t_3 = __Pyx_PyBytes_FromString(__pyx_v_s); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 39, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyBytes_FromString(__pyx_v_s); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_strip); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 39, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_strip); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -1630,10 +1630,10 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
   }
   __pyx_t_2 = (__pyx_t_3) ? __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3) : __Pyx_PyObject_CallNoArg(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (unlikely(!__pyx_t_2)) __PYX_ERR(2, 39, __pyx_L1_error)
+  if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_decode); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 39, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_decode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -1646,22 +1646,22 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
       __Pyx_DECREF_SET(__pyx_t_4, function);
     }
   }
-  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_s_UTF_8) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_s_UTF_8);
+  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_u_UTF_8) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_u_UTF_8);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 39, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_message = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "glpk.pxi":40
+  /* "pyene/engines/glpk.pxi":40
  *     # TODO make this use logging.
  *     message = s.strip().decode('UTF-8')
  *     if message.startswith("Constructing initial basis"):             # <<<<<<<<<<<<<<
  *         pass
  *     elif message.startswith("Size of triangular part is"):
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_message, __pyx_n_s_startswith); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 40, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_message, __pyx_n_s_startswith); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_2 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -1673,25 +1673,25 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
       __Pyx_DECREF_SET(__pyx_t_4, function);
     }
   }
-  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_s_Constructing_initial_basis) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_s_Constructing_initial_basis);
+  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_u_Constructing_initial_basis) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_u_Constructing_initial_basis);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 40, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(2, 40, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 40, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (__pyx_t_5) {
     goto __pyx_L3;
   }
 
-  /* "glpk.pxi":42
+  /* "pyene/engines/glpk.pxi":42
  *     if message.startswith("Constructing initial basis"):
  *         pass
  *     elif message.startswith("Size of triangular part is"):             # <<<<<<<<<<<<<<
  *         pass
  *     else:
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_message, __pyx_n_s_startswith); if (unlikely(!__pyx_t_4)) __PYX_ERR(2, 42, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_message, __pyx_n_s_startswith); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_2 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -1703,18 +1703,18 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
       __Pyx_DECREF_SET(__pyx_t_4, function);
     }
   }
-  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_s_Size_of_triangular_part_is) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_s_Size_of_triangular_part_is);
+  __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_2, __pyx_kp_u_Size_of_triangular_part_is) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_kp_u_Size_of_triangular_part_is);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 42, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(2, 42, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_5 < 0)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (__pyx_t_5) {
     goto __pyx_L3;
   }
 
-  /* "glpk.pxi":45
+  /* "pyene/engines/glpk.pxi":45
  *         pass
  *     else:
  *         print(message)             # <<<<<<<<<<<<<<
@@ -1722,11 +1722,13 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
  * 
  */
   /*else*/ {
-    if (__Pyx_PrintOne(0, __pyx_v_message) < 0) __PYX_ERR(2, 45, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_print, __pyx_v_message); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
   __pyx_L3:;
 
-  /* "glpk.pxi":46
+  /* "pyene/engines/glpk.pxi":46
  *     else:
  *         print(message)
  *     return 1             # <<<<<<<<<<<<<<
@@ -1736,7 +1738,7 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
   __pyx_r = 1;
   goto __pyx_L0;
 
-  /* "glpk.pxi":36
+  /* "pyene/engines/glpk.pxi":36
  * ]
  * 
  * cdef int term_hook(void *info, const char *s):             # <<<<<<<<<<<<<<
@@ -1750,7 +1752,7 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_WriteUnraisable("_glpk.term_hook", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.term_hook", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_message);
@@ -1758,7 +1760,7 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
   return __pyx_r;
 }
 
-/* "glpk.pxi":49
+/* "pyene/engines/glpk.pxi":49
  * 
  * 
  * cdef inline int constraint_type(double a, double b):             # <<<<<<<<<<<<<<
@@ -1766,13 +1768,13 @@ static int __pyx_f_5_glpk_term_hook(CYTHON_UNUSED void *__pyx_v_info, char const
  *         return GLP_FX
  */
 
-static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double __pyx_v_b) {
+static CYTHON_INLINE int __pyx_f_5pyene_7engines_5_glpk_constraint_type(double __pyx_v_a, double __pyx_v_b) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("constraint_type", 0);
 
-  /* "glpk.pxi":50
+  /* "pyene/engines/glpk.pxi":50
  * 
  * cdef inline int constraint_type(double a, double b):
  *     if a == b:             # <<<<<<<<<<<<<<
@@ -1782,7 +1784,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
   __pyx_t_1 = ((__pyx_v_a == __pyx_v_b) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":51
+    /* "pyene/engines/glpk.pxi":51
  * cdef inline int constraint_type(double a, double b):
  *     if a == b:
  *         return GLP_FX             # <<<<<<<<<<<<<<
@@ -1792,7 +1794,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
     __pyx_r = GLP_FX;
     goto __pyx_L0;
 
-    /* "glpk.pxi":50
+    /* "pyene/engines/glpk.pxi":50
  * 
  * cdef inline int constraint_type(double a, double b):
  *     if a == b:             # <<<<<<<<<<<<<<
@@ -1801,7 +1803,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
  */
   }
 
-  /* "glpk.pxi":52
+  /* "pyene/engines/glpk.pxi":52
  *     if a == b:
  *         return GLP_FX
  *     elif b == DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1811,7 +1813,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
   __pyx_t_1 = ((__pyx_v_b == DBL_MAX) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":53
+    /* "pyene/engines/glpk.pxi":53
  *         return GLP_FX
  *     elif b == DBL_MAX:
  *         if a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1821,7 +1823,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
     __pyx_t_1 = ((__pyx_v_a == (-DBL_MAX)) != 0);
     if (__pyx_t_1) {
 
-      /* "glpk.pxi":54
+      /* "pyene/engines/glpk.pxi":54
  *     elif b == DBL_MAX:
  *         if a == -DBL_MAX:
  *             return GLP_FR             # <<<<<<<<<<<<<<
@@ -1831,7 +1833,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
       __pyx_r = GLP_FR;
       goto __pyx_L0;
 
-      /* "glpk.pxi":53
+      /* "pyene/engines/glpk.pxi":53
  *         return GLP_FX
  *     elif b == DBL_MAX:
  *         if a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1840,7 +1842,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
  */
     }
 
-    /* "glpk.pxi":56
+    /* "pyene/engines/glpk.pxi":56
  *             return GLP_FR
  *         else:
  *             return GLP_LO             # <<<<<<<<<<<<<<
@@ -1852,7 +1854,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
       goto __pyx_L0;
     }
 
-    /* "glpk.pxi":52
+    /* "pyene/engines/glpk.pxi":52
  *     if a == b:
  *         return GLP_FX
  *     elif b == DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1861,7 +1863,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
  */
   }
 
-  /* "glpk.pxi":57
+  /* "pyene/engines/glpk.pxi":57
  *         else:
  *             return GLP_LO
  *     elif a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1871,7 +1873,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
   __pyx_t_1 = ((__pyx_v_a == (-DBL_MAX)) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":58
+    /* "pyene/engines/glpk.pxi":58
  *             return GLP_LO
  *     elif a == -DBL_MAX:
  *         return GLP_UP             # <<<<<<<<<<<<<<
@@ -1881,7 +1883,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
     __pyx_r = GLP_UP;
     goto __pyx_L0;
 
-    /* "glpk.pxi":57
+    /* "pyene/engines/glpk.pxi":57
  *         else:
  *             return GLP_LO
  *     elif a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1890,7 +1892,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
  */
   }
 
-  /* "glpk.pxi":60
+  /* "pyene/engines/glpk.pxi":60
  *         return GLP_UP
  *     else:
  *         return GLP_DB             # <<<<<<<<<<<<<<
@@ -1902,7 +1904,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
     goto __pyx_L0;
   }
 
-  /* "glpk.pxi":49
+  /* "pyene/engines/glpk.pxi":49
  * 
  * 
  * cdef inline int constraint_type(double a, double b):             # <<<<<<<<<<<<<<
@@ -1916,7 +1918,7 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
   return __pyx_r;
 }
 
-/* "glpk.pxi":64
+/* "pyene/engines/glpk.pxi":64
  * cdef double inf = float('inf')
  * 
  * cdef inline double dbl_max_to_inf(double a):             # <<<<<<<<<<<<<<
@@ -1924,13 +1926,13 @@ static CYTHON_INLINE int __pyx_f_5_glpk_constraint_type(double __pyx_v_a, double
  *         return inf
  */
 
-static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
+static CYTHON_INLINE double __pyx_f_5pyene_7engines_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("dbl_max_to_inf", 0);
 
-  /* "glpk.pxi":65
+  /* "pyene/engines/glpk.pxi":65
  * 
  * cdef inline double dbl_max_to_inf(double a):
  *     if a == DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1940,17 +1942,17 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
   __pyx_t_1 = ((__pyx_v_a == DBL_MAX) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":66
+    /* "pyene/engines/glpk.pxi":66
  * cdef inline double dbl_max_to_inf(double a):
  *     if a == DBL_MAX:
  *         return inf             # <<<<<<<<<<<<<<
  *     elif a == -DBL_MAX:
  *         return -inf
  */
-    __pyx_r = __pyx_v_5_glpk_inf;
+    __pyx_r = __pyx_v_5pyene_7engines_5_glpk_inf;
     goto __pyx_L0;
 
-    /* "glpk.pxi":65
+    /* "pyene/engines/glpk.pxi":65
  * 
  * cdef inline double dbl_max_to_inf(double a):
  *     if a == DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1959,7 +1961,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
  */
   }
 
-  /* "glpk.pxi":67
+  /* "pyene/engines/glpk.pxi":67
  *     if a == DBL_MAX:
  *         return inf
  *     elif a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1969,17 +1971,17 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
   __pyx_t_1 = ((__pyx_v_a == (-DBL_MAX)) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":68
+    /* "pyene/engines/glpk.pxi":68
  *         return inf
  *     elif a == -DBL_MAX:
  *         return -inf             # <<<<<<<<<<<<<<
  *     return a
  * 
  */
-    __pyx_r = (-__pyx_v_5_glpk_inf);
+    __pyx_r = (-__pyx_v_5pyene_7engines_5_glpk_inf);
     goto __pyx_L0;
 
-    /* "glpk.pxi":67
+    /* "pyene/engines/glpk.pxi":67
  *     if a == DBL_MAX:
  *         return inf
  *     elif a == -DBL_MAX:             # <<<<<<<<<<<<<<
@@ -1988,7 +1990,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
  */
   }
 
-  /* "glpk.pxi":69
+  /* "pyene/engines/glpk.pxi":69
  *     elif a == -DBL_MAX:
  *         return -inf
  *     return a             # <<<<<<<<<<<<<<
@@ -1998,7 +2000,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
   __pyx_r = __pyx_v_a;
   goto __pyx_L0;
 
-  /* "glpk.pxi":64
+  /* "pyene/engines/glpk.pxi":64
  * cdef double inf = float('inf')
  * 
  * cdef inline double dbl_max_to_inf(double a):             # <<<<<<<<<<<<<<
@@ -2012,7 +2014,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
   return __pyx_r;
 }
 
-/* "glpk.pxi":71
+/* "pyene/engines/glpk.pxi":71
  *     return a
  * 
  * cdef inline double inf_to_dbl_max(double a):             # <<<<<<<<<<<<<<
@@ -2020,23 +2022,23 @@ static CYTHON_INLINE double __pyx_f_5_glpk_dbl_max_to_inf(double __pyx_v_a) {
  *         return DBL_MAX
  */
 
-static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
+static CYTHON_INLINE double __pyx_f_5pyene_7engines_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("inf_to_dbl_max", 0);
 
-  /* "glpk.pxi":72
+  /* "pyene/engines/glpk.pxi":72
  * 
  * cdef inline double inf_to_dbl_max(double a):
  *     if a == inf:             # <<<<<<<<<<<<<<
  *         return DBL_MAX
  *     elif a == -inf:
  */
-  __pyx_t_1 = ((__pyx_v_a == __pyx_v_5_glpk_inf) != 0);
+  __pyx_t_1 = ((__pyx_v_a == __pyx_v_5pyene_7engines_5_glpk_inf) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":73
+    /* "pyene/engines/glpk.pxi":73
  * cdef inline double inf_to_dbl_max(double a):
  *     if a == inf:
  *         return DBL_MAX             # <<<<<<<<<<<<<<
@@ -2046,7 +2048,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
     __pyx_r = DBL_MAX;
     goto __pyx_L0;
 
-    /* "glpk.pxi":72
+    /* "pyene/engines/glpk.pxi":72
  * 
  * cdef inline double inf_to_dbl_max(double a):
  *     if a == inf:             # <<<<<<<<<<<<<<
@@ -2055,17 +2057,17 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
  */
   }
 
-  /* "glpk.pxi":74
+  /* "pyene/engines/glpk.pxi":74
  *     if a == inf:
  *         return DBL_MAX
  *     elif a == -inf:             # <<<<<<<<<<<<<<
  *         return -DBL_MAX
  *     return a
  */
-  __pyx_t_1 = ((__pyx_v_a == (-__pyx_v_5_glpk_inf)) != 0);
+  __pyx_t_1 = ((__pyx_v_a == (-__pyx_v_5pyene_7engines_5_glpk_inf)) != 0);
   if (__pyx_t_1) {
 
-    /* "glpk.pxi":75
+    /* "pyene/engines/glpk.pxi":75
  *         return DBL_MAX
  *     elif a == -inf:
  *         return -DBL_MAX             # <<<<<<<<<<<<<<
@@ -2075,7 +2077,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
     __pyx_r = (-DBL_MAX);
     goto __pyx_L0;
 
-    /* "glpk.pxi":74
+    /* "pyene/engines/glpk.pxi":74
  *     if a == inf:
  *         return DBL_MAX
  *     elif a == -inf:             # <<<<<<<<<<<<<<
@@ -2084,7 +2086,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
  */
   }
 
-  /* "glpk.pxi":76
+  /* "pyene/engines/glpk.pxi":76
  *     elif a == -inf:
  *         return -DBL_MAX
  *     return a             # <<<<<<<<<<<<<<
@@ -2094,7 +2096,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
   __pyx_r = __pyx_v_a;
   goto __pyx_L0;
 
-  /* "glpk.pxi":71
+  /* "pyene/engines/glpk.pxi":71
  *     return a
  * 
  * cdef inline double inf_to_dbl_max(double a):             # <<<<<<<<<<<<<<
@@ -2108,7 +2110,7 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
   return __pyx_r;
 }
 
-/* "_glpk.pyx":34
+/* "pyene/engines/_glpk.pyx":42
  *     cdef readonly  dict stats
  * 
  *     def __cinit__(self):             # <<<<<<<<<<<<<<
@@ -2117,28 +2119,28 @@ static CYTHON_INLINE double __pyx_f_5_glpk_inf_to_dbl_max(double __pyx_v_a) {
  */
 
 /* Python wrapper */
-static int __pyx_pw_5_glpk_10GLPKSolver_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_5_glpk_10GLPKSolver_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
   if (unlikely(PyTuple_GET_SIZE(__pyx_args) > 0)) {
     __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 0, 0, PyTuple_GET_SIZE(__pyx_args)); return -1;}
   if (unlikely(__pyx_kwds) && unlikely(PyDict_Size(__pyx_kwds) > 0) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__cinit__", 0))) return -1;
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver___cinit__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver___cinit__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static int __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "_glpk.pyx":36
+  /* "pyene/engines/_glpk.pyx":44
  *     def __cinit__(self):
  *         # create a new problem
  *         self.prob = glp_create_prob()             # <<<<<<<<<<<<<<
@@ -2147,14 +2149,14 @@ static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSo
  */
   __pyx_v_self->prob = glp_create_prob();
 
-  /* "_glpk.pyx":37
+  /* "pyene/engines/_glpk.pyx":45
  *         # create a new problem
  *         self.prob = glp_create_prob()
  *         self.row_ids = {}             # <<<<<<<<<<<<<<
  *         self.col_ids = {}
  * 
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 45, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->row_ids);
@@ -2162,14 +2164,14 @@ static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSo
   __pyx_v_self->row_ids = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":38
+  /* "pyene/engines/_glpk.pyx":46
  *         self.prob = glp_create_prob()
  *         self.row_ids = {}
  *         self.col_ids = {}             # <<<<<<<<<<<<<<
  * 
  *     def __init__(self, time_limit=None, iteration_limit=None, \
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 38, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 46, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->col_ids);
@@ -2177,7 +2179,7 @@ static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSo
   __pyx_v_self->col_ids = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":34
+  /* "pyene/engines/_glpk.pyx":42
  *     cdef readonly  dict stats
  * 
  *     def __cinit__(self):             # <<<<<<<<<<<<<<
@@ -2190,14 +2192,14 @@ static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSo
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "_glpk.pyx":40
+/* "pyene/engines/_glpk.pyx":48
  *         self.col_ids = {}
  * 
  *     def __init__(self, time_limit=None, iteration_limit=None, \             # <<<<<<<<<<<<<<
@@ -2206,8 +2208,8 @@ static int __pyx_pf_5_glpk_10GLPKSolver___cinit__(struct __pyx_obj_5_glpk_GLPKSo
  */
 
 /* Python wrapper */
-static int __pyx_pw_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_time_limit = 0;
   PyObject *__pyx_v_iteration_limit = 0;
   PyObject *__pyx_v_message_level = 0;
@@ -2220,8 +2222,8 @@ static int __pyx_pw_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObje
     PyObject* values[4] = {0,0,0,0};
     values[0] = ((PyObject *)Py_None);
     values[1] = ((PyObject *)Py_None);
-    values[2] = ((PyObject *)__pyx_n_s_error);
-    values[3] = ((PyObject *)__pyx_n_s_dualprimal);
+    values[2] = ((PyObject *)__pyx_n_u_error);
+    values[3] = ((PyObject *)__pyx_n_u_dualprimal);
     if (unlikely(__pyx_kwds)) {
       Py_ssize_t kw_args;
       const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
@@ -2264,7 +2266,7 @@ static int __pyx_pw_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObje
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 40, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(1, 48, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -2287,20 +2289,20 @@ static int __pyx_pw_5_glpk_10GLPKSolver_3__init__(PyObject *__pyx_v_self, PyObje
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 0, 0, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 40, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 0, 0, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 48, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_2__init__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_time_limit, __pyx_v_iteration_limit, __pyx_v_message_level, __pyx_v_simplex_method);
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_2__init__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_time_limit, __pyx_v_iteration_limit, __pyx_v_message_level, __pyx_v_simplex_method);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_time_limit, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_message_level, PyObject *__pyx_v_simplex_method) {
+static int __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_time_limit, PyObject *__pyx_v_iteration_limit, PyObject *__pyx_v_message_level, PyObject *__pyx_v_simplex_method) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2310,7 +2312,7 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
   int __pyx_t_5;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "_glpk.pyx":43
+  /* "pyene/engines/_glpk.pyx":51
  *         message_level='error', simplex_method='dualprimal'):
  * 
  *         self.stats = None             # <<<<<<<<<<<<<<
@@ -2323,7 +2325,7 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
   __Pyx_DECREF(__pyx_v_self->stats);
   __pyx_v_self->stats = ((PyObject*)Py_None);
 
-  /* "_glpk.pyx":46
+  /* "pyene/engines/_glpk.pyx":54
  * 
  *         # Set solver options
  *         glp_init_smcp(&self.smcp)             # <<<<<<<<<<<<<<
@@ -2332,23 +2334,23 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
  */
   glp_init_smcp((&__pyx_v_self->smcp));
 
-  /* "_glpk.pyx":47
+  /* "pyene/engines/_glpk.pyx":55
  *         # Set solver options
  *         glp_init_smcp(&self.smcp)
  *         self.smcp.msg_lev = message_levels[message_level]             # <<<<<<<<<<<<<<
  *         if time_limit is not None:
  *             self.smcp.tm_lim = time_limit  # 5 second limit
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_message_levels); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_message_levels); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 55, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_message_level); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 47, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_message_level); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 55, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 47, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 55, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_self->smcp.msg_lev = __pyx_t_3;
 
-  /* "_glpk.pyx":48
+  /* "pyene/engines/_glpk.pyx":56
  *         glp_init_smcp(&self.smcp)
  *         self.smcp.msg_lev = message_levels[message_level]
  *         if time_limit is not None:             # <<<<<<<<<<<<<<
@@ -2359,17 +2361,17 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
   __pyx_t_5 = (__pyx_t_4 != 0);
   if (__pyx_t_5) {
 
-    /* "_glpk.pyx":49
+    /* "pyene/engines/_glpk.pyx":57
  *         self.smcp.msg_lev = message_levels[message_level]
  *         if time_limit is not None:
  *             self.smcp.tm_lim = time_limit  # 5 second limit             # <<<<<<<<<<<<<<
  *         if iteration_limit is not None:
  *             self.smcp.it_lim = iteration_limit
  */
-    __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_time_limit); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 49, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_time_limit); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 57, __pyx_L1_error)
     __pyx_v_self->smcp.tm_lim = __pyx_t_3;
 
-    /* "_glpk.pyx":48
+    /* "pyene/engines/_glpk.pyx":56
  *         glp_init_smcp(&self.smcp)
  *         self.smcp.msg_lev = message_levels[message_level]
  *         if time_limit is not None:             # <<<<<<<<<<<<<<
@@ -2378,7 +2380,7 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
  */
   }
 
-  /* "_glpk.pyx":50
+  /* "pyene/engines/_glpk.pyx":58
  *         if time_limit is not None:
  *             self.smcp.tm_lim = time_limit  # 5 second limit
  *         if iteration_limit is not None:             # <<<<<<<<<<<<<<
@@ -2389,17 +2391,17 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
   __pyx_t_4 = (__pyx_t_5 != 0);
   if (__pyx_t_4) {
 
-    /* "_glpk.pyx":51
+    /* "pyene/engines/_glpk.pyx":59
  *             self.smcp.tm_lim = time_limit  # 5 second limit
  *         if iteration_limit is not None:
  *             self.smcp.it_lim = iteration_limit             # <<<<<<<<<<<<<<
  * 
  *         self.smcp.meth = GLP_METH[simplex_method]
  */
-    __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_iteration_limit); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 51, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_v_iteration_limit); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 59, __pyx_L1_error)
     __pyx_v_self->smcp.it_lim = __pyx_t_3;
 
-    /* "_glpk.pyx":50
+    /* "pyene/engines/_glpk.pyx":58
  *         if time_limit is not None:
  *             self.smcp.tm_lim = time_limit  # 5 second limit
  *         if iteration_limit is not None:             # <<<<<<<<<<<<<<
@@ -2408,32 +2410,32 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
  */
   }
 
-  /* "_glpk.pyx":53
+  /* "pyene/engines/_glpk.pyx":61
  *             self.smcp.it_lim = iteration_limit
  * 
  *         self.smcp.meth = GLP_METH[simplex_method]             # <<<<<<<<<<<<<<
  * 
  *         glp_term_hook(term_hook, NULL)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_GLP_METH); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_GLP_METH); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 61, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_t_2, __pyx_v_simplex_method); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_t_2, __pyx_v_simplex_method); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 61, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 53, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 61, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_self->smcp.meth = __pyx_t_3;
 
-  /* "_glpk.pyx":55
+  /* "pyene/engines/_glpk.pyx":63
  *         self.smcp.meth = GLP_METH[simplex_method]
  * 
  *         glp_term_hook(term_hook, NULL)             # <<<<<<<<<<<<<<
  * 
  *     def __dealloc__(self):
  */
-  glp_term_hook(__pyx_f_5_glpk_term_hook, NULL);
+  glp_term_hook(__pyx_f_5pyene_7engines_5_glpk_term_hook, NULL);
 
-  /* "_glpk.pyx":40
+  /* "pyene/engines/_glpk.pyx":48
  *         self.col_ids = {}
  * 
  *     def __init__(self, time_limit=None, iteration_limit=None, \             # <<<<<<<<<<<<<<
@@ -2447,14 +2449,14 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "_glpk.pyx":57
+/* "pyene/engines/_glpk.pyx":65
  *         glp_term_hook(term_hook, NULL)
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -2463,21 +2465,21 @@ static int __pyx_pf_5_glpk_10GLPKSolver_2__init__(struct __pyx_obj_5_glpk_GLPKSo
  */
 
 /* Python wrapper */
-static void __pyx_pw_5_glpk_10GLPKSolver_5__dealloc__(PyObject *__pyx_v_self); /*proto*/
-static void __pyx_pw_5_glpk_10GLPKSolver_5__dealloc__(PyObject *__pyx_v_self) {
+static void __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5__dealloc__(PyObject *__pyx_v_self); /*proto*/
+static void __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5__dealloc__(PyObject *__pyx_v_self) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__ (wrapper)", 0);
-  __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_4__dealloc__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
 }
 
-static void __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static void __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
-  /* "_glpk.pyx":59
+  /* "pyene/engines/_glpk.pyx":67
  *     def __dealloc__(self):
  *         # free the problem
  *         glp_delete_prob(self.prob)             # <<<<<<<<<<<<<<
@@ -2486,7 +2488,7 @@ static void __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5_glpk_GL
  */
   glp_delete_prob(__pyx_v_self->prob);
 
-  /* "_glpk.pyx":57
+  /* "pyene/engines/_glpk.pyx":65
  *         glp_term_hook(term_hook, NULL)
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -2498,7 +2500,7 @@ static void __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5_glpk_GL
   __Pyx_RefNannyFinishContext();
 }
 
-/* "_glpk.pyx":61
+/* "pyene/engines/_glpk.pyx":69
  *         glp_delete_prob(self.prob)
  * 
  *     cpdef set_dir(self, direction):             # <<<<<<<<<<<<<<
@@ -2506,8 +2508,8 @@ static void __pyx_pf_5_glpk_10GLPKSolver_4__dealloc__(struct __pyx_obj_5_glpk_GL
  * 
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction, int __pyx_skip_dispatch) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2525,9 +2527,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLP
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_dir); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 61, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_dir); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 69, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_7set_dir)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7set_dir)) {
         __Pyx_XDECREF(__pyx_r);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
@@ -2542,7 +2544,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLP
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_v_direction) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_direction);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 61, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 69, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __pyx_r = __pyx_t_2;
@@ -2563,23 +2565,23 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLP
     #endif
   }
 
-  /* "_glpk.pyx":62
+  /* "pyene/engines/_glpk.pyx":70
  * 
  *     cpdef set_dir(self, direction):
  *         glp_set_obj_dir(self.prob, GLP_DIR[direction])             # <<<<<<<<<<<<<<
  * 
  *     cpdef int add_rows(self, str name, int num):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_GLP_DIR); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_GLP_DIR); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 70, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_v_direction); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 70, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 70, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   glp_set_obj_dir(__pyx_v_self->prob, __pyx_t_5);
 
-  /* "_glpk.pyx":61
+  /* "pyene/engines/_glpk.pyx":69
  *         glp_delete_prob(self.prob)
  * 
  *     cpdef set_dir(self, direction):             # <<<<<<<<<<<<<<
@@ -2595,7 +2597,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLP
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_dir", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_dir", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -2604,25 +2606,26 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_dir(struct __pyx_obj_5_glpk_GLP
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_6set_dir[] = "GLPKSolver.set_dir(self, direction)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7set_dir(PyObject *__pyx_v_self, PyObject *__pyx_v_direction) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_dir (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_6set_dir(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), ((PyObject *)__pyx_v_direction));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_6set_dir(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), ((PyObject *)__pyx_v_direction));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_direction) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("set_dir", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_set_dir(__pyx_v_self, __pyx_v_direction, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_dir(__pyx_v_self, __pyx_v_direction, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 69, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2631,7 +2634,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5_glpk_G
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_dir", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_dir", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -2639,7 +2642,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5_glpk_G
   return __pyx_r;
 }
 
-/* "_glpk.pyx":64
+/* "pyene/engines/_glpk.pyx":72
  *         glp_set_obj_dir(self.prob, GLP_DIR[direction])
  * 
  *     cpdef int add_rows(self, str name, int num):             # <<<<<<<<<<<<<<
@@ -2647,8 +2650,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_6set_dir(struct __pyx_obj_5_glpk_G
  *         if name in self.row_ids:
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch) {
   int __pyx_v_idx;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -2673,10 +2676,10 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_rows); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 64, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_rows); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 72, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_9add_rows)) {
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_num); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 64, __pyx_L1_error)
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_9add_rows)) {
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_num); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 72, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2694,7 +2697,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 64, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 72, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -2703,14 +2706,14 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 64, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 72, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 64, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 72, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           if (__pyx_t_5) {
             __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -2721,12 +2724,12 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
           __Pyx_GIVEREF(__pyx_t_3);
           PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
           __pyx_t_3 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 64, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 72, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 64, __pyx_L1_error)
+        __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 72, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2745,7 +2748,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
     #endif
   }
 
-  /* "_glpk.pyx":66
+  /* "pyene/engines/_glpk.pyx":74
  *     cpdef int add_rows(self, str name, int num):
  *         """Add new rows to the linear programme."""
  *         if name in self.row_ids:             # <<<<<<<<<<<<<<
@@ -2754,20 +2757,20 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
  */
   if (unlikely(__pyx_v_self->row_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(0, 66, __pyx_L1_error)
+    __PYX_ERR(1, 74, __pyx_L1_error)
   }
-  __pyx_t_8 = (__Pyx_PyDict_ContainsTF(__pyx_v_name, __pyx_v_self->row_ids, Py_EQ)); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 66, __pyx_L1_error)
+  __pyx_t_8 = (__Pyx_PyDict_ContainsTF(__pyx_v_name, __pyx_v_self->row_ids, Py_EQ)); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(1, 74, __pyx_L1_error)
   __pyx_t_9 = (__pyx_t_8 != 0);
   if (unlikely(__pyx_t_9)) {
 
-    /* "_glpk.pyx":67
+    /* "pyene/engines/_glpk.pyx":75
  *         """Add new rows to the linear programme."""
  *         if name in self.row_ids:
  *             raise KeyError(f'Row name "{name}" already exists.')             # <<<<<<<<<<<<<<
  *         cdef int idx = glp_add_rows(self.prob, num)
  *         self.row_ids[name] = idx
  */
-    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 67, __pyx_L1_error)
+    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 75, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_10 = 0;
     __pyx_t_11 = 127;
@@ -2775,7 +2778,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
     __pyx_t_10 += 10;
     __Pyx_GIVEREF(__pyx_kp_u_Row_name);
     PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Row_name);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_v_name, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 67, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_Unicode(__pyx_v_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 75, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_11 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_11) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_11;
     __pyx_t_10 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_2);
@@ -2786,17 +2789,17 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
     __pyx_t_10 += 17;
     __Pyx_GIVEREF(__pyx_kp_u_already_exists);
     PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_already_exists);
-    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 3, __pyx_t_10, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 67, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 3, __pyx_t_10, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 75, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_KeyError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 67, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_KeyError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 75, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 67, __pyx_L1_error)
+    __PYX_ERR(1, 75, __pyx_L1_error)
 
-    /* "_glpk.pyx":66
+    /* "pyene/engines/_glpk.pyx":74
  *     cpdef int add_rows(self, str name, int num):
  *         """Add new rows to the linear programme."""
  *         if name in self.row_ids:             # <<<<<<<<<<<<<<
@@ -2805,7 +2808,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
  */
   }
 
-  /* "_glpk.pyx":68
+  /* "pyene/engines/_glpk.pyx":76
  *         if name in self.row_ids:
  *             raise KeyError(f'Row name "{name}" already exists.')
  *         cdef int idx = glp_add_rows(self.prob, num)             # <<<<<<<<<<<<<<
@@ -2814,23 +2817,23 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
  */
   __pyx_v_idx = glp_add_rows(__pyx_v_self->prob, __pyx_v_num);
 
-  /* "_glpk.pyx":69
+  /* "pyene/engines/_glpk.pyx":77
  *             raise KeyError(f'Row name "{name}" already exists.')
  *         cdef int idx = glp_add_rows(self.prob, num)
  *         self.row_ids[name] = idx             # <<<<<<<<<<<<<<
  *         return idx
  * 
  */
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 69, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 77, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (unlikely(__pyx_v_self->row_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 69, __pyx_L1_error)
+    __PYX_ERR(1, 77, __pyx_L1_error)
   }
-  if (unlikely(PyDict_SetItem(__pyx_v_self->row_ids, __pyx_v_name, __pyx_t_1) < 0)) __PYX_ERR(0, 69, __pyx_L1_error)
+  if (unlikely(PyDict_SetItem(__pyx_v_self->row_ids, __pyx_v_name, __pyx_t_1) < 0)) __PYX_ERR(1, 77, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":70
+  /* "pyene/engines/_glpk.pyx":78
  *         cdef int idx = glp_add_rows(self.prob, num)
  *         self.row_ids[name] = idx
  *         return idx             # <<<<<<<<<<<<<<
@@ -2840,7 +2843,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
   __pyx_r = __pyx_v_idx;
   goto __pyx_L0;
 
-  /* "_glpk.pyx":64
+  /* "pyene/engines/_glpk.pyx":72
  *         glp_set_obj_dir(self.prob, GLP_DIR[direction])
  * 
  *     cpdef int add_rows(self, str name, int num):             # <<<<<<<<<<<<<<
@@ -2856,7 +2859,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -2864,9 +2867,9 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_rows(struct __pyx_obj_5_glpk_GLPKSolv
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static char __pyx_doc_5_glpk_10GLPKSolver_8add_rows[] = "Add new rows to the linear programme.";
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_8add_rows[] = "GLPKSolver.add_rows(self, unicode name, int num) -> int\nAdd new rows to the linear programme.";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_num;
   PyObject *__pyx_r = 0;
@@ -2895,11 +2898,11 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_num)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("add_rows", 1, 2, 2, 1); __PYX_ERR(0, 64, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("add_rows", 1, 2, 2, 1); __PYX_ERR(1, 72, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "add_rows") < 0)) __PYX_ERR(0, 64, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "add_rows") < 0)) __PYX_ERR(1, 72, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2908,18 +2911,18 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, 
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_num = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_num == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 64, __pyx_L3_error)
+    __pyx_v_num = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_num == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 72, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("add_rows", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 64, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("add_rows", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 72, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 64, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_8add_rows(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_num);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 72, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_8add_rows(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_num);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2930,13 +2933,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_9add_rows(PyObject *__pyx_v_self, 
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("add_rows", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5_glpk_10GLPKSolver_add_rows(__pyx_v_self, __pyx_v_name, __pyx_v_num, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_rows(__pyx_v_self, __pyx_v_name, __pyx_v_num, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 72, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2945,7 +2948,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5_glpk_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.add_rows", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -2953,7 +2956,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5_glpk_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":72
+/* "pyene/engines/_glpk.pyx":80
  *         return idx
  * 
  *     cpdef int add_cols(self, str name, int num):             # <<<<<<<<<<<<<<
@@ -2961,8 +2964,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_8add_rows(struct __pyx_obj_5_glpk_
  *         if name in self.col_ids:
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num, int __pyx_skip_dispatch) {
   int __pyx_v_idx;
   int __pyx_v_i;
   int __pyx_r;
@@ -2990,10 +2993,10 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_cols); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_cols); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 80, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_11add_cols)) {
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_num); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 72, __pyx_L1_error)
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_11add_cols)) {
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_num); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 80, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3011,7 +3014,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 80, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3020,14 +3023,14 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 80, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 72, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 80, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           if (__pyx_t_5) {
             __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -3038,12 +3041,12 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
           __Pyx_GIVEREF(__pyx_t_3);
           PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
           __pyx_t_3 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 72, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 80, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
+        __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 80, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_6;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3062,7 +3065,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
     #endif
   }
 
-  /* "_glpk.pyx":74
+  /* "pyene/engines/_glpk.pyx":82
  *     cpdef int add_cols(self, str name, int num):
  *         """Add new columns to the linear programme."""
  *         if name in self.col_ids:             # <<<<<<<<<<<<<<
@@ -3071,20 +3074,20 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
  */
   if (unlikely(__pyx_v_self->col_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(0, 74, __pyx_L1_error)
+    __PYX_ERR(1, 82, __pyx_L1_error)
   }
-  __pyx_t_8 = (__Pyx_PyDict_ContainsTF(__pyx_v_name, __pyx_v_self->col_ids, Py_EQ)); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __pyx_t_8 = (__Pyx_PyDict_ContainsTF(__pyx_v_name, __pyx_v_self->col_ids, Py_EQ)); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(1, 82, __pyx_L1_error)
   __pyx_t_9 = (__pyx_t_8 != 0);
   if (unlikely(__pyx_t_9)) {
 
-    /* "_glpk.pyx":75
+    /* "pyene/engines/_glpk.pyx":83
  *         """Add new columns to the linear programme."""
  *         if name in self.col_ids:
  *             raise KeyError(f'Column name "{name}" already exists.')             # <<<<<<<<<<<<<<
  *         cdef int idx = glp_add_cols(self.prob, num)
  *         self.col_ids[name] = idx
  */
-    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 83, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_10 = 0;
     __pyx_t_11 = 127;
@@ -3092,7 +3095,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
     __pyx_t_10 += 13;
     __Pyx_GIVEREF(__pyx_kp_u_Column_name);
     PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Column_name);
-    __pyx_t_2 = __Pyx_PyObject_FormatSimple(__pyx_v_name, __pyx_empty_unicode); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_Unicode(__pyx_v_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 83, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_11 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) > __pyx_t_11) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_2) : __pyx_t_11;
     __pyx_t_10 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_2);
@@ -3103,17 +3106,17 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
     __pyx_t_10 += 17;
     __Pyx_GIVEREF(__pyx_kp_u_already_exists);
     PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_already_exists);
-    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 3, __pyx_t_10, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 3, __pyx_t_10, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 83, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_KeyError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_KeyError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 83, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 75, __pyx_L1_error)
+    __PYX_ERR(1, 83, __pyx_L1_error)
 
-    /* "_glpk.pyx":74
+    /* "pyene/engines/_glpk.pyx":82
  *     cpdef int add_cols(self, str name, int num):
  *         """Add new columns to the linear programme."""
  *         if name in self.col_ids:             # <<<<<<<<<<<<<<
@@ -3122,7 +3125,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
  */
   }
 
-  /* "_glpk.pyx":76
+  /* "pyene/engines/_glpk.pyx":84
  *         if name in self.col_ids:
  *             raise KeyError(f'Column name "{name}" already exists.')
  *         cdef int idx = glp_add_cols(self.prob, num)             # <<<<<<<<<<<<<<
@@ -3131,23 +3134,23 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
  */
   __pyx_v_idx = glp_add_cols(__pyx_v_self->prob, __pyx_v_num);
 
-  /* "_glpk.pyx":77
+  /* "pyene/engines/_glpk.pyx":85
  *             raise KeyError(f'Column name "{name}" already exists.')
  *         cdef int idx = glp_add_cols(self.prob, num)
  *         self.col_ids[name] = idx             # <<<<<<<<<<<<<<
  * 
  *         for i in range(num):
  */
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_idx); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 85, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (unlikely(__pyx_v_self->col_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 77, __pyx_L1_error)
+    __PYX_ERR(1, 85, __pyx_L1_error)
   }
-  if (unlikely(PyDict_SetItem(__pyx_v_self->col_ids, __pyx_v_name, __pyx_t_1) < 0)) __PYX_ERR(0, 77, __pyx_L1_error)
+  if (unlikely(PyDict_SetItem(__pyx_v_self->col_ids, __pyx_v_name, __pyx_t_1) < 0)) __PYX_ERR(1, 85, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":79
+  /* "pyene/engines/_glpk.pyx":87
  *         self.col_ids[name] = idx
  * 
  *         for i in range(num):             # <<<<<<<<<<<<<<
@@ -3159,19 +3162,19 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
   for (__pyx_t_13 = 0; __pyx_t_13 < __pyx_t_12; __pyx_t_13+=1) {
     __pyx_v_i = __pyx_t_13;
 
-    /* "_glpk.pyx":80
+    /* "pyene/engines/_glpk.pyx":88
  * 
  *         for i in range(num):
  *             self.set_col_bnds(name, i, 'lower', 0.0, DBL_MAX)             # <<<<<<<<<<<<<<
  *         return idx
  * 
  */
-    __pyx_t_1 = ((struct __pyx_vtabstruct_5_glpk_GLPKSolver *)__pyx_v_self->__pyx_vtab)->set_col_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_i, __pyx_n_s_lower, 0.0, DBL_MAX, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 80, __pyx_L1_error)
+    __pyx_t_1 = ((struct __pyx_vtabstruct_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self->__pyx_vtab)->set_col_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_i, __pyx_n_u_lower, 0.0, DBL_MAX, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 88, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "_glpk.pyx":81
+  /* "pyene/engines/_glpk.pyx":89
  *         for i in range(num):
  *             self.set_col_bnds(name, i, 'lower', 0.0, DBL_MAX)
  *         return idx             # <<<<<<<<<<<<<<
@@ -3181,7 +3184,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
   __pyx_r = __pyx_v_idx;
   goto __pyx_L0;
 
-  /* "_glpk.pyx":72
+  /* "pyene/engines/_glpk.pyx":80
  *         return idx
  * 
  *     cpdef int add_cols(self, str name, int num):             # <<<<<<<<<<<<<<
@@ -3197,7 +3200,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -3205,9 +3208,9 @@ static int __pyx_f_5_glpk_10GLPKSolver_add_cols(struct __pyx_obj_5_glpk_GLPKSolv
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static char __pyx_doc_5_glpk_10GLPKSolver_10add_cols[] = "Add new columns to the linear programme.";
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_10add_cols[] = "GLPKSolver.add_cols(self, unicode name, int num) -> int\nAdd new columns to the linear programme.";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_num;
   PyObject *__pyx_r = 0;
@@ -3236,11 +3239,11 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self,
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_num)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("add_cols", 1, 2, 2, 1); __PYX_ERR(0, 72, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("add_cols", 1, 2, 2, 1); __PYX_ERR(1, 80, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "add_cols") < 0)) __PYX_ERR(0, 72, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "add_cols") < 0)) __PYX_ERR(1, 80, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3249,18 +3252,18 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self,
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_num = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_num == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L3_error)
+    __pyx_v_num = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_num == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 80, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("add_cols", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 72, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("add_cols", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 80, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 72, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_10add_cols(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_num);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 80, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_10add_cols(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_num);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3271,13 +3274,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_11add_cols(PyObject *__pyx_v_self,
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_num) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("add_cols", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5_glpk_10GLPKSolver_add_cols(__pyx_v_self, __pyx_v_name, __pyx_v_num, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 72, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_cols(__pyx_v_self, __pyx_v_name, __pyx_v_num, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 80, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3286,7 +3289,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5_glpk
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.add_cols", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -3294,7 +3297,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5_glpk
   return __pyx_r;
 }
 
-/* "_glpk.pyx":83
+/* "pyene/engines/_glpk.pyx":91
  *         return idx
  * 
  *     cpdef set_mat_row(self, str name, int row_offset, cols, values):             # <<<<<<<<<<<<<<
@@ -3302,8 +3305,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_10add_cols(struct __pyx_obj_5_glpk
  *         cdef double* val
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values, int __pyx_skip_dispatch) {
   int *__pyx_v_ind;
   double *__pyx_v_val;
   int __pyx_v_row;
@@ -3334,11 +3337,11 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_mat_row); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_mat_row); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 91, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_13set_mat_row)) {
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 83, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 91, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3356,7 +3359,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[5] = {__pyx_t_5, __pyx_v_name, __pyx_t_3, __pyx_v_cols, __pyx_v_values};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 83, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 91, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3365,14 +3368,14 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[5] = {__pyx_t_5, __pyx_v_name, __pyx_t_3, __pyx_v_cols, __pyx_v_values};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 83, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 91, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_7 = PyTuple_New(4+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 83, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_New(4+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 91, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           if (__pyx_t_5) {
             __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -3389,7 +3392,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
           __Pyx_GIVEREF(__pyx_v_values);
           PyTuple_SET_ITEM(__pyx_t_7, 3+__pyx_t_6, __pyx_v_values);
           __pyx_t_3 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 83, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 91, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
@@ -3412,26 +3415,26 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     #endif
   }
 
-  /* "_glpk.pyx":87
+  /* "pyene/engines/_glpk.pyx":95
  *         cdef double* val
  * 
  *         if len(cols) != len(values):             # <<<<<<<<<<<<<<
  *             raise ValueError(
  *                 f'The length of the `cols` ({len(cols)}) and `values` ({len(values)}) arguments mut be the same.')
  */
-  __pyx_t_8 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(0, 87, __pyx_L1_error)
-  __pyx_t_9 = PyObject_Length(__pyx_v_values); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(0, 87, __pyx_L1_error)
+  __pyx_t_8 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(1, 95, __pyx_L1_error)
+  __pyx_t_9 = PyObject_Length(__pyx_v_values); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(1, 95, __pyx_L1_error)
   __pyx_t_10 = ((__pyx_t_8 != __pyx_t_9) != 0);
   if (unlikely(__pyx_t_10)) {
 
-    /* "_glpk.pyx":89
+    /* "pyene/engines/_glpk.pyx":97
  *         if len(cols) != len(values):
  *             raise ValueError(
  *                 f'The length of the `cols` ({len(cols)}) and `values` ({len(values)}) arguments mut be the same.')             # <<<<<<<<<<<<<<
  * 
  *         # Calculate the actual row in the LP to update
  */
-    __pyx_t_1 = PyTuple_New(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __pyx_t_1 = PyTuple_New(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 97, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_9 = 0;
     __pyx_t_11 = 127;
@@ -3439,8 +3442,8 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     __pyx_t_9 += 26;
     __Pyx_GIVEREF(__pyx_kp_u_The_length_of_the_cols);
     PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_The_length_of_the_cols);
-    __pyx_t_8 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(0, 89, __pyx_L1_error)
-    __pyx_t_2 = __Pyx_PyUnicode_From_Py_ssize_t(__pyx_t_8, 0, ' ', 'd'); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __pyx_t_8 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(1, 97, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_From_Py_ssize_t(__pyx_t_8, 0, ' ', 'd'); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 97, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_9 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_2);
@@ -3450,8 +3453,8 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     __pyx_t_9 += 16;
     __Pyx_GIVEREF(__pyx_kp_u_and_values);
     PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_and_values);
-    __pyx_t_8 = PyObject_Length(__pyx_v_values); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(0, 89, __pyx_L1_error)
-    __pyx_t_2 = __Pyx_PyUnicode_From_Py_ssize_t(__pyx_t_8, 0, ' ', 'd'); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __pyx_t_8 = PyObject_Length(__pyx_v_values); if (unlikely(__pyx_t_8 == ((Py_ssize_t)-1))) __PYX_ERR(1, 97, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_From_Py_ssize_t(__pyx_t_8, 0, ' ', 'd'); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 97, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_9 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_2);
@@ -3461,25 +3464,25 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     __pyx_t_9 += 28;
     __Pyx_GIVEREF(__pyx_kp_u_arguments_mut_be_the_same);
     PyTuple_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_arguments_mut_be_the_same);
-    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 5, __pyx_t_9, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 89, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyUnicode_Join(__pyx_t_1, 5, __pyx_t_9, __pyx_t_11); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 97, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "_glpk.pyx":88
+    /* "pyene/engines/_glpk.pyx":96
  * 
  *         if len(cols) != len(values):
  *             raise ValueError(             # <<<<<<<<<<<<<<
  *                 f'The length of the `cols` ({len(cols)}) and `values` ({len(values)}) arguments mut be the same.')
  * 
  */
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 88, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 96, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 88, __pyx_L1_error)
+    __PYX_ERR(1, 96, __pyx_L1_error)
 
-    /* "_glpk.pyx":87
+    /* "pyene/engines/_glpk.pyx":95
  *         cdef double* val
  * 
  *         if len(cols) != len(values):             # <<<<<<<<<<<<<<
@@ -3488,7 +3491,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
  */
   }
 
-  /* "_glpk.pyx":92
+  /* "pyene/engines/_glpk.pyx":100
  * 
  *         # Calculate the actual row in the LP to update
  *         cdef int row = self.row_ids[name] + row_offset             # <<<<<<<<<<<<<<
@@ -3497,41 +3500,41 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
  */
   if (unlikely(__pyx_v_self->row_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 92, __pyx_L1_error)
+    __PYX_ERR(1, 100, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->row_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->row_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 100, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 100, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 100, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_row = __pyx_t_6;
 
-  /* "_glpk.pyx":94
+  /* "pyene/engines/_glpk.pyx":102
  *         cdef int row = self.row_ids[name] + row_offset
  * 
  *         ind = <int*>malloc((1 + len(cols)) * sizeof(int))             # <<<<<<<<<<<<<<
  *         val = <double*>malloc((1 + len(cols)) * sizeof(double))
  *         for n, c in enumerate(cols):
  */
-  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(0, 94, __pyx_L1_error)
+  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(1, 102, __pyx_L1_error)
   __pyx_v_ind = ((int *)malloc(((1 + __pyx_t_9) * (sizeof(int)))));
 
-  /* "_glpk.pyx":95
+  /* "pyene/engines/_glpk.pyx":103
  * 
  *         ind = <int*>malloc((1 + len(cols)) * sizeof(int))
  *         val = <double*>malloc((1 + len(cols)) * sizeof(double))             # <<<<<<<<<<<<<<
  *         for n, c in enumerate(cols):
  *             ind[1+n] = 1+c
  */
-  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(0, 95, __pyx_L1_error)
+  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(1, 103, __pyx_L1_error)
   __pyx_v_val = ((double *)malloc(((1 + __pyx_t_9) * (sizeof(double)))));
 
-  /* "_glpk.pyx":96
+  /* "pyene/engines/_glpk.pyx":104
  *         ind = <int*>malloc((1 + len(cols)) * sizeof(int))
  *         val = <double*>malloc((1 + len(cols)) * sizeof(double))
  *         for n, c in enumerate(cols):             # <<<<<<<<<<<<<<
@@ -3544,26 +3547,26 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     __pyx_t_2 = __pyx_v_cols; __Pyx_INCREF(__pyx_t_2); __pyx_t_9 = 0;
     __pyx_t_12 = NULL;
   } else {
-    __pyx_t_9 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_cols); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __pyx_t_9 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_cols); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 104, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_12 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __pyx_t_12 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(1, 104, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_12)) {
       if (likely(PyList_CheckExact(__pyx_t_2))) {
         if (__pyx_t_9 >= PyList_GET_SIZE(__pyx_t_2)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_9); __Pyx_INCREF(__pyx_t_1); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 96, __pyx_L1_error)
+        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_9); __Pyx_INCREF(__pyx_t_1); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(1, 104, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 104, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       } else {
         if (__pyx_t_9 >= PyTuple_GET_SIZE(__pyx_t_2)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_9); __Pyx_INCREF(__pyx_t_1); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(0, 96, __pyx_L1_error)
+        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_9); __Pyx_INCREF(__pyx_t_1); __pyx_t_9++; if (unlikely(0 < 0)) __PYX_ERR(1, 104, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_2, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 104, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       }
@@ -3573,7 +3576,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 96, __pyx_L1_error)
+          else __PYX_ERR(1, 104, __pyx_L1_error)
         }
         break;
       }
@@ -3583,58 +3586,58 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     __pyx_t_1 = 0;
     __Pyx_INCREF(__pyx_t_4);
     __Pyx_XDECREF_SET(__pyx_v_n, __pyx_t_4);
-    __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_t_4, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 96, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_t_4, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 104, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_4);
     __pyx_t_4 = __pyx_t_1;
     __pyx_t_1 = 0;
 
-    /* "_glpk.pyx":97
+    /* "pyene/engines/_glpk.pyx":105
  *         val = <double*>malloc((1 + len(cols)) * sizeof(double))
  *         for n, c in enumerate(cols):
  *             ind[1+n] = 1+c             # <<<<<<<<<<<<<<
  *             # TODO check for finite values
  *             val[1+n] = values[n]
  */
-    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_c, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_c, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 105, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 97, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_1); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 105, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_n, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 97, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_n, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 105, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_8 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_8 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 97, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_8 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(1, 105, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     (__pyx_v_ind[__pyx_t_8]) = __pyx_t_6;
 
-    /* "_glpk.pyx":99
+    /* "pyene/engines/_glpk.pyx":107
  *             ind[1+n] = 1+c
  *             # TODO check for finite values
  *             val[1+n] = values[n]             # <<<<<<<<<<<<<<
  *             print(row, c, n, values[n])
  *         glp_set_mat_row(self.prob, row, len(cols), ind, val)
  */
-    __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_n); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_n); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 107, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_13 = __pyx_PyFloat_AsDouble(__pyx_t_1); if (unlikely((__pyx_t_13 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 107, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_n, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_n, 1, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 107, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_8 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_8 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyIndex_AsSsize_t(__pyx_t_1); if (unlikely((__pyx_t_8 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(1, 107, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     (__pyx_v_val[__pyx_t_8]) = __pyx_t_13;
 
-    /* "_glpk.pyx":100
+    /* "pyene/engines/_glpk.pyx":108
  *             # TODO check for finite values
  *             val[1+n] = values[n]
  *             print(row, c, n, values[n])             # <<<<<<<<<<<<<<
  *         glp_set_mat_row(self.prob, row, len(cols), ind, val)
  *         #glp_set_row_bnds(self.prob, row, GLP_FX, 0.0, 0.0)
  */
-    __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_row); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 100, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_row); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 108, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_n); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 100, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_v_values, __pyx_v_n); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 108, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_3 = PyTuple_New(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 100, __pyx_L1_error)
+    __pyx_t_3 = PyTuple_New(4); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 108, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_GIVEREF(__pyx_t_1);
     PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_1);
@@ -3648,10 +3651,12 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
     PyTuple_SET_ITEM(__pyx_t_3, 3, __pyx_t_7);
     __pyx_t_1 = 0;
     __pyx_t_7 = 0;
-    if (__Pyx_PrintOne(0, __pyx_t_3) < 0) __PYX_ERR(0, 100, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_print, __pyx_t_3, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 108, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-    /* "_glpk.pyx":96
+    /* "pyene/engines/_glpk.pyx":104
  *         ind = <int*>malloc((1 + len(cols)) * sizeof(int))
  *         val = <double*>malloc((1 + len(cols)) * sizeof(double))
  *         for n, c in enumerate(cols):             # <<<<<<<<<<<<<<
@@ -3662,17 +3667,17 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-  /* "_glpk.pyx":101
+  /* "pyene/engines/_glpk.pyx":109
  *             val[1+n] = values[n]
  *             print(row, c, n, values[n])
  *         glp_set_mat_row(self.prob, row, len(cols), ind, val)             # <<<<<<<<<<<<<<
  *         #glp_set_row_bnds(self.prob, row, GLP_FX, 0.0, 0.0)
  * 
  */
-  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(0, 101, __pyx_L1_error)
+  __pyx_t_9 = PyObject_Length(__pyx_v_cols); if (unlikely(__pyx_t_9 == ((Py_ssize_t)-1))) __PYX_ERR(1, 109, __pyx_L1_error)
   glp_set_mat_row(__pyx_v_self->prob, __pyx_v_row, __pyx_t_9, __pyx_v_ind, __pyx_v_val);
 
-  /* "_glpk.pyx":104
+  /* "pyene/engines/_glpk.pyx":112
  *         #glp_set_row_bnds(self.prob, row, GLP_FX, 0.0, 0.0)
  * 
  *         free(ind)             # <<<<<<<<<<<<<<
@@ -3681,7 +3686,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
  */
   free(__pyx_v_ind);
 
-  /* "_glpk.pyx":105
+  /* "pyene/engines/_glpk.pyx":113
  * 
  *         free(ind)
  *         free(val)             # <<<<<<<<<<<<<<
@@ -3690,7 +3695,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
  */
   free(__pyx_v_val);
 
-  /* "_glpk.pyx":83
+  /* "pyene/engines/_glpk.pyx":91
  *         return idx
  * 
  *     cpdef set_mat_row(self, str name, int row_offset, cols, values):             # <<<<<<<<<<<<<<
@@ -3708,7 +3713,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_n);
@@ -3719,8 +3724,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_mat_row(struct __pyx_obj_5_glpk
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_12set_mat_row[] = "GLPKSolver.set_mat_row(self, unicode name, int row_offset, cols, values)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_row_offset;
   PyObject *__pyx_v_cols = 0;
@@ -3755,23 +3761,23 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_row_offset)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 1); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 1); __PYX_ERR(1, 91, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_cols)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 2); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 2); __PYX_ERR(1, 91, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_values)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 3); __PYX_ERR(0, 83, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, 3); __PYX_ERR(1, 91, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_mat_row") < 0)) __PYX_ERR(0, 83, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_mat_row") < 0)) __PYX_ERR(1, 91, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -3782,20 +3788,20 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_se
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_row_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_row_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 83, __pyx_L3_error)
+    __pyx_v_row_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_row_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 91, __pyx_L3_error)
     __pyx_v_cols = values[2];
     __pyx_v_values = values[3];
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 83, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_mat_row", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 91, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 83, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_row_offset, __pyx_v_cols, __pyx_v_values);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 91, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_12set_mat_row(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_row_offset, __pyx_v_cols, __pyx_v_values);
 
   /* function exit code */
   goto __pyx_L0;
@@ -3806,13 +3812,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row(PyObject *__pyx_v_se
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_cols, PyObject *__pyx_v_values) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("set_mat_row", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_set_mat_row(__pyx_v_self, __pyx_v_name, __pyx_v_row_offset, __pyx_v_cols, __pyx_v_values, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_mat_row(__pyx_v_self, __pyx_v_name, __pyx_v_row_offset, __pyx_v_cols, __pyx_v_values, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 91, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3821,7 +3827,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5_g
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_mat_row", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -3829,7 +3835,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5_g
   return __pyx_r;
 }
 
-/* "_glpk.pyx":107
+/* "pyene/engines/_glpk.pyx":115
  *         free(val)
  * 
  *     cpdef load_matrix(self, int ne, iapy, japy, arpy):             # <<<<<<<<<<<<<<
@@ -3837,8 +3843,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_12set_mat_row(struct __pyx_obj_5_g
  *         cdef int* ja
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy, int __pyx_skip_dispatch) {
   int *__pyx_v_ia;
   int *__pyx_v_ja;
   double *__pyx_v_ar;
@@ -3866,11 +3872,11 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_load_matrix); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_load_matrix); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 115, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_15load_matrix)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_15load_matrix)) {
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_ne); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 107, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_ne); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 115, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3888,7 +3894,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[5] = {__pyx_t_5, __pyx_t_3, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 115, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -3897,14 +3903,14 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[5] = {__pyx_t_5, __pyx_t_3, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 4+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 115, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_7 = PyTuple_New(4+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 107, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_New(4+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 115, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           if (__pyx_t_5) {
             __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -3921,7 +3927,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
           __Pyx_GIVEREF(__pyx_v_arpy);
           PyTuple_SET_ITEM(__pyx_t_7, 3+__pyx_t_6, __pyx_v_arpy);
           __pyx_t_3 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 115, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
@@ -3944,7 +3950,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
     #endif
   }
 
-  /* "_glpk.pyx":112
+  /* "pyene/engines/_glpk.pyx":120
  *         cdef double* ar
  * 
  *         ia = <int*> malloc((ne + 1) * sizeof(int))             # <<<<<<<<<<<<<<
@@ -3953,7 +3959,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   __pyx_v_ia = ((int *)malloc(((__pyx_v_ne + 1) * (sizeof(int)))));
 
-  /* "_glpk.pyx":113
+  /* "pyene/engines/_glpk.pyx":121
  * 
  *         ia = <int*> malloc((ne + 1) * sizeof(int))
  *         ja = <int*> malloc((ne + 1) * sizeof(int))             # <<<<<<<<<<<<<<
@@ -3962,7 +3968,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   __pyx_v_ja = ((int *)malloc(((__pyx_v_ne + 1) * (sizeof(int)))));
 
-  /* "_glpk.pyx":114
+  /* "pyene/engines/_glpk.pyx":122
  *         ia = <int*> malloc((ne + 1) * sizeof(int))
  *         ja = <int*> malloc((ne + 1) * sizeof(int))
  *         ar = <double*> malloc((ne + 1) * sizeof(double))             # <<<<<<<<<<<<<<
@@ -3971,25 +3977,25 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   __pyx_v_ar = ((double *)malloc(((__pyx_v_ne + 1) * (sizeof(double)))));
 
-  /* "_glpk.pyx":116
+  /* "pyene/engines/_glpk.pyx":124
  *         ar = <double*> malloc((ne + 1) * sizeof(double))
  * 
  *         for aux1 in range(ne):             # <<<<<<<<<<<<<<
  *             ia[aux1 + 1] = iapy[aux1]
  *             ja[aux1 + 1] = japy[aux1]
  */
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_ne); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_ne); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 124, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 116, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_range, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (likely(PyList_CheckExact(__pyx_t_2)) || PyTuple_CheckExact(__pyx_t_2)) {
     __pyx_t_1 = __pyx_t_2; __Pyx_INCREF(__pyx_t_1); __pyx_t_8 = 0;
     __pyx_t_9 = NULL;
   } else {
-    __pyx_t_8 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 116, __pyx_L1_error)
+    __pyx_t_8 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 124, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_9 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 116, __pyx_L1_error)
+    __pyx_t_9 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 124, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   for (;;) {
@@ -3997,17 +4003,17 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
       if (likely(PyList_CheckExact(__pyx_t_1))) {
         if (__pyx_t_8 >= PyList_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_8); __Pyx_INCREF(__pyx_t_2); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 116, __pyx_L1_error)
+        __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_8); __Pyx_INCREF(__pyx_t_2); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(1, 124, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 116, __pyx_L1_error)
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         #endif
       } else {
         if (__pyx_t_8 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_8); __Pyx_INCREF(__pyx_t_2); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(0, 116, __pyx_L1_error)
+        __pyx_t_2 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_8); __Pyx_INCREF(__pyx_t_2); __pyx_t_8++; if (unlikely(0 < 0)) __PYX_ERR(1, 124, __pyx_L1_error)
         #else
-        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 116, __pyx_L1_error)
+        __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 124, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         #endif
       }
@@ -4017,7 +4023,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 116, __pyx_L1_error)
+          else __PYX_ERR(1, 124, __pyx_L1_error)
         }
         break;
       }
@@ -4026,58 +4032,58 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
     __Pyx_XDECREF_SET(__pyx_v_aux1, __pyx_t_2);
     __pyx_t_2 = 0;
 
-    /* "_glpk.pyx":117
+    /* "pyene/engines/_glpk.pyx":125
  * 
  *         for aux1 in range(ne):
  *             ia[aux1 + 1] = iapy[aux1]             # <<<<<<<<<<<<<<
  *             ja[aux1 + 1] = japy[aux1]
  *             ar[aux1 + 1] = arpy[aux1]
  */
-    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_iapy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_iapy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 125, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 125, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 125, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 117, __pyx_L1_error)
+    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(1, 125, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     (__pyx_v_ia[__pyx_t_10]) = __pyx_t_6;
 
-    /* "_glpk.pyx":118
+    /* "pyene/engines/_glpk.pyx":126
  *         for aux1 in range(ne):
  *             ia[aux1 + 1] = iapy[aux1]
  *             ja[aux1 + 1] = japy[aux1]             # <<<<<<<<<<<<<<
  *             ar[aux1 + 1] = arpy[aux1]
  * 
  */
-    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_japy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 118, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_japy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 126, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 118, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 126, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 118, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 126, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 118, __pyx_L1_error)
+    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(1, 126, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     (__pyx_v_ja[__pyx_t_10]) = __pyx_t_6;
 
-    /* "_glpk.pyx":119
+    /* "pyene/engines/_glpk.pyx":127
  *             ia[aux1 + 1] = iapy[aux1]
  *             ja[aux1 + 1] = japy[aux1]
  *             ar[aux1 + 1] = arpy[aux1]             # <<<<<<<<<<<<<<
  * 
  *         glp_load_matrix(self.prob, ne, ia, ja, ar)
  */
-    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_arpy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 119, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_arpy, __pyx_v_aux1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 119, __pyx_L1_error)
+    __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 127, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 119, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_AddObjC(__pyx_v_aux1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 119, __pyx_L1_error)
+    __pyx_t_10 = __Pyx_PyIndex_AsSsize_t(__pyx_t_2); if (unlikely((__pyx_t_10 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(1, 127, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     (__pyx_v_ar[__pyx_t_10]) = __pyx_t_11;
 
-    /* "_glpk.pyx":116
+    /* "pyene/engines/_glpk.pyx":124
  *         ar = <double*> malloc((ne + 1) * sizeof(double))
  * 
  *         for aux1 in range(ne):             # <<<<<<<<<<<<<<
@@ -4087,7 +4093,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":121
+  /* "pyene/engines/_glpk.pyx":129
  *             ar[aux1 + 1] = arpy[aux1]
  * 
  *         glp_load_matrix(self.prob, ne, ia, ja, ar)             # <<<<<<<<<<<<<<
@@ -4096,7 +4102,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   glp_load_matrix(__pyx_v_self->prob, __pyx_v_ne, __pyx_v_ia, __pyx_v_ja, __pyx_v_ar);
 
-  /* "_glpk.pyx":123
+  /* "pyene/engines/_glpk.pyx":131
  *         glp_load_matrix(self.prob, ne, ia, ja, ar)
  * 
  *         free(ia)             # <<<<<<<<<<<<<<
@@ -4105,7 +4111,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   free(__pyx_v_ia);
 
-  /* "_glpk.pyx":124
+  /* "pyene/engines/_glpk.pyx":132
  * 
  *         free(ia)
  *         free(ja)             # <<<<<<<<<<<<<<
@@ -4114,7 +4120,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   free(__pyx_v_ja);
 
-  /* "_glpk.pyx":125
+  /* "pyene/engines/_glpk.pyx":133
  *         free(ia)
  *         free(ja)
  *         free(ar)             # <<<<<<<<<<<<<<
@@ -4123,7 +4129,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
  */
   free(__pyx_v_ar);
 
-  /* "_glpk.pyx":107
+  /* "pyene/engines/_glpk.pyx":115
  *         free(val)
  * 
  *     cpdef load_matrix(self, int ne, iapy, japy, arpy):             # <<<<<<<<<<<<<<
@@ -4141,7 +4147,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_aux1);
@@ -4151,8 +4157,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_load_matrix(struct __pyx_obj_5_glpk
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_14load_matrix[] = "GLPKSolver.load_matrix(self, int ne, iapy, japy, arpy)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   int __pyx_v_ne;
   PyObject *__pyx_v_iapy = 0;
   PyObject *__pyx_v_japy = 0;
@@ -4187,23 +4194,23 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_se
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_iapy)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 1); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 1); __PYX_ERR(1, 115, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_japy)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 2); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 2); __PYX_ERR(1, 115, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_arpy)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 3); __PYX_ERR(0, 107, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, 3); __PYX_ERR(1, 115, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "load_matrix") < 0)) __PYX_ERR(0, 107, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "load_matrix") < 0)) __PYX_ERR(1, 115, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 4) {
       goto __pyx_L5_argtuple_error;
@@ -4213,33 +4220,33 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_15load_matrix(PyObject *__pyx_v_se
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
       values[3] = PyTuple_GET_ITEM(__pyx_args, 3);
     }
-    __pyx_v_ne = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_ne == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 107, __pyx_L3_error)
+    __pyx_v_ne = __Pyx_PyInt_As_int(values[0]); if (unlikely((__pyx_v_ne == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 115, __pyx_L3_error)
     __pyx_v_iapy = values[1];
     __pyx_v_japy = values[2];
     __pyx_v_arpy = values[3];
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 107, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("load_matrix", 1, 4, 4, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 115, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_14load_matrix(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_ne, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy);
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_14load_matrix(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_ne, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_v_ne, PyObject *__pyx_v_iapy, PyObject *__pyx_v_japy, PyObject *__pyx_v_arpy) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("load_matrix", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_load_matrix(__pyx_v_self, __pyx_v_ne, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_load_matrix(__pyx_v_self, __pyx_v_ne, __pyx_v_iapy, __pyx_v_japy, __pyx_v_arpy, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 115, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4248,7 +4255,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5_g
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.load_matrix", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -4256,7 +4263,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5_g
   return __pyx_r;
 }
 
-/* "_glpk.pyx":127
+/* "pyene/engines/_glpk.pyx":135
  *         free(ar)
  * 
  *     cpdef set_row_bnds(self, str name, int row_offset, type, double lb, double ub):             # <<<<<<<<<<<<<<
@@ -4264,8 +4271,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_14load_matrix(struct __pyx_obj_5_g
  *         # Calculate the actual row in the LP to update
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch) {
   int __pyx_v_row;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -4288,15 +4295,15 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_row_bnds); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_row_bnds); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 135, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_17set_row_bnds)) {
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 127, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 135, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_lb); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 127, __pyx_L1_error)
+        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_lb); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 135, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_5 = PyFloat_FromDouble(__pyx_v_ub); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 127, __pyx_L1_error)
+        __pyx_t_5 = PyFloat_FromDouble(__pyx_v_ub); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 135, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_5);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_6 = __pyx_t_1; __pyx_t_7 = NULL;
@@ -4314,7 +4321,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_6)) {
           PyObject *__pyx_temp[6] = {__pyx_t_7, __pyx_v_name, __pyx_t_3, __pyx_v_type, __pyx_t_4, __pyx_t_5};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 135, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4325,7 +4332,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_6)) {
           PyObject *__pyx_temp[6] = {__pyx_t_7, __pyx_v_name, __pyx_t_3, __pyx_v_type, __pyx_t_4, __pyx_t_5};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 135, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4334,7 +4341,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
         } else
         #endif
         {
-          __pyx_t_9 = PyTuple_New(5+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 127, __pyx_L1_error)
+          __pyx_t_9 = PyTuple_New(5+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 135, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_9);
           if (__pyx_t_7) {
             __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7); __pyx_t_7 = NULL;
@@ -4354,7 +4361,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
           __pyx_t_3 = 0;
           __pyx_t_4 = 0;
           __pyx_t_5 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_9, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_9, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 135, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
         }
@@ -4377,7 +4384,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
     #endif
   }
 
-  /* "_glpk.pyx":130
+  /* "pyene/engines/_glpk.pyx":138
  *         # TODO check for finite values here
  *         # Calculate the actual row in the LP to update
  *         cdef int row = self.row_ids[name] + row_offset             # <<<<<<<<<<<<<<
@@ -4386,37 +4393,37 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
  */
   if (unlikely(__pyx_v_self->row_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 130, __pyx_L1_error)
+    __PYX_ERR(1, 138, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->row_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->row_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 138, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 138, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_6 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_6 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 138, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 130, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 138, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_v_row = __pyx_t_8;
 
-  /* "_glpk.pyx":131
+  /* "pyene/engines/_glpk.pyx":139
  *         # Calculate the actual row in the LP to update
  *         cdef int row = self.row_ids[name] + row_offset
  *         glp_set_row_bnds(self.prob, row, GLP_BND_TYPES[type], lb, ub)             # <<<<<<<<<<<<<<
  * 
  *     cpdef set_col_bnds(self, str name, int col_offset, type, double lb, double ub):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_GLP_BND_TYPES); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_GLP_BND_TYPES); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_6, __pyx_v_type); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_6, __pyx_v_type); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 139, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 131, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 139, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   glp_set_row_bnds(__pyx_v_self->prob, __pyx_v_row, __pyx_t_8, __pyx_v_lb, __pyx_v_ub);
 
-  /* "_glpk.pyx":127
+  /* "pyene/engines/_glpk.pyx":135
  *         free(ar)
  * 
  *     cpdef set_row_bnds(self, str name, int row_offset, type, double lb, double ub):             # <<<<<<<<<<<<<<
@@ -4436,7 +4443,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -4445,8 +4452,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_row_bnds(struct __pyx_obj_5_glp
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_16set_row_bnds[] = "GLPKSolver.set_row_bnds(self, unicode name, int row_offset, type, double lb, double ub)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_row_offset;
   PyObject *__pyx_v_type = 0;
@@ -4484,29 +4492,29 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_row_offset)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 1); __PYX_ERR(0, 127, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 1); __PYX_ERR(1, 135, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_type)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 2); __PYX_ERR(0, 127, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 2); __PYX_ERR(1, 135, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lb)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 3); __PYX_ERR(0, 127, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 3); __PYX_ERR(1, 135, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_ub)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 4); __PYX_ERR(0, 127, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, 4); __PYX_ERR(1, 135, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_row_bnds") < 0)) __PYX_ERR(0, 127, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_row_bnds") < 0)) __PYX_ERR(1, 135, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -4518,21 +4526,21 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_s
       values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_row_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_row_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L3_error)
+    __pyx_v_row_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_row_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 135, __pyx_L3_error)
     __pyx_v_type = values[2];
-    __pyx_v_lb = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_lb == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L3_error)
-    __pyx_v_ub = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_ub == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 127, __pyx_L3_error)
+    __pyx_v_lb = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_lb == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 135, __pyx_L3_error)
+    __pyx_v_ub = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_ub == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 135, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 127, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_row_bnds", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 135, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 127, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_row_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 135, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_16set_row_bnds(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_row_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4543,13 +4551,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds(PyObject *__pyx_v_s
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("set_row_bnds", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_set_row_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_row_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_row_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_row_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 135, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4558,7 +4566,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_row_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -4566,7 +4574,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":133
+/* "pyene/engines/_glpk.pyx":141
  *         glp_set_row_bnds(self.prob, row, GLP_BND_TYPES[type], lb, ub)
  * 
  *     cpdef set_col_bnds(self, str name, int col_offset, type, double lb, double ub):             # <<<<<<<<<<<<<<
@@ -4574,8 +4582,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_16set_row_bnds(struct __pyx_obj_5_
  *         # Calculate the actual col in the LP to update
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub, int __pyx_skip_dispatch) {
   int __pyx_v_col;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -4598,15 +4606,15 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_col_bnds); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 133, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_col_bnds); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 141, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_19set_col_bnds)) {
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 133, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 141, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_lb); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 133, __pyx_L1_error)
+        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_lb); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 141, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_5 = PyFloat_FromDouble(__pyx_v_ub); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 133, __pyx_L1_error)
+        __pyx_t_5 = PyFloat_FromDouble(__pyx_v_ub); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 141, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_5);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_6 = __pyx_t_1; __pyx_t_7 = NULL;
@@ -4624,7 +4632,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_6)) {
           PyObject *__pyx_temp[6] = {__pyx_t_7, __pyx_v_name, __pyx_t_3, __pyx_v_type, __pyx_t_4, __pyx_t_5};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 133, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 141, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4635,7 +4643,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_6)) {
           PyObject *__pyx_temp[6] = {__pyx_t_7, __pyx_v_name, __pyx_t_3, __pyx_v_type, __pyx_t_4, __pyx_t_5};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 133, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_6, __pyx_temp+1-__pyx_t_8, 5+__pyx_t_8); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 141, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4644,7 +4652,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
         } else
         #endif
         {
-          __pyx_t_9 = PyTuple_New(5+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 133, __pyx_L1_error)
+          __pyx_t_9 = PyTuple_New(5+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 141, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_9);
           if (__pyx_t_7) {
             __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7); __pyx_t_7 = NULL;
@@ -4664,7 +4672,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
           __pyx_t_3 = 0;
           __pyx_t_4 = 0;
           __pyx_t_5 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_9, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 133, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_6, __pyx_t_9, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 141, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
         }
@@ -4687,7 +4695,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
     #endif
   }
 
-  /* "_glpk.pyx":136
+  /* "pyene/engines/_glpk.pyx":144
  *         # TODO check for finite values here
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset             # <<<<<<<<<<<<<<
@@ -4696,37 +4704,37 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
  */
   if (unlikely(__pyx_v_self->col_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 136, __pyx_L1_error)
+    __PYX_ERR(1, 144, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 136, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 144, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 136, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 144, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_6 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 136, __pyx_L1_error)
+  __pyx_t_6 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 144, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 136, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_6); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 144, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_v_col = __pyx_t_8;
 
-  /* "_glpk.pyx":137
+  /* "pyene/engines/_glpk.pyx":145
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset
  *         glp_set_col_bnds(self.prob, col, GLP_BND_TYPES[type], lb, ub)             # <<<<<<<<<<<<<<
  * 
  *     cpdef set_obj_coef(self, str name, int col_offset, double coef):
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_GLP_BND_TYPES); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 137, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_GLP_BND_TYPES); if (unlikely(!__pyx_t_6)) __PYX_ERR(1, 145, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_6, __pyx_v_type); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 137, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_6, __pyx_v_type); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 145, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 137, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_8 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 145, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   glp_set_col_bnds(__pyx_v_self->prob, __pyx_v_col, __pyx_t_8, __pyx_v_lb, __pyx_v_ub);
 
-  /* "_glpk.pyx":133
+  /* "pyene/engines/_glpk.pyx":141
  *         glp_set_row_bnds(self.prob, row, GLP_BND_TYPES[type], lb, ub)
  * 
  *     cpdef set_col_bnds(self, str name, int col_offset, type, double lb, double ub):             # <<<<<<<<<<<<<<
@@ -4746,7 +4754,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_7);
   __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -4755,8 +4763,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_col_bnds(struct __pyx_obj_5_glp
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_18set_col_bnds[] = "GLPKSolver.set_col_bnds(self, unicode name, int col_offset, type, double lb, double ub)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_col_offset;
   PyObject *__pyx_v_type = 0;
@@ -4794,29 +4803,29 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_col_offset)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 1); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 1); __PYX_ERR(1, 141, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_type)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 2); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 2); __PYX_ERR(1, 141, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
         if (likely((values[3] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_lb)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 3); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 3); __PYX_ERR(1, 141, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
         if (likely((values[4] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_ub)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 4); __PYX_ERR(0, 133, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, 4); __PYX_ERR(1, 141, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_col_bnds") < 0)) __PYX_ERR(0, 133, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_col_bnds") < 0)) __PYX_ERR(1, 141, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 5) {
       goto __pyx_L5_argtuple_error;
@@ -4828,21 +4837,21 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_s
       values[4] = PyTuple_GET_ITEM(__pyx_args, 4);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
+    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 141, __pyx_L3_error)
     __pyx_v_type = values[2];
-    __pyx_v_lb = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_lb == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
-    __pyx_v_ub = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_ub == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 133, __pyx_L3_error)
+    __pyx_v_lb = __pyx_PyFloat_AsDouble(values[3]); if (unlikely((__pyx_v_lb == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 141, __pyx_L3_error)
+    __pyx_v_ub = __pyx_PyFloat_AsDouble(values[4]); if (unlikely((__pyx_v_ub == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 141, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 133, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_col_bnds", 1, 5, 5, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 141, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 133, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 141, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_18set_col_bnds(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub);
 
   /* function exit code */
   goto __pyx_L0;
@@ -4853,13 +4862,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds(PyObject *__pyx_v_s
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, double __pyx_v_lb, double __pyx_v_ub) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("set_col_bnds", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_set_col_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 133, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_bnds(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, __pyx_v_type, __pyx_v_lb, __pyx_v_ub, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 141, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4868,7 +4877,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_bnds", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -4876,7 +4885,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":139
+/* "pyene/engines/_glpk.pyx":147
  *         glp_set_col_bnds(self.prob, col, GLP_BND_TYPES[type], lb, ub)
  * 
  *     cpdef set_obj_coef(self, str name, int col_offset, double coef):             # <<<<<<<<<<<<<<
@@ -4884,8 +4893,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_18set_col_bnds(struct __pyx_obj_5_
  *         # Calculate the actual col in the LP to update
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef, int __pyx_skip_dispatch) {
   int __pyx_v_col;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
@@ -4907,13 +4916,13 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_obj_coef); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 139, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_obj_coef); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 147, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_21set_obj_coef)) {
         __Pyx_XDECREF(__pyx_r);
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 139, __pyx_L1_error)
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 147, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_coef); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 139, __pyx_L1_error)
+        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_coef); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 147, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -4931,7 +4940,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_5)) {
           PyObject *__pyx_temp[4] = {__pyx_t_6, __pyx_v_name, __pyx_t_3, __pyx_t_4};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 3+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 139, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 3+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 147, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4941,7 +4950,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_5)) {
           PyObject *__pyx_temp[4] = {__pyx_t_6, __pyx_v_name, __pyx_t_3, __pyx_t_4};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 3+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 139, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_7, 3+__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 147, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -4949,7 +4958,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
         } else
         #endif
         {
-          __pyx_t_8 = PyTuple_New(3+__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 139, __pyx_L1_error)
+          __pyx_t_8 = PyTuple_New(3+__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 147, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_8);
           if (__pyx_t_6) {
             __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -4963,7 +4972,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
           PyTuple_SET_ITEM(__pyx_t_8, 2+__pyx_t_7, __pyx_t_4);
           __pyx_t_3 = 0;
           __pyx_t_4 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 139, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 147, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
         }
@@ -4986,7 +4995,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
     #endif
   }
 
-  /* "_glpk.pyx":142
+  /* "pyene/engines/_glpk.pyx":150
  *         # TODO check for finite vaues here
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset             # <<<<<<<<<<<<<<
@@ -4995,21 +5004,21 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
  */
   if (unlikely(__pyx_v_self->col_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 142, __pyx_L1_error)
+    __PYX_ERR(1, 150, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_5 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_5 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 142, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyInt_As_int(__pyx_t_5); if (unlikely((__pyx_t_7 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 150, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_v_col = __pyx_t_7;
 
-  /* "_glpk.pyx":143
+  /* "pyene/engines/_glpk.pyx":151
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset
  *         glp_set_obj_coef(self.prob, col, coef)             # <<<<<<<<<<<<<<
@@ -5018,7 +5027,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
  */
   glp_set_obj_coef(__pyx_v_self->prob, __pyx_v_col, __pyx_v_coef);
 
-  /* "_glpk.pyx":139
+  /* "pyene/engines/_glpk.pyx":147
  *         glp_set_col_bnds(self.prob, col, GLP_BND_TYPES[type], lb, ub)
  * 
  *     cpdef set_obj_coef(self, str name, int col_offset, double coef):             # <<<<<<<<<<<<<<
@@ -5037,7 +5046,7 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_6);
   __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5046,8 +5055,9 @@ static PyObject *__pyx_f_5_glpk_10GLPKSolver_set_obj_coef(struct __pyx_obj_5_glp
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_20set_obj_coef[] = "GLPKSolver.set_obj_coef(self, unicode name, int col_offset, double coef)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_col_offset;
   double __pyx_v_coef;
@@ -5079,17 +5089,17 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_col_offset)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, 1); __PYX_ERR(0, 139, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, 1); __PYX_ERR(1, 147, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_coef)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, 2); __PYX_ERR(0, 139, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, 2); __PYX_ERR(1, 147, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_obj_coef") < 0)) __PYX_ERR(0, 139, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_obj_coef") < 0)) __PYX_ERR(1, 147, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -5099,19 +5109,19 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_s
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 139, __pyx_L3_error)
-    __pyx_v_coef = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_coef == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 139, __pyx_L3_error)
+    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 147, __pyx_L3_error)
+    __pyx_v_coef = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_coef == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 147, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 139, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("set_obj_coef", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 147, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 139, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset, __pyx_v_coef);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 147, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_20set_obj_coef(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset, __pyx_v_coef);
 
   /* function exit code */
   goto __pyx_L0;
@@ -5122,13 +5132,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef(PyObject *__pyx_v_s
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, double __pyx_v_coef) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("set_obj_coef", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_f_5_glpk_10GLPKSolver_set_obj_coef(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, __pyx_v_coef, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 139, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_obj_coef(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, __pyx_v_coef, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 147, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5137,7 +5147,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_obj_coef", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5145,7 +5155,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":145
+/* "pyene/engines/_glpk.pyx":153
  *         glp_set_obj_coef(self.prob, col, coef)
  * 
  *     cpdef int simplex(self):             # <<<<<<<<<<<<<<
@@ -5153,8 +5163,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_20set_obj_coef(struct __pyx_obj_5_
  * 
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5172,9 +5182,9 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_simplex); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 145, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_simplex); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 153, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_23simplex)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_23simplex)) {
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -5188,10 +5198,10 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 145, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 153, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 145, __pyx_L1_error)
+        __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 153, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_5;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5210,7 +5220,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
     #endif
   }
 
-  /* "_glpk.pyx":146
+  /* "pyene/engines/_glpk.pyx":154
  * 
  *     cpdef int simplex(self):
  *         return glp_simplex(self.prob, &self.smcp)             # <<<<<<<<<<<<<<
@@ -5220,7 +5230,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
   __pyx_r = glp_simplex(__pyx_v_self->prob, (&__pyx_v_self->smcp));
   goto __pyx_L0;
 
-  /* "_glpk.pyx":145
+  /* "pyene/engines/_glpk.pyx":153
  *         glp_set_obj_coef(self.prob, col, coef)
  * 
  *     cpdef int simplex(self):             # <<<<<<<<<<<<<<
@@ -5234,7 +5244,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.simplex", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.simplex", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -5242,25 +5252,26 @@ static int __pyx_f_5_glpk_10GLPKSolver_simplex(struct __pyx_obj_5_glpk_GLPKSolve
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_22simplex[] = "GLPKSolver.simplex(self) -> int";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_23simplex(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("simplex (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_22simplex(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_22simplex(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("simplex", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5_glpk_10GLPKSolver_simplex(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 145, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_simplex(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 153, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5269,7 +5280,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5_glpk_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.simplex", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.simplex", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5277,7 +5288,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5_glpk_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":148
+/* "pyene/engines/_glpk.pyx":156
  *         return glp_simplex(self.prob, &self.smcp)
  * 
  *     cpdef int status(self):             # <<<<<<<<<<<<<<
@@ -5285,8 +5296,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_22simplex(struct __pyx_obj_5_glpk_
  * 
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static int __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_status(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
   CYTHON_UNUSED int __pyx_v_status;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -5305,9 +5316,9 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 148, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_status); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 156, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_25status)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_25status)) {
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -5321,10 +5332,10 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 148, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 156, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 148, __pyx_L1_error)
+        __pyx_t_5 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_5 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 156, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_5;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5343,7 +5354,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
     #endif
   }
 
-  /* "_glpk.pyx":149
+  /* "pyene/engines/_glpk.pyx":157
  * 
  *     cpdef int status(self):
  *         status = glp_get_status(self.prob)             # <<<<<<<<<<<<<<
@@ -5352,7 +5363,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
  */
   __pyx_v_status = glp_get_status(__pyx_v_self->prob);
 
-  /* "_glpk.pyx":148
+  /* "pyene/engines/_glpk.pyx":156
  *         return glp_simplex(self.prob, &self.smcp)
  * 
  *     cpdef int status(self):             # <<<<<<<<<<<<<<
@@ -5368,7 +5379,7 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.status", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.status", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -5376,25 +5387,26 @@ static int __pyx_f_5_glpk_10GLPKSolver_status(struct __pyx_obj_5_glpk_GLPKSolver
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_24status[] = "GLPKSolver.status(self) -> int";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_25status(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("status (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_24status(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_24status(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("status", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5_glpk_10GLPKSolver_status(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 148, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_status(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 156, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5403,7 +5415,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5_glpk_G
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.status", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.status", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5411,7 +5423,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5_glpk_G
   return __pyx_r;
 }
 
-/* "_glpk.pyx":151
+/* "pyene/engines/_glpk.pyx":159
  *         status = glp_get_status(self.prob)
  * 
  *     cpdef double get_col_prim(self, str name, int col_offset):             # <<<<<<<<<<<<<<
@@ -5419,8 +5431,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_24status(struct __pyx_obj_5_glpk_G
  *         cdef int col = self.col_ids[name] + col_offset
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, int __pyx_skip_dispatch) {
   int __pyx_v_col;
   double __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -5442,10 +5454,10 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_col_prim); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 151, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_col_prim); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 159, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim)) {
-        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 151, __pyx_L1_error)
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_27get_col_prim)) {
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 159, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -5463,7 +5475,7 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
         #if CYTHON_FAST_PYCALL
         if (PyFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 159, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -5472,14 +5484,14 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
         #if CYTHON_FAST_PYCCALL
         if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
           PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
-          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 159, __pyx_L1_error)
           __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         } else
         #endif
         {
-          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 151, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 159, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           if (__pyx_t_5) {
             __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
@@ -5490,12 +5502,12 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
           __Pyx_GIVEREF(__pyx_t_3);
           PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
           __pyx_t_3 = 0;
-          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 151, __pyx_L1_error)
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 159, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_2);
           __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
         }
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_8 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_8 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L1_error)
+        __pyx_t_8 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_8 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 159, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_8;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5514,7 +5526,7 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
     #endif
   }
 
-  /* "_glpk.pyx":153
+  /* "pyene/engines/_glpk.pyx":161
  *     cpdef double get_col_prim(self, str name, int col_offset):
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset             # <<<<<<<<<<<<<<
@@ -5523,21 +5535,21 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
  */
   if (unlikely(__pyx_v_self->col_ids == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 153, __pyx_L1_error)
+    __PYX_ERR(1, 161, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 153, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 153, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 153, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 153, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 161, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_col = __pyx_t_6;
 
-  /* "_glpk.pyx":154
+  /* "pyene/engines/_glpk.pyx":162
  *         # Calculate the actual col in the LP to update
  *         cdef int col = self.col_ids[name] + col_offset
  *         return glp_get_col_prim(self.prob, col)             # <<<<<<<<<<<<<<
@@ -5547,7 +5559,7 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
   __pyx_r = glp_get_col_prim(__pyx_v_self->prob, __pyx_v_col);
   goto __pyx_L0;
 
-  /* "_glpk.pyx":151
+  /* "pyene/engines/_glpk.pyx":159
  *         status = glp_get_status(self.prob)
  * 
  *     cpdef double get_col_prim(self, str name, int col_offset):             # <<<<<<<<<<<<<<
@@ -5563,7 +5575,7 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
   __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -5571,8 +5583,9 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_col_prim(struct __pyx_obj_5_glpk_G
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_26get_col_prim[] = "GLPKSolver.get_col_prim(self, unicode name, int col_offset) -> double";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_name = 0;
   int __pyx_v_col_offset;
   PyObject *__pyx_r = 0;
@@ -5601,11 +5614,11 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_s
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_col_offset)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("get_col_prim", 1, 2, 2, 1); __PYX_ERR(0, 151, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("get_col_prim", 1, 2, 2, 1); __PYX_ERR(1, 159, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_col_prim") < 0)) __PYX_ERR(0, 151, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_col_prim") < 0)) __PYX_ERR(1, 159, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -5614,18 +5627,18 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_s
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
     __pyx_v_name = ((PyObject*)values[0]);
-    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 151, __pyx_L3_error)
+    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 159, __pyx_L3_error)
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_col_prim", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 151, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_col_prim", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 159, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("_glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyString_Type), 1, "name", 1))) __PYX_ERR(0, 151, __pyx_L1_error)
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 159, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_26get_col_prim(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset);
 
   /* function exit code */
   goto __pyx_L0;
@@ -5636,13 +5649,13 @@ static PyObject *__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim(PyObject *__pyx_v_s
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("get_col_prim", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_5_glpk_10GLPKSolver_get_col_prim(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_col_prim(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5651,7 +5664,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5_
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.get_col_prim", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5659,7 +5672,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":156
+/* "pyene/engines/_glpk.pyx":164
  *         return glp_get_col_prim(self.prob, col)
  * 
  *     cpdef double get_obj_val(self):             # <<<<<<<<<<<<<<
@@ -5667,8 +5680,8 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_26get_col_prim(struct __pyx_obj_5_
  *         return glp_get_obj_val(self.prob)
  */
 
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, int __pyx_skip_dispatch) {
   double __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5686,9 +5699,9 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
     if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
       PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
       #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_obj_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 156, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_obj_val); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 164, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5_glpk_10GLPKSolver_29get_obj_val)) {
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_29get_obj_val)) {
         __Pyx_INCREF(__pyx_t_1);
         __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_3))) {
@@ -5702,10 +5715,10 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
         }
         __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
         __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 156, __pyx_L1_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 164, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        __pyx_t_5 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_5 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 156, __pyx_L1_error)
+        __pyx_t_5 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_5 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 164, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __pyx_r = __pyx_t_5;
         __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -5724,17 +5737,17 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
     #endif
   }
 
-  /* "_glpk.pyx":158
+  /* "pyene/engines/_glpk.pyx":166
  *     cpdef double get_obj_val(self):
  *         # retrieve objective value
  *         return glp_get_obj_val(self.prob)             # <<<<<<<<<<<<<<
  * 
- * 
+ *     cpdef set_col_stat(self, str name, int col_offset, type):
  */
   __pyx_r = glp_get_obj_val(__pyx_v_self->prob);
   goto __pyx_L0;
 
-  /* "_glpk.pyx":156
+  /* "pyene/engines/_glpk.pyx":164
  *         return glp_get_col_prim(self.prob, col)
  * 
  *     cpdef double get_obj_val(self):             # <<<<<<<<<<<<<<
@@ -5748,7 +5761,7 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_WriteUnraisable("_glpk.GLPKSolver.get_obj_val", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.get_obj_val", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
   __pyx_r = 0;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -5756,25 +5769,26 @@ static double __pyx_f_5_glpk_10GLPKSolver_get_obj_val(struct __pyx_obj_5_glpk_GL
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_28get_obj_val[] = "GLPKSolver.get_obj_val(self) -> double";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_29get_obj_val(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("get_obj_val (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_28get_obj_val(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("get_obj_val", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_5_glpk_10GLPKSolver_get_obj_val(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 156, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_obj_val(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 164, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5783,7 +5797,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5_g
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.get_obj_val", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.get_obj_val", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5791,7 +5805,527 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5_g
   return __pyx_r;
 }
 
-/* "_glpk.pyx":30
+/* "pyene/engines/_glpk.pyx":168
+ *         return glp_get_obj_val(self.prob)
+ * 
+ *     cpdef set_col_stat(self, str name, int col_offset, type):             # <<<<<<<<<<<<<<
+ *         # Declare variables as basic or non-basic
+ *         cdef int col = self.col_ids[name] + col_offset
+ */
+
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_31set_col_stat(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_stat(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type, int __pyx_skip_dispatch) {
+  int __pyx_v_col;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  __Pyx_RefNannySetupContext("set_col_stat", 0);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || (Py_TYPE(((PyObject *)__pyx_v_self))->tp_flags & (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
+    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
+      PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      #endif
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_col_stat); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 168, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_31set_col_stat)) {
+        __Pyx_XDECREF(__pyx_r);
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 168, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
+        __pyx_t_6 = 0;
+        if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
+          __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
+          if (likely(__pyx_t_5)) {
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+            __Pyx_INCREF(__pyx_t_5);
+            __Pyx_INCREF(function);
+            __Pyx_DECREF_SET(__pyx_t_4, function);
+            __pyx_t_6 = 1;
+          }
+        }
+        #if CYTHON_FAST_PYCALL
+        if (PyFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[4] = {__pyx_t_5, __pyx_v_name, __pyx_t_3, __pyx_v_type};
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 168, __pyx_L1_error)
+          __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        } else
+        #endif
+        #if CYTHON_FAST_PYCCALL
+        if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[4] = {__pyx_t_5, __pyx_v_name, __pyx_t_3, __pyx_v_type};
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 3+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 168, __pyx_L1_error)
+          __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        } else
+        #endif
+        {
+          __pyx_t_7 = PyTuple_New(3+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 168, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_7);
+          if (__pyx_t_5) {
+            __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
+          }
+          __Pyx_INCREF(__pyx_v_name);
+          __Pyx_GIVEREF(__pyx_v_name);
+          PyTuple_SET_ITEM(__pyx_t_7, 0+__pyx_t_6, __pyx_v_name);
+          __Pyx_GIVEREF(__pyx_t_3);
+          PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
+          __Pyx_INCREF(__pyx_v_type);
+          __Pyx_GIVEREF(__pyx_v_type);
+          PyTuple_SET_ITEM(__pyx_t_7, 2+__pyx_t_6, __pyx_v_type);
+          __pyx_t_3 = 0;
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 168, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+        }
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_r = __pyx_t_2;
+        __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        goto __pyx_L0;
+      }
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
+      if (unlikely(__pyx_type_dict_guard != __pyx_tp_dict_version)) {
+        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+      }
+      #endif
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    }
+    #endif
+  }
+
+  /* "pyene/engines/_glpk.pyx":170
+ *     cpdef set_col_stat(self, str name, int col_offset, type):
+ *         # Declare variables as basic or non-basic
+ *         cdef int col = self.col_ids[name] + col_offset             # <<<<<<<<<<<<<<
+ *         glp_set_col_stat(self.prob, col, GLP_STATUS[type])
+ * 
+ */
+  if (unlikely(__pyx_v_self->col_ids == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 170, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->col_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 170, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_col_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 170, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 170, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 170, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_col = __pyx_t_6;
+
+  /* "pyene/engines/_glpk.pyx":171
+ *         # Declare variables as basic or non-basic
+ *         cdef int col = self.col_ids[name] + col_offset
+ *         glp_set_col_stat(self.prob, col, GLP_STATUS[type])             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef double get_row_dual(self, str name, int row_offset):
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_GLP_STATUS); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 171, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_t_4, __pyx_v_type); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 171, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 171, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  glp_set_col_stat(__pyx_v_self->prob, __pyx_v_col, __pyx_t_6);
+
+  /* "pyene/engines/_glpk.pyx":168
+ *         return glp_get_obj_val(self.prob)
+ * 
+ *     cpdef set_col_stat(self, str name, int col_offset, type):             # <<<<<<<<<<<<<<
+ *         # Declare variables as basic or non-basic
+ *         cdef int col = self.col_ids[name] + col_offset
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_stat", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_31set_col_stat(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_30set_col_stat[] = "GLPKSolver.set_col_stat(self, unicode name, int col_offset, type)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_31set_col_stat(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_name = 0;
+  int __pyx_v_col_offset;
+  PyObject *__pyx_v_type = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("set_col_stat (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_col_offset,&__pyx_n_s_type,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        CYTHON_FALLTHROUGH;
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_name)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_col_offset)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("set_col_stat", 1, 3, 3, 1); __PYX_ERR(1, 168, __pyx_L3_error)
+        }
+        CYTHON_FALLTHROUGH;
+        case  2:
+        if (likely((values[2] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_type)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("set_col_stat", 1, 3, 3, 2); __PYX_ERR(1, 168, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_col_stat") < 0)) __PYX_ERR(1, 168, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_name = ((PyObject*)values[0]);
+    __pyx_v_col_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_col_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 168, __pyx_L3_error)
+    __pyx_v_type = values[2];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("set_col_stat", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 168, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_stat", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 168, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_30set_col_stat(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_col_offset, __pyx_v_type);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_30set_col_stat(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_col_offset, PyObject *__pyx_v_type) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("set_col_stat", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_stat(__pyx_v_self, __pyx_v_name, __pyx_v_col_offset, __pyx_v_type, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 168, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.set_col_stat", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "pyene/engines/_glpk.pyx":173
+ *         glp_set_col_stat(self.prob, col, GLP_STATUS[type])
+ * 
+ *     cpdef double get_row_dual(self, str name, int row_offset):             # <<<<<<<<<<<<<<
+ *         # Calculate the dual value of a contraint
+ *         cdef int row = self.row_ids[name] + row_offset
+ */
+
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_33get_row_dual(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static double __pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_row_dual(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset, int __pyx_skip_dispatch) {
+  int __pyx_v_row;
+  double __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  double __pyx_t_8;
+  __Pyx_RefNannySetupContext("get_row_dual", 0);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || (Py_TYPE(((PyObject *)__pyx_v_self))->tp_flags & (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
+    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
+      PY_UINT64_T __pyx_type_dict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      #endif
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_get_row_dual); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 173, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)(void*)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_33get_row_dual)) {
+        __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 173, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
+        __pyx_t_6 = 0;
+        if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
+          __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
+          if (likely(__pyx_t_5)) {
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+            __Pyx_INCREF(__pyx_t_5);
+            __Pyx_INCREF(function);
+            __Pyx_DECREF_SET(__pyx_t_4, function);
+            __pyx_t_6 = 1;
+          }
+        }
+        #if CYTHON_FAST_PYCALL
+        if (PyFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
+          __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 173, __pyx_L1_error)
+          __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        } else
+        #endif
+        #if CYTHON_FAST_PYCCALL
+        if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
+          PyObject *__pyx_temp[3] = {__pyx_t_5, __pyx_v_name, __pyx_t_3};
+          __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-__pyx_t_6, 2+__pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 173, __pyx_L1_error)
+          __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        } else
+        #endif
+        {
+          __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 173, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_7);
+          if (__pyx_t_5) {
+            __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
+          }
+          __Pyx_INCREF(__pyx_v_name);
+          __Pyx_GIVEREF(__pyx_v_name);
+          PyTuple_SET_ITEM(__pyx_t_7, 0+__pyx_t_6, __pyx_v_name);
+          __Pyx_GIVEREF(__pyx_t_3);
+          PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
+          __pyx_t_3 = 0;
+          __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 173, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+        }
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+        __pyx_t_8 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_8 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 173, __pyx_L1_error)
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __pyx_r = __pyx_t_8;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        goto __pyx_L0;
+      }
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
+      if (unlikely(__pyx_type_dict_guard != __pyx_tp_dict_version)) {
+        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+      }
+      #endif
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    }
+    #endif
+  }
+
+  /* "pyene/engines/_glpk.pyx":175
+ *     cpdef double get_row_dual(self, str name, int row_offset):
+ *         # Calculate the dual value of a contraint
+ *         cdef int row = self.row_ids[name] + row_offset             # <<<<<<<<<<<<<<
+ *         return glp_get_row_dual(self.prob, row)
+ * 
+ */
+  if (unlikely(__pyx_v_self->row_ids == Py_None)) {
+    PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
+    __PYX_ERR(1, 175, __pyx_L1_error)
+  }
+  __pyx_t_1 = __Pyx_PyDict_GetItem(__pyx_v_self->row_ids, __pyx_v_name); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 175, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_row_offset); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 175, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 175, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 175, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_v_row = __pyx_t_6;
+
+  /* "pyene/engines/_glpk.pyx":176
+ *         # Calculate the dual value of a contraint
+ *         cdef int row = self.row_ids[name] + row_offset
+ *         return glp_get_row_dual(self.prob, row)             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_r = glp_get_row_dual(__pyx_v_self->prob, __pyx_v_row);
+  goto __pyx_L0;
+
+  /* "pyene/engines/_glpk.pyx":173
+ *         glp_set_col_stat(self.prob, col, GLP_STATUS[type])
+ * 
+ *     cpdef double get_row_dual(self, str name, int row_offset):             # <<<<<<<<<<<<<<
+ *         # Calculate the dual value of a contraint
+ *         cdef int row = self.row_ids[name] + row_offset
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_WriteUnraisable("pyene.engines._glpk.GLPKSolver.get_row_dual", __pyx_clineno, __pyx_lineno, __pyx_filename, 1, 0);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_33get_row_dual(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_32get_row_dual[] = "GLPKSolver.get_row_dual(self, unicode name, int row_offset) -> double";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_33get_row_dual(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_name = 0;
+  int __pyx_v_row_offset;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_row_dual (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_name,&__pyx_n_s_row_offset,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_name)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_row_offset)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("get_row_dual", 1, 2, 2, 1); __PYX_ERR(1, 173, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_row_dual") < 0)) __PYX_ERR(1, 173, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_name = ((PyObject*)values[0]);
+    __pyx_v_row_offset = __Pyx_PyInt_As_int(values[1]); if (unlikely((__pyx_v_row_offset == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 173, __pyx_L3_error)
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("get_row_dual", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(1, 173, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.get_row_dual", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_name), (&PyUnicode_Type), 1, "name", 1))) __PYX_ERR(1, 173, __pyx_L1_error)
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_32get_row_dual(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), __pyx_v_name, __pyx_v_row_offset);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_32get_row_dual(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, PyObject *__pyx_v_name, int __pyx_v_row_offset) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  __Pyx_RefNannySetupContext("get_row_dual", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_row_dual(__pyx_v_self, __pyx_v_name, __pyx_v_row_offset, 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 173, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.get_row_dual", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "pyene/engines/_glpk.pyx":38
  *     cdef glp_smcp smcp
  * 
  *     cdef readonly dict row_ids             # <<<<<<<<<<<<<<
@@ -5800,19 +6334,19 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_28get_obj_val(struct __pyx_obj_5_g
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7row_ids_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7row_ids_1__get__(PyObject *__pyx_v_self) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids_1__get__(PyObject *__pyx_v_self) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_7row_ids___get__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids___get__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 0);
@@ -5828,7 +6362,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":31
+/* "pyene/engines/_glpk.pyx":39
  * 
  *     cdef readonly dict row_ids
  *     cdef readonly dict col_ids             # <<<<<<<<<<<<<<
@@ -5837,19 +6371,19 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7row_ids___get__(struct __pyx_obj_
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7col_ids_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_7col_ids_1__get__(PyObject *__pyx_v_self) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids_1__get__(PyObject *__pyx_v_self) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_7col_ids___get__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids___get__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 0);
@@ -5865,7 +6399,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "_glpk.pyx":32
+/* "pyene/engines/_glpk.pyx":40
  *     cdef readonly dict row_ids
  *     cdef readonly dict col_ids
  *     cdef readonly  dict stats             # <<<<<<<<<<<<<<
@@ -5874,19 +6408,19 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_7col_ids___get__(struct __pyx_obj_
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_5stats_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_5stats_1__get__(PyObject *__pyx_v_self) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5stats_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5stats_1__get__(PyObject *__pyx_v_self) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_5stats___get__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_5stats___get__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_5stats___get__(struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_5stats___get__(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 0);
@@ -5909,19 +6443,20 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_5stats___get__(struct __pyx_obj_5_
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_31__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_31__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_35__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_34__reduce_cython__[] = "GLPKSolver.__reduce_cython__(self)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_35__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__reduce_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_34__reduce_cython__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_34__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5933,11 +6468,11 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(CYTHON_UNUSED 
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __PYX_ERR(1, 2, __pyx_L1_error)
+  __PYX_ERR(2, 2, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
@@ -5948,7 +6483,7 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(CYTHON_UNUSED 
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -5963,19 +6498,20 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_30__reduce_cython__(CYTHON_UNUSED 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_33__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
-static PyObject *__pyx_pw_5_glpk_10GLPKSolver_33__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_37__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
+static char __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_36__setstate_cython__[] = "GLPKSolver.__setstate_cython__(self, __pyx_state)";
+static PyObject *__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_37__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__setstate_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5_glpk_10GLPKSolver_32__setstate_cython__(((struct __pyx_obj_5_glpk_GLPKSolver *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
+  __pyx_r = __pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_36__setstate_cython__(((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5_glpk_10GLPKSolver_32__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5_glpk_GLPKSolver *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_5pyene_7engines_5_glpk_10GLPKSolver_36__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5986,11 +6522,11 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_32__setstate_cython__(CYTHON_UNUSE
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_Raise(__pyx_t_1, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __PYX_ERR(1, 4, __pyx_L1_error)
+  __PYX_ERR(2, 4, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
@@ -6002,16 +6538,16 @@ static PyObject *__pyx_pf_5_glpk_10GLPKSolver_32__setstate_cython__(CYTHON_UNUSE
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("_glpk.GLPKSolver.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("pyene.engines._glpk.GLPKSolver.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
-static struct __pyx_vtabstruct_5_glpk_GLPKSolver __pyx_vtable_5_glpk_GLPKSolver;
+static struct __pyx_vtabstruct_5pyene_7engines_5_glpk_GLPKSolver __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver;
 
-static PyObject *__pyx_tp_new_5_glpk_GLPKSolver(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
-  struct __pyx_obj_5_glpk_GLPKSolver *p;
+static PyObject *__pyx_tp_new_5pyene_7engines_5_glpk_GLPKSolver(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *p;
   PyObject *o;
   if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
     o = (*t->tp_alloc)(t, 0);
@@ -6019,20 +6555,20 @@ static PyObject *__pyx_tp_new_5_glpk_GLPKSolver(PyTypeObject *t, CYTHON_UNUSED P
     o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
   }
   if (unlikely(!o)) return 0;
-  p = ((struct __pyx_obj_5_glpk_GLPKSolver *)o);
-  p->__pyx_vtab = __pyx_vtabptr_5_glpk_GLPKSolver;
+  p = ((struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)o);
+  p->__pyx_vtab = __pyx_vtabptr_5pyene_7engines_5_glpk_GLPKSolver;
   p->row_ids = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->col_ids = ((PyObject*)Py_None); Py_INCREF(Py_None);
   p->stats = ((PyObject*)Py_None); Py_INCREF(Py_None);
-  if (unlikely(__pyx_pw_5_glpk_10GLPKSolver_1__cinit__(o, __pyx_empty_tuple, NULL) < 0)) goto bad;
+  if (unlikely(__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_1__cinit__(o, __pyx_empty_tuple, NULL) < 0)) goto bad;
   return o;
   bad:
   Py_DECREF(o); o = 0;
   return NULL;
 }
 
-static void __pyx_tp_dealloc_5_glpk_GLPKSolver(PyObject *o) {
-  struct __pyx_obj_5_glpk_GLPKSolver *p = (struct __pyx_obj_5_glpk_GLPKSolver *)o;
+static void __pyx_tp_dealloc_5pyene_7engines_5_glpk_GLPKSolver(PyObject *o) {
+  struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *p = (struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)o;
   #if CYTHON_USE_TP_FINALIZE
   if (unlikely(PyType_HasFeature(Py_TYPE(o), Py_TPFLAGS_HAVE_FINALIZE) && Py_TYPE(o)->tp_finalize) && !_PyGC_FINALIZED(o)) {
     if (PyObject_CallFinalizerFromDealloc(o)) return;
@@ -6043,7 +6579,7 @@ static void __pyx_tp_dealloc_5_glpk_GLPKSolver(PyObject *o) {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
     ++Py_REFCNT(o);
-    __pyx_pw_5_glpk_10GLPKSolver_5__dealloc__(o);
+    __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5__dealloc__(o);
     --Py_REFCNT(o);
     PyErr_Restore(etype, eval, etb);
   }
@@ -6053,9 +6589,9 @@ static void __pyx_tp_dealloc_5_glpk_GLPKSolver(PyObject *o) {
   (*Py_TYPE(o)->tp_free)(o);
 }
 
-static int __pyx_tp_traverse_5_glpk_GLPKSolver(PyObject *o, visitproc v, void *a) {
+static int __pyx_tp_traverse_5pyene_7engines_5_glpk_GLPKSolver(PyObject *o, visitproc v, void *a) {
   int e;
-  struct __pyx_obj_5_glpk_GLPKSolver *p = (struct __pyx_obj_5_glpk_GLPKSolver *)o;
+  struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *p = (struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)o;
   if (p->row_ids) {
     e = (*v)(p->row_ids, a); if (e) return e;
   }
@@ -6068,9 +6604,9 @@ static int __pyx_tp_traverse_5_glpk_GLPKSolver(PyObject *o, visitproc v, void *a
   return 0;
 }
 
-static int __pyx_tp_clear_5_glpk_GLPKSolver(PyObject *o) {
+static int __pyx_tp_clear_5pyene_7engines_5_glpk_GLPKSolver(PyObject *o) {
   PyObject* tmp;
-  struct __pyx_obj_5_glpk_GLPKSolver *p = (struct __pyx_obj_5_glpk_GLPKSolver *)o;
+  struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *p = (struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *)o;
   tmp = ((PyObject*)p->row_ids);
   p->row_ids = ((PyObject*)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
@@ -6083,49 +6619,51 @@ static int __pyx_tp_clear_5_glpk_GLPKSolver(PyObject *o) {
   return 0;
 }
 
-static PyObject *__pyx_getprop_5_glpk_10GLPKSolver_row_ids(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_5_glpk_10GLPKSolver_7row_ids_1__get__(o);
+static PyObject *__pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_row_ids(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7row_ids_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_5_glpk_10GLPKSolver_col_ids(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_5_glpk_10GLPKSolver_7col_ids_1__get__(o);
+static PyObject *__pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_col_ids(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7col_ids_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_5_glpk_10GLPKSolver_stats(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_5_glpk_10GLPKSolver_5stats_1__get__(o);
+static PyObject *__pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_stats(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_5stats_1__get__(o);
 }
 
-static PyMethodDef __pyx_methods_5_glpk_GLPKSolver[] = {
-  {"set_dir", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_7set_dir, METH_O, 0},
-  {"add_rows", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_9add_rows, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5_glpk_10GLPKSolver_8add_rows},
-  {"add_cols", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_11add_cols, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5_glpk_10GLPKSolver_10add_cols},
-  {"set_mat_row", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_13set_mat_row, METH_VARARGS|METH_KEYWORDS, 0},
-  {"load_matrix", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_15load_matrix, METH_VARARGS|METH_KEYWORDS, 0},
-  {"set_row_bnds", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_17set_row_bnds, METH_VARARGS|METH_KEYWORDS, 0},
-  {"set_col_bnds", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_19set_col_bnds, METH_VARARGS|METH_KEYWORDS, 0},
-  {"set_obj_coef", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_21set_obj_coef, METH_VARARGS|METH_KEYWORDS, 0},
-  {"simplex", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_23simplex, METH_NOARGS, 0},
-  {"status", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_25status, METH_NOARGS, 0},
-  {"get_col_prim", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5_glpk_10GLPKSolver_27get_col_prim, METH_VARARGS|METH_KEYWORDS, 0},
-  {"get_obj_val", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_29get_obj_val, METH_NOARGS, 0},
-  {"__reduce_cython__", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_31__reduce_cython__, METH_NOARGS, 0},
-  {"__setstate_cython__", (PyCFunction)__pyx_pw_5_glpk_10GLPKSolver_33__setstate_cython__, METH_O, 0},
+static PyMethodDef __pyx_methods_5pyene_7engines_5_glpk_GLPKSolver[] = {
+  {"set_dir", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_7set_dir, METH_O, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_6set_dir},
+  {"add_rows", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_9add_rows, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_8add_rows},
+  {"add_cols", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_11add_cols, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_10add_cols},
+  {"set_mat_row", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_13set_mat_row, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_12set_mat_row},
+  {"load_matrix", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_15load_matrix, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_14load_matrix},
+  {"set_row_bnds", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_17set_row_bnds, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_16set_row_bnds},
+  {"set_col_bnds", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_19set_col_bnds, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_18set_col_bnds},
+  {"set_obj_coef", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_21set_obj_coef, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_20set_obj_coef},
+  {"simplex", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_23simplex, METH_NOARGS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_22simplex},
+  {"status", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_25status, METH_NOARGS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_24status},
+  {"get_col_prim", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_27get_col_prim, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_26get_col_prim},
+  {"get_obj_val", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_29get_obj_val, METH_NOARGS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_28get_obj_val},
+  {"set_col_stat", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_31set_col_stat, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_30set_col_stat},
+  {"get_row_dual", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_33get_row_dual, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_32get_row_dual},
+  {"__reduce_cython__", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_35__reduce_cython__, METH_NOARGS, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_34__reduce_cython__},
+  {"__setstate_cython__", (PyCFunction)__pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_37__setstate_cython__, METH_O, __pyx_doc_5pyene_7engines_5_glpk_10GLPKSolver_36__setstate_cython__},
   {0, 0, 0, 0}
 };
 
-static struct PyGetSetDef __pyx_getsets_5_glpk_GLPKSolver[] = {
-  {(char *)"row_ids", __pyx_getprop_5_glpk_10GLPKSolver_row_ids, 0, (char *)0, 0},
-  {(char *)"col_ids", __pyx_getprop_5_glpk_10GLPKSolver_col_ids, 0, (char *)0, 0},
-  {(char *)"stats", __pyx_getprop_5_glpk_10GLPKSolver_stats, 0, (char *)0, 0},
+static struct PyGetSetDef __pyx_getsets_5pyene_7engines_5_glpk_GLPKSolver[] = {
+  {(char *)"row_ids", __pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_row_ids, 0, (char *)0, 0},
+  {(char *)"col_ids", __pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_col_ids, 0, (char *)0, 0},
+  {(char *)"stats", __pyx_getprop_5pyene_7engines_5_glpk_10GLPKSolver_stats, 0, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 
-static PyTypeObject __pyx_type_5_glpk_GLPKSolver = {
+static PyTypeObject __pyx_type_5pyene_7engines_5_glpk_GLPKSolver = {
   PyVarObject_HEAD_INIT(0, 0)
-  "_glpk.GLPKSolver", /*tp_name*/
-  sizeof(struct __pyx_obj_5_glpk_GLPKSolver), /*tp_basicsize*/
+  "pyene.engines._glpk.GLPKSolver", /*tp_name*/
+  sizeof(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_5_glpk_GLPKSolver, /*tp_dealloc*/
+  __pyx_tp_dealloc_5pyene_7engines_5_glpk_GLPKSolver, /*tp_dealloc*/
   #if PY_VERSION_HEX < 0x030800b4
   0, /*tp_print*/
   #endif
@@ -6151,24 +6689,24 @@ static PyTypeObject __pyx_type_5_glpk_GLPKSolver = {
   0, /*tp_setattro*/
   0, /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_GC, /*tp_flags*/
-  0, /*tp_doc*/
-  __pyx_tp_traverse_5_glpk_GLPKSolver, /*tp_traverse*/
-  __pyx_tp_clear_5_glpk_GLPKSolver, /*tp_clear*/
+  "GLPKSolver(time_limit=None, iteration_limit=None, message_level=u'error', simplex_method=u'dualprimal')", /*tp_doc*/
+  __pyx_tp_traverse_5pyene_7engines_5_glpk_GLPKSolver, /*tp_traverse*/
+  __pyx_tp_clear_5pyene_7engines_5_glpk_GLPKSolver, /*tp_clear*/
   0, /*tp_richcompare*/
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
   0, /*tp_iternext*/
-  __pyx_methods_5_glpk_GLPKSolver, /*tp_methods*/
+  __pyx_methods_5pyene_7engines_5_glpk_GLPKSolver, /*tp_methods*/
   0, /*tp_members*/
-  __pyx_getsets_5_glpk_GLPKSolver, /*tp_getset*/
+  __pyx_getsets_5pyene_7engines_5_glpk_GLPKSolver, /*tp_getset*/
   0, /*tp_base*/
   0, /*tp_dict*/
   0, /*tp_descr_get*/
   0, /*tp_descr_set*/
   0, /*tp_dictoffset*/
-  __pyx_pw_5_glpk_10GLPKSolver_3__init__, /*tp_init*/
+  __pyx_pw_5pyene_7engines_5_glpk_10GLPKSolver_3__init__, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new_5_glpk_GLPKSolver, /*tp_new*/
+  __pyx_tp_new_5pyene_7engines_5_glpk_GLPKSolver, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -6236,90 +6774,97 @@ static struct PyModuleDef __pyx_moduledef = {
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_u_Column_name, __pyx_k_Column_name, sizeof(__pyx_k_Column_name), 0, 1, 0, 0},
-  {&__pyx_kp_s_Constructing_initial_basis, __pyx_k_Constructing_initial_basis, sizeof(__pyx_k_Constructing_initial_basis), 0, 0, 1, 0},
+  {&__pyx_kp_u_Constructing_initial_basis, __pyx_k_Constructing_initial_basis, sizeof(__pyx_k_Constructing_initial_basis), 0, 1, 0, 0},
   {&__pyx_n_s_GLPKSolver, __pyx_k_GLPKSolver, sizeof(__pyx_k_GLPKSolver), 0, 0, 1, 1},
   {&__pyx_n_s_GLP_BND_TYPES, __pyx_k_GLP_BND_TYPES, sizeof(__pyx_k_GLP_BND_TYPES), 0, 0, 1, 1},
   {&__pyx_n_s_GLP_DIR, __pyx_k_GLP_DIR, sizeof(__pyx_k_GLP_DIR), 0, 0, 1, 1},
   {&__pyx_n_s_GLP_METH, __pyx_k_GLP_METH, sizeof(__pyx_k_GLP_METH), 0, 0, 1, 1},
+  {&__pyx_n_s_GLP_STATUS, __pyx_k_GLP_STATUS, sizeof(__pyx_k_GLP_STATUS), 0, 0, 1, 1},
   {&__pyx_n_s_KeyError, __pyx_k_KeyError, sizeof(__pyx_k_KeyError), 0, 0, 1, 1},
+  {&__pyx_kp_u_None, __pyx_k_None, sizeof(__pyx_k_None), 0, 1, 0, 0},
   {&__pyx_kp_u_Row_name, __pyx_k_Row_name, sizeof(__pyx_k_Row_name), 0, 1, 0, 0},
-  {&__pyx_kp_s_Size_of_triangular_part_is, __pyx_k_Size_of_triangular_part_is, sizeof(__pyx_k_Size_of_triangular_part_is), 0, 0, 1, 0},
+  {&__pyx_kp_u_Size_of_triangular_part_is, __pyx_k_Size_of_triangular_part_is, sizeof(__pyx_k_Size_of_triangular_part_is), 0, 1, 0, 0},
   {&__pyx_kp_u_The_length_of_the_cols, __pyx_k_The_length_of_the_cols, sizeof(__pyx_k_The_length_of_the_cols), 0, 1, 0, 0},
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
-  {&__pyx_kp_s_UTF_8, __pyx_k_UTF_8, sizeof(__pyx_k_UTF_8), 0, 0, 1, 0},
+  {&__pyx_kp_u_UTF_8, __pyx_k_UTF_8, sizeof(__pyx_k_UTF_8), 0, 1, 0, 0},
   {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_n_s_add_cols, __pyx_k_add_cols, sizeof(__pyx_k_add_cols), 0, 0, 1, 1},
   {&__pyx_n_s_add_rows, __pyx_k_add_rows, sizeof(__pyx_k_add_rows), 0, 0, 1, 1},
-  {&__pyx_n_s_all, __pyx_k_all, sizeof(__pyx_k_all), 0, 0, 1, 1},
+  {&__pyx_n_u_all, __pyx_k_all, sizeof(__pyx_k_all), 0, 1, 0, 1},
   {&__pyx_kp_u_already_exists, __pyx_k_already_exists, sizeof(__pyx_k_already_exists), 0, 1, 0, 0},
   {&__pyx_kp_u_and_values, __pyx_k_and_values, sizeof(__pyx_k_and_values), 0, 1, 0, 0},
   {&__pyx_kp_u_arguments_mut_be_the_same, __pyx_k_arguments_mut_be_the_same, sizeof(__pyx_k_arguments_mut_be_the_same), 0, 1, 0, 0},
   {&__pyx_n_s_arpy, __pyx_k_arpy, sizeof(__pyx_k_arpy), 0, 0, 1, 1},
-  {&__pyx_n_s_bounded, __pyx_k_bounded, sizeof(__pyx_k_bounded), 0, 0, 1, 1},
+  {&__pyx_n_u_basic, __pyx_k_basic, sizeof(__pyx_k_basic), 0, 1, 0, 1},
+  {&__pyx_n_u_bounded, __pyx_k_bounded, sizeof(__pyx_k_bounded), 0, 1, 0, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_coef, __pyx_k_coef, sizeof(__pyx_k_coef), 0, 0, 1, 1},
   {&__pyx_n_s_col_offset, __pyx_k_col_offset, sizeof(__pyx_k_col_offset), 0, 0, 1, 1},
   {&__pyx_n_s_cols, __pyx_k_cols, sizeof(__pyx_k_cols), 0, 0, 1, 1},
-  {&__pyx_n_s_debug, __pyx_k_debug, sizeof(__pyx_k_debug), 0, 0, 1, 1},
+  {&__pyx_n_u_debug, __pyx_k_debug, sizeof(__pyx_k_debug), 0, 1, 0, 1},
   {&__pyx_n_s_decode, __pyx_k_decode, sizeof(__pyx_k_decode), 0, 0, 1, 1},
-  {&__pyx_n_s_dual, __pyx_k_dual, sizeof(__pyx_k_dual), 0, 0, 1, 1},
-  {&__pyx_n_s_dualprimal, __pyx_k_dualprimal, sizeof(__pyx_k_dualprimal), 0, 0, 1, 1},
-  {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
+  {&__pyx_n_u_dual, __pyx_k_dual, sizeof(__pyx_k_dual), 0, 1, 0, 1},
+  {&__pyx_n_u_dualprimal, __pyx_k_dualprimal, sizeof(__pyx_k_dualprimal), 0, 1, 0, 1},
   {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
-  {&__pyx_n_s_error, __pyx_k_error, sizeof(__pyx_k_error), 0, 0, 1, 1},
-  {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
-  {&__pyx_n_s_fixed, __pyx_k_fixed, sizeof(__pyx_k_fixed), 0, 0, 1, 1},
-  {&__pyx_n_s_free, __pyx_k_free, sizeof(__pyx_k_free), 0, 0, 1, 1},
+  {&__pyx_n_u_error, __pyx_k_error, sizeof(__pyx_k_error), 0, 1, 0, 1},
+  {&__pyx_n_u_fixed, __pyx_k_fixed, sizeof(__pyx_k_fixed), 0, 1, 0, 1},
+  {&__pyx_n_u_free, __pyx_k_free, sizeof(__pyx_k_free), 0, 1, 0, 1},
   {&__pyx_n_s_get_col_prim, __pyx_k_get_col_prim, sizeof(__pyx_k_get_col_prim), 0, 0, 1, 1},
   {&__pyx_n_s_get_obj_val, __pyx_k_get_obj_val, sizeof(__pyx_k_get_obj_val), 0, 0, 1, 1},
+  {&__pyx_n_s_get_row_dual, __pyx_k_get_row_dual, sizeof(__pyx_k_get_row_dual), 0, 0, 1, 1},
   {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
   {&__pyx_n_s_iapy, __pyx_k_iapy, sizeof(__pyx_k_iapy), 0, 0, 1, 1},
-  {&__pyx_kp_s_ill_conditioned_matrix, __pyx_k_ill_conditioned_matrix, sizeof(__pyx_k_ill_conditioned_matrix), 0, 0, 1, 0},
-  {&__pyx_n_s_inf, __pyx_k_inf, sizeof(__pyx_k_inf), 0, 0, 1, 1},
-  {&__pyx_kp_s_invalid_basis, __pyx_k_invalid_basis, sizeof(__pyx_k_invalid_basis), 0, 0, 1, 0},
-  {&__pyx_kp_s_invalid_bounds, __pyx_k_invalid_bounds, sizeof(__pyx_k_invalid_bounds), 0, 0, 1, 0},
-  {&__pyx_kp_s_invalid_data, __pyx_k_invalid_data, sizeof(__pyx_k_invalid_data), 0, 0, 1, 0},
+  {&__pyx_kp_u_ill_conditioned_matrix, __pyx_k_ill_conditioned_matrix, sizeof(__pyx_k_ill_conditioned_matrix), 0, 1, 0, 0},
+  {&__pyx_n_u_inf, __pyx_k_inf, sizeof(__pyx_k_inf), 0, 1, 0, 1},
+  {&__pyx_kp_u_invalid_basis, __pyx_k_invalid_basis, sizeof(__pyx_k_invalid_basis), 0, 1, 0, 0},
+  {&__pyx_kp_u_invalid_bounds, __pyx_k_invalid_bounds, sizeof(__pyx_k_invalid_bounds), 0, 1, 0, 0},
+  {&__pyx_kp_u_invalid_data, __pyx_k_invalid_data, sizeof(__pyx_k_invalid_data), 0, 1, 0, 0},
   {&__pyx_n_s_iteration_limit, __pyx_k_iteration_limit, sizeof(__pyx_k_iteration_limit), 0, 0, 1, 1},
-  {&__pyx_kp_s_iteration_limit_exceeded, __pyx_k_iteration_limit_exceeded, sizeof(__pyx_k_iteration_limit_exceeded), 0, 0, 1, 0},
+  {&__pyx_kp_u_iteration_limit_exceeded, __pyx_k_iteration_limit_exceeded, sizeof(__pyx_k_iteration_limit_exceeded), 0, 1, 0, 0},
   {&__pyx_n_s_japy, __pyx_k_japy, sizeof(__pyx_k_japy), 0, 0, 1, 1},
   {&__pyx_n_s_lb, __pyx_k_lb, sizeof(__pyx_k_lb), 0, 0, 1, 1},
   {&__pyx_n_s_load_matrix, __pyx_k_load_matrix, sizeof(__pyx_k_load_matrix), 0, 0, 1, 1},
-  {&__pyx_n_s_lower, __pyx_k_lower, sizeof(__pyx_k_lower), 0, 0, 1, 1},
+  {&__pyx_n_u_lower, __pyx_k_lower, sizeof(__pyx_k_lower), 0, 1, 0, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
-  {&__pyx_n_s_max, __pyx_k_max, sizeof(__pyx_k_max), 0, 0, 1, 1},
-  {&__pyx_n_s_maximise, __pyx_k_maximise, sizeof(__pyx_k_maximise), 0, 0, 1, 1},
+  {&__pyx_n_u_max, __pyx_k_max, sizeof(__pyx_k_max), 0, 1, 0, 1},
+  {&__pyx_n_u_maximise, __pyx_k_maximise, sizeof(__pyx_k_maximise), 0, 1, 0, 1},
   {&__pyx_n_s_message_level, __pyx_k_message_level, sizeof(__pyx_k_message_level), 0, 0, 1, 1},
   {&__pyx_n_s_message_levels, __pyx_k_message_levels, sizeof(__pyx_k_message_levels), 0, 0, 1, 1},
-  {&__pyx_n_s_min, __pyx_k_min, sizeof(__pyx_k_min), 0, 0, 1, 1},
-  {&__pyx_n_s_minimise, __pyx_k_minimise, sizeof(__pyx_k_minimise), 0, 0, 1, 1},
+  {&__pyx_n_u_min, __pyx_k_min, sizeof(__pyx_k_min), 0, 1, 0, 1},
+  {&__pyx_n_u_minimise, __pyx_k_minimise, sizeof(__pyx_k_minimise), 0, 1, 0, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_name_2, __pyx_k_name_2, sizeof(__pyx_k_name_2), 0, 0, 1, 1},
   {&__pyx_n_s_ne, __pyx_k_ne, sizeof(__pyx_k_ne), 0, 0, 1, 1},
-  {&__pyx_kp_s_no_convergence, __pyx_k_no_convergence, sizeof(__pyx_k_no_convergence), 0, 0, 1, 0},
+  {&__pyx_kp_u_no_convergence, __pyx_k_no_convergence, sizeof(__pyx_k_no_convergence), 0, 1, 0, 0},
   {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
-  {&__pyx_kp_s_no_dual_feasible_solution, __pyx_k_no_dual_feasible_solution, sizeof(__pyx_k_no_dual_feasible_solution), 0, 0, 1, 0},
-  {&__pyx_kp_s_no_feasible_solution_exists, __pyx_k_no_feasible_solution_exists, sizeof(__pyx_k_no_feasible_solution_exists), 0, 0, 1, 0},
-  {&__pyx_kp_s_no_primal_dual_feasible_solution, __pyx_k_no_primal_dual_feasible_solution, sizeof(__pyx_k_no_primal_dual_feasible_solution), 0, 0, 1, 0},
-  {&__pyx_kp_s_no_primal_feasible_solution, __pyx_k_no_primal_feasible_solution, sizeof(__pyx_k_no_primal_feasible_solution), 0, 0, 1, 0},
-  {&__pyx_n_s_normal, __pyx_k_normal, sizeof(__pyx_k_normal), 0, 0, 1, 1},
+  {&__pyx_kp_u_no_dual_feasible_solution, __pyx_k_no_dual_feasible_solution, sizeof(__pyx_k_no_dual_feasible_solution), 0, 1, 0, 0},
+  {&__pyx_kp_u_no_feasible_solution_exists, __pyx_k_no_feasible_solution_exists, sizeof(__pyx_k_no_feasible_solution_exists), 0, 1, 0, 0},
+  {&__pyx_kp_u_no_primal_dual_feasible_solution, __pyx_k_no_primal_dual_feasible_solution, sizeof(__pyx_k_no_primal_dual_feasible_solution), 0, 1, 0, 0},
+  {&__pyx_kp_u_no_primal_feasible_solution, __pyx_k_no_primal_feasible_solution, sizeof(__pyx_k_no_primal_feasible_solution), 0, 1, 0, 0},
+  {&__pyx_n_u_nonbasicfixed, __pyx_k_nonbasicfixed, sizeof(__pyx_k_nonbasicfixed), 0, 1, 0, 1},
+  {&__pyx_n_u_nonbasicfree, __pyx_k_nonbasicfree, sizeof(__pyx_k_nonbasicfree), 0, 1, 0, 1},
+  {&__pyx_n_u_nonbasiclower, __pyx_k_nonbasiclower, sizeof(__pyx_k_nonbasiclower), 0, 1, 0, 1},
+  {&__pyx_n_u_nonbasicupper, __pyx_k_nonbasicupper, sizeof(__pyx_k_nonbasicupper), 0, 1, 0, 1},
+  {&__pyx_n_u_normal, __pyx_k_normal, sizeof(__pyx_k_normal), 0, 1, 0, 1},
   {&__pyx_n_s_num, __pyx_k_num, sizeof(__pyx_k_num), 0, 0, 1, 1},
-  {&__pyx_kp_s_numerical_instability, __pyx_k_numerical_instability, sizeof(__pyx_k_numerical_instability), 0, 0, 1, 0},
-  {&__pyx_kp_s_objective_lower_limit_reached, __pyx_k_objective_lower_limit_reached, sizeof(__pyx_k_objective_lower_limit_reached), 0, 0, 1, 0},
-  {&__pyx_kp_s_objective_upper_limit_reached, __pyx_k_objective_upper_limit_reached, sizeof(__pyx_k_objective_upper_limit_reached), 0, 0, 1, 0},
-  {&__pyx_n_s_off, __pyx_k_off, sizeof(__pyx_k_off), 0, 0, 1, 1},
-  {&__pyx_n_s_primal, __pyx_k_primal, sizeof(__pyx_k_primal), 0, 0, 1, 1},
+  {&__pyx_kp_u_numerical_instability, __pyx_k_numerical_instability, sizeof(__pyx_k_numerical_instability), 0, 1, 0, 0},
+  {&__pyx_kp_u_objective_lower_limit_reached, __pyx_k_objective_lower_limit_reached, sizeof(__pyx_k_objective_lower_limit_reached), 0, 1, 0, 0},
+  {&__pyx_kp_u_objective_upper_limit_reached, __pyx_k_objective_upper_limit_reached, sizeof(__pyx_k_objective_upper_limit_reached), 0, 1, 0, 0},
+  {&__pyx_n_u_off, __pyx_k_off, sizeof(__pyx_k_off), 0, 1, 0, 1},
+  {&__pyx_n_u_primal, __pyx_k_primal, sizeof(__pyx_k_primal), 0, 1, 0, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
   {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
   {&__pyx_n_s_reduce, __pyx_k_reduce, sizeof(__pyx_k_reduce), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_cython, __pyx_k_reduce_cython, sizeof(__pyx_k_reduce_cython), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_ex, __pyx_k_reduce_ex, sizeof(__pyx_k_reduce_ex), 0, 0, 1, 1},
-  {&__pyx_kp_s_relative_mip_gap_tolerance_reach, __pyx_k_relative_mip_gap_tolerance_reach, sizeof(__pyx_k_relative_mip_gap_tolerance_reach), 0, 0, 1, 0},
-  {&__pyx_kp_s_result_out_of_range, __pyx_k_result_out_of_range, sizeof(__pyx_k_result_out_of_range), 0, 0, 1, 0},
-  {&__pyx_kp_s_root_LP_optimum_not_provided, __pyx_k_root_LP_optimum_not_provided, sizeof(__pyx_k_root_LP_optimum_not_provided), 0, 0, 1, 0},
+  {&__pyx_kp_u_relative_mip_gap_tolerance_reach, __pyx_k_relative_mip_gap_tolerance_reach, sizeof(__pyx_k_relative_mip_gap_tolerance_reach), 0, 1, 0, 0},
+  {&__pyx_kp_u_result_out_of_range, __pyx_k_result_out_of_range, sizeof(__pyx_k_result_out_of_range), 0, 1, 0, 0},
+  {&__pyx_kp_u_root_LP_optimum_not_provided, __pyx_k_root_LP_optimum_not_provided, sizeof(__pyx_k_root_LP_optimum_not_provided), 0, 1, 0, 0},
   {&__pyx_n_s_row_offset, __pyx_k_row_offset, sizeof(__pyx_k_row_offset), 0, 0, 1, 1},
-  {&__pyx_kp_s_search_terminated_by_application, __pyx_k_search_terminated_by_application, sizeof(__pyx_k_search_terminated_by_application), 0, 0, 1, 0},
+  {&__pyx_kp_u_search_terminated_by_application, __pyx_k_search_terminated_by_application, sizeof(__pyx_k_search_terminated_by_application), 0, 1, 0, 0},
   {&__pyx_n_s_set_col_bnds, __pyx_k_set_col_bnds, sizeof(__pyx_k_set_col_bnds), 0, 0, 1, 1},
+  {&__pyx_n_s_set_col_stat, __pyx_k_set_col_stat, sizeof(__pyx_k_set_col_stat), 0, 0, 1, 1},
   {&__pyx_n_s_set_dir, __pyx_k_set_dir, sizeof(__pyx_k_set_dir), 0, 0, 1, 1},
   {&__pyx_n_s_set_mat_row, __pyx_k_set_mat_row, sizeof(__pyx_k_set_mat_row), 0, 0, 1, 1},
   {&__pyx_n_s_set_obj_coef, __pyx_k_set_obj_coef, sizeof(__pyx_k_set_obj_coef), 0, 0, 1, 1},
@@ -6329,32 +6874,33 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_simplex, __pyx_k_simplex, sizeof(__pyx_k_simplex), 0, 0, 1, 1},
   {&__pyx_n_s_simplex_method, __pyx_k_simplex_method, sizeof(__pyx_k_simplex_method), 0, 0, 1, 1},
   {&__pyx_n_s_simplex_status_string, __pyx_k_simplex_status_string, sizeof(__pyx_k_simplex_status_string), 0, 0, 1, 1},
-  {&__pyx_kp_s_singular_matrix, __pyx_k_singular_matrix, sizeof(__pyx_k_singular_matrix), 0, 0, 1, 0},
-  {&__pyx_kp_s_solution_is_feasible, __pyx_k_solution_is_feasible, sizeof(__pyx_k_solution_is_feasible), 0, 0, 1, 0},
-  {&__pyx_kp_s_solution_is_infeasible, __pyx_k_solution_is_infeasible, sizeof(__pyx_k_solution_is_infeasible), 0, 0, 1, 0},
-  {&__pyx_kp_s_solution_is_optimal, __pyx_k_solution_is_optimal, sizeof(__pyx_k_solution_is_optimal), 0, 0, 1, 0},
-  {&__pyx_kp_s_solution_is_unbounded, __pyx_k_solution_is_unbounded, sizeof(__pyx_k_solution_is_unbounded), 0, 0, 1, 0},
-  {&__pyx_kp_s_solution_is_undefined, __pyx_k_solution_is_undefined, sizeof(__pyx_k_solution_is_undefined), 0, 0, 1, 0},
-  {&__pyx_kp_s_solver_failed, __pyx_k_solver_failed, sizeof(__pyx_k_solver_failed), 0, 0, 1, 0},
+  {&__pyx_kp_u_singular_matrix, __pyx_k_singular_matrix, sizeof(__pyx_k_singular_matrix), 0, 1, 0, 0},
+  {&__pyx_kp_u_solution_is_feasible, __pyx_k_solution_is_feasible, sizeof(__pyx_k_solution_is_feasible), 0, 1, 0, 0},
+  {&__pyx_kp_u_solution_is_infeasible, __pyx_k_solution_is_infeasible, sizeof(__pyx_k_solution_is_infeasible), 0, 1, 0, 0},
+  {&__pyx_kp_u_solution_is_optimal, __pyx_k_solution_is_optimal, sizeof(__pyx_k_solution_is_optimal), 0, 1, 0, 0},
+  {&__pyx_kp_u_solution_is_unbounded, __pyx_k_solution_is_unbounded, sizeof(__pyx_k_solution_is_unbounded), 0, 1, 0, 0},
+  {&__pyx_kp_u_solution_is_undefined, __pyx_k_solution_is_undefined, sizeof(__pyx_k_solution_is_undefined), 0, 1, 0, 0},
+  {&__pyx_kp_u_solver_failed, __pyx_k_solver_failed, sizeof(__pyx_k_solver_failed), 0, 1, 0, 0},
   {&__pyx_n_s_startswith, __pyx_k_startswith, sizeof(__pyx_k_startswith), 0, 0, 1, 1},
   {&__pyx_n_s_status, __pyx_k_status, sizeof(__pyx_k_status), 0, 0, 1, 1},
   {&__pyx_n_s_status_string, __pyx_k_status_string, sizeof(__pyx_k_status_string), 0, 0, 1, 1},
   {&__pyx_n_s_strip, __pyx_k_strip, sizeof(__pyx_k_strip), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_time_limit, __pyx_k_time_limit, sizeof(__pyx_k_time_limit), 0, 0, 1, 1},
-  {&__pyx_kp_s_time_limit_exceeded, __pyx_k_time_limit_exceeded, sizeof(__pyx_k_time_limit_exceeded), 0, 0, 1, 0},
+  {&__pyx_kp_u_time_limit_exceeded, __pyx_k_time_limit_exceeded, sizeof(__pyx_k_time_limit_exceeded), 0, 1, 0, 0},
   {&__pyx_n_s_type, __pyx_k_type, sizeof(__pyx_k_type), 0, 0, 1, 1},
   {&__pyx_n_s_ub, __pyx_k_ub, sizeof(__pyx_k_ub), 0, 0, 1, 1},
-  {&__pyx_n_s_upper, __pyx_k_upper, sizeof(__pyx_k_upper), 0, 0, 1, 1},
+  {&__pyx_n_u_upper, __pyx_k_upper, sizeof(__pyx_k_upper), 0, 1, 0, 1},
   {&__pyx_n_s_values, __pyx_k_values, sizeof(__pyx_k_values), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) __PYX_ERR(0, 67, __pyx_L1_error)
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 79, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 88, __pyx_L1_error)
-  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(0, 96, __pyx_L1_error)
-  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_builtin_print = __Pyx_GetBuiltinName(__pyx_n_s_print); if (!__pyx_builtin_print) __PYX_ERR(0, 45, __pyx_L1_error)
+  __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) __PYX_ERR(1, 75, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(1, 87, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 96, __pyx_L1_error)
+  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(1, 104, __pyx_L1_error)
+  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(2, 2, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -6370,7 +6916,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple_)) __PYX_ERR(1, 2, __pyx_L1_error)
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple_)) __PYX_ERR(2, 2, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
@@ -6379,7 +6925,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")             # <<<<<<<<<<<<<<
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(1, 4, __pyx_L1_error)
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_no_default___reduce___due_to_non); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(2, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
   __Pyx_RefNannyFinishContext();
@@ -6390,9 +6936,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
 }
 
 static CYTHON_SMALL_CODE int __Pyx_InitGlobals(void) {
-  if (__Pyx_InitStrings(__pyx_string_tab) < 0) __PYX_ERR(0, 1, __pyx_L1_error);
-  __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_int_1 = PyInt_FromLong(1); if (unlikely(!__pyx_int_1)) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitStrings(__pyx_string_tab) < 0) __PYX_ERR(1, 1, __pyx_L1_error);
+  __pyx_int_0 = PyInt_FromLong(0); if (unlikely(!__pyx_int_0)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_int_1 = PyInt_FromLong(1); if (unlikely(!__pyx_int_1)) __PYX_ERR(1, 1, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -6434,30 +6980,32 @@ static int __Pyx_modinit_type_init_code(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_init_code", 0);
   /*--- Type init code ---*/
-  __pyx_vtabptr_5_glpk_GLPKSolver = &__pyx_vtable_5_glpk_GLPKSolver;
-  __pyx_vtable_5_glpk_GLPKSolver.set_dir = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_set_dir;
-  __pyx_vtable_5_glpk_GLPKSolver.add_rows = (int (*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_add_rows;
-  __pyx_vtable_5_glpk_GLPKSolver.add_cols = (int (*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_add_cols;
-  __pyx_vtable_5_glpk_GLPKSolver.set_mat_row = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_set_mat_row;
-  __pyx_vtable_5_glpk_GLPKSolver.load_matrix = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, int, PyObject *, PyObject *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_load_matrix;
-  __pyx_vtable_5_glpk_GLPKSolver.set_row_bnds = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_set_row_bnds;
-  __pyx_vtable_5_glpk_GLPKSolver.set_col_bnds = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_set_col_bnds;
-  __pyx_vtable_5_glpk_GLPKSolver.set_obj_coef = (PyObject *(*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, double, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_set_obj_coef;
-  __pyx_vtable_5_glpk_GLPKSolver.simplex = (int (*)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_simplex;
-  __pyx_vtable_5_glpk_GLPKSolver.status = (int (*)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_status;
-  __pyx_vtable_5_glpk_GLPKSolver.get_col_prim = (double (*)(struct __pyx_obj_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_get_col_prim;
-  __pyx_vtable_5_glpk_GLPKSolver.get_obj_val = (double (*)(struct __pyx_obj_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5_glpk_10GLPKSolver_get_obj_val;
-  if (PyType_Ready(&__pyx_type_5_glpk_GLPKSolver) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
+  __pyx_vtabptr_5pyene_7engines_5_glpk_GLPKSolver = &__pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_dir = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_dir;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.add_rows = (int (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_rows;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.add_cols = (int (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_add_cols;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_mat_row = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_mat_row;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.load_matrix = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int, PyObject *, PyObject *, PyObject *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_load_matrix;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_row_bnds = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_row_bnds;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_col_bnds = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, double, double, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_bnds;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_obj_coef = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, double, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_obj_coef;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.simplex = (int (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_simplex;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.status = (int (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_status;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.get_col_prim = (double (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_col_prim;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.get_obj_val = (double (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_obj_val;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.set_col_stat = (PyObject *(*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, PyObject *, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_set_col_stat;
+  __pyx_vtable_5pyene_7engines_5_glpk_GLPKSolver.get_row_dual = (double (*)(struct __pyx_obj_5pyene_7engines_5_glpk_GLPKSolver *, PyObject *, int, int __pyx_skip_dispatch))__pyx_f_5pyene_7engines_5_glpk_10GLPKSolver_get_row_dual;
+  if (PyType_Ready(&__pyx_type_5pyene_7engines_5_glpk_GLPKSolver) < 0) __PYX_ERR(1, 34, __pyx_L1_error)
   #if PY_VERSION_HEX < 0x030800B1
-  __pyx_type_5_glpk_GLPKSolver.tp_print = 0;
+  __pyx_type_5pyene_7engines_5_glpk_GLPKSolver.tp_print = 0;
   #endif
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_5_glpk_GLPKSolver.tp_dictoffset && __pyx_type_5_glpk_GLPKSolver.tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_type_5_glpk_GLPKSolver.tp_getattro = __Pyx_PyObject_GenericGetAttr;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_type_5pyene_7engines_5_glpk_GLPKSolver.tp_dictoffset && __pyx_type_5pyene_7engines_5_glpk_GLPKSolver.tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_type_5pyene_7engines_5_glpk_GLPKSolver.tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
-  if (__Pyx_SetVtable(__pyx_type_5_glpk_GLPKSolver.tp_dict, __pyx_vtabptr_5_glpk_GLPKSolver) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_GLPKSolver, (PyObject *)&__pyx_type_5_glpk_GLPKSolver) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5_glpk_GLPKSolver) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
-  __pyx_ptype_5_glpk_GLPKSolver = &__pyx_type_5_glpk_GLPKSolver;
+  if (__Pyx_SetVtable(__pyx_type_5pyene_7engines_5_glpk_GLPKSolver.tp_dict, __pyx_vtabptr_5pyene_7engines_5_glpk_GLPKSolver) < 0) __PYX_ERR(1, 34, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_GLPKSolver, (PyObject *)&__pyx_type_5pyene_7engines_5_glpk_GLPKSolver) < 0) __PYX_ERR(1, 34, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5pyene_7engines_5_glpk_GLPKSolver) < 0) __PYX_ERR(1, 34, __pyx_L1_error)
+  __pyx_ptype_5pyene_7engines_5_glpk_GLPKSolver = &__pyx_type_5pyene_7engines_5_glpk_GLPKSolver;
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -6604,30 +7152,30 @@ if (!__Pyx_RefNanny) {
 }
 #endif
   __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit__glpk(void)", 0);
-  if (__Pyx_check_binary_version() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_check_binary_version() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #ifdef __Pxy_PyFrame_Initialize_Offsets
   __Pxy_PyFrame_Initialize_Offsets();
   #endif
-  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_empty_unicode = PyUnicode_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_unicode)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_empty_unicode = PyUnicode_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_unicode)) __PYX_ERR(1, 1, __pyx_L1_error)
   #ifdef __Pyx_CyFunction_USED
-  if (__pyx_CyFunction_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_CyFunction_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_FusedFunction_USED
-  if (__pyx_FusedFunction_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_FusedFunction_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_Coroutine_USED
-  if (__pyx_Coroutine_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_Coroutine_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_Generator_USED
-  if (__pyx_Generator_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_Generator_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_AsyncGen_USED
-  if (__pyx_AsyncGen_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_AsyncGen_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_StopAsyncIteration_USED
-  if (__pyx_StopAsyncIteration_init() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_StopAsyncIteration_init() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   /*--- Library function declarations ---*/
   /*--- Threads initialization code ---*/
@@ -6646,28 +7194,28 @@ if (!__Pyx_RefNanny) {
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
-  if (unlikely(!__pyx_m)) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (unlikely(!__pyx_m)) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
-  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) __PYX_ERR(1, 1, __pyx_L1_error)
   Py_INCREF(__pyx_d);
-  __pyx_b = PyImport_AddModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_b = PyImport_AddModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) __PYX_ERR(1, 1, __pyx_L1_error)
   Py_INCREF(__pyx_b);
-  __pyx_cython_runtime = PyImport_AddModule((char *) "cython_runtime"); if (unlikely(!__pyx_cython_runtime)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_cython_runtime = PyImport_AddModule((char *) "cython_runtime"); if (unlikely(!__pyx_cython_runtime)) __PYX_ERR(1, 1, __pyx_L1_error)
   Py_INCREF(__pyx_cython_runtime);
-  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) __PYX_ERR(0, 1, __pyx_L1_error);
+  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) __PYX_ERR(1, 1, __pyx_L1_error);
   /*--- Initialize various global constants etc. ---*/
-  if (__Pyx_InitGlobals() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitGlobals() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
-  if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
-  if (__pyx_module_is_main__glpk) {
-    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_module_is_main_pyene__engines___glpk) {
+    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name_2, __pyx_n_s_main) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
-    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
-    if (!PyDict_GetItemString(modules, "_glpk")) {
-      if (unlikely(PyDict_SetItemString(modules, "_glpk", __pyx_m) < 0)) __PYX_ERR(0, 1, __pyx_L1_error)
+    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(1, 1, __pyx_L1_error)
+    if (!PyDict_GetItemString(modules, "pyene.engines._glpk")) {
+      if (unlikely(PyDict_SetItemString(modules, "pyene.engines._glpk", __pyx_m) < 0)) __PYX_ERR(1, 1, __pyx_L1_error)
     }
   }
   #endif
@@ -6685,345 +7233,409 @@ if (!__Pyx_RefNanny) {
   (void)__Pyx_modinit_function_import_code();
   /*--- Execution code ---*/
   #if defined(__Pyx_Generator_USED) || defined(__Pyx_Coroutine_USED)
-  if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_patch_abc() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
 
-  /* "glpk.pxi":3
+  /* "pyene/engines/glpk.pxi":3
  * from libc.float cimport DBL_MAX
  * 
  * status_string = [             # <<<<<<<<<<<<<<
  *     None,
  *     'solution is undefined',
  */
-  __pyx_t_1 = PyList_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(Py_None);
   PyList_SET_ITEM(__pyx_t_1, 0, Py_None);
-  __Pyx_INCREF(__pyx_kp_s_solution_is_undefined);
-  __Pyx_GIVEREF(__pyx_kp_s_solution_is_undefined);
-  PyList_SET_ITEM(__pyx_t_1, 1, __pyx_kp_s_solution_is_undefined);
-  __Pyx_INCREF(__pyx_kp_s_solution_is_feasible);
-  __Pyx_GIVEREF(__pyx_kp_s_solution_is_feasible);
-  PyList_SET_ITEM(__pyx_t_1, 2, __pyx_kp_s_solution_is_feasible);
-  __Pyx_INCREF(__pyx_kp_s_solution_is_infeasible);
-  __Pyx_GIVEREF(__pyx_kp_s_solution_is_infeasible);
-  PyList_SET_ITEM(__pyx_t_1, 3, __pyx_kp_s_solution_is_infeasible);
-  __Pyx_INCREF(__pyx_kp_s_no_feasible_solution_exists);
-  __Pyx_GIVEREF(__pyx_kp_s_no_feasible_solution_exists);
-  PyList_SET_ITEM(__pyx_t_1, 4, __pyx_kp_s_no_feasible_solution_exists);
-  __Pyx_INCREF(__pyx_kp_s_solution_is_optimal);
-  __Pyx_GIVEREF(__pyx_kp_s_solution_is_optimal);
-  PyList_SET_ITEM(__pyx_t_1, 5, __pyx_kp_s_solution_is_optimal);
-  __Pyx_INCREF(__pyx_kp_s_solution_is_unbounded);
-  __Pyx_GIVEREF(__pyx_kp_s_solution_is_unbounded);
-  PyList_SET_ITEM(__pyx_t_1, 6, __pyx_kp_s_solution_is_unbounded);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_status_string, __pyx_t_1) < 0) __PYX_ERR(2, 3, __pyx_L1_error)
+  __Pyx_INCREF(__pyx_kp_u_solution_is_undefined);
+  __Pyx_GIVEREF(__pyx_kp_u_solution_is_undefined);
+  PyList_SET_ITEM(__pyx_t_1, 1, __pyx_kp_u_solution_is_undefined);
+  __Pyx_INCREF(__pyx_kp_u_solution_is_feasible);
+  __Pyx_GIVEREF(__pyx_kp_u_solution_is_feasible);
+  PyList_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_solution_is_feasible);
+  __Pyx_INCREF(__pyx_kp_u_solution_is_infeasible);
+  __Pyx_GIVEREF(__pyx_kp_u_solution_is_infeasible);
+  PyList_SET_ITEM(__pyx_t_1, 3, __pyx_kp_u_solution_is_infeasible);
+  __Pyx_INCREF(__pyx_kp_u_no_feasible_solution_exists);
+  __Pyx_GIVEREF(__pyx_kp_u_no_feasible_solution_exists);
+  PyList_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_no_feasible_solution_exists);
+  __Pyx_INCREF(__pyx_kp_u_solution_is_optimal);
+  __Pyx_GIVEREF(__pyx_kp_u_solution_is_optimal);
+  PyList_SET_ITEM(__pyx_t_1, 5, __pyx_kp_u_solution_is_optimal);
+  __Pyx_INCREF(__pyx_kp_u_solution_is_unbounded);
+  __Pyx_GIVEREF(__pyx_kp_u_solution_is_unbounded);
+  PyList_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u_solution_is_unbounded);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_status_string, __pyx_t_1) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "glpk.pxi":13
+  /* "pyene/engines/glpk.pxi":13
  * ]
  * 
  * simplex_status_string = [             # <<<<<<<<<<<<<<
  *     None,
  *     'invalid basis',
  */
-  __pyx_t_1 = PyList_New(20); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 13, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(20); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(Py_None);
   __Pyx_GIVEREF(Py_None);
   PyList_SET_ITEM(__pyx_t_1, 0, Py_None);
-  __Pyx_INCREF(__pyx_kp_s_invalid_basis);
-  __Pyx_GIVEREF(__pyx_kp_s_invalid_basis);
-  PyList_SET_ITEM(__pyx_t_1, 1, __pyx_kp_s_invalid_basis);
-  __Pyx_INCREF(__pyx_kp_s_singular_matrix);
-  __Pyx_GIVEREF(__pyx_kp_s_singular_matrix);
-  PyList_SET_ITEM(__pyx_t_1, 2, __pyx_kp_s_singular_matrix);
-  __Pyx_INCREF(__pyx_kp_s_ill_conditioned_matrix);
-  __Pyx_GIVEREF(__pyx_kp_s_ill_conditioned_matrix);
-  PyList_SET_ITEM(__pyx_t_1, 3, __pyx_kp_s_ill_conditioned_matrix);
-  __Pyx_INCREF(__pyx_kp_s_invalid_bounds);
-  __Pyx_GIVEREF(__pyx_kp_s_invalid_bounds);
-  PyList_SET_ITEM(__pyx_t_1, 4, __pyx_kp_s_invalid_bounds);
-  __Pyx_INCREF(__pyx_kp_s_solver_failed);
-  __Pyx_GIVEREF(__pyx_kp_s_solver_failed);
-  PyList_SET_ITEM(__pyx_t_1, 5, __pyx_kp_s_solver_failed);
-  __Pyx_INCREF(__pyx_kp_s_objective_lower_limit_reached);
-  __Pyx_GIVEREF(__pyx_kp_s_objective_lower_limit_reached);
-  PyList_SET_ITEM(__pyx_t_1, 6, __pyx_kp_s_objective_lower_limit_reached);
-  __Pyx_INCREF(__pyx_kp_s_objective_upper_limit_reached);
-  __Pyx_GIVEREF(__pyx_kp_s_objective_upper_limit_reached);
-  PyList_SET_ITEM(__pyx_t_1, 7, __pyx_kp_s_objective_upper_limit_reached);
-  __Pyx_INCREF(__pyx_kp_s_iteration_limit_exceeded);
-  __Pyx_GIVEREF(__pyx_kp_s_iteration_limit_exceeded);
-  PyList_SET_ITEM(__pyx_t_1, 8, __pyx_kp_s_iteration_limit_exceeded);
-  __Pyx_INCREF(__pyx_kp_s_time_limit_exceeded);
-  __Pyx_GIVEREF(__pyx_kp_s_time_limit_exceeded);
-  PyList_SET_ITEM(__pyx_t_1, 9, __pyx_kp_s_time_limit_exceeded);
-  __Pyx_INCREF(__pyx_kp_s_no_primal_feasible_solution);
-  __Pyx_GIVEREF(__pyx_kp_s_no_primal_feasible_solution);
-  PyList_SET_ITEM(__pyx_t_1, 10, __pyx_kp_s_no_primal_feasible_solution);
-  __Pyx_INCREF(__pyx_kp_s_no_dual_feasible_solution);
-  __Pyx_GIVEREF(__pyx_kp_s_no_dual_feasible_solution);
-  PyList_SET_ITEM(__pyx_t_1, 11, __pyx_kp_s_no_dual_feasible_solution);
-  __Pyx_INCREF(__pyx_kp_s_root_LP_optimum_not_provided);
-  __Pyx_GIVEREF(__pyx_kp_s_root_LP_optimum_not_provided);
-  PyList_SET_ITEM(__pyx_t_1, 12, __pyx_kp_s_root_LP_optimum_not_provided);
-  __Pyx_INCREF(__pyx_kp_s_search_terminated_by_application);
-  __Pyx_GIVEREF(__pyx_kp_s_search_terminated_by_application);
-  PyList_SET_ITEM(__pyx_t_1, 13, __pyx_kp_s_search_terminated_by_application);
-  __Pyx_INCREF(__pyx_kp_s_relative_mip_gap_tolerance_reach);
-  __Pyx_GIVEREF(__pyx_kp_s_relative_mip_gap_tolerance_reach);
-  PyList_SET_ITEM(__pyx_t_1, 14, __pyx_kp_s_relative_mip_gap_tolerance_reach);
-  __Pyx_INCREF(__pyx_kp_s_no_primal_dual_feasible_solution);
-  __Pyx_GIVEREF(__pyx_kp_s_no_primal_dual_feasible_solution);
-  PyList_SET_ITEM(__pyx_t_1, 15, __pyx_kp_s_no_primal_dual_feasible_solution);
-  __Pyx_INCREF(__pyx_kp_s_no_convergence);
-  __Pyx_GIVEREF(__pyx_kp_s_no_convergence);
-  PyList_SET_ITEM(__pyx_t_1, 16, __pyx_kp_s_no_convergence);
-  __Pyx_INCREF(__pyx_kp_s_numerical_instability);
-  __Pyx_GIVEREF(__pyx_kp_s_numerical_instability);
-  PyList_SET_ITEM(__pyx_t_1, 17, __pyx_kp_s_numerical_instability);
-  __Pyx_INCREF(__pyx_kp_s_invalid_data);
-  __Pyx_GIVEREF(__pyx_kp_s_invalid_data);
-  PyList_SET_ITEM(__pyx_t_1, 18, __pyx_kp_s_invalid_data);
-  __Pyx_INCREF(__pyx_kp_s_result_out_of_range);
-  __Pyx_GIVEREF(__pyx_kp_s_result_out_of_range);
-  PyList_SET_ITEM(__pyx_t_1, 19, __pyx_kp_s_result_out_of_range);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_simplex_status_string, __pyx_t_1) < 0) __PYX_ERR(2, 13, __pyx_L1_error)
+  __Pyx_INCREF(__pyx_kp_u_invalid_basis);
+  __Pyx_GIVEREF(__pyx_kp_u_invalid_basis);
+  PyList_SET_ITEM(__pyx_t_1, 1, __pyx_kp_u_invalid_basis);
+  __Pyx_INCREF(__pyx_kp_u_singular_matrix);
+  __Pyx_GIVEREF(__pyx_kp_u_singular_matrix);
+  PyList_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_singular_matrix);
+  __Pyx_INCREF(__pyx_kp_u_ill_conditioned_matrix);
+  __Pyx_GIVEREF(__pyx_kp_u_ill_conditioned_matrix);
+  PyList_SET_ITEM(__pyx_t_1, 3, __pyx_kp_u_ill_conditioned_matrix);
+  __Pyx_INCREF(__pyx_kp_u_invalid_bounds);
+  __Pyx_GIVEREF(__pyx_kp_u_invalid_bounds);
+  PyList_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_invalid_bounds);
+  __Pyx_INCREF(__pyx_kp_u_solver_failed);
+  __Pyx_GIVEREF(__pyx_kp_u_solver_failed);
+  PyList_SET_ITEM(__pyx_t_1, 5, __pyx_kp_u_solver_failed);
+  __Pyx_INCREF(__pyx_kp_u_objective_lower_limit_reached);
+  __Pyx_GIVEREF(__pyx_kp_u_objective_lower_limit_reached);
+  PyList_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u_objective_lower_limit_reached);
+  __Pyx_INCREF(__pyx_kp_u_objective_upper_limit_reached);
+  __Pyx_GIVEREF(__pyx_kp_u_objective_upper_limit_reached);
+  PyList_SET_ITEM(__pyx_t_1, 7, __pyx_kp_u_objective_upper_limit_reached);
+  __Pyx_INCREF(__pyx_kp_u_iteration_limit_exceeded);
+  __Pyx_GIVEREF(__pyx_kp_u_iteration_limit_exceeded);
+  PyList_SET_ITEM(__pyx_t_1, 8, __pyx_kp_u_iteration_limit_exceeded);
+  __Pyx_INCREF(__pyx_kp_u_time_limit_exceeded);
+  __Pyx_GIVEREF(__pyx_kp_u_time_limit_exceeded);
+  PyList_SET_ITEM(__pyx_t_1, 9, __pyx_kp_u_time_limit_exceeded);
+  __Pyx_INCREF(__pyx_kp_u_no_primal_feasible_solution);
+  __Pyx_GIVEREF(__pyx_kp_u_no_primal_feasible_solution);
+  PyList_SET_ITEM(__pyx_t_1, 10, __pyx_kp_u_no_primal_feasible_solution);
+  __Pyx_INCREF(__pyx_kp_u_no_dual_feasible_solution);
+  __Pyx_GIVEREF(__pyx_kp_u_no_dual_feasible_solution);
+  PyList_SET_ITEM(__pyx_t_1, 11, __pyx_kp_u_no_dual_feasible_solution);
+  __Pyx_INCREF(__pyx_kp_u_root_LP_optimum_not_provided);
+  __Pyx_GIVEREF(__pyx_kp_u_root_LP_optimum_not_provided);
+  PyList_SET_ITEM(__pyx_t_1, 12, __pyx_kp_u_root_LP_optimum_not_provided);
+  __Pyx_INCREF(__pyx_kp_u_search_terminated_by_application);
+  __Pyx_GIVEREF(__pyx_kp_u_search_terminated_by_application);
+  PyList_SET_ITEM(__pyx_t_1, 13, __pyx_kp_u_search_terminated_by_application);
+  __Pyx_INCREF(__pyx_kp_u_relative_mip_gap_tolerance_reach);
+  __Pyx_GIVEREF(__pyx_kp_u_relative_mip_gap_tolerance_reach);
+  PyList_SET_ITEM(__pyx_t_1, 14, __pyx_kp_u_relative_mip_gap_tolerance_reach);
+  __Pyx_INCREF(__pyx_kp_u_no_primal_dual_feasible_solution);
+  __Pyx_GIVEREF(__pyx_kp_u_no_primal_dual_feasible_solution);
+  PyList_SET_ITEM(__pyx_t_1, 15, __pyx_kp_u_no_primal_dual_feasible_solution);
+  __Pyx_INCREF(__pyx_kp_u_no_convergence);
+  __Pyx_GIVEREF(__pyx_kp_u_no_convergence);
+  PyList_SET_ITEM(__pyx_t_1, 16, __pyx_kp_u_no_convergence);
+  __Pyx_INCREF(__pyx_kp_u_numerical_instability);
+  __Pyx_GIVEREF(__pyx_kp_u_numerical_instability);
+  PyList_SET_ITEM(__pyx_t_1, 17, __pyx_kp_u_numerical_instability);
+  __Pyx_INCREF(__pyx_kp_u_invalid_data);
+  __Pyx_GIVEREF(__pyx_kp_u_invalid_data);
+  PyList_SET_ITEM(__pyx_t_1, 18, __pyx_kp_u_invalid_data);
+  __Pyx_INCREF(__pyx_kp_u_result_out_of_range);
+  __Pyx_GIVEREF(__pyx_kp_u_result_out_of_range);
+  PyList_SET_ITEM(__pyx_t_1, 19, __pyx_kp_u_result_out_of_range);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_simplex_status_string, __pyx_t_1) < 0) __PYX_ERR(0, 13, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "glpk.pxi":62
+  /* "pyene/engines/glpk.pxi":62
  *         return GLP_DB
  * 
  * cdef double inf = float('inf')             # <<<<<<<<<<<<<<
  * 
  * cdef inline double dbl_max_to_inf(double a):
  */
-  __pyx_t_2 = __Pyx_PyObject_AsDouble(__pyx_n_s_inf); if (unlikely(__pyx_t_2 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(2, 62, __pyx_L1_error)
-  __pyx_v_5_glpk_inf = __pyx_t_2;
+  __pyx_t_2 = __Pyx_PyObject_AsDouble(__pyx_n_u_inf); if (unlikely(__pyx_t_2 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 62, __pyx_L1_error)
+  __pyx_v_5pyene_7engines_5_glpk_inf = __pyx_t_2;
 
-  /* "glpk.pxi":178
+  /* "pyene/engines/glpk.pxi":186
  * 
  * message_levels = {
  *     'off': GLP_MSG_OFF,             # <<<<<<<<<<<<<<
  *     'error': GLP_MSG_ERR,
  *     'normal': GLP_MSG_ON,
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 178, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_OFF); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 178, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_OFF); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_off, __pyx_t_3) < 0) __PYX_ERR(2, 178, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_off, __pyx_t_3) < 0) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "glpk.pxi":179
+  /* "pyene/engines/glpk.pxi":187
  * message_levels = {
  *     'off': GLP_MSG_OFF,
  *     'error': GLP_MSG_ERR,             # <<<<<<<<<<<<<<
  *     'normal': GLP_MSG_ON,
  *     'all': GLP_MSG_ALL,
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ERR); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 179, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ERR); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 187, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_error, __pyx_t_3) < 0) __PYX_ERR(2, 178, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_error, __pyx_t_3) < 0) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "glpk.pxi":180
+  /* "pyene/engines/glpk.pxi":188
  *     'off': GLP_MSG_OFF,
  *     'error': GLP_MSG_ERR,
  *     'normal': GLP_MSG_ON,             # <<<<<<<<<<<<<<
  *     'all': GLP_MSG_ALL,
  *     'debug': GLP_MSG_DBG,
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ON); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 180, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ON); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 188, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_normal, __pyx_t_3) < 0) __PYX_ERR(2, 178, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_normal, __pyx_t_3) < 0) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "glpk.pxi":181
+  /* "pyene/engines/glpk.pxi":189
  *     'error': GLP_MSG_ERR,
  *     'normal': GLP_MSG_ON,
  *     'all': GLP_MSG_ALL,             # <<<<<<<<<<<<<<
  *     'debug': GLP_MSG_DBG,
  * }
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 181, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_ALL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_all, __pyx_t_3) < 0) __PYX_ERR(2, 178, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_all, __pyx_t_3) < 0) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "glpk.pxi":182
+  /* "pyene/engines/glpk.pxi":190
  *     'normal': GLP_MSG_ON,
  *     'all': GLP_MSG_ALL,
  *     'debug': GLP_MSG_DBG,             # <<<<<<<<<<<<<<
  * }
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_DBG); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 182, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MSG_DBG); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 190, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_debug, __pyx_t_3) < 0) __PYX_ERR(2, 178, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_debug, __pyx_t_3) < 0) __PYX_ERR(0, 186, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_message_levels, __pyx_t_1) < 0) __PYX_ERR(2, 177, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_message_levels, __pyx_t_1) < 0) __PYX_ERR(0, 185, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":3
+  /* "pyene/engines/_glpk.pyx":3
  * from libc.stdlib cimport malloc, free
  * include "glpk.pxi"
  * inf = float('inf')             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_t_2 = __Pyx_PyObject_AsDouble(__pyx_n_s_inf); if (unlikely(__pyx_t_2 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 3, __pyx_L1_error)
-  __pyx_v_5_glpk_inf = __pyx_t_2;
+  __pyx_t_2 = __Pyx_PyObject_AsDouble(__pyx_n_u_inf); if (unlikely(__pyx_t_2 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(1, 3, __pyx_L1_error)
+  __pyx_v_5pyene_7engines_5_glpk_inf = __pyx_t_2;
 
-  /* "_glpk.pyx":7
+  /* "pyene/engines/_glpk.pyx":7
  * 
  * GLP_BND_TYPES = {
  *         'free': GLP_FR,  # free (unbounded) variable             # <<<<<<<<<<<<<<
  *         'lower': GLP_LO,  # variable with lower bound
  *         'upper': GLP_UP,  # variable with upper bound
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 7, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_FR); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 7, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_FR); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_free, __pyx_t_3) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_free, __pyx_t_3) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":8
+  /* "pyene/engines/_glpk.pyx":8
  * GLP_BND_TYPES = {
  *         'free': GLP_FR,  # free (unbounded) variable
  *         'lower': GLP_LO,  # variable with lower bound             # <<<<<<<<<<<<<<
  *         'upper': GLP_UP,  # variable with upper bound
  *         'bounded': GLP_DB,  # double-bounded variable
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_LO); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_LO); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_lower, __pyx_t_3) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_lower, __pyx_t_3) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":9
+  /* "pyene/engines/_glpk.pyx":9
  *         'free': GLP_FR,  # free (unbounded) variable
  *         'lower': GLP_LO,  # variable with lower bound
  *         'upper': GLP_UP,  # variable with upper bound             # <<<<<<<<<<<<<<
  *         'bounded': GLP_DB,  # double-bounded variable
  *         'fixed': GLP_FX,  # fixed variable
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_UP); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 9, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_UP); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 9, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_upper, __pyx_t_3) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_upper, __pyx_t_3) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":10
+  /* "pyene/engines/_glpk.pyx":10
  *         'lower': GLP_LO,  # variable with lower bound
  *         'upper': GLP_UP,  # variable with upper bound
  *         'bounded': GLP_DB,  # double-bounded variable             # <<<<<<<<<<<<<<
  *         'fixed': GLP_FX,  # fixed variable
  * }
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DB); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DB); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_bounded, __pyx_t_3) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_bounded, __pyx_t_3) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":11
+  /* "pyene/engines/_glpk.pyx":11
  *         'upper': GLP_UP,  # variable with upper bound
  *         'bounded': GLP_DB,  # double-bounded variable
  *         'fixed': GLP_FX,  # fixed variable             # <<<<<<<<<<<<<<
  * }
  * 
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_FX); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_FX); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 11, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_fixed, __pyx_t_3) < 0) __PYX_ERR(0, 7, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_fixed, __pyx_t_3) < 0) __PYX_ERR(1, 7, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_BND_TYPES, __pyx_t_1) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_BND_TYPES, __pyx_t_1) < 0) __PYX_ERR(1, 6, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":15
+  /* "pyene/engines/_glpk.pyx":15
  * 
  * GLP_DIR = {
  *     'min': GLP_MIN, 'minimise': GLP_MIN,             # <<<<<<<<<<<<<<
  *     'max': GLP_MAX, 'maximise': GLP_MAX,
  * }
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(4); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MIN); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MIN); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_min, __pyx_t_3) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_min, __pyx_t_3) < 0) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MIN); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MIN); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_minimise, __pyx_t_3) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_minimise, __pyx_t_3) < 0) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":16
+  /* "pyene/engines/_glpk.pyx":16
  * GLP_DIR = {
  *     'min': GLP_MIN, 'minimise': GLP_MIN,
  *     'max': GLP_MAX, 'maximise': GLP_MAX,             # <<<<<<<<<<<<<<
  * }
  * 
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MAX); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MAX); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_max, __pyx_t_3) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_max, __pyx_t_3) < 0) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MAX); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_MAX); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 16, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_maximise, __pyx_t_3) < 0) __PYX_ERR(0, 15, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_maximise, __pyx_t_3) < 0) __PYX_ERR(1, 15, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_DIR, __pyx_t_1) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_DIR, __pyx_t_1) < 0) __PYX_ERR(1, 14, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":21
+  /* "pyene/engines/_glpk.pyx":21
  * 
  * GLP_METH = {
  *     'primal': GLP_PRIMAL,  # use primal simplex             # <<<<<<<<<<<<<<
  *     'dualprimal': GLP_DUALP,   # use dual; if it fails, use primal
  *     'dual': GLP_DUAL,   # use dual simplex
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 21, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_PRIMAL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 21, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_PRIMAL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_primal, __pyx_t_3) < 0) __PYX_ERR(0, 21, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_primal, __pyx_t_3) < 0) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":22
+  /* "pyene/engines/_glpk.pyx":22
  * GLP_METH = {
  *     'primal': GLP_PRIMAL,  # use primal simplex
  *     'dualprimal': GLP_DUALP,   # use dual; if it fails, use primal             # <<<<<<<<<<<<<<
  *     'dual': GLP_DUAL,   # use dual simplex
  * }
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DUALP); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DUALP); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 22, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_dualprimal, __pyx_t_3) < 0) __PYX_ERR(0, 21, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_dualprimal, __pyx_t_3) < 0) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "_glpk.pyx":23
+  /* "pyene/engines/_glpk.pyx":23
  *     'primal': GLP_PRIMAL,  # use primal simplex
  *     'dualprimal': GLP_DUALP,   # use dual; if it fails, use primal
  *     'dual': GLP_DUAL,   # use dual simplex             # <<<<<<<<<<<<<<
  * }
  * 
  */
-  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DUAL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_DUAL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_dual, __pyx_t_3) < 0) __PYX_ERR(0, 21, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_dual, __pyx_t_3) < 0) __PYX_ERR(1, 21, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_METH, __pyx_t_1) < 0) __PYX_ERR(0, 20, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_METH, __pyx_t_1) < 0) __PYX_ERR(1, 20, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "_glpk.pyx":1
+  /* "pyene/engines/_glpk.pyx":27
+ * 
+ * GLP_STATUS = {
+ *     'basic': GLP_BS, # basic variable             # <<<<<<<<<<<<<<
+ *     'nonbasiclower': GLP_NL, # non-basic variable having active lower bound
+ *     'nonbasicupper': GLP_NU, # non-basic variable having active upper bound
+ */
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(5); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_BS); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_basic, __pyx_t_3) < 0) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+  /* "pyene/engines/_glpk.pyx":28
+ * GLP_STATUS = {
+ *     'basic': GLP_BS, # basic variable
+ *     'nonbasiclower': GLP_NL, # non-basic variable having active lower bound             # <<<<<<<<<<<<<<
+ *     'nonbasicupper': GLP_NU, # non-basic variable having active upper bound
+ *     'nonbasicfree': GLP_NF, # non-basic free variable
+ */
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_NL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 28, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_nonbasiclower, __pyx_t_3) < 0) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+  /* "pyene/engines/_glpk.pyx":29
+ *     'basic': GLP_BS, # basic variable
+ *     'nonbasiclower': GLP_NL, # non-basic variable having active lower bound
+ *     'nonbasicupper': GLP_NU, # non-basic variable having active upper bound             # <<<<<<<<<<<<<<
+ *     'nonbasicfree': GLP_NF, # non-basic free variable
+ *     'nonbasicfixed': GLP_NS, # non-basic fixed variable
+ */
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_NU); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 29, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_nonbasicupper, __pyx_t_3) < 0) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+  /* "pyene/engines/_glpk.pyx":30
+ *     'nonbasiclower': GLP_NL, # non-basic variable having active lower bound
+ *     'nonbasicupper': GLP_NU, # non-basic variable having active upper bound
+ *     'nonbasicfree': GLP_NF, # non-basic free variable             # <<<<<<<<<<<<<<
+ *     'nonbasicfixed': GLP_NS, # non-basic fixed variable
+ * }
+ */
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_NF); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 30, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_nonbasicfree, __pyx_t_3) < 0) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+  /* "pyene/engines/_glpk.pyx":31
+ *     'nonbasicupper': GLP_NU, # non-basic variable having active upper bound
+ *     'nonbasicfree': GLP_NF, # non-basic free variable
+ *     'nonbasicfixed': GLP_NS, # non-basic fixed variable             # <<<<<<<<<<<<<<
+ * }
+ * 
+ */
+  __pyx_t_3 = __Pyx_PyInt_From_int(GLP_NS); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 31, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_u_nonbasicfixed, __pyx_t_3) < 0) __PYX_ERR(1, 27, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_GLP_STATUS, __pyx_t_1) < 0) __PYX_ERR(1, 26, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "pyene/engines/_glpk.pyx":1
  * from libc.stdlib cimport malloc, free             # <<<<<<<<<<<<<<
  * include "glpk.pxi"
  * inf = float('inf')
  */
-  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /*--- Wrapped vars code ---*/
@@ -7034,11 +7646,11 @@ if (!__Pyx_RefNanny) {
   __Pyx_XDECREF(__pyx_t_3);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init _glpk", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init pyene.engines._glpk", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_CLEAR(__pyx_m);
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init _glpk");
+    PyErr_SetString(PyExc_ImportError, "init pyene.engines._glpk");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -7794,6 +8406,13 @@ static PyObject *__Pyx_PyObject_GetItem(PyObject *obj, PyObject* key) {
     return __Pyx_PyObject_GetIndex(obj, key);
 }
 #endif
+
+/* PyUnicode_Unicode */
+static CYTHON_INLINE PyObject* __Pyx_PyUnicode_Unicode(PyObject *obj) {
+    if (unlikely(obj == Py_None))
+        obj = __pyx_kp_u_None;
+    return __Pyx_NewRef(obj);
+}
 
 /* JoinPyUnicode */
 static PyObject* __Pyx_PyUnicode_Join(PyObject* value_tuple, Py_ssize_t value_count, Py_ssize_t result_ulength,
@@ -8944,112 +9563,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
         return (target_type) value;\
     }
 
-/* Print */
-#if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
-static PyObject *__Pyx_GetStdout(void) {
-    PyObject *f = PySys_GetObject((char *)"stdout");
-    if (!f) {
-        PyErr_SetString(PyExc_RuntimeError, "lost sys.stdout");
-    }
-    return f;
-}
-static int __Pyx_Print(PyObject* f, PyObject *arg_tuple, int newline) {
-    int i;
-    if (!f) {
-        if (!(f = __Pyx_GetStdout()))
-            return -1;
-    }
-    Py_INCREF(f);
-    for (i=0; i < PyTuple_GET_SIZE(arg_tuple); i++) {
-        PyObject* v;
-        if (PyFile_SoftSpace(f, 1)) {
-            if (PyFile_WriteString(" ", f) < 0)
-                goto error;
-        }
-        v = PyTuple_GET_ITEM(arg_tuple, i);
-        if (PyFile_WriteObject(v, f, Py_PRINT_RAW) < 0)
-            goto error;
-        if (PyString_Check(v)) {
-            char *s = PyString_AsString(v);
-            Py_ssize_t len = PyString_Size(v);
-            if (len > 0) {
-                switch (s[len-1]) {
-                    case ' ': break;
-                    case '\f': case '\r': case '\n': case '\t': case '\v':
-                        PyFile_SoftSpace(f, 0);
-                        break;
-                    default:  break;
-                }
-            }
-        }
-    }
-    if (newline) {
-        if (PyFile_WriteString("\n", f) < 0)
-            goto error;
-        PyFile_SoftSpace(f, 0);
-    }
-    Py_DECREF(f);
-    return 0;
-error:
-    Py_DECREF(f);
-    return -1;
-}
-#else
-static int __Pyx_Print(PyObject* stream, PyObject *arg_tuple, int newline) {
-    PyObject* kwargs = 0;
-    PyObject* result = 0;
-    PyObject* end_string;
-    if (unlikely(!__pyx_print)) {
-        __pyx_print = PyObject_GetAttr(__pyx_b, __pyx_n_s_print);
-        if (!__pyx_print)
-            return -1;
-    }
-    if (stream) {
-        kwargs = PyDict_New();
-        if (unlikely(!kwargs))
-            return -1;
-        if (unlikely(PyDict_SetItem(kwargs, __pyx_n_s_file, stream) < 0))
-            goto bad;
-        if (!newline) {
-            end_string = PyUnicode_FromStringAndSize(" ", 1);
-            if (unlikely(!end_string))
-                goto bad;
-            if (PyDict_SetItem(kwargs, __pyx_n_s_end, end_string) < 0) {
-                Py_DECREF(end_string);
-                goto bad;
-            }
-            Py_DECREF(end_string);
-        }
-    } else if (!newline) {
-        if (unlikely(!__pyx_print_kwargs)) {
-            __pyx_print_kwargs = PyDict_New();
-            if (unlikely(!__pyx_print_kwargs))
-                return -1;
-            end_string = PyUnicode_FromStringAndSize(" ", 1);
-            if (unlikely(!end_string))
-                return -1;
-            if (PyDict_SetItem(__pyx_print_kwargs, __pyx_n_s_end, end_string) < 0) {
-                Py_DECREF(end_string);
-                return -1;
-            }
-            Py_DECREF(end_string);
-        }
-        kwargs = __pyx_print_kwargs;
-    }
-    result = PyObject_Call(__pyx_print, arg_tuple, kwargs);
-    if (unlikely(kwargs) && (kwargs != __pyx_print_kwargs))
-        Py_DECREF(kwargs);
-    if (!result)
-        return -1;
-    Py_DECREF(result);
-    return 0;
-bad:
-    if (kwargs != __pyx_print_kwargs)
-        Py_XDECREF(kwargs);
-    return -1;
-}
-#endif
-
 /* CIntFromPy */
 static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
     const int neg_one = (int) ((int) 0 - (int) 1), const_zero = (int) 0;
@@ -9238,43 +9751,6 @@ raise_neg_overflow:
         "can't convert negative value to int");
     return (int) -1;
 }
-
-/* PrintOne */
-#if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
-static int __Pyx_PrintOne(PyObject* f, PyObject *o) {
-    if (!f) {
-        if (!(f = __Pyx_GetStdout()))
-            return -1;
-    }
-    Py_INCREF(f);
-    if (PyFile_SoftSpace(f, 0)) {
-        if (PyFile_WriteString(" ", f) < 0)
-            goto error;
-    }
-    if (PyFile_WriteObject(o, f, Py_PRINT_RAW) < 0)
-        goto error;
-    if (PyFile_WriteString("\n", f) < 0)
-        goto error;
-    Py_DECREF(f);
-    return 0;
-error:
-    Py_DECREF(f);
-    return -1;
-    /* the line below is just to avoid C compiler
-     * warnings about unused functions */
-    return __Pyx_Print(f, NULL, 0);
-}
-#else
-static int __Pyx_PrintOne(PyObject* stream, PyObject *o) {
-    int res;
-    PyObject* arg_tuple = PyTuple_Pack(1, o);
-    if (unlikely(!arg_tuple))
-        return -1;
-    res = __Pyx_Print(stream, arg_tuple, 1);
-    Py_DECREF(arg_tuple);
-    return res;
-}
-#endif
 
 /* CIntToPy */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {

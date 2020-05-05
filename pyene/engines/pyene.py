@@ -123,7 +123,7 @@ class pyeneClass():
         else:
             print('Losses are neglected')
         if NM.settings['Feasibility']:
-            print('Feasibility constraints are included')
+            print('Feasibility constrants are included')
         else:
             print('Feasibility constraints are neglected')
         print('Demand multiplyiers ', NM.settings['Demand'])
