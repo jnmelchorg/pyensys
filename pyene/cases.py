@@ -296,7 +296,6 @@ def hydro_example_tobeerased(conf):
     conf.NM.hydropower['Bus'] = [1, 5]  # Location (bus) of hydro
     conf.NM.hydropower['Max'] = [200, 200]  # Generation capacity
     conf.NM.hydropower['Cost'] = [0.001, 0.001]  # Costs
-    conf.NM.hydropower['Baseload'] = [0.4, 0.6]
 
     # Create object
     EN = pyeneClass(conf.EN)

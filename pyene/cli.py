@@ -116,7 +116,13 @@ def _update_config_pyeneN(conf, kwargs):
             conf.EN.solverselection['pyomo'] = aux
             conf.EN.solverselection['glpk'] = False        
 
+    # TODO: THIS NEED TO BE REMOVED - IT'S COMPLETELY HARDCODED AND CAN CAUSE 
+    # THAT THE CODE CRASHES IN THE FUTURE
+    aux = kwargs.pop('baseline')
+    conf.NM.hydropower['Baseload'] = [aux, aux]
+
     return conf
+
 
 
 @cli.command('run-e')
@@ -195,6 +201,8 @@ def network_simulation_pyeneEN(conf, **kwargs):
 @click.option('--time', default=24, help='Number of time steps')
 @click.option('--Linearloss', default=0, type=float,
               help='Fraction assigned to losses')
+@click.option('--baseline', default=0, type=float,
+              help='Fraction assigned to baseline of hydro electrical generators')
 @pass_conf
 def network_simulation_pyeneEN(conf, **kwargs):
     """Prepare energy balance and network simulation """
