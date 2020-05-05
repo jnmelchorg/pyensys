@@ -118,8 +118,9 @@ def _update_config_pyeneN(conf, kwargs):
 
     # TODO: THIS NEED TO BE REMOVED - IT'S COMPLETELY HARDCODED AND CAN CAUSE 
     # THAT THE CODE CRASHES IN THE FUTURE
-    aux = kwargs.pop('baseline')
-    conf.NM.hydropower['Baseload'] = [aux, aux]
+    if 'baseline' in kwargs.keys():
+        aux = kwargs.pop('baseline')
+        conf.NM.hydropower['Baseload'] = [aux, aux]
 
     return conf
 
@@ -148,6 +149,8 @@ def energy_balance_pyeneE(conf, **kwargs):
 @click.option('--feas', default=False, type=bool,
               help='Consider feasibility constratints')
 @click.option('--time', default=1, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
 @pass_conf
 def network_simulation_pyeneE(conf, **kwargs):
     """Prepare electricity network simulation"""
