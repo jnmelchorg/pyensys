@@ -28,7 +28,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         logging.basicConfig(format='%(asctime)s %(message)s', \
             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     
-    def IslandsIsolations(self):
+    def islands_isolations(self):
         ''' This class method calls and controls all main methods in this class'''
         auxp = 'Running network analyser - Determining islands and \
             isolated nodes in the power system'
@@ -323,11 +323,14 @@ class PowerSystemReduction(ElectricityNetwork):
         super().__init__(**kwargs)
     
     def Networkreduction(self, opt=None):
-        ''' This class method calls and controls all main methods in this class'''
+        ''' This class method calls and controls all main methods in this 
+        class '''
         auxp = "No option has been passed to reduce the network"
         assert opt is not None, " ".join(auxp.split())
-        
+    
         self.G = nx.MultiGraph()
+    
+    def network_reduction_
         
 
     def Reduction(self):

@@ -628,13 +628,24 @@ class ElectricityNetwork:
         ''' set the __data of the electricity network object '''
         assert isinstance(ob, ElectricityNetwork), "Incorrect object \
             passed to set the Electricity Network __data"
-        self.set_bus_data(ob.__data['bus'])
-        self.set_transmission_line_data(ob.__data['transmissionline'])
-        if len(ob.__data['conv']) > 0:
-            self.set_conv_data(ob.__data['conv'])
-        if len(ob.__data['hydro']) > 0:
-            self.set_hydro_data(ob.__data['hydro'])
-        if len(ob.__data['RES']) > 0:
+        self.set_bus_data(ob.get_objects(obj='bus'))
+        aux = ob.get_objects('transmissionline')
+        if len(aux) > 0:
+            self.set_transmission_line_data(aux)
+        aux = ob.get_objects(obj='twowindingtrafo')
+        if len(aux) > 0:
+            self.set_two_winding_trafos_data(aux)
+        aux = ob.get_objects(obj='threewindingtrafo')
+        if len(aux) > 0:
+            self.set_three_winding_trafos_data(aux)
+        aux = ob.get_objects(obj='conv')
+        if len(aux) > 0:
+            self.set_conv_data(aux)
+        aux = ob.get_objects(obj='hydro')
+        if len(aux) > 0:
+            self.set_hydro_data(aux)
+        aux = ob.get_objects(obj='RES')
+        if len(aux) > 0:
             self.set_renewable_data(ob.__data['RES'])
 
     def set_hydro_data(self, ob=None):
