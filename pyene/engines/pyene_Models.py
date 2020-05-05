@@ -2128,16 +2128,16 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         #                             end = ' ')
         #                 print('')
         #             print('')
-                print('Load Curtailment:')
-                for k in range(len(self.settings['Security']) + 1):
-                    print('Contingency %d :' %(k))
-                    for ii in range(self.ENetwork.get_NoBus()):
-                        for j in range(self.settings['NoTime']):
-                            print("%f" %(self.solver.get_col_prim(\
-                                str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-                                    * self.ENetwork.get_Base()), end = ' ')
-                        print('')
-                    print('')
+        #         print('Load Curtailment:')
+        #         for k in range(len(self.settings['Security']) + 1):
+        #             print('Contingency %d :' %(k))
+        #             for ii in range(self.ENetwork.get_NoBus()):
+        #                 for j in range(self.settings['NoTime']):
+        #                     print("%f" %(self.solver.get_col_prim(\
+        #                         str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
+        #                             * self.ENetwork.get_Base()), end = ' ')
+        #                 print('')
+        #             print('')
         #         print('Active Power Flow:')
         #         for k in range(len(self.settings['Security']) + 1):
         #             print('Contingency %d :' %(k))

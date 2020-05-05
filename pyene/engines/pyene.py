@@ -57,6 +57,10 @@ class ENEConfig():
                 'HydroL': [],  # Link position-->profile
                 'Hydro': []  # New hydropower time-series
                 }
+        self.solverselection = {
+            'pyomo': False,
+            'glpk': True
+        }
 
 
 class pyeneClass():
@@ -83,6 +87,9 @@ class pyeneClass():
         m = self.NM.addCon(m)
         m = self.HM.addCon(m)
         m = self.addCon(m)
+
+        # IEEE paper control variables.
+        m.pEeee = self.EM.Print['IEEE']
 
         return m
 
@@ -116,7 +123,7 @@ class pyeneClass():
         else:
             print('Losses are neglected')
         if NM.settings['Feasibility']:
-            print('Feasibility constrants are included')
+            print('Feasibility constraints are included')
         else:
             print('Feasibility constraints are neglected')
         print('Demand multiplyiers ', NM.settings['Demand'])
@@ -385,7 +392,7 @@ class pyeneClass():
     def get_Demand(self, m, bus, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from a given bus'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         xb = bus-1
@@ -405,10 +412,9 @@ class pyeneClass():
             return 0
 
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
-        #if isinstance(m, ConcreteModel):
         if self.NM.settings['Feasibility']:
             for xh in auxscens:
                 acu = 0
@@ -419,12 +425,12 @@ class pyeneClass():
                 value += acu*auxOF[xh]
             value *= self.NM.ENetwork.get_Base()
 
-            return value
+        return value
 
     def get_Generation(self, m, index, *varg, **kwarg):
         ''' Get kWh for a single generator '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         for xh in auxscens:
@@ -473,27 +479,32 @@ class pyeneClass():
     def get_Loss(self, m, xb, *varg, **kwarg):
         '''Get losses for a given branch'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
+        value = 0
         if self.NM.settings['Flag']:
             # If the electricity network has been modelled
-            value = 0
-            for xh in auxscens:
-                acu = 0
-                for xt in auxtime:
-                    acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
-                        auxweight[xt]
-                value += acu*auxOF[xh]
-            value *= self.NM.ENetwork.get_Base()
+            if self.NM.settings['Losses']:
+                value = 0
+                for xh in auxscens:
+                    acu = 0
+                    for xt in auxtime:
+                        acu += m.vNLoss[self.NM.get_ConL(xh)+xb, xt].value * \
+                            auxweight[xt]
+                    value += acu*auxOF[xh]
+                value *= self.NM.ENetwork.get_Base()
+            elif self.NM.settings['Loss'] is not None:
+                # TODO: Enable option
+                import sys
+                sys.exit('Options with network and predefined losses not yet enabled')
 
         elif self.NM.settings['Loss'] is not None:
             # If losses have been estimated
-            aux = self.NM.settings['Loss']/(1+self.NM.settings['Loss'])
-            value = self.get_AllGeneration(m, *varg, **kwarg)*aux
-        else:
-            # If losses have been neglected
-            value = 0
+            import sys
+            sys.exit('Options without network and predefined losses not yet enabled')
 
+        import sys
+        sys.exit('Just stop')
         return value
 
     def get_MeanHydroMarginal(self, m):
@@ -525,7 +536,7 @@ class pyeneClass():
     def get_OFpart(self, m, xg, *varg, **kwarg):
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = sum(sum(m.vNGCost[self.NM.get_ConC(xh)+xg, xt].value
                         for xt in auxtime)*auxOF[xh] for xh in auxscens)
@@ -536,35 +547,31 @@ class pyeneClass():
         # TODO: Validate
         ''' Get components of the objective function '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         value = 0
         if auxFlags[0]:  # Conventional generation
             for x in self.NM.Gen.Conv:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
         if auxFlags[1]:  # RES generation
             for x in self.NM.Gen.RES:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[2]:  # Hydro generation
             for x in self.NM.Gen.Hydro:
                 value += sum(sum(m.vNGCost[self.NM.get_ConC(xh)+x.get_vNGen(),
-                                           xt].value *
-                                 self.NM.scenarios['Weights'][xt] for xt in
+                                           xt].value for xt in
                                  auxtime)*auxOF[xh] for xh in auxscens)
 
         if auxFlags[3]:  # Pumps
             value -= sum(sum(self.NM.pumps['Value'][xdl] *
                              self.NM.ENetwork.get_Base() *
                              sum(m.vNPump[self.NM.get_ConP(xh)+xdl+1,
-                                          xt].value *
-                                 self.NM.scenarios['Weights'][xt]
+                                          xt].value
                                  for xt in auxtime)
                              for xdl in self.NM.s['Pump']) *
                          auxOF[xh] for xh in auxscens)
@@ -580,7 +587,7 @@ class pyeneClass():
     def get_Pump(self, m, index, *varg, **kwarg):
         ''' Get kWh consumed by a specific pump '''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
         value = 0
         for xh in auxscens:
             acu = 0
@@ -595,7 +602,7 @@ class pyeneClass():
     def get_RES(self, m, index, *varg, **kwarg):
         ''' Spilled kWh of RES for the whole period'''
         (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(m, *varg, **kwarg)
+         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
 
         xg = index-1
         value = 0
@@ -612,16 +619,16 @@ class pyeneClass():
 
         return value
 
-    def get_timeAndScenario(self, m, *varg, **kwarg):
+    def get_timeAndScenario(self, *varg, **kwarg):
         # Specify times
         if 'times' in kwarg:
             auxtime = kwarg.pop('times')
         else:
-            auxtime = range(self.NM.settings['NoTime'])
+            auxtime = self.NM.s['Tim']
 
         # Remove weights
         if 'snapshot' in varg:
-            auxweight = np.ones(self.NM.settings['NoTime'], dtype=int)
+            auxweight = np.ones(len(self.NM.s['Tim']), dtype=int)
             auxOF = np.ones(len(self.NM.get_ConS()), dtype=int)
         else:
             auxweight = self.NM.scenarios['Weights']
@@ -887,10 +894,13 @@ class pyeneClass():
 
     def Print_ENSim(self, m):
         ''' Print results '''
+        
+        from pyene.engines.pyeneP import PrintClass
+        prnt = PrintClass(m, self)
+        
         self.EM.print(m)
         for xh in range(self.p['Number']):
-            self.EM.print(m)
-            self.NM.print(m, [xh])
+            self.NM.print(m, [xh], prnt)
             self.HM.print(m, [xh])
             print()
 
