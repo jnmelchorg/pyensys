@@ -7,9 +7,13 @@ engine.
 
 """
 from .engines.pyene import pyeneClass, pyeneConfig
+from .fixtures import json_directory
+from .engines.pyene import pyeneClass as pe
 from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 from .engines.pyeneO import PrintinScreen as PSc
+import os
+import json
 
 
 def get_pyene(conf=None):
@@ -283,10 +287,11 @@ def test_pyeneRES(conf):
     '''
 
     # Initialise simulation methods
+    conf.HM.settings['Flag'] = False
     conf.NM.settings['Flag'] = True
     conf.NM.settings['Losses'] = False
     conf.NM.settings['Feasibility'] = True
-    conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
+    #conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
     conf.NM.settings['NoTime'] = 24
     conf.NM.scenarios['Weights'] = [1 for _ in range(conf.NM.settings['NoTime'])]
 
