@@ -32,6 +32,7 @@ class pyeneNConfig:
                 'Loss': None,  # Factor for losses
                 'Ancillary': None,  # Need for uncillary services
                 'UC': False,  # Model UC
+                'NoGenerators': 13  # Bespoke setting for tutorial
                 }
         # Connections
         self.connections = {
@@ -1099,6 +1100,16 @@ class ENetworkClass:
         ''' Read input data '''
         # Load file
         mpc = json.load(open(self.settings['File']))
+        
+        n = self.settings['NoGenerators']
+        for k in mpc['gen'].keys():
+            mpc['gen'][k] = mpc['gen'][k][:n]
+
+        for k in mpc['gencost'].keys():
+            if k == 'COST':
+                mpc['gencost'][k] = mpc['gencost'][k][:n][:]
+            else:
+                mpc['gencost'][k] = mpc['gencost'][k][:n]
 
         GenNCost = np.array(mpc['gencost']['COST'], dtype=int)
         NoOGen = len(GenNCost)
