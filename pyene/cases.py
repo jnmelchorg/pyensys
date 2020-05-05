@@ -278,6 +278,55 @@ def test_pyene(conf):
         print('Total curtailment:', curAll.value)
 
 
+def hydro_example_tobeerased(conf):
+    """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
+        IN A FUTURE RELEASE"""
+    # Disable pyeneH
+    conf.HM.settings['Flag'] = False
+
+    conf.NM.settings['Flag'] = True
+    conf.NM.settings['Losses'] = False
+    conf.NM.settings['Feasibility'] = True
+    conf.NM.settings['NoTime'] = 24  # Single period
+    conf.NM.scenarios['Weights'] = [1 for _ in range(24)]  # Add weights 
+        # to the time steps
+
+    # Adding hydropower plants
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 5]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [200, 200]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.001, 0.001]  # Costs
+    conf.NM.hydropower['Baseload'] = [0.4, 0.6]
+
+    # Create object
+    EN = pyeneClass(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Single demand node (first scenario)
+    demandNode = _node()
+    demandNode.value = [0.3333, 0.2623, 0.2350, 0.2240, 0.2240, 
+        0.2514, 0.3825, 0.6284, 0.6503, 0.5574, 0.5301, 0.5137, 
+        0.5355, 0.5027, 0.4918, 0.5464, 0.7760, 0.9891, 1.0000, 
+        0.9399, 0.8634, 0.8142, 0.6885, 0.4918]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # Several hydro nodes
+    hydroInNode = _node()
+    for xh in range(EN.NM.hydropower['Number']):
+        hydroInNode.value = 10000
+        hydroInNode.index = xh+1
+        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
+    
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    print('Spill ', EN.get_AllRES(m))
+    print('OF   : ', m.OF.expr())
 
 
 def test_pyenetest(mthd):

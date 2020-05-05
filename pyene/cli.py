@@ -3,7 +3,7 @@ import numpy as np
 import cProfile
 import os
 from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
-    test_pyenetest
+    test_pyenetest, hydro_example_tobeerased
 from .engines.pyene import pyeneConfig
 
 
@@ -178,6 +178,30 @@ def network_simulation_pyeneEN(conf, **kwargs):
     conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyene(conf)
+
+@cli.command('run-example-hydro')
+@click.option('--tree', default='TreeMonth01_01RD.json',
+              help='Time resolution tree file')
+@click.option('--network', default='case14_con.json',
+              help='Network model file')
+@click.option('--Pump', default=0, help='Number of pumps')
+@click.option('--res', default=0, help='Number of RES generators')
+@click.option('--sec', default=[], type=list,
+              help='Include N-1 security constraints')
+@click.option('--loss', default=True, type=bool,
+              help='Estimate losses')
+@click.option('--feas', default=True, type=bool,
+              help='Consider feasibility constraints')
+@click.option('--time', default=24, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
+@pass_conf
+def network_simulation_pyeneEN(conf, **kwargs):
+    """Prepare energy balance and network simulation """
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    hydro_example_tobeerased(conf)
 
 @cli.command('run-ac')
 @click.option('--tree', default='ResolutionTreeMonth01.json',
