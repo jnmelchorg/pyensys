@@ -161,7 +161,6 @@ class TransmissionLine(Branch):
     def __init__(self):
         super().__init__()
 
-
 class Bus:
     ''' Electricity bus '''
     def __init__(self):
@@ -374,7 +373,6 @@ class Bus:
         assert poslt != None and newpos!=None, "Some values have not been \
             passed to set the GenPosition"
         self.__data['GenPosition'][poslt] = newpos
-
 
 class ElectricityNetwork:
     ''' Electricity network '''
@@ -1002,7 +1000,6 @@ class GenClass:
         ''' Set coefficient cost of linear generation cost'''
         self.__data['UniCost'] = val
 
-
 class Conventional(GenClass):
     ''' Conventional generator '''
     def __init__(self):
@@ -1012,19 +1009,15 @@ class Conventional(GenClass):
         self.cooling['Derate'] = None
         super().__init__()
 
-
 class Hydropower(GenClass):
     ''' Hydropower generator '''
     def __init__(self):
         super().__init__()
 
-
 class RES(GenClass):
     ''' RES generation '''
     def __init__(self):
         super().__init__()
-
-
 
 class ThreeWindingTrafo():
     ''' Three winding transformer object '''
