@@ -285,7 +285,7 @@ def test_pyeneRES(conf):
     '''
     A case study with 2 PV generators located at two buses for 2 representative winter days
     '''
-
+    # TODO THIS NEEDS TO BE ERASED IN A FUTURE RELEASE
     # Initialise simulation methods
     conf.HM.settings['Flag'] = False
     conf.NM.settings['Flag'] = True
@@ -376,11 +376,11 @@ def test_pyeneRES(conf):
     print('OF   : ', m.OF.expr())
 
 def hydro_example_tobeerased(conf):
-    """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
-        IN A FUTURE RELEASE"""
+    """ Execute pyene to run the example of baseload"""
+    # TODO THIS NEEDS TO BE ERASED IN A FUTURE RELEASE
     # Disable pyeneH
     conf.HM.settings['Flag'] = False
-
+    conf.NM.settings['NoGenerators'] = 13
     conf.NM.settings['Flag'] = True
     conf.NM.settings['Losses'] = False
     conf.NM.settings['Feasibility'] = True

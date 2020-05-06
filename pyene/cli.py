@@ -188,13 +188,14 @@ def network_simulation_pyeneEN(conf, **kwargs):
 
     test_pyene(conf)
 
+
 @cli.command('run-res')
 @click.option('--tree', default='ResolutionTreeMonth01.json',
               help='Time resolution tree file')
 @click.option('--Pump', default=0, help='Number of pumps')
 @click.option('--sec', default=[], type=list,
               help='Include N-1 security constraints')
-@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json', help='Network model file')
+@click.option('--network', default='case14_con.json', help='Network model file')
 @click.option('--res', default=2,
               help='Number of RES generators')
 @click.option('--time', default=24,
@@ -205,10 +206,8 @@ def network_simulation_pyeneEN(conf, **kwargs):
               help='Fraction assigned to losses')
 @click.option('--feas', default=True, type=bool,
               help='Consider feasibility constraints')
-
-
 @pass_conf
-def network_simulation_pyeneEN(conf, **kwargs):
+def network_simulation_pyeneRES(conf, **kwargs):
     ''' Prepare Network Simulation '''
     conf = _update_config_pyeneE(conf, kwargs)
     conf = _update_config_pyeneN(conf, kwargs)
@@ -218,7 +217,7 @@ def network_simulation_pyeneEN(conf, **kwargs):
 @cli.command('run-example-hydro')
 @click.option('--tree', default='TreeMonth01_01RD.json',
               help='Time resolution tree file')
-@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json',
+@click.option('--network', default='case14_con.json',
               help='Network model file')
 @click.option('--Pump', default=0, help='Number of pumps')
 @click.option('--res', default=0, help='Number of RES generators')
@@ -234,7 +233,7 @@ def network_simulation_pyeneEN(conf, **kwargs):
 @click.option('--baseline', default=0, type=float,
               help='Fraction assigned to baseline of hydro electrical generators')
 @pass_conf
-def network_simulation_pyeneEN(conf, **kwargs):
+def network_simulation_pyeneHydro(conf, **kwargs):
     """Prepare energy balance and network simulation """
     conf = _update_config_pyeneE(conf, kwargs)
     conf = _update_config_pyeneN(conf, kwargs)
