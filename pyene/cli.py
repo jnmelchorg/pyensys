@@ -194,7 +194,7 @@ def network_simulation_pyeneEN(conf, **kwargs):
 @click.option('--Pump', default=0, help='Number of pumps')
 @click.option('--sec', default=[], type=list,
               help='Include N-1 security constraints')
-@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json', help='Network model file')
+@click.option('--network', default='case14_con.json', help='Network model file')
 @click.option('--res', default=2,
               help='Number of RES generators')
 @click.option('--time', default=24,

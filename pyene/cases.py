@@ -318,50 +318,53 @@ def test_pyeneRES(conf):
 
     ################### case 1 - Winter scenarios ###########################
 
-    # Demand profile
-    fileName = os.path.join(json_directory(), 'TimeSeries.json')
-    Eprofiles = json.load(open(fileName))
-    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
-    if conf.NM.scenarios['NoDem'] == 2:
-        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
-
-
-    # RES profile
-    resInNode = _node()
-    for xr in range(EN.NM.RES['Number']):
-        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
-        resInNode.index = xr + 1
-        EN.set_RES(resInNode.index, resInNode.value)
-
-    # Hydro profile
-    hydroInNode = _node()
-    for xh in range(EN.NM.hydropower['Number']):
-        hydroInNode.value = 1000  # Winter dry seasons MWh
-        hydroInNode.index = xh + 1
-        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
-
-    # Solve the model and generate results
-    m = ConcreteModel()
-    m = EN.run(m)
-    EN.Print_ENSim(m)
-    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
-    print('Spill ', EN.get_AllRES(m))
-    print('OF   : ', m.OF.expr())
+    # # Demand profile
+    # fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    # Eprofiles = json.load(open(fileName))
+    # EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    # if conf.NM.scenarios['NoDem'] == 2:
+    #     EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+    #
+    # # RES profile
+    # resInNode = _node()
+    # for xr in range(EN.NM.RES['Number']):
+    #     resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+    #     resInNode.index = xr + 1
+    #     EN.set_RES(resInNode.index, resInNode.value)
+    #
+    # # Hydro profile
+    # hydroInNode = _node()
+    # for xh in range(EN.NM.hydropower['Number']):
+    #     hydroInNode.value = 1000  # Winter dry seasons MWh
+    #     hydroInNode.index = xh + 1
+    #     EN.set_Hydro(hydroInNode.index, hydroInNode.value)
+    #
+    # # Solve the model and generate results
+    # m = ConcreteModel()
+    # m = EN.run(m)
+    # EN.Print_ENSim(m)
+    # print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    # print('Spill ', EN.get_AllRES(m))
+    # print('OF   : ', m.OF.expr())
 
     ################### case 2 - Summer scenarios ###########################
 
     # Demand profile
+    fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    Eprofiles = json.load(open(fileName))
     EN.set_Demand(1, Eprofiles['Demand']['Values'][4])  # Third scenario demand profile - Summer Weekday
     if conf.NM.scenarios['NoDem'] == 2:
         EN.set_Demand(2, Eprofiles['Demand']['Values'][5])  # Fourth scenario demand profile - Summer Weekend
 
     # RES profile
+    resInNode = _node()
     for xr in range(EN.NM.RES['Number']):
         resInNode.value = Eprofiles['PV']['Values'][xr+4]  # Summer profile for RES generator 1 & 2
         resInNode.index = xr + 1
         EN.set_RES(resInNode.index, resInNode.value)
 
     # Hydro profile
+    hydroInNode = _node()
     for xh in range(EN.NM.hydropower['Number']):
         hydroInNode.value = 10000  # Summer rainy seasons MWh
         hydroInNode.index = xh + 1
