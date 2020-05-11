@@ -316,26 +316,92 @@ class PowerSystemReduction(ElectricityNetwork):
     
     The options considered are:
     
-    1. Simplify generators connected to the same node to an equivalent generator
-    2. Simplify loads connected to the same node to an equivalent load
-    2. Simplify power system network until a desired voltage level '''
+    1. Simplify generators connected to the same node to an equivalent 
+        generator - Not implemented
+    2. Simplify loads connected to the same node to an equivalent load - 
+        Not implemented
+    3. Simplify power system network until a desired voltage level - network 
+        characteristics of the reduced network are omitted
+    4. Simplify power system network until a desired voltage level - network 
+        characteristics of the reduced network are omitted - Not implemented'''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.__data = {
+            'NoVoltageLevels': 0, # Number of voltage levels in the 
+            # power system
+            'VoltageLevels': [], # Voltage levels in the power system
+        }
+        logging.basicConfig(format='%(asctime)s %(message)s', \
+            datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     
-    def Networkreduction(self, opt=None):
-        ''' This class method calls and controls all main methods in this 
-        class '''
-        auxp = "No option has been passed to reduce the network"
-        assert opt is not None, " ".join(auxp.split())
+    def get_no_two_winding_trafos(self):
+        ''' Get total number of two winding transformers in the network '''
+        return self.__data['TWtrafos']
     
-        self.G = nx.MultiGraph()
-    
-    def network_reduction_
+    def network_reduction_voltage_no_characteristics(self, vol_kv=None, \
+        electricity_network=None):
+        ''' This class method controls the functions to reduce the network \
+        until the desired voltage level (vol_kv) without including 
+        electrical characteristics of the eliminated elements
+
+        The vol parameter needs to be in kV
+        The electricity_network parameter needs to be an object of the 
+            ElectricityNetwork class
+        '''
+        assert vol_kv is not None, "No voltage passed to reduce the network"
+        self.__find_voltage_levels()
+        auxp = "The indicated voltage level is not in the list of voltage \
+            levels"
+        assert vol_kv in self.__data['VoltageLevels'], " ".join(auxp.split())
         
 
-    def Reduction(self):
+    def reduction(self):
         ''' This is the main class method'''
-        self.Networkreduction()
+        self.network_reduction_voltage_no_characteristics()
+    
+    def __find_voltage_levels(self):
+        ''' This method finds all voltage levels in the system '''
+        aux = self.get_voltage()
+        aux1 = []
+        for xn in aux:
+            flag_vol = False
+            for xvol in aux1:
+                if xn == xvol:
+                    flag_vol = True
+                    break
+            if not flag_vol:
+                aux1.append(xn)
+        aux1.sort(reverse=True)
+        self.__data['VoltageLevels'] = aux1
+        self.__data['NoVoltageLevels'] += len(aux1)
+    
+    def __initialize_flag_vector(self, electricity_network=None):
+        ''' This method initialize the flags for the network reduction  
+        considering the voltage'''
+        assert isinstance(electricity_network, ElectricityNetwork), "Incorrect \
+            object passed for the Electricity Network data"
+        aux = [
+                'bus',
+                'transmissionline',
+                'conv',
+                'hydro',
+                'RES',
+                'twowindingtrafo',
+                'threewindingtrafo'
+        ]
+        flags = {}
+        for xobj in aux:
+            flags[xobj] = [False for _ in \
+                electricity_network.get_no_elements(obj=xobj)]
+    
+    def __list_elements_to_remove(self, vol_kv=None, electricity_network=None):
+        ''' This function return the list of elements (nodes, lines, trafos, 
+        etc) to be eliminated in the network reduction'''
+        assert vol_kv is not None, "No voltage passed to reduce the network"
+        copy_electricity_network = ElectricityNetwork()
+        copy_electricity_network.set_electricity_network_data(\
+            electricity_network)
+        self.__initialize_flag_vector(electricity_network=electricity_network)
 
 class TemporalTree():
     
