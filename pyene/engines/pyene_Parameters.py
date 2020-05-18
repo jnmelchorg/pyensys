@@ -14,9 +14,9 @@ import numpy as np
 class _CommonMethods():
     def __init__(self):
         ''' This Class contains the methods that are common to some classes '''
-        # Assign random value to self.__data in this function. The value will 
+        # Assign random value to self._data in this function. The value will 
         # be overwritten in the child classes
-        self.__data = {}
+        self._data = {}
 
     def get_element(self, name=None, pos=':'):
         ''' This function returns the value or a list of values for the 
@@ -29,24 +29,24 @@ class _CommonMethods():
         auxp = "No valid name has been passed to the function get_element in \
             the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
-        if name in self.__data:
-            if isinstance(self.__data[name], list):
+        if name in self._data:
+            if isinstance(self._data[name], list):
                 if pos == ':':
-                    return self.__data[name]
+                    return self._data[name]
                 elif isinstance(pos, list):
                     aux = []
                     for aux1 in pos:
-                        aux.append(self.__data[name][aux1])
+                        aux.append(self._data[name][aux1])
                     return aux
                 else:
-                    return self.__data[name][pos]
+                    return self._data[name][pos]
             else:
-                return self.__data[name]
+                return self._data[name]
         else:
             auxp = "No valid key {0} has been passed to the function \
             get_element in the class {1}. The valid keys for this class are as \
             follows: \n {2}".format(name, self.__class__.__name__, \
-            self.__data.keys()) 
+            self._data.keys()) 
             assert " ".join(auxp.split())
     
     def get_no_elements(self, name=None):
@@ -54,9 +54,9 @@ class _CommonMethods():
         auxp = "No valid name has been passed to the function get_no_elements \
             in the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
-        if name in self.__data:
-            if isinstance(self.__data[name], list):
-                return len(self.__data[name])
+        if name in self._data:
+            if isinstance(self._data[name], list):
+                return len(self._data[name])
             else:
                 auxp = "the key {0} in the class {1} is not a list".format(\
                     name, self.__class__.__name__)
@@ -65,37 +65,40 @@ class _CommonMethods():
             auxp = "No valid key {0} has been passed to the function \
             get_no_elements in the class {1}. The valid keys for this class are \
             as follows: \n {2}".format(name, self.__class__.__name__, \
-            self.__data.keys()) 
+            self._data.keys()) 
             assert " ".join(auxp.split())
     
     def set_element(self, name=None, val=None):
-        ''' This function set the value or a list of values to the 
+        ''' This function set the value or a list of values ("val") to the 
         requested parameter "name". 
-        - This function rewrite the existing values or value stored in the 
-        parameter'''
+        - This function rewrites the existing values or value stored in the 
+        parameter "name" '''
         auxp = "No valid name has been passed to the function get_element in \
             the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
-        if name in self.__data:
-            if isinstance(self.__data[name], list):
+        auxp = "No valid value has been passed to the function get_element in \
+            the class {0}".format(self.__class__.__name__)
+        assert val is not None, " ".join(auxp.split())
+        if name in self._data:
+            if isinstance(self._data[name], list):
                 auxp = "You are trying to set the \
                 parameter {0} that have to be a list with different type of \
                 data element in the class {1}".format(name, \
                 self.__class__.__name__)
                 assert isinstance(val, list), " ".join(auxp.split())
-                self.__data[name] = val
+                self._data[name] = val
             else:
                 auxp = "You are trying to set the \
                 parameter {0} that have to be a single number or other single type \
                 of data with a list in the class {1}".format(name, \
                 self.__class__.__name__)
                 assert not isinstance(val, list), " ".join(auxp.split())
-                self.__data[name] = val
+                self._data[name] = val
         else:
             auxp = "No valid key {0} has been passed to the function \
             get_element in the class {1}. The valid keys for this class are as \
             follows \n {2}".format(name, self.__class__.__name__, \
-            self.__data.keys()) 
+            self._data.keys()) 
             assert " ".join(auxp.split())
 
 class Branch(_CommonMethods):
@@ -108,9 +111,9 @@ class Branch(_CommonMethods):
                'short_term_thermal_limit', 'emergency_thermal_limit',
                'non_technical_losses_fix', 'position',
                'contingency_n-1']
-        self.__data = {}
+        self._data = {}
         for x in aux:
-            self.__data[x] = None
+            self._data[x] = None
 
         # Data that have to be a list of numbers or names
         aux =  ['bus_number', 'bus_position']
@@ -118,19 +121,21 @@ class Branch(_CommonMethods):
         for x in aux:
             __data2[x] = []
         
-        self.__data.update(__data2)
+        self._data.update(__data2)
         del __data2
 
 class TwoWindingTrafo(Branch):
     ''' Two winding transformer class '''
     def __init__(self):
         super().__init__()
-        # Basic __data
-        aux = ['max_phase_shift_angle', 'min_phase_shift_angle',
-        'tap']
-        self.__data.update(aux)
+        # Basic _data
+        aux = ['max_phase_shift_angle', 'min_phase_shift_angle', 'tap']
+        __data2 = {}
         for x in aux:
-            self.__data[x] = None
+            __data2[x] = []
+        
+        self._data.update(__data2)
+        del __data2
 
 class TransmissionLine(Branch):
     ''' Transmission Line class '''
@@ -147,30 +152,24 @@ class Bus(_CommonMethods):
                'position', 'name', 'number','initial_voltage_magnitude', 
                'initial_voltage_angle', 'maximum_voltage_magnitude', 
                'minimum_voltage_magnitude', 'zone', 'non_technical_losses_fix']
-        self.__data = {}
+        self._data = {}
         for x in aux:
-            self.__data[x] = None
+            self._data[x] = None
 
         # Data that have to be a list of numbers or names
-        aux =  ['contingency_n-1', 'load_type', 'from_end_transmission_lines',
-                'to_end_transmission_lines', 'gen_type','gen_position',
-                'from_end_two_winding_trafo', 'to_end_two_winding_trafo',
-                'high_voltage_end_three_winding_trafo', 
-                'medium_voltage_end_three_winding_trafo',
-                'low_voltage_end_three_winding_trafo']
+        aux =  ['contingency_n-1', 'load_type', 
+                'transmissionline_position', 'transmissionline_number',
+                'conv_position', 'conv_number',
+                'hydro_position', 'hydro_number',
+                'RES_position', 'RES_number',
+                'twowindingtrafo_position', 'twowindingtrafo_number'
+                'threewindingtrafo_position', 'threewindingtrafo_number']
         __data2 = {}
         for x in aux:
             __data2[x] = []
         
-        self.__data.update(__data2)
+        self._data.update(__data2)
         del __data2
-    
-    def update_gen_pos(self, poslt=None, newpos=None):
-        ''' Update list of generator positions for each type connected to
-        the bus '''
-        assert poslt != None and newpos!=None, "Some values have not been \
-            passed to set the GenPosition"
-        self.__data['GenPosition'][poslt] = newpos
 
 class ElectricityNetwork(_CommonMethods):
     ''' Electricity network '''
@@ -186,7 +185,7 @@ class ElectricityNetwork(_CommonMethods):
         'notwtrafos' -> Number of two winding transformers
         'nothwtrafos' -> Number of three winding transformers
         '''
-        self.__data = {
+        self._data = {
             'baseMVA': None,
             'Slack': None,
             'Security': [],  # list of N-1 cases to consider
@@ -251,6 +250,66 @@ class ElectricityNetwork(_CommonMethods):
         else:
             self.__objects['twowindingtrafo'] = [TwoWindingTrafo()]
     
+    def copy_electricity_network_data(self):
+        ''' This returns a copy of the electricity network object'''
+        return self.__dict__
+
+    def delete_objects(self, name=None, pos=None):
+        ''' This function delete an object or a list of objects for the 
+        requested object "name". 
+        - The function delete either a list with the positions indicated 
+        in "pos" or the object of the position "pos"
+        - "pos" needs to indicate a position between zero and the size of the 
+        '''
+        auxp = "No valid name has been passed to the function delete_objects \
+            in the class {0}".format(self.__class__.__name__)
+        assert name is not None, " ".join(auxp.split())
+        auxp = "No valid position has been passed to the function \
+            delete_objects in the class {0}".format(self.__class__.__name__)
+        assert name is not None, " ".join(auxp.split())
+        if name in self.__objects:
+            if isinstance(pos, list):
+                for aux1 in pos:
+                    self.__objects[name].pop(aux1)
+            else:
+                return self.__objects[name].pop(pos)
+            self.__update_positions_objects(name)
+            if name == 'bus':
+                 # Updating the positions related to the bus object
+                for xobj in self.__objects.keys():
+                    if xobj != 'bus':
+                        self.__update_relative_position_objects(\
+                            name_object1='bus', \
+                            name_element1='number', name_object2=xobj, \
+                            name_element2='bus_number', 
+                            name_position_element='bus_position')
+            else:
+                # Updating the positions of other objects in the bus object
+                self.__update_relative_position_objects(name_object1=name, \
+                    name_element1='number', name_object2='bus', \
+                    name_element2=name+'_number', \
+                    name_position_element=name+'_position')
+        else:
+            auxp = "No valid key {0} has been passed to the function \
+            delete_objects in the class {1}. The valid keys for this class are \
+            as follows: \n {2}".format(name, self.__class__.__name__, \
+            self.__objects.keys()) 
+            assert " ".join(auxp.split())
+    
+    def get_no_objects(self, name=None):
+        ''' This function returns the number of objects in a list '''
+        auxp = "No valid name has been passed to the function get_no_objects \
+            in the class {0}".format(self.__class__.__name__)
+        assert name is not None, " ".join(auxp.split())
+        if name in self.__objects:
+            return len(self.__objects[name])
+        else:
+            auxp = "No valid key {0} has been passed to the function \
+            get_no_objects in the class {1}. The valid keys for this class are \
+            as follows: \n {2}".format(name, self.__class__.__name__, \
+            self._data.keys()) 
+            assert " ".join(auxp.split())
+
     def get_objects(self, name=None, pos=':'):
         ''' This function returns an object or a list of objects for the 
         requested object "name". 
@@ -279,37 +338,36 @@ class ElectricityNetwork(_CommonMethods):
             self.__objects.keys()) 
             assert " ".join(auxp.split())
     
-    def get_objects_elements(self, name_object=None, name_element, pos=':'):
+    def get_object_elements(self, name_object=None, name_element=None, \
+        pos_element=':', pos_object=None):
         ''' This function returns the value or a list of values for the 
-        requested parameter "name_element" in the object "name_obj". 
+        requested parameter "name_element" of the object "name_obj" in position
+        "pos_object". 
         - If the parameter is a list then the function returns either a list 
-        with the positions indicated in "pos" or the value of the position "pos"
-        - "pos" needs to indicate a position between zero and the size of the 
-        list
+        with the positions indicated in "pos_element" or the value of the 
+        position "pos_element"
+        - "pos_element" needs to indicate a position between zero and the size 
+        of the list of parameters
+        - "pos_object" needs to indicate a position between zero and the size 
+        of the list of objects
         - If the parameters is a value then "pos" can be ignored
+        - The function returns by default the whole list of parameters '''
 
-        - The function returns either a list with the positions indicated 
-        in "pos" or the object of the position "pos"
-        - "pos" needs to indicate a position between zero and the size of the 
-        list
-        - The function returns by default the whole list of objects'''
-        auxp = "No valid name has been passed to the function get_objects in \
+        auxp = "No valid object name has been passed to the function \
+            get_objects_elements in the class \
+            {0}".format(self.__class__.__name__)
+        assert name_object is not None, " ".join(auxp.split())
+        auxp = "No valid object position has been passed to the function \
+            get_objects_elements in \
             the class {0}".format(self.__class__.__name__)
-        assert name is not None, " ".join(auxp.split())
-        if name in self.__objects:
-            if pos == ':':
-                return self.__objects[name]
-            elif isinstance(pos, list):
-                aux = []
-                for aux1 in pos:
-                    aux.append(self.__objects[name][aux1])
-                return aux
-            else:
-                return self.__objects[name][pos]
+        assert pos_object is not None, " ".join(auxp.split())
+        if name_object in self.__objects:
+            return self.__objects[name_object][pos_object].get_element(\
+                name=name_element, pos=pos_element)
         else:
             auxp = "No valid key {0} has been passed to the function \
-            get_objects in the class {1}. The valid keys for this class are as \
-            follows: \n {2}".format(name, self.__class__.__name__, \
+            get_object_elements in the class {1}. The valid keys for this class are as \
+            follows: \n {2}".format(name_object, self.__class__.__name__, \
             self.__objects.keys()) 
             assert " ".join(auxp.split())
     
@@ -344,192 +402,156 @@ class ElectricityNetwork(_CommonMethods):
             self.__objects.keys()) 
             assert " ".join(auxp.split())
 
+    def set_object_elements(self, name_object=None, name_element=None, \
+        val=None, pos_object=None):
+        ''' This function set the value or a list of values for the 
+        requested parameter "name_element" of the object "name_obj" in position
+        "pos_object". 
+        - This function rewrite the existing values or value stored in the 
+        parameter
+        - "pos_object" needs to indicate a position between zero and the size 
+        of the list of objects '''
+
+        auxp = "No valid object name has been passed to the function \
+            get_objects_elements in \
+            the class {0}".format(self.__class__.__name__)
+        assert name_object is not None, " ".join(auxp.split())
+        auxp = "No valid object position has been passed to the function \
+            get_objects_elements in \
+            the class {0}".format(self.__class__.__name__)
+        assert pos_object is not None, " ".join(auxp.split())
+        if name_object in self.__objects:
+            self.__objects[name_object][pos_object].set_element(\
+                name=name_element, val=val)
+        else:
+            auxp = "No valid key {0} has been passed to the function \
+            set_object_elements in the class {1}. The valid keys for this class are as \
+            follows: \n {2}".format(name_object, self.__class__.__name__, \
+            self.__objects.keys()) 
+            assert " ".join(auxp.split())
+
     def set_electricity_network_data(self, ob=None):
         ''' set the data of the electricity network object '''
         assert isinstance(ob, ElectricityNetwork), "Incorrect object \
             passed to set the Electricity Network data"
         for xkey in self.__objects.keys():
             self.set_objects(name=xkey, list_obj=ob.get_objects(name=xkey))
-        for xkey in self.__data.keys():
+        for xkey in self._data.keys():
             self.set_element(name=xkey,val=ob.get_element(name=xkey))
     
     def update_all_positions(self):
         ''' Update the position of all nodes, transmission lines, etc. '''
-        self.__update_pos_nodes()
-        self.__update_pos_generators()
-        self.__update_pos_transmission_lines()
-        self.__update_pos_two_winding_trafos()
-        self.__update_pos_three_winding_trafos()
-    
-    def __update_bus_pos_conv(self):
-        '''Update the position of the nodes in all conventional generators'''
-        for xn in self.__objects['bus']:
-            for xg in self.__objects['conv']:
-                if xn.get_element(name='number') == get_element(name='number'):
-                    xg.set_pos(xn.get_pos())
+        for xobj in self.__objects.keys():
+            self.__update_positions_objects(name_object=xobj)
+        # Updating the positions related to the bus object
+        for xobj in self.__objects.keys():
+            if xobj != 'bus':
+                self.__update_relative_position_objects(name_object1='bus', \
+                    name_element1='number', name_object2=xobj, \
+                    name_element2='bus_number', 
+                    name_position_element='bus_position')
+        # Updating the positions of other objects in the bus object
+        for xobj in self.__objects.keys():
+            if xobj != 'bus':
+                self.__update_relative_position_objects(name_object1=xobj, \
+                    name_element1='number', name_object2='bus', \
+                    name_element2=xobj+'_number', \
+                    name_position_element=xobj+'_position')
 
-    def __update_bus_pos_hydro(self):
-        '''Update the position of the nodes in all hydro generators'''
-        for xn in self.__objects['bus']:
-            for xg in self.__objects['hydro']:
-                if xn.get_number() == xg.get_bus():
-                    xg.set_pos(xn.get_pos())
-    
-    def __update_bus_pos_RES(self):
-        '''Update the position of the nodes in all RES generators'''
-        for xn in self.__objects['bus']:
-            for xg in self.__objects['RES']:
-                if xn.get_number() == xg.get_bus():
-                    xg.set_pos(xn.get_pos())
-    
-    def __update_generator_pos_buses(self):
-        '''Update the position of the generators in all buses'''
-        for xn in self.__data['bus']:
-            aux = []
-            aux1 = []
-            for xgt in self.__data['GenTypes']:
-                for xg in self.__data[xgt]:
-                    if xn.get_pos() == xg.get_bus_pos():
-                        aux.append(xgt)
-                        aux1.append(xg.get_pos())
-            xn.set_gen_type(aux)
-            xn.set_gen_pos(aux1)
-    
-    def __update_three_winding_trafos_pos_buses(self):
-        '''Update the position of three winding transformers in all buses'''
-        for xn in self.__data['bus']:
-            aux = []
-            aux1 = []
-            aux2 = []
-            for xthwt in self.__data['threewindingtrafo']:
-                if xn.get_pos() == xthwt.get_pos_bus1():
-                    aux.append(xthwt.get_pos())
-                elif xn.get_pos() == xthwt.get_pos_bus2():
-                    aux1.append(xthwt.get_pos())
-                elif xn.get_pos() == xthwt.get_pos_bus3():
-                    aux2.append(xthwt.get_pos())
-            xn.set_three_trafo_end1(aux)
-            xn.set_three_trafo_end2(aux1)
-            xn.set_three_trafo_end3(aux2)
-    
-    def __update_transmission_lines_pos_buses(self):
-        '''Update the position of  transmission lines in all buses'''
-        for xn in self.__data['bus']:
-            aux = []
-            aux1 = []
-            for xl in self.__data['transmissionline']:
-                if xn.get_pos() == xl.get_pos_from():
-                    aux.append(xl.get_pos())
-                elif xn.get_pos() == xl.get_pos_to():
-                    aux1.append(xl.get_pos())
-            xn.set_transmission_line_from(aux)
-            xn.set_transmission_line_to(aux1)
-    
-    def __update_two_winding_trafos_pos_buses(self):
-        '''Update the position of two winding trafos in all buses'''
-        for xn in self.__data['bus']:
-            aux = []
-            aux1 = []
-            for xtwt in self.__data['twowindingtrafo']:
-                if xn.get_pos() == xtwt.get_pos_from():
-                    aux.append(xtwt.get_pos())
-                elif xn.get_pos() == xtwt.get_pos_to():
-                    aux1.append(xtwt.get_pos())
-            xn.set_two_trafo_from(aux)
-            xn.set_two_trafo_to(aux1)
-        
-    def __update_pos_ends_three_winding_trafos(self):
-        '''Update the position of the nodes in both ends of the three winding
-        transformer'''
-        for xn in self.__objects['bus']:
-            for xthwt in self.__objects['threewindingtrafo']:
-                if xn.get_number() == xthwt.get_number_bus1():
-                    xthwt.set_pos_bus1(xn.get_pos())
-                elif xn.get_number() == xthwt.get_number_bus2():
-                    xthwt.set_pos_bus2(xn.get_pos())
-                elif xn.get_number() == xthwt.get_number_bus3():
-                    xthwt.set_pos_bus3(xn.get_pos())
-    
-    def __update_pos_ends_transmission_lines(self):
-        '''Update the position of the nodes in both ends of the transmission 
-        line'''
-        for xn in self.__objects['bus']:
-            for xl in self.__objects['transmissionline']:
-                if xn.get_number() == xl.get_bus_from():
-                    xl.set_pos_from(xn.get_pos())
-                elif xn.get_number() == xl.get_bus_to():
-                    xl.set_pos_to(xn.get_pos())
-    
-    def __update_pos_ends_two_winding_trafos(self):
-        '''Update the position of the nodes in both ends of the two winding
-        transformer'''
-        for xn in self.__objects['bus']:
-            for xtwt in self.__objects['twowindingtrafo']:
-                if xn.get_number() == xtwt.get_bus_from():
-                    xtwt.set_pos_from(xn.get_pos())
-                elif xn.get_number() == xtwt.get_bus_to():
-                    xtwt.set_pos_to(xn.get_pos())
+    def __update_relative_position_objects(self, name_object1=None, \
+        name_element1=None, name_object2=None, name_element2=None, 
+        name_position_element=None):
+        ''' This function update the relative position of the object 
+        "name_object1" in the object "name_object2". 
+        - "name_element1" and "name_element2" are elements in the objects that 
+        are compared to update the positions 
+        - "name_element1" is always a single parameter
+        - "name_element2" can be a list or a single value
+        - "name_position_element" is the name of the elements in the object 
+        "name_object2" that will be updated '''
+        auxp = "No valid object name 'name_object1' has been passed to the \
+            function __update_relative_position_objects in \
+            the class {0}".format(self.__class__.__name__)
+        assert name_object1 is not None, " ".join(auxp.split())
+        auxp = "No valid object name 'name_object2' has been passed to the \
+            function __update_relative_position_objects in \
+            the class {0}".format(self.__class__.__name__)
+        assert name_object2 is not None, " ".join(auxp.split())
+        aux = self.__objects[name_object2].get_element(name='position')
+        aux1 = self.__objects[name_object1].get_element(name='position')
+        # If any of the objects does not have values then there is nothing to
+        # update
+        if aux == None or aux1 == None:
+            return
 
-    def __update_pos_generators(self):
-        ''' Update the position of the generators - starting from zero '''
-        for xgt in self.get_gen_types():
+        if name_object1 in self.__objects and name_object2 in self.__objects:
+            for xobj2 in self.__objects[name_object2]:
+                aux1 = xobj2.get_element(name=name_element2)
+                if isinstance(aux1, list):
+                    aux3 = [-1 for _ in range(len(aux1))]
+                    for xobj1 in self.__objects[name_object1]:
+                        for aux2 in range(len(aux1)):
+                            if aux1[aux2] == xobj1.get_element(\
+                                name=name_element1):
+                                aux3[aux2] = xobj1.get_element(name='position')
+                    for aux2 in range(len(aux1)):
+                        assert aux3[aux2] != -1, "The position of the nodes \
+                            has not been updated"
+                    xobj2.set_element(name=name_position_element, val=aux3)
+                else:
+                    for xobj1 in self.__objects[name_object1]:
+                        if aux1 == xobj1.get_element(name=name_element1):
+                            xobj2.set_element(name=name_position_element, \
+                                val=xobj1.get_element(name='position'))
+                            break
+        else:
+            auxp = "No valid key {0} has been passed to the function \
+            set_objects in the class {1}. The valid keys for this class are as \
+            follows \n {2}".format(name_object1, self.__class__.__name__, \
+            self.__objects.keys()) 
+            assert name_object1 in self.__objects, " ".join(auxp.split())
+
+            auxp = "No valid key {0} has been passed to the function \
+            set_objects in the class {1}. The valid keys for this class are as \
+            follows \n {2}".format(name_object2, self.__class__.__name__, \
+            self.__objects.keys()) 
+            assert name_object2 in self.__objects, " ".join(auxp.split())
+    
+    def __update_positions_objects(self, name_object=None):
+        ''' This function update the position of the list of the object 
+        "name_obj". 
+        - This function rewrite the existing values of the positions '''
+
+        auxp = "No valid object name has been passed to the function \
+            get_objects_elements in \
+            the class {0}".format(self.__class__.__name__)
+        assert name_object is not None, " ".join(auxp.split())
+        if name_object in self.__objects:
             aux=0
-            for xg in self.__data[xgt]:
-                xg.set_pos(aux)
+            for xn in self.__objects[name_object]:
+                xn.set_element(name='position', val=aux)
                 aux += 1
-        self.__update_generator_pos_buses()
-
-    def __update_pos_nodes(self):
-        '''Update the position of the nodes - starting from zero'''
-        aux=0
-        for xn in self.__objects['bus']:
-            xn.set_pos(aux)
-            aux += 1
-        for xn in self.__objects['bus']:
-            for xobj in self.self.__objects.keys():
-
-        self.__update_pos_ends_transmission_lines()
-        self.__update_pos_ends_two_winding_trafos()
-        self.__update_pos_ends_three_winding_trafos()
-        self.__update_bus_pos_generators()
+        else:
+            auxp = "No valid key {0} has been passed to the function \
+            set_object_elements in the class {1}. The valid keys for this class are as \
+            follows: \n {2}".format(name_object, self.__class__.__name__, \
+            self.__objects.keys()) 
+            assert " ".join(auxp.split())
     
-    def __update_pos_three_winding_trafos(self):
-        ''' Update the position of three winding trafos - starting from zero '''
-        aux=0
-        for xl in self.__data['threewindingtrafo']:
-            xl.set_pos(aux)
-            aux += 1
-        self.__update_three_winding_trafos_pos_buses()
-    
-    def __update_pos_transmission_lines(self):
-        ''' Update the position of transmission lines - starting from zero '''
-        aux=0
-        for xl in self.__data['transmissionline']:
-            xl.set_pos(aux)
-            aux += 1
-        self.__update_transmission_lines_pos_buses()
-    
-    def __update_pos_two_winding_trafos(self):
-        ''' Update the position of two winding trafos - starting from zero '''
-        aux=0
-        for xl in self.__data['twowindingtrafo']:
-            xl.set_pos(aux)
-            aux += 1
-        self.__update_two_winding_trafos_pos_buses()
 
 class GenClass(_CommonMethods):
     ''' Core generation class '''
     def __init__(self):
-        # Basic __data
+        # Basic _data
         aux = [ 'maximum_active_power_generation', 
                 'minimum_active_power_generation', 
                 'maximum_reactive_power_generation',
                 'minimum_reactive_power_generation', 'ramp', 'baseload',
                 'model', 'shutdown_cost', 'startup_cost', 'position',
-                'uncertainty', 'gen_number']
-        self.__data = {}
+                'uncertainty', 'number']
+        self._data = {}
         for x in aux:
-            self.__data[x] = None
+            self._data[x] = None
         
         aux =  ['cost_function_parameters', 'piecewise_linearization_parameters'
                 , 'bus_number', 'bus_position']
@@ -537,7 +559,7 @@ class GenClass(_CommonMethods):
         for x in aux:
             __data2[x] = []
         
-        self.__data.update(__data2)
+        self._data.update(__data2)
         del __data2
 
 class Conventional(GenClass):
@@ -563,10 +585,10 @@ class ThreeWindingTrafo(_CommonMethods):
     ''' Three winding transformer object '''
     def __init__(self):
         # Data that have to be single numbers or names
-        aux = ['transformer_magnetizing_admittance', 'Position']
-        self.__data = {}
+        aux = ['transformer_magnetizing_admittance', 'position', 'number']
+        self._data = {}
         for x in aux:
-            self.__data[x] = None
+            self._data[x] = None
         
         # Data that have to be a list of numbers or names
         aux =  ['bus_number', 'bus_position', 'resistance_delta', 'tap_delta',
@@ -578,5 +600,5 @@ class ThreeWindingTrafo(_CommonMethods):
         for x in aux:
             __data2[x] = []
         
-        self.__data.update(__data2)
+        self._data.update(__data2)
         del __data2
