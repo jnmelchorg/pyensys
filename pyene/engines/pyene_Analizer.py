@@ -273,25 +273,6 @@ class PowerSystemReduction(ElectricityNetwork):
         aux1.sort(reverse=True)
         self.__data['VoltageLevels'] = aux1
     
-    def __initialize_flag_vector(self, electricity_network=None):
-        ''' This method initialize the flags for the network reduction  
-        considering the voltage'''
-        assert isinstance(electricity_network, ElectricityNetwork), "Incorrect \
-            object passed for the Electricity Network data"
-        aux = [
-                'bus',
-                'transmissionline',
-                'conv',
-                'hydro',
-                'RES',
-                'twowindingtrafo',
-                'threewindingtrafo'
-        ]
-        flags = {}
-        for xobj in aux:
-            flags[xobj] = [False for _ in \
-                electricity_network.get_no_elements(obj=xobj)]
-    
     def __list_elements_to_remove(self, vol_kv=None, electricity_network=None):
         ''' This function return the list of elements (nodes, lines, trafos, 
         etc) to be eliminated in the network reduction'''
@@ -299,7 +280,6 @@ class PowerSystemReduction(ElectricityNetwork):
         copy_electricity_network = ElectricityNetwork()
         copy_electricity_network.set_electricity_network_data(\
             electricity_network)
-        self.__initialize_flag_vector(electricity_network=electricity_network)
 
 class TemporalTree():
     
