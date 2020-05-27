@@ -149,7 +149,7 @@ class Bus(_CommonMethods):
         aux = ['voltage_kv', 'shunt_susceptance', 'area', 'type', 'position_x', 
                'position_y', 'active_power_demand', 'shunt_conductance', 
                'active_power_demand_peak', 'reactive_power_demand_peak', 
-               'position', 'name', 'number','initial_voltage_magnitude', 
+               'position', 'name', 'number', 'initial_voltage_magnitude',
                'initial_voltage_angle', 'maximum_voltage_magnitude', 
                'minimum_voltage_magnitude', 'zone', 'non_technical_losses_fix']
         self._data = {}
@@ -548,13 +548,13 @@ class GenClass(_CommonMethods):
                 'maximum_reactive_power_generation',
                 'minimum_reactive_power_generation', 'ramp', 'baseload',
                 'model', 'shutdown_cost', 'startup_cost', 'position',
-                'uncertainty', 'number']
+                'uncertainty', 'number', 'bus_number', 'bus_position']
         self._data = {}
         for x in aux:
             self._data[x] = None
         
-        aux =  ['cost_function_parameters', 'piecewise_linearization_parameters'
-                , 'bus_number', 'bus_position']
+        aux =  ['cost_function_parameters',
+                'piecewise_linearization_parameters']
         __data2 = {}
         for x in aux:
             __data2[x] = []
