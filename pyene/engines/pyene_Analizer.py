@@ -10,6 +10,7 @@ Furthermore, tools to build the temporal tree are provided
 
 import networkx as nx
 import logging
+import copy
 from .pyene_Parameters import ElectricityNetwork, Bus
 
 class PowerSystemIslandsIsolations(ElectricityNetwork):
@@ -29,7 +30,8 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         auxp = 'Running network analyser - Determining islands and \
             isolated nodes in the power system'
         logging.info(" ".join(auxp.split()))
-        copy_electricity_network = self.copy_electricity_network_data()
+        copy_electricity_network = copy.deepcopy(\
+            self.copy_electricity_network_data())
         self.find_isolates()
         self.find_islands()
         self.set_electricity_network_data(ob=copy_electricity_network)
@@ -217,18 +219,16 @@ class PowerSystemReduction(ElectricityNetwork):
         characteristics of the reduced network are omitted - Not implemented'''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.__data = {
+        __data2 = {
             'VoltageLevels': [], # Voltage levels in the power system
+            'Supernodeinitial' : None # Initial node for supernodes
         }
+        self._data.update(__data2)
+        del __data2
         logging.basicConfig(format='%(asctime)s %(message)s', \
             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     
-    def get_no_two_winding_trafos(self):
-        ''' Get total number of two winding transformers in the network '''
-        return self.__data['TWtrafos']
-    
-    def network_reduction_voltage_no_characteristics(self, vol_kv=None, \
-        electricity_network=None):
+    def network_reduction_voltage_no_characteristics(self, vol_kv=None):
         ''' This class method controls the functions to reduce the network \
         until the desired voltage level (vol_kv) without including 
         electrical characteristics of the eliminated elements
@@ -241,19 +241,175 @@ class PowerSystemReduction(ElectricityNetwork):
         self.__find_voltage_levels()
         auxp = "The indicated voltage level is not in the list of voltage \
             levels. The valid voltages are: {0}".format(\
-            self.__data['VoltageLevels'])
-        assert vol_kv in self.__data['VoltageLevels'], " ".join(auxp.split())
-        nodes_to_analyse_voltage = [False for _ in \
-            range(self.get_no_objects(name='bus'))]
-        for xaux in range(self.get_no_objects(name='bus')):
-            if self.get_object_elements(name_object='bus', \
-                name_element='voltage_kv', pos_object=xaux) > vol_kv:
-                nodes_to_analyse_voltage[xaux] = True
-        
+            self._data['VoltageLevels'])
+        assert vol_kv in self._data['VoltageLevels'], " ".join(auxp.split())
+        flags = {
+            'bus' : [False for _ in \
+            range(self.get_no_objects(name='bus'))], # Boolean list of Bus 
+                # objects
+            'transmissionline' : [False for _ in \
+            range(self.get_no_objects(name='transmissionline'))], # Boolean 
+                # list of transmission line objects
+            'transformers' : [False for _ in \
+            range(self.get_no_objects(name='transformers'))], # Boolean 
+                # list of two winding trafo objects
+            }
+        flag_continue=True
+        counter = 0
+        supernodes = []
+        while flag_continue:
+            flag_continue = False
+            for xaux in range(self.get_no_objects(name='bus')):
+                if not flags['bus'][xaux]:
+                    supernode = { # This dictionary contains the positions of the elements
+                        # of the network that will be converted into a supernode
+                        'bus' : [], # list of Bus objects in the supernode
+                        'coupling_buses' : [], # list with the positions of nodes in the 
+                            # supernode that interconnect the supernode with the reduced
+                            # network
+                        'coupling_bus_name' : None, # name of the coupling node  
+                            # that interconnect the supernode with the reduced network
+                        'transmissionline' : [], # list of transmission line objects in the
+                            # supernode
+                        'transformers' : [], # list of trafo objects in the
+                            # supernode
+                        'equivalent_demand' : None, # Equivalent demand to be connected to
+                            # the supernode
+                        'thermal_limit_artificial_lines' : []
+                    }
+                    flags, supernode, flag_supernode = self.__voltage_track(\
+                        bus_position=xaux, vol_kv=vol_kv, \
+                        flags=flags, supernode=supernode, flag_supernode=False)
+                    if flag_supernode:
+                        supernode['coupling_bus_name'] = \
+                            'supernode_'+str(counter)
+                        counter += 1
+                        supernodes.append(supernode)
+                    flag_continue = True
+        if supernodes != []:
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} supernodes'.format(len(supernodes))
+            logging.info(" ".join(auxp.split()))
+            self.__reduce_network_from_supernodes(supernodes=supernodes)
+        else:
+            auxp = 'Network analyser message - the power system under \
+                analysis has not been reduced - check if the indicated voltage \
+                    {0} is correct'.format(vol_kv)
+            logging.info(" ".join(auxp.split()))
+        return supernodes
+                    
+
+
 
     def reduction(self):
         ''' This is the main class method'''
         self.network_reduction_voltage_no_characteristics()
+    
+    def __add_artificial_nodes(self, supernodes=None):
+        ''' This class method add the artificial buses and lines to the 
+        network '''
+        assert isinstance(supernodes, list), "Incorrect \
+            object passed for supernodes"
+        copy_nodes = self.get_objects(name='bus')
+        number_nodes = []
+        for xaux in copy_nodes:
+            number_nodes.append(xaux.get_element(name='number'))
+        aux = 1
+        while aux <= max(number_nodes):
+            aux *= 10
+        auxp = 'Network analyser message - artificial nodes with numbering \
+            starting from {0} are added to the system'.format(aux)
+        logging.info(" ".join(auxp.split()))
+
+        new_nodes = []        
+        counter = 0
+        for x in range(len(supernodes)):
+            if len(supernodes[x]['coupling_buses']) > 1:
+                new_nodes.append(Bus())
+                new_nodes[counter].set_element(name='voltage_kv', val=0)
+                new_nodes[counter].set_element(name='name', \
+                    val=supernodes[x]['coupling_bus_name'])
+                new_nodes[counter].set_element(name='number', val=aux)
+                
+                aux += 1
+
+        
+        
+        set_element(self, name=None, val=None)
+
+        
+    
+    def __check_if_empty_list(self, name=None, bus_position=None):
+        ''' This method checks if the bus object is connected to the network '''
+        assert bus_position is not None, "No bus position passed to check its \
+            connectivity"
+        assert name is not None, "No name of branch element pass"
+        aux = self.get_object_elements(name_object='bus', \
+            name_element=name+'_position', pos_object=bus_position)
+        if aux != []:
+            return False
+    
+    def __check_positions_branch_objects(self, name=None, bus_position=None, \
+        vol_kv=None, flags=None, supernode=None, flag_supernode=None):
+        assert bus_position is not None, "No bus position passed to reduce \
+            the network"
+        assert flags is not None, "No flag dictionary passed to reduce the \
+            network"
+        assert supernode is not None, "No supernode dictionary passed to \
+            reduce the network"
+        assert flag_supernode is not None, "No flag for the supernode passed to \
+            reduce the network"
+        assert name is not None, "No name of branch element pass"
+
+        # Checking if the object exist
+        aux = self.get_object_elements(name_object=name, \
+            name_element='position', pos_object=0)
+        if aux == None:
+            return flags, supernode, flag_supernode
+        
+        auxlist = self.get_object_elements(name_object='bus', \
+            name_element=name+'_position', pos_object=bus_position)
+        if auxlist == None:
+            return flags, supernode, flag_supernode
+
+        for xauxlist in auxlist:
+            if not flags[name][xauxlist]:
+                list_pos_buses = self.get_object_elements(\
+                    name_object=name, \
+                    name_element='bus_position', pos_object=xauxlist)
+                assert bus_position in list_pos_buses , \
+                    "The node should be on the list list_pos_buses"
+                
+                for xauxlisbuses in list_pos_buses:
+                    auxvoltage = self.get_object_elements(name_object='bus', \
+                        name_element='voltage_kv', pos_object=xauxlisbuses)
+                    if xauxlisbuses != bus_position and \
+                        not flags['bus'][xauxlisbuses]:
+                        flags, supernode, flag_supernode = \
+                            self.__voltage_track(bus_position=xauxlisbuses, \
+                            vol_kv=vol_kv, flags=flags, supernode=supernode, \
+                            flag_supernode=flag_supernode)
+                        if  auxvoltage >= vol_kv and auxvoltage != \
+                            self.get_element(name='voltagethreewindingtrafos'):
+                            supernode['thermal_limit_artificial_lines'].append(\
+                                self.get_object_elements(name_object=name, \
+                                name_element='long_term_thermal_limit', \
+                                pos_object=xauxlist))
+                    elif xauxlisbuses != bus_position and \
+                        flags['bus'][xauxlisbuses] and \
+                        auxvoltage >= vol_kv and \
+                        xauxlisbuses not in supernode['bus'] \
+                        and auxvoltage != self.get_element(\
+                        name='voltagethreewindingtrafos'):
+                            supernode['coupling_buses'].append(xauxlisbuses)
+                            supernode['thermal_limit_artificial_lines'].append(\
+                                self.get_object_elements(name_object=name, \
+                                name_element='long_term_thermal_limit', \
+                                pos_object=xauxlist))
+                if not flags[name][xauxlist]:
+                    flags[name][xauxlist] = True
+                    supernode[name].append(xauxlist)
+        return flags, supernode, flag_supernode
     
     def __find_voltage_levels(self):
         ''' This method finds all voltage levels in the system '''
@@ -271,16 +427,89 @@ class PowerSystemReduction(ElectricityNetwork):
             if not flag_vol:
                 aux1.append(xn)
         aux1.sort(reverse=True)
-        self.__data['VoltageLevels'] = aux1
+        self._data['VoltageLevels'] = aux1
     
     def __list_elements_to_remove(self, vol_kv=None, electricity_network=None):
         ''' This function return the list of elements (nodes, lines, trafos, 
         etc) to be eliminated in the network reduction'''
-        assert vol_kv is not None, "No voltage passed to reduce the network"
         copy_electricity_network = ElectricityNetwork()
         copy_electricity_network.set_electricity_network_data(\
             electricity_network)
+    
+    def __reduce_network_from_supernodes(self, supernodes=None):
+        ''' This class method reduce the network based on the information of 
+            supernodes '''
+        assert isinstance(supernodes, list), "Incorrect \
+            object passed for supernodes"
+        
+        busestoerase = []
+        for xsuper in supernodes:
+            busestoerase.extend(xsuper['bus'])
+            xsuper['equivalent_demand'] = 0
+            for xbus in xsuper['bus']:
+                xsuper['equivalent_demand'] += self.get_object_elements(\
+                    name_object='bus', \
+                    name_element='active_power_demand', pos_object=xbus)
+        self.delete_objects(name='bus', pos=busestoerase)
+        for xseries in self.get_series_elements_names():
+            elementstoerase = []
+            for xsuper in supernodes:
+                elementstoerase.extend(xsuper[xseries])
+            self.delete_objects(name=xseries, pos=elementstoerase)
 
+    def __voltage_track(self, bus_position=None, vol_kv=None, flags=None, \
+        supernode=None, flag_supernode=None):
+        ''' Recursive function for finding next voltage level '''
+        assert bus_position is not None, "No bus position passed to reduce \
+            the network"
+        assert flags is not None, "No flag dictionary passed to reduce the \
+            network"
+        assert supernode is not None, "No supernode dictionary passed to \
+            reduce the network"
+        assert flag_supernode is not None, "No flag for the supernode passed to \
+            reduce the network"
+        
+        if not flag_supernode:
+            aux = self.get_object_elements(name_object='bus', \
+                name_element='voltage_kv', pos_object=bus_position)
+            if aux >= vol_kv and aux != self.get_element(\
+                name='voltagethreewindingtrafos'):
+                flags['bus'][bus_position] = True
+                return flags, supernode, flag_supernode
+        else:
+            aux = self.get_object_elements(name_object='bus', \
+                name_element='voltage_kv', pos_object=bus_position)
+            if aux >= vol_kv and aux != self.get_element(\
+                name='voltagethreewindingtrafos'):
+                # If a supernode exist add the node to the list of coupling 
+                # nodes
+                flags['bus'][bus_position] = True
+                supernode['bus'].append(bus_position)
+                supernode['coupling_buses'].append(bus_position)
+                return flags, supernode, flag_supernode
+        
+        flags['bus'][bus_position] = True
+        is_disconnected = True
+        for key in flags.keys():
+            if key != 'bus':
+                is_disconnected = self.__check_if_empty_list(\
+                    name=key, bus_position=bus_position)
+            if not is_disconnected:
+                break
+        if is_disconnected:
+            return flags, supernode, flag_supernode
+        
+        flag_supernode = True
+        supernode['bus'].append(bus_position)
+        
+        for xlist in self.get_series_elements_names():
+            flags, supernode, flag_supernode = \
+                self.__check_positions_branch_objects(name=xlist, \
+                bus_position=bus_position, vol_kv=vol_kv, \
+                flags=flags, supernode=supernode, flag_supernode=flag_supernode)
+        
+        return flags, supernode, flag_supernode
+    
 class TemporalTree():
     
     G = nx.DiGraph()
