@@ -144,17 +144,18 @@ class Bus(_CommonMethods):
     def __init__(self):
         # Data that have to be single numbers or names
         aux = ['voltage_kv', 'shunt_susceptance', 'area', 'type', 'position_x', 
-               'position_y', 'active_power_demand', 'shunt_conductance', 
+               'position_y', 'shunt_conductance', 
                'active_power_demand_peak', 'reactive_power_demand_peak', 
                'position', 'name', 'number','initial_voltage_magnitude', 
                'initial_voltage_angle', 'maximum_voltage_magnitude', 
-               'minimum_voltage_magnitude', 'zone', 'non_technical_losses_fix']
+               'minimum_voltage_magnitude', 'zone', 'non_technical_losses_fix',
+               'load_type']
         self._data = {}
         for x in aux:
             self._data[x] = None
 
         # Data that have to be a list of numbers or names
-        aux =  ['contingency_n-1', 'load_type', 
+        aux =  ['contingency_n-1', 
                 'transmissionline_position', 'transmissionline_number',
                 'conv_position', 'conv_number',
                 'hydro_position', 'hydro_number',
