@@ -129,7 +129,7 @@ class Transformers(Branch):
         aux = ['max_phase_shift_angle', 'min_phase_shift_angle', 'tap']
         __data2 = {}
         for x in aux:
-            __data2[x] = []
+            __data2[x] = None
         
         self._data.update(__data2)
         del __data2
