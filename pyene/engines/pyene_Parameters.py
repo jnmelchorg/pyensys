@@ -7,7 +7,7 @@ created by Dr Eduardo Alejandro Martínez Ceseña.
          Dr Eduardo Alejandro Martínez Ceseña
 """
 
-import numpy as np
+import copy
 
 '''                               DEVICE CLASSES                            '''
 
@@ -76,9 +76,6 @@ class _CommonMethods():
         auxp = "No valid name has been passed to the function get_element in \
             the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
-        auxp = "No valid value has been passed to the function get_element in \
-            the class {0}".format(self.__class__.__name__)
-        assert val is not None, " ".join(auxp.split())
         if name in self._data:
             if isinstance(self._data[name], list):
                 auxp = "You are trying to set the \
@@ -96,7 +93,7 @@ class _CommonMethods():
                 self._data[name] = val
         else:
             auxp = "No valid key {0} has been passed to the function \
-            get_element in the class {1}. The valid keys for this class are as \
+            set_element in the class {1}. The valid keys for this class are as \
             follows \n {2}".format(name, self.__class__.__name__, \
             self._data.keys()) 
             assert " ".join(auxp.split())
@@ -124,7 +121,7 @@ class Branch(_CommonMethods):
         self._data.update(__data2)
         del __data2
 
-class TwoWindingTrafo(Branch):
+class Transformers(Branch):
     ''' Two winding transformer class '''
     def __init__(self):
         super().__init__()
@@ -162,8 +159,7 @@ class Bus(_CommonMethods):
                 'conv_position', 'conv_number',
                 'hydro_position', 'hydro_number',
                 'RES_position', 'RES_number',
-                'twowindingtrafo_position', 'twowindingtrafo_number'
-                'threewindingtrafo_position', 'threewindingtrafo_number']
+                'transformers_position', 'transformers_number']
         __data2 = {}
         for x in aux:
             __data2[x] = []
@@ -182,24 +178,40 @@ class ElectricityNetwork(_CommonMethods):
         'nohydro' -> Number of hydro generators
         'nores' -> Number of RES generators
         'notlines' -> Number of transmission lines
-        'notwtrafos' -> Number of two winding transformers
-        'nothwtrafos' -> Number of three winding transformers
+        'notrafos' -> Number of transformers
         '''
         self._data = {
             'baseMVA': None,
             'Slack': None,
             'Security': [],  # list of N-1 cases to consider
+            'Threewindinginitial' : None, # initial bus for three winding trafos
+            'voltagethreewindingtrafos' : 1000000 # voltage for artificial nodes 
+                                                  # in three winding trafos
             }
         
         self.__objects = {
             'bus' : [], # list of Bus objects
-            'transmissionline' : [], # list of transmission line objects
             'conv' : [], # list of conventional generator objects
             'hydro' : [], # list of hydro generator objects
             'RES' : [], # list of RES generator objects
-            'twowindingtrafo' : [], # list of two winding trafo objects
-            'threewindingtrafo' : [] # list of two winding trafo objects
+            'transformers' : [], # list of two winding trafo objects
+            'transmissionline' : [] # list of transmission line objects
             }
+        
+        # This list should contain the names of all series elements
+        self.__series_elements = [
+            'transmissionline', 'transformers'
+        ]
+
+        # This list should contain the names of all generator types
+        self.__generation_types = [
+            'conv', 'RES', 'hydro'
+        ]
+
+        self.__parameters_elements = [
+            'baseMVA', 'Slack', 'Security', 'Threewindinginitial',
+            'voltagethreewindingtrafos'
+        ]
 
         # Initialise bus object
         if 'nobuses' in kwargs.keys():
@@ -236,19 +248,12 @@ class ElectricityNetwork(_CommonMethods):
         else:
             self.__objects['transmissionline'] = [TransmissionLine()]
 
-        # Initialise three winding transformer object
-        if 'nothwtrafos' in kwargs.keys():
-            self.__objects['threewindingtrafo'] = [ThreeWindingTrafo() for _ in
-                range(kwargs.pop('nothwtrafos'))]
+        # Initialise transformer object
+        if 'notrafos' in kwargs.keys():
+            self.__objects['transformers'] = [Transformers() for _ in
+                range(kwargs.pop('notrafos'))]
         else:
-            self.__objects['threewindingtrafo'] = [ThreeWindingTrafo()]
-
-        # Initialise two winding transformer object
-        if 'notwtrafos' in kwargs.keys():
-            self.__objects['twowindingtrafo'] = [TwoWindingTrafo() for _ in
-                range(kwargs.pop('notwtrafos'))]
-        else:
-            self.__objects['twowindingtrafo'] = [TwoWindingTrafo()]
+            self.__objects['transformers'] = [Transformers()]
     
     def copy_electricity_network_data(self):
         ''' This returns a copy of the electricity network object'''
@@ -268,11 +273,15 @@ class ElectricityNetwork(_CommonMethods):
             delete_objects in the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
         if name in self.__objects:
+            copy_class = copy.deepcopy(self.__objects[name][0])
+            copy_class.__init__()
             if isinstance(pos, list):
-                for aux1 in pos:
-                    self.__objects[name].pop(aux1)
+                self.__objects[name] = [i for j, i in \
+                    enumerate(self.__objects[name]) if j not in pos]
             else:
-                return self.__objects[name].pop(pos)
+                self.__objects[name].pop(pos)
+            if self.__objects[name] == []:
+                self.__objects[name] = [copy_class]
             self.__update_positions_objects(name)
             if name == 'bus':
                  # Updating the positions related to the bus object
@@ -295,14 +304,22 @@ class ElectricityNetwork(_CommonMethods):
             as follows: \n {2}".format(name, self.__class__.__name__, \
             self.__objects.keys()) 
             assert " ".join(auxp.split())
-    
+
+    def get_generation_types_names(self):
+        ''' This function returns a list of all generation types considered in 
+        the electricity network class'''
+        return self.__generation_types
+
     def get_no_objects(self, name=None):
         ''' This function returns the number of objects in a list '''
         auxp = "No valid name has been passed to the function get_no_objects \
             in the class {0}".format(self.__class__.__name__)
         assert name is not None, " ".join(auxp.split())
         if name in self.__objects:
-            return len(self.__objects[name])
+            if self.__objects[name][0].get_element(name='position') != None:
+                return len(self.__objects[name])
+            else:
+                return 0
         else:
             auxp = "No valid key {0} has been passed to the function \
             get_no_objects in the class {1}. The valid keys for this class are \
@@ -371,6 +388,16 @@ class ElectricityNetwork(_CommonMethods):
             self.__objects.keys()) 
             assert " ".join(auxp.split())
     
+    def get_parameters_list(self):
+        ''' This function returns a list parameters considered in 
+        the electricity network class'''
+        return self.__parameters_elements
+
+    def get_series_elements_names(self):
+        ''' This function returns a list of all series elements considered in 
+        the electricity network class'''
+        return self.__series_elements
+
     def set_objects(self, name=None, list_obj=None):
         ''' This function set a list of a specific object indicated in "name". 
         - This function rewrite the list of a specific object '''
@@ -392,7 +419,7 @@ class ElectricityNetwork(_CommonMethods):
                     the class {0}".format(\
                     self.__objects[name][0].__class__.__name__)
                 assert isinstance(list_obj[0], \
-                    self.__objects[name][0].__class__.__name__), \
+                    self.__objects[name][0].__class__), \
                     " ".join(auxp.split())
                 self.__objects[name] = list_obj
         else:
@@ -436,7 +463,7 @@ class ElectricityNetwork(_CommonMethods):
             passed to set the Electricity Network data"
         for xkey in self.__objects.keys():
             self.set_objects(name=xkey, list_obj=ob.get_objects(name=xkey))
-        for xkey in self._data.keys():
+        for xkey in self.get_parameters_list():
             self.set_element(name=xkey,val=ob.get_element(name=xkey))
     
     def update_all_positions(self):
@@ -477,26 +504,26 @@ class ElectricityNetwork(_CommonMethods):
             function __update_relative_position_objects in \
             the class {0}".format(self.__class__.__name__)
         assert name_object2 is not None, " ".join(auxp.split())
-        aux = self.__objects[name_object2].get_element(name='position')
-        aux1 = self.__objects[name_object1].get_element(name='position')
+        aux = self.__objects[name_object2][0].get_element(name='position')
+        aux1 = self.__objects[name_object1][0].get_element(name='position')
         # If any of the objects does not have values then there is nothing to
         # update
         if aux == None or aux1 == None:
+            if name_object2 not in self.get_generation_types_names():
+                for xobj2 in self.__objects[name_object2]:
+                    xobj2.set_element(name=name_position_element, val=[])
             return
 
         if name_object1 in self.__objects and name_object2 in self.__objects:
             for xobj2 in self.__objects[name_object2]:
                 aux1 = xobj2.get_element(name=name_element2)
                 if isinstance(aux1, list):
-                    aux3 = [-1 for _ in range(len(aux1))]
+                    aux3 = []
                     for xobj1 in self.__objects[name_object1]:
                         for aux2 in range(len(aux1)):
                             if aux1[aux2] == xobj1.get_element(\
                                 name=name_element1):
-                                aux3[aux2] = xobj1.get_element(name='position')
-                    for aux2 in range(len(aux1)):
-                        assert aux3[aux2] != -1, "The position of the nodes \
-                            has not been updated"
+                                aux3.append(xobj1.get_element(name='position'))
                     xobj2.set_element(name=name_position_element, val=aux3)
                 else:
                     for xobj1 in self.__objects[name_object1]:
@@ -527,17 +554,18 @@ class ElectricityNetwork(_CommonMethods):
             the class {0}".format(self.__class__.__name__)
         assert name_object is not None, " ".join(auxp.split())
         if name_object in self.__objects:
-            aux=0
-            for xn in self.__objects[name_object]:
-                xn.set_element(name='position', val=aux)
-                aux += 1
+            if self.__objects[name_object][0].get_element(name='position') != \
+                None:
+                aux=0
+                for xn in self.__objects[name_object]:
+                    xn.set_element(name='position', val=aux)
+                    aux += 1
         else:
             auxp = "No valid key {0} has been passed to the function \
             set_object_elements in the class {1}. The valid keys for this class are as \
             follows: \n {2}".format(name_object, self.__class__.__name__, \
             self.__objects.keys()) 
             assert " ".join(auxp.split())
-    
 
 class GenClass(_CommonMethods):
     ''' Core generation class '''
@@ -548,13 +576,13 @@ class GenClass(_CommonMethods):
                 'maximum_reactive_power_generation',
                 'minimum_reactive_power_generation', 'ramp', 'baseload',
                 'model', 'shutdown_cost', 'startup_cost', 'position',
-                'uncertainty', 'number']
+                'uncertainty', 'bus_number', 'bus_position']
         self._data = {}
         for x in aux:
             self._data[x] = None
         
-        aux =  ['cost_function_parameters', 'piecewise_linearization_parameters'
-                , 'bus_number', 'bus_position']
+        aux =  ['cost_function_parameters', 
+        'piecewise_linearization_parameters']
         __data2 = {}
         for x in aux:
             __data2[x] = []
@@ -580,25 +608,3 @@ class RES(GenClass):
     ''' RES generation '''
     def __init__(self):
         super().__init__()
-
-class ThreeWindingTrafo(_CommonMethods):
-    ''' Three winding transformer object '''
-    def __init__(self):
-        # Data that have to be single numbers or names
-        aux = ['transformer_magnetizing_admittance', 'position', 'number']
-        self._data = {}
-        for x in aux:
-            self._data[x] = None
-        
-        # Data that have to be a list of numbers or names
-        aux =  ['bus_number', 'bus_position', 'resistance_delta', 'tap_delta',
-                'base_power_delta', 'reactance_delta', 'voltage_kv',
-                'voltage_angle_fix', 'maximum_voltage_angle',
-                'minimum_voltage_angle', 'long_term_thermal_limit', 
-                'contingency_n-1', 'status']
-        __data2 = {}
-        for x in aux:
-            __data2[x] = []
-        
-        self._data.update(__data2)
-        del __data2
