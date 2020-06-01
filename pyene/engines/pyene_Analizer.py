@@ -592,8 +592,6 @@ class PowerSystemReduction(ElectricityNetwork):
         self.__save_network_info_in_supernodes(supernodes=supernodes)
         busestoerase = []
         for xsuper in supernodes:
-            print(xsuper['coupling_buses'])
-            print(xsuper['bus'])
             xsuper['zone_supernode'] = self.get_object_elements(\
                     name_object='bus', \
                     name_element='zone', pos_object=\
@@ -666,9 +664,6 @@ class PowerSystemReduction(ElectricityNetwork):
                 name_element='voltage_kv', pos_object=bus_position)
             if aux >= vol_kv and aux != self.get_element(\
                 name='voltagethreewindingtrafos'):
-                print(bus_position)
-                print(aux)
-                aux[10000]
                 flags['bus'][bus_position] = True
                 return flags, supernode, flag_supernode
         else:
@@ -679,8 +674,6 @@ class PowerSystemReduction(ElectricityNetwork):
                 # If a supernode exist add the node to the list of coupling 
                 # nodes
                 flags['bus'][bus_position] = True
-                print(bus_position)
-                aux[10000]
                 supernode['bus'].append(bus_position)
                 supernode['coupling_buses'].append(bus_position)
                 return flags, supernode, flag_supernode
