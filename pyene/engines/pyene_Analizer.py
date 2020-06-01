@@ -11,17 +11,19 @@ Furthermore, tools to build the temporal tree are provided
 import networkx as nx
 import logging
 import copy
-from .pyene_Parameters import ElectricityNetwork, Bus
+from .pyene_Parameters import ElectricityNetwork, Bus, TransmissionLine
 
 class PowerSystemIslandsIsolations(ElectricityNetwork):
     ''' This class contains all necessary methods to find all islands and 
     isolated nodes in a network '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.__data = {
+        __data2 = {
             'IsolatedNodes': [], # Isolated nodes in the power system
             'Islands': [] # Islands in the whole power system
         }
+        self._data.update(__data2)
+        del __data2
         logging.basicConfig(format='%(asctime)s %(message)s', \
             datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
     
@@ -202,7 +204,6 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         for xisl in range(self.get_no_islands()):
             self.__data['Islands'][xisl].update_all_positions()
 
-
 class PowerSystemReduction(ElectricityNetwork):
     ''' This class contains all necessary methods to reduce a network depending 
     on the requirements of the user
@@ -298,7 +299,7 @@ class PowerSystemReduction(ElectricityNetwork):
                 analysis has {0} supernodes'.format(len(supernodes))
             logging.info(" ".join(auxp.split()))
             self.__reduce_network_from_supernodes(supernodes=supernodes)
-            self.__add_artificial_elements(upernodes=supernodes)
+            self.__add_artificial_elements(supernodes=supernodes)
         else:
             auxp = 'Network analyser message - the power system under \
                 analysis has not been reduced - check if the indicated voltage \
@@ -319,6 +320,9 @@ class PowerSystemReduction(ElectricityNetwork):
         number_nodes = []
         for xaux in copy_nodes:
             number_nodes.append(xaux.get_element(name='number'))
+        for xaux in self._data['SupernodesNetworkInfo']:
+            for xaux1 in xaux['bus']:
+                number_nodes.append(xaux1.get_element(name='number'))
         aux = 1
         while aux <= max(number_nodes):
             aux *= 10
@@ -327,8 +331,11 @@ class PowerSystemReduction(ElectricityNetwork):
         number_lines = []
         for xaux in copy_lines:
             number_lines.append(xaux.get_element(name='number'))
+        for xaux in self._data['SupernodesNetworkInfo']:
+            for xaux1 in xaux['transmissionline']:
+                number_nodes.append(xaux1.get_element(name='number'))
         auxline = 1
-        while aux <= max(number_lines):
+        while auxline <= max(number_lines):
             auxline *= 10        
 
         new_nodes = []
@@ -337,7 +344,7 @@ class PowerSystemReduction(ElectricityNetwork):
         counterlines = 0
         for x in range(len(supernodes)):
             if len(supernodes[x]['coupling_buses']) > 1:
-                if x == 0:
+                if counternodes == 0:
                     auxp = 'Network analyser message - artificial nodes with \
                         numbering starting from {0} are added to the \
                         system'.format(aux)
@@ -351,25 +358,26 @@ class PowerSystemReduction(ElectricityNetwork):
                         self._data['Supernodelineinitial'] = auxline
                     logging.info(" ".join(auxp.split()))
                 new_nodes.append(Bus())
-                new_nodes = self.__add_artificial_nodes(supernodes=supernodes, \
+                new_nodes = self.__add_artificial_node(supernodes=supernodes, \
                     counter=counternodes, number_node=aux, new_nodes=new_nodes,\
                     pos_supernode=x)
                 self.__add_generators_to_artificial_node(supernodes=supernodes,\
                     counter=counternodes, number_node=aux, new_nodes=new_nodes,\
                     pos_supernode=x)
-                counter, auxline = self.__add_artificial_lines(\
+                counterlines, auxline = self.__add_artificial_lines(\
                     supernodes=supernodes, counter=counterlines, \
                     number_line=auxline, new_nodes=new_nodes, \
-                    counternode=counternodes, number_node=None, pos_supernode=x)
+                    counternode=counternodes, number_node=None, pos_supernode=x,
+                    new_lines=new_lines)
                 counternodes += 1
                 aux += 1
             else:
                 for xnode in copy_nodes:
                     if xnode.get_element(name='number') == \
                         self._data['SupernodesNetworkInfo'][x]\
-                        ['coupling_buses'][0].get_element(name=number):
+                        ['coupling_buses'][0].get_element(name='number'):
                         xnode.set_element(name='active_power_demand_peak',\
-                            val=supernodes[xauxlist]\
+                            val=supernodes[x]\
                                 ['equivalent_active_power_demand'] + \
                             xnode.get_element(name='active_power_demand_peak'))
                         xnode.set_element(name='reactive_power_demand_peak',\
@@ -388,6 +396,12 @@ class PowerSystemReduction(ElectricityNetwork):
                             number_node=xnode.get_element(name='number'), \
                             new_nodes=copy_nodes, \
                             pos_supernode=x)
+        
+        copy_nodes.extend(new_nodes)
+        copy_lines.extend(new_lines)
+        self.set_objects(name='bus', list_obj=copy_nodes)
+        self.set_objects(name='transmissionline', list_obj=copy_lines)
+        self.update_all_positions()
 
     def __add_artificial_node(self, supernodes=None, counter=None, \
         number_node=None, new_nodes=None, pos_supernode=None):        
@@ -420,26 +434,26 @@ class PowerSystemReduction(ElectricityNetwork):
 
     def __add_artificial_lines(self, supernodes=None, counter=None, \
         number_line=None, new_nodes=None, counternode=None, number_node=None,
-        pos_supernode=None):
+        pos_supernode=None, new_lines=None):
         ''' This class method adds the artificial transmission lines to the 
         electricity network '''
         xcounter = 0
         number_lines = []
-        for xnodespos in supernodes[x]['coupling_buses']:
+        for xnodespos in supernodes[pos_supernode]['coupling_buses']:
             new_lines.append(TransmissionLine())
             new_lines[counter].set_element(name='shunt_susceptance', val=0)
             new_lines[counter].set_element(name='resistance', val=0)
             new_lines[counter].set_element(name='reactance', val=0.01)
             new_lines[counter].set_element(name='number', val=number_line)
             new_lines[counter].set_element(name='long_term_thermal_limit', \
-                val=supernodes[x]['thermal_limit_artificial_lines'][xcounter])
+                val=supernodes[pos_supernode]['thermal_limit_artificial_lines'][xcounter])
             new_lines[counter].set_element(name='non_technical_losses_fix', \
                 val=0)
             new_lines[counter].set_element(name='non_technical_losses_fix', \
                 val=0)
             new_lines[counter].set_element(name='bus_number', \
                 val=[self._data['SupernodesNetworkInfo'][pos_supernode]\
-                    ['coupling_buses'][xcounter].get_element(name=number), \
+                    ['coupling_buses'][xcounter].get_element(name='number'), \
                     number_node])
             number_lines.append(number_line)
             xcounter += 1
@@ -501,38 +515,49 @@ class PowerSystemReduction(ElectricityNetwork):
                     name_element='bus_position', pos_object=xauxlist)
                 assert bus_position in list_pos_buses , \
                     "The node should be on the list list_pos_buses"
-                
-                for xauxlisbuses in list_pos_buses:
-                    auxvoltage = self.get_object_elements(name_object='bus', \
-                        name_element='voltage_kv', pos_object=xauxlisbuses)
-                    if xauxlisbuses != bus_position and \
-                        not flags['bus'][xauxlisbuses]:
-                        flags, supernode, flag_supernode = \
-                            self.__voltage_track(bus_position=xauxlisbuses, \
-                            vol_kv=vol_kv, flags=flags, supernode=supernode, \
-                            flag_supernode=flag_supernode)
-                        if  auxvoltage >= vol_kv and auxvoltage != \
-                            self.get_element(name='voltagethreewindingtrafos'):
-                            supernode['thermal_limit_artificial_lines'].append(\
-                                self.get_object_elements(name_object=name, \
-                                name_element='long_term_thermal_limit', \
-                                pos_object=xauxlist))
-                    elif xauxlisbuses != bus_position and \
-                        flags['bus'][xauxlisbuses] and \
-                        auxvoltage >= vol_kv and \
-                        xauxlisbuses not in supernode['bus'] \
-                        and auxvoltage != self.get_element(\
-                        name='voltagethreewindingtrafos'):
-                            supernode['coupling_buses'].append(xauxlisbuses)
-                            supernode['thermal_limit_artificial_lines'].append(\
-                                self.get_object_elements(name_object=name, \
-                                name_element='long_term_thermal_limit', \
-                                pos_object=xauxlist))
+                flags, supernode, flag_supernode = self.__check_ends_lines(\
+                    bus_position=bus_position, vol_kv=vol_kv, \
+                    element_position=xauxlist, element_name=name, \
+                    list_pos_buses=list_pos_buses, flags=flags, \
+                    supernode=supernode, flag_supernode=flag_supernode)                
                 if not flags[name][xauxlist]:
                     flags[name][xauxlist] = True
                     supernode[name].append(xauxlist)
         return flags, supernode, flag_supernode
-    
+
+    def __check_ends_lines(self, bus_position=None, \
+        vol_kv=None, element_position=None, element_name=None, \
+        list_pos_buses=None, flags=None, supernode=None, flag_supernode=None):
+        ''' This class method check the nodes that are not connected to a three 
+        winding transformer'''
+        for xauxlisbuses in list_pos_buses:
+            auxvoltage = self.get_object_elements(name_object='bus', \
+                name_element='voltage_kv', pos_object=xauxlisbuses)
+            if xauxlisbuses != bus_position and \
+                not flags['bus'][xauxlisbuses]:
+                flags, supernode, flag_supernode = \
+                    self.__voltage_track(bus_position=xauxlisbuses, \
+                    vol_kv=vol_kv, flags=flags, supernode=supernode, \
+                    flag_supernode=flag_supernode)
+                if  auxvoltage >= vol_kv and auxvoltage != \
+                    self.get_element(name='voltagethreewindingtrafos'):
+                    supernode['thermal_limit_artificial_lines'].append(\
+                        self.get_object_elements(name_object=element_name, \
+                        name_element='long_term_thermal_limit', \
+                        pos_object=element_position))
+            elif xauxlisbuses != bus_position and \
+                flags['bus'][xauxlisbuses] and \
+                auxvoltage >= vol_kv and \
+                xauxlisbuses not in supernode['bus'] \
+                and auxvoltage != self.get_element(\
+                name='voltagethreewindingtrafos'):
+                    supernode['coupling_buses'].append(xauxlisbuses)
+                    supernode['thermal_limit_artificial_lines'].append(\
+                        self.get_object_elements(name_object=element_name, \
+                        name_element='long_term_thermal_limit', \
+                        pos_object=element_position))
+        return flags, supernode, flag_supernode
+
     def __find_voltage_levels(self):
         ''' This method finds all voltage levels in the system '''
         aux = []
@@ -567,6 +592,8 @@ class PowerSystemReduction(ElectricityNetwork):
         self.__save_network_info_in_supernodes(supernodes=supernodes)
         busestoerase = []
         for xsuper in supernodes:
+            print(xsuper['coupling_buses'])
+            print(xsuper['bus'])
             xsuper['zone_supernode'] = self.get_object_elements(\
                     name_object='bus', \
                     name_element='zone', pos_object=\
@@ -639,6 +666,9 @@ class PowerSystemReduction(ElectricityNetwork):
                 name_element='voltage_kv', pos_object=bus_position)
             if aux >= vol_kv and aux != self.get_element(\
                 name='voltagethreewindingtrafos'):
+                print(bus_position)
+                print(aux)
+                aux[10000]
                 flags['bus'][bus_position] = True
                 return flags, supernode, flag_supernode
         else:
@@ -649,6 +679,8 @@ class PowerSystemReduction(ElectricityNetwork):
                 # If a supernode exist add the node to the list of coupling 
                 # nodes
                 flags['bus'][bus_position] = True
+                print(bus_position)
+                aux[10000]
                 supernode['bus'].append(bus_position)
                 supernode['coupling_buses'].append(bus_position)
                 return flags, supernode, flag_supernode
