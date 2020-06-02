@@ -20,7 +20,10 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         super().__init__(**kwargs)
         __data2 = {
             'IsolatedNodes': [], # Isolated nodes in the power system
-            'Islands': [] # Islands in the whole power system
+            'Islands': [], # Islands in the whole power system
+            'Disconnectedserieselements' : {} # This array contains all 
+                # disconnected series elements (e.g. transmission lines and 
+                # transformers)
         }
         self._data.update(__data2)
         del __data2
@@ -33,7 +36,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             isolated nodes in the power system'
         logging.info(" ".join(auxp.split()))
         copy_electricity_network = copy.deepcopy(self)
-        print(self.get_no_objects(name='transmissionline'))
+        self.__delete_disconnected_series_elements()
         self.find_isolates()
         self.find_islands()
         self.set_electricity_network_data(ob=copy_electricity_network)
@@ -42,25 +45,21 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         ''' This class method load all edges in the graph'''
         auxp = "No edge data has been loaded in the \
                 class PowerSystemIslandsIsolations"
-        aux = self.get_object_elements(name_object='transmissionline', \
-            name_element='position',  pos_object=0)
-        aux1 = self.get_object_elements(name_object='twowindingtrafo', \
-            name_element='position',  pos_object=0)
-        aux2 = self.get_object_elements(name_object='threewindingtrafo', \
-            name_element='position',  pos_object=0)
-        assert aux != None or aux1 != None or aux2 != None, \
-            " ".join(auxp.split())
+        are_edges = False
+        for xseries in self.get_series_elements_names():
+            aux = self.get_object_elements(name_object=xseries, \
+                name_element='position',  pos_object=0)
+            if aux != None:
+                are_edges = True
+                break
+        assert are_edges, " ".join(auxp.split())
         assert graph.is_multigraph(), "graph is not a multigraph"
         # Edges for transmission lines
-        aux = self.get_objects(name='transmissionline')
-        for edges in aux:
-            aux1 = edges.get_element(name='bus_position')
-            graph.add_edge(aux1[0], aux1[1])
-        # Edges for two winding transformers
-        aux = self.get_objects(name='transformers')
-        for edges in aux:
-            aux1 = edges.get_element(name='bus_position')
-            graph.add_edge(aux1[0], aux1[1])
+        for xseries in self.get_series_elements_names():
+            aux = self.get_objects(name=xseries)
+            for edges in aux:
+                aux1 = edges.get_element(name='bus_position')
+                graph.add_edge(aux1[0], aux1[1])
         return graph
     
     def nodes_graph(self, graph=None):
@@ -89,11 +88,11 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             self._data['Islands'] = [ElectricityNetwork() for _ in \
                 range(len(S))]
             self.__add_nodes_to_island(S)
-            self.__add_object_to_islands(name_object='conv')
-            self.__add_object_to_islands(name_object='hydro')
-            self.__add_object_to_islands(name_object='RES')
-            self.__add_object_to_islands(name_object='transmissionline')
-            self.__add_object_to_islands(name_object='transformers')
+            for xgentypes in self.get_generation_types_names():
+                self.__add_object_to_islands(name_object=xgentypes)
+            for xseriestype in self.get_series_elements_names():
+                self.__add_object_to_islands(name_object=xseriestype)
+            self.__add_parameters_to_islands()
             self.__update_all_pos_islands()
             auxp = 'Network analyser message - the power system under \
                 analysis has {0} islands'.format(\
@@ -150,18 +149,22 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         assert name_object is not None, " ".join(auxp.split())
         for aux1 in range(self.get_no_elements(name='Islands')):
             aux_objects = []
-            aux_objects_list = []
             for aux2 in self._data['Islands'][aux1].get_objects(name='bus'):
                 aux_objects.extend(aux2.get_element(\
                     name=name_object+'_position'))
             aux_objects = list(dict.fromkeys(aux_objects))
-            for aux2 in aux_objects:
-                aux_objects_list.extend(\
-                    self.get_objects(name=name_object, pos=aux2))
-            if aux_objects_list != []:
+            if self.get_objects(name=name_object, pos=aux_objects) != []:
                 self._data['Islands'][aux1].set_objects(name=name_object, \
-                    list_obj=aux_objects_list)
+                    list_obj=self.get_objects(name=name_object, pos=aux_objects))
     
+    def __add_parameters_to_islands(self):
+        ''' This class method set the parameters of the electricity network on 
+        each island '''
+        for aux1 in range(self.get_no_elements(name='Islands')):
+            for xparam in self.get_parameters_list():
+                self._data['Islands'][aux1].set_element(name=xparam, val=\
+                    self.get_element(name=xparam))
+
     def __delete_nodes_graph(self, nodes=None):
         ''' This class method remove the isolated nodes from the graph. The 
         method return a list with all information of the deleted nodes'''
@@ -172,6 +175,20 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             isolated_nodes[aux1] = self.get_objects(name='bus', pos=nodes[aux1])
         self.delete_objects(name='bus', pos=nodes)
         return isolated_nodes
+
+    def __delete_disconnected_series_elements(self):
+        ''' This class method deletes all disconnected transmission lines, 
+        transformers and all series elements from the network '''
+        for xseries in self.get_series_elements_names():
+            auxremovals = []
+            for xelement in self.get_objects(name=xseries):
+                if xelement.get_element('status') == 0:
+                    auxremovals.append(xelement.get_element('position'))
+            if auxremovals != []:
+                auxstore = {xseries : self.get_objects(name=xseries, pos=\
+                    auxremovals)}
+                self._data['Disconnectedserieselements'].update(auxstore)
+                self.delete_objects(name=xseries, pos=auxremovals)
 
     def __update_all_pos_islands(self):
         ''' Update the position of all nodes, transmission lines, etc. on 
@@ -332,7 +349,7 @@ class PowerSystemReduction(ElectricityNetwork):
             number_lines.append(xaux.get_element(name='number'))
         for xaux in self._data['SupernodesNetworkInfo']:
             for xaux1 in xaux['transmissionline']:
-                number_nodes.append(xaux1.get_element(name='number'))
+                number_lines.append(xaux1.get_element(name='number'))
         auxline = 1
         while auxline <= max(number_lines):
             auxline *= 10        
@@ -591,14 +608,6 @@ class PowerSystemReduction(ElectricityNetwork):
         self.__save_network_info_in_supernodes(supernodes=supernodes)
         busestoerase = []
         for xsuper in supernodes:
-            print(xsuper['bus'])
-            auxnodes = []
-            for xnodes in xsuper['bus']:
-                auxnodes.append(self.get_object_elements(name_object='bus', \
-                    name_element='number', pos_object=xnodes))
-            print(auxnodes)
-            print(xsuper['coupling_buses'])
-            print('\n')
             xsuper['zone_supernode'] = self.get_object_elements(\
                     name_object='bus', \
                     name_element='zone', pos_object=\
@@ -681,7 +690,6 @@ class PowerSystemReduction(ElectricityNetwork):
                 # If a supernode exist add the node to the list of coupling 
                 # nodes
                 flags['bus'][bus_position] = True
-                supernode['bus'].append(bus_position)
                 supernode['coupling_buses'].append(bus_position)
                 return flags, supernode, flag_supernode
         
