@@ -229,7 +229,7 @@ class Branch:
         '''
 
         aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
-               'BR_B', 'Loss_Fix']
+               'BR_B', 'Loss_Fix', 'BR_STATUS']
 
         # Get settings
         self.data = {}
