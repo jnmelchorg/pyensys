@@ -32,8 +32,8 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         auxp = 'Running network analyser - Determining islands and \
             isolated nodes in the power system'
         logging.info(" ".join(auxp.split()))
-        copy_electricity_network = copy.deepcopy(\
-            self.copy_electricity_network_data())
+        copy_electricity_network = copy.deepcopy(self)
+        print(self.get_no_objects(name='transmissionline'))
         self.find_isolates()
         self.find_islands()
         self.set_electricity_network_data(ob=copy_electricity_network)
@@ -57,17 +57,10 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
             aux1 = edges.get_element(name='bus_position')
             graph.add_edge(aux1[0], aux1[1])
         # Edges for two winding transformers
-        aux = self.get_objects(name='twowindingtrafo')
+        aux = self.get_objects(name='transformers')
         for edges in aux:
             aux1 = edges.get_element(name='bus_position')
             graph.add_edge(aux1[0], aux1[1])
-        # Edges for three winding transformers
-        aux = self.get_objects(name='threewindingtrafo')
-        for edges in aux:
-            aux1 = edges.get_element(name='bus_position')
-            graph.add_edge(aux1[0], aux1[1])
-            graph.add_edge(aux1[1], aux1[2])
-            graph.add_edge(aux1[2], aux1[0])
         return graph
     
     def nodes_graph(self, graph=None):
@@ -91,21 +84,20 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         G = self.nodes_graph(G)
         G = self.edges_graph(G)
         if nx.number_connected_components(G) > 0:
-            self.__data['Islands'] = [ElectricityNetwork() for _ in \
-                range(self.get_no_islands())]
             S = [G.subgraph(c).copy() for c in \
                 nx.connected_components(G)]
+            self._data['Islands'] = [ElectricityNetwork() for _ in \
+                range(len(S))]
             self.__add_nodes_to_island(S)
             self.__add_object_to_islands(name_object='conv')
             self.__add_object_to_islands(name_object='hydro')
             self.__add_object_to_islands(name_object='RES')
             self.__add_object_to_islands(name_object='transmissionline')
-            self.__add_object_to_islands(name_object='twowindingtrafo')
-            self.__add_object_to_islands(name_object='threewindingtrafo')
+            self.__add_object_to_islands(name_object='transformers')
             self.__update_all_pos_islands()
             auxp = 'Network analyser message - the power system under \
                 analysis has {0} islands'.format(\
-                str(self.get_no_islands()))
+                str(self.get_no_elements(name='Islands')))
             logging.info(" ".join(auxp.split()))
         else:
             auxp = 'Network analyser message - the power system under \
@@ -121,62 +113,45 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         if isolatednodesgraph != []:
             G.remove_nodes_from(isolatednodesgraph)
             isolatednodesgraph.sort()
-            self.__data['IsolatedNodes'] = \
+            self._data['IsolatedNodes'] = \
                 self.__delete_nodes_graph(isolatednodesgraph)
-            self.__data['NoIsolatedNodes'] = len(self.__data['IsolatedNodes'])
             auxp = 'Network analyser message - the power system under \
                 analysis has {0} isolated nodes'.format(\
-                str(self.__data['NoIsolatedNodes']))
+                len(self._data['IsolatedNodes']))
             logging.info(" ".join(auxp.split()))
         else:
             auxp = 'Network analyser message - the power system under \
                 analysis does not have isolated nodes'
             logging.info(" ".join(auxp.split()))
-    
-    def get_islands(self):
-        ''' Get islands - list of ElectricityNetwork objects'''
-        return self.__data['Islands']
-    
-    def get_isolated_nodes(self):
-        ''' Get isolated nodes - list of Bus objects'''
-        return self.__data['IsolatedNodes']
-
-    def get_no_islands(self):
-        ''' Get number of islands '''
-        return len(self.__data['Islands'])
-    
-    def get_no_isolated_nodes(self):
-        ''' Get number of isolated nodes '''
-        return len(self.__data['IsolatedNodes'])
 
     def __add_nodes_to_island(self, graphs=None, lt=None):
         ''' This class method add the nodes to the islands '''
-        assert isinstance(self.__data['Islands'], list) and \
-            isinstance(self.__data['Islands'][0], ElectricityNetwork), \
+        assert isinstance(self._data['Islands'], list) and \
+            isinstance(self._data['Islands'][0], ElectricityNetwork), \
                 "List of islands does not have the necessary format"
         if isinstance(graphs, list):
             assert graphs[0].is_multigraph(), "graphs is not a multigraph"
-            for aux in range(self.get_no_islands()):
+            for aux in range(self.get_no_elements(name='Islands')):
                 aux1 = [aux2[1]['obj'] for aux2 in \
                     graphs[aux].nodes(data=True)]
-                self.__data['Islands'][aux].set_objects(name='bus', \
+                self._data['Islands'][aux].set_objects(name='bus', \
                     list_obj=aux1)
                 del aux1
 
     def __add_object_to_islands(self, name_object=None):
         ''' This class method add the transmission lines to the islands '''
         auxp = "List of islands does not have the necessary format"
-        assert isinstance(self.__data['Islands'], list) and \
-            isinstance(self.__data['Islands'][0], ElectricityNetwork), \
+        assert isinstance(self._data['Islands'], list) and \
+            isinstance(self._data['Islands'][0], ElectricityNetwork), \
             " ".join(auxp.split())
         auxp = "No valid objects name has been passed to the function \
             __add_object_to_islands \
             in the class {0}".format(self.__class__.__name__)
         assert name_object is not None, " ".join(auxp.split())
-        for aux1 in range(self.get_no_islands()):
+        for aux1 in range(self.get_no_elements(name='Islands')):
             aux_objects = []
             aux_objects_list = []
-            for aux2 in self.__data['Islands'][aux1].get_objects(name='bus'):
+            for aux2 in self._data['Islands'][aux1].get_objects(name='bus'):
                 aux_objects.extend(aux2.get_element(\
                     name=name_object+'_position'))
             aux_objects = list(dict.fromkeys(aux_objects))
@@ -184,7 +159,7 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
                 aux_objects_list.extend(\
                     self.get_objects(name=name_object, pos=aux2))
             if aux_objects_list != []:
-                self.__data['Islands'][aux1].set_objects(name=name_object, \
+                self._data['Islands'][aux1].set_objects(name=name_object, \
                     list_obj=aux_objects_list)
     
     def __delete_nodes_graph(self, nodes=None):
@@ -201,8 +176,8 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
     def __update_all_pos_islands(self):
         ''' Update the position of all nodes, transmission lines, etc. on 
         each island '''
-        for xisl in range(self.get_no_islands()):
-            self.__data['Islands'][xisl].update_all_positions()
+        for xisl in range(self.get_no_elements(name='Islands')):
+            self._data['Islands'][xisl].update_all_positions()
 
 class PowerSystemReduction(ElectricityNetwork):
     ''' This class contains all necessary methods to reduce a network depending 
@@ -298,8 +273,32 @@ class PowerSystemReduction(ElectricityNetwork):
             auxp = 'Network analyser message - the power system under \
                 analysis has {0} supernodes'.format(len(supernodes))
             logging.info(" ".join(auxp.split()))
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} nodes before reduction'.format(\
+                self.get_no_objects('bus'))
+            logging.info(" ".join(auxp.split()))
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} transmission lines before reduction'.format(\
+                self.get_no_objects('transmissionline'))
+            logging.info(" ".join(auxp.split()))
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} transformers before reduction'.format(\
+                self.get_no_objects('transformers'))
+            logging.info(" ".join(auxp.split()))
             self.__reduce_network_from_supernodes(supernodes=supernodes)
             self.__add_artificial_elements(supernodes=supernodes)
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} nodes after reduction'.format(\
+                self.get_no_objects('bus'))
+            logging.info(" ".join(auxp.split()))
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} transmission lines after reduction'.format(\
+                self.get_no_objects('transmissionline'))
+            logging.info(" ".join(auxp.split()))
+            auxp = 'Network analyser message - the power system under \
+                analysis has {0} transformers after reduction'.format(\
+                self.get_no_objects('transformers'))
+            logging.info(" ".join(auxp.split()))
         else:
             auxp = 'Network analyser message - the power system under \
                 analysis has not been reduced - check if the indicated voltage \
@@ -367,7 +366,7 @@ class PowerSystemReduction(ElectricityNetwork):
                 counterlines, auxline = self.__add_artificial_lines(\
                     supernodes=supernodes, counter=counterlines, \
                     number_line=auxline, new_nodes=new_nodes, \
-                    counternode=counternodes, number_node=None, pos_supernode=x,
+                    counternode=counternodes, number_node=aux, pos_supernode=x,
                     new_lines=new_lines)
                 counternodes += 1
                 aux += 1
@@ -592,6 +591,14 @@ class PowerSystemReduction(ElectricityNetwork):
         self.__save_network_info_in_supernodes(supernodes=supernodes)
         busestoerase = []
         for xsuper in supernodes:
+            print(xsuper['bus'])
+            auxnodes = []
+            for xnodes in xsuper['bus']:
+                auxnodes.append(self.get_object_elements(name_object='bus', \
+                    name_element='number', pos_object=xnodes))
+            print(auxnodes)
+            print(xsuper['coupling_buses'])
+            print('\n')
             xsuper['zone_supernode'] = self.get_object_elements(\
                     name_object='bus', \
                     name_element='zone', pos_object=\
@@ -677,6 +684,9 @@ class PowerSystemReduction(ElectricityNetwork):
                 supernode['bus'].append(bus_position)
                 supernode['coupling_buses'].append(bus_position)
                 return flags, supernode, flag_supernode
+        
+        if flags['bus'][bus_position]:
+            return flags, supernode, flag_supernode
         
         flags['bus'][bus_position] = True
         is_disconnected = True
