@@ -479,12 +479,16 @@ class ElectricityNetwork(_CommonMethods):
                     name_element2='bus_number', 
                     name_position_element='bus_position')
         # Updating the positions of other objects in the bus object
-        for xobj in self.__objects.keys():
-            if xobj != 'bus':
-                self.__update_relative_position_objects(name_object1=xobj, \
-                    name_element1='number', name_object2='bus', \
-                    name_element2=xobj+'_number', \
-                    name_position_element=xobj+'_position')
+        for xobj in self.get_series_elements_names():
+            self.__update_relative_position_objects(name_object1=xobj, \
+                name_element1='number', name_object2='bus', \
+                name_element2=xobj+'_number', \
+                name_position_element=xobj+'_position')
+        for xobj in self.get_generation_types_names():
+            self.__update_relative_position_objects(name_object1=xobj, \
+                name_element1='bus_number', name_object2='bus', \
+                name_element2=xobj+'_number', \
+                name_position_element=xobj+'_position')
 
     def __update_relative_position_objects(self, name_object1=None, \
         name_element1=None, name_object2=None, name_element2=None, 
@@ -577,7 +581,7 @@ class GenClass(_CommonMethods):
                 'maximum_reactive_power_generation',
                 'minimum_reactive_power_generation', 'ramp', 'baseload',
                 'model', 'shutdown_cost', 'startup_cost', 'position',
-                'uncertainty', 'bus_number', 'bus_position']
+                'uncertainty', 'bus_number', 'bus_position', 'status']
         self._data = {}
         for x in aux:
             self._data[x] = None
