@@ -870,7 +870,7 @@ class Networkmodel():
         """ This class method solve the optimisation problem """
         # Creation of model instance
         self.solver = GLPKSolver(message_level='all', \
-            simplex_method='primal')      
+            simplex_method='dualprimal')      
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation
@@ -1816,7 +1816,7 @@ class Networkmodel():
         self.generationrampsconstraints()
 
         self.activepowerbalancepernode()
-        # self.activepowerflowconstraints()
+        self.activepowerflowconstraints()
         if self.LossesFlag:
             self.activepowerlosses1constraints()
             self.activepowerlosses2constraints()
@@ -3378,6 +3378,9 @@ class Networkmodel():
             return GenerationCurtailmentSystemEDSolution
         else:
             return None
+    
+    def GetObjectiveFunctionNM(self):
+        return self.solver.get_obj_val()
 
 
 class EnergyandNetwork(Energymodel, Networkmodel):
