@@ -150,8 +150,13 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         for aux1 in range(self.get_no_elements(name='Islands')):
             aux_objects = []
             for aux2 in self._data['Islands'][aux1].get_objects(name='bus'):
-                aux_objects.extend(aux2.get_element(\
-                    name=name_object+'_position'))
+                if isinstance(aux2.get_element(\
+                    name=name_object+'_position'), list):
+                    aux_objects.extend(aux2.get_element(\
+                        name=name_object+'_position'))
+                else:
+                    aux_objects.append(aux2.get_element(\
+                        name=name_object+'_position'))
             aux_objects = list(dict.fromkeys(aux_objects))
             if self.get_objects(name=name_object, pos=aux_objects) != []:
                 self._data['Islands'][aux1].set_objects(name=name_object, \
@@ -471,6 +476,8 @@ class PowerSystemReduction(ElectricityNetwork):
                 val=[self._data['SupernodesNetworkInfo'][pos_supernode]\
                     ['coupling_buses'][xcounter].get_element(name='number'), \
                     number_node])
+            new_lines[counter].set_element(name='status', \
+                val=1)
             number_lines.append(number_line)
             xcounter += 1
             counter += 1
@@ -484,12 +491,14 @@ class PowerSystemReduction(ElectricityNetwork):
         number_node=None, new_nodes=None, pos_supernode=None):
         ''' This class method adds generators to the artificial node '''
         for xgentype in self.get_generation_types_names():
+            auxgennumber = []
             for xgen in self.get_objects(name=xgentype):
                 if xgen.get_element(name='bus_position') in \
                     supernodes[pos_supernode]['bus']:
                     xgen.set_element(name='bus_number', val=number_node)
-                    new_nodes[counter].set_element(\
-                    name=xgentype+'_number', val=number_node)
+                    auxgennumber.append(number_node)
+            new_nodes[counter].set_element(\
+                name=xgentype+'_number', val=auxgennumber)
 
     def __check_if_empty_list(self, name=None, bus_position=None):
         ''' This method checks if the bus object is connected to the network '''
