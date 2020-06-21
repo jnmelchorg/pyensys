@@ -869,7 +869,7 @@ class Networkmodel():
     def optimisationNM(self):
         """ This class method solve the optimisation problem """
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='all', \
+        self.solver = GLPKSolver(message_level='off', \
             simplex_method='dualprimal')      
         # Definition of minimisation problem
         self.solver.set_dir('min')
