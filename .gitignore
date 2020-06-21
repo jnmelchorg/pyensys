@@ -63,3 +63,9 @@ pyene/json/Egypt202001.json
 tests/json/Egypt202001.json
 salida.out
 tests/json/Egypt.m
+pyene/engines/pyeneT2.py
+tests/json/Egypt_reduced.json
+tests/json/Egypt_reduced.m
+tests/json/Egyptnonmod.m
+tests/json/Egyptnonmod.m
+tests/json/Egypt.json
