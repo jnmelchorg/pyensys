@@ -591,6 +591,7 @@ class Networkmodel():
         
         # TODO: Generalise inputs as a list of values
         if self.NumberConvGen > 0:
+            self.ActiveConv = np.ones(self.NumberConvGen, dtype=bool)
             self.PWConvGen = np.empty((self.NumberConvGen), dtype=np.int_) # Number of pieces of
                                 # the piecewise linearisation of the conventional 
                                 # generation cost
@@ -1118,10 +1119,11 @@ class Networkmodel():
                 # Limits for the thermal generators
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
-                        self.solver.set_col_bnds(\
-                            str(self.thermalgenerators[i, j][0]), k,\
-                            'bounded', self.MinConvGen[k],\
-                            self.MaxConvGen[k])
+                        if self.ActiveConv[k]:
+                            self.solver.set_col_bnds(\
+                                str(self.thermalgenerators[i, j][0]), k,\
+                                'bounded', self.MinConvGen[k],\
+                                self.MaxConvGen[k])
                 # Limits for the RES generators
                 if self.NumberRESGen > 0:
                     for k in range(self.NumberRESGen):
