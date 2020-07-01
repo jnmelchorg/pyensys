@@ -739,7 +739,7 @@ class PrintinScreen():
                     for xco in range(obj.NumberContingencies + 1):
                         for xt in range(obj.ShortTemporalConnections):
                             if not obj.FlagFeasibility and \
-                                self.NumberConvGen > 0:
+                                obj.NumberConvGen > 0:
                                 aux = 0
                             else:
                                 aux = ThermalGenerationCurtailment\
@@ -755,7 +755,7 @@ class PrintinScreen():
                     for xco in range(obj.NumberContingencies + 1):
                         for xt in range(obj.ShortTemporalConnections):
                             if not obj.FlagFeasibility and \
-                                self.NumberRESGen > 0:
+                                obj.NumberRESGen > 0:
                                 aux = 0
                             else:
                                 aux = RESGenerationCurtailment\
@@ -771,7 +771,7 @@ class PrintinScreen():
                     for xco in range(obj.NumberContingencies + 1):
                         for xt in range(obj.ShortTemporalConnections):
                             if not obj.FlagFeasibility and \
-                                self.NumberHydroGen > 0:
+                                obj.NumberHydroGen > 0:
                                 aux = 0
                             else:
                                 aux = HydroGenerationCurtailment\
