@@ -76,7 +76,8 @@ class BranchConfig:
                'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS', 'MTTF',
                'MTTR']
         for x in aux:
-            self.settings[x] = mpc[x][No]
+            if x in mpc:
+                self.settings[x] = mpc[x][No]
 
         if 'Loss_Fix' in mpc.keys():
             self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
@@ -112,7 +113,8 @@ class ConventionalConfig:
                'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG',
                'GEN', 'MTTF', 'MTTR']
         for x in aux:
-            self.settings[x] = mpc['gen'][x][No]
+            if x in mpc['gen']:
+                self.settings[x] = mpc['gen'][x][No]
 
         # Generator costs - from mat power file
         aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
