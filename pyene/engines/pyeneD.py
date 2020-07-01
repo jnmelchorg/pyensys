@@ -61,7 +61,7 @@ class BranchConfig:
         # Basic settings
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
                'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP',
-               'T_BUS', 'Loss_Fix']
+               'T_BUS', 'Loss_Fix', 'MTTF', 'MTTR']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -73,7 +73,8 @@ class BranchConfig:
         self.settings['Position'] = No
 
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
-               'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS']
+               'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS', 'MTTF',
+               'MTTR']
         for x in aux:
             self.settings[x] = mpc[x][No]
 
@@ -90,7 +91,7 @@ class ConventionalConfig:
         aux = ['Ancillary', 'APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
                'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
                'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
-               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT', 'GEN']
+               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT', 'GEN', 'MTTF', 'MTTR']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -109,7 +110,7 @@ class ConventionalConfig:
         aux = ['APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
                'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX', 'QG', 'QMAX',
                'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG',
-               'GEN']
+               'GEN', 'MTTF', 'MTTR']
         for x in aux:
             self.settings[x] = mpc['gen'][x][No]
 
@@ -230,7 +231,7 @@ class Branch:
         '''
 
         aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
-               'BR_B', 'Loss_Fix', 'BR_STATUS']
+               'BR_B', 'Loss_Fix', 'BR_STATUS', 'MTTF', 'MTTR']
 
         # Get settings
         self.data = {}
@@ -1003,7 +1004,8 @@ class Conventional(GenClass):
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position',
-               'VG', 'PG', 'QG', 'MDT', 'MUT', 'QMAX', 'QMIN', 'GEN']
+               'VG', 'PG', 'QG', 'MDT', 'MUT', 'QMAX', 'QMIN', 'GEN', 'MTTF',
+               'MTTR']
 
         # Get settings
         self.data = {}
@@ -1012,6 +1014,7 @@ class Conventional(GenClass):
         for xa in aux:
             self.data[xa] = obj.settings[xa]
         self.data['Bus'] = obj.settings['GEN_BUS']
+
 
         aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         self.cost = {}
