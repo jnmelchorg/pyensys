@@ -167,11 +167,11 @@ class MonteCarloSimulation():
                                     ThermalGenerationCurtailment\
                                     [xh, xt, xco, xn]
             OF_timesteps_intact[xstep] = Model.GetObjectiveFunctionNM()
-            print(OF_timesteps_intact[xstep])
-            print(LC_timesteps_intact[xstep])
-            print(ConvC_timesteps_intact[xstep])
-            print(xstep)
-            print()
+            # print(OF_timesteps_intact[xstep])
+            # print(LC_timesteps_intact[xstep])
+            # print(ConvC_timesteps_intact[xstep])
+            # print(xstep)
+            # print()
 
         # Running the power system with failures
         OF_timesteps_MC = np.zeros(self.totaltimesteps * self.iterationsMC)
@@ -261,12 +261,12 @@ class MonteCarloSimulation():
                         ConvC_timesteps_intact[xstep]
                     OF_timesteps_MC[xit*self.totaltimesteps + xstep] =\
                         OF_timesteps_intact[xstep]
-                    print(OF_timesteps_MC[xit*self.totaltimesteps + xstep])
-                    print(LC_timesteps_MC[xit*self.totaltimesteps + xstep])
-                    print(ConvC_timesteps_MC[xit*self.totaltimesteps + \
-                        xstep])
-                    print(xit*self.totaltimesteps + xstep)
-                    print()
+                    # print(OF_timesteps_MC[xit*self.totaltimesteps + xstep])
+                    # print(LC_timesteps_MC[xit*self.totaltimesteps + xstep])
+                    # print(ConvC_timesteps_MC[xit*self.totaltimesteps + \
+                    #     xstep])
+                    # print(xit*self.totaltimesteps + xstep)
+                    # print()
 
         end = time.time()
         time1 = end - start
