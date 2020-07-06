@@ -325,7 +325,90 @@ class pyeneHDF5Settings():
             LoadCurtailment = GLPKobj.GetLoadCurtailmentNodes()
         else:
             LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
-        ActivePowerLosses = GLPKobj.GetActivePowerLosses()
+        
+        ThermalGenerationCurtailment = GLPKobj.GetThermalGenerationCurtailmentNodes()
+        RESGenerationCurtailment = GLPKobj.GetRESGenerationCurtailmentNodes()
+        HydroGenerationCurtailment = GLPKobj.GetHydroGenerationCurtailmentNodes()
+        Branches = EN.NM.ENetwork.Branch
+        if GLPKobj.FlagProblem and GLPKobj.LossesFlag:
+            ActivePowerLosses = GLPKobj.GetActivePowerLosses()
+        elif not GLPKobj.LossesFlag and GLPKobj.PercentageLosses is not None and \
+            GLPKobj.FlagProblem:
+            # Interpolation of losses
+            ActivePowerLosses = \
+                np.empty((len(GLPKobj.LongTemporalConnections),\
+                    GLPKobj.ShortTemporalConnections, \
+                    (GLPKobj.NumberContingencies + 1), \
+                    GLPKobj.NumberLinesPS))
+            for xh in GLPKobj.LongTemporalConnections:
+                for xt in range(GLPKobj.ShortTemporalConnections):
+                    FullLoss = 0
+                    # Add all power generation
+                    if GLPKobj.NumberConvGen > 0:
+                        for xn in range(GLPKobj.NumberConvGen):
+                            FullLoss += ThermalGeneration[xh, xt, xn]
+                    if GLPKobj.NumberRESGen > 0:
+                        for xn in range(GLPKobj.NumberRESGen):
+                            FullLoss += RESGeneration[xh, xt, xn]
+                    if GLPKobj.NumberHydroGen > 0:
+                        for xn in range(GLPKobj.NumberHydroGen):
+                            FullLoss += HydroGeneration[xh, xt, xn]
+                                        
+                    # Substract all power generation curtailment
+                    if GLPKobj.NumberConvGen > 0:
+                        for xn in range(GLPKobj.NumberConvGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= ThermalGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if GLPKobj.NumberRESGen > 0:
+                        for xn in range(GLPKobj.NumberRESGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= RESGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if GLPKobj.NumberHydroGen > 0:
+                        for xn in range(GLPKobj.NumberHydroGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= HydroGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+
+                    # Substract demand
+                    for xn in range(GLPKobj.NumberNodesPS):
+                        if GLPKobj.NumberDemScenarios == 0:
+                            FullLoss -= GLPKobj.PowerDemandNode[xn] * \
+                                GLPKobj.MultScenariosDemand[xh, xn] * \
+                                GLPKobj.BaseUnitPower
+                        else:
+                            FullLoss -= GLPKobj.PowerDemandNode[xn] * \
+                                GLPKobj.MultScenariosDemand[xh, xt, xn] * \
+                                GLPKobj.BaseUnitPower
+
+                        # Curtailment
+                        if GLPKobj.FlagFeasibility:
+                            # Add load curtailment
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss += LoadCurtailment[xh, xt, xco, xn]
+
+                    # Substract non-technical losses
+                    for xb in range(GLPKobj.NumberLinesPS):
+                        FullLoss -= Branches[xb].getLoss()
+
+                    # Allocate losses per line
+                    FullFlow = 0
+                    for xb in range(GLPKobj.NumberLinesPS):
+                        for xco in range(GLPKobj.NumberContingencies + 1):
+                            FullFlow += abs(ActivePowerFlow[xh, xt, xco, xb])
+                    if FullFlow > 0:
+                        for xb in range(GLPKobj.NumberLinesPS):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                aux = abs(ActivePowerFlow[xh, xt, xco, xb]) / FullFlow
+                            ActivePowerLosses[xh, xt, xco, xb] = FullLoss * aux + \
+                                Branches[xb].getLoss()
+        else:
+            ActivePowerLosses = \
+                np.zeros((len(GLPKobj.LongTemporalConnections),\
+                    GLPKobj.ShortTemporalConnections, \
+                    (GLPKobj.NumberContingencies + 1), \
+                    GLPKobj.NumberLinesPS))
         
 
         for xs in GLPKobj.LongTemporalConnections:
@@ -438,7 +521,6 @@ class pyeneHDF5Settings():
         self.filedetailedinfo.create_array(HDF5group, "Hydro_Marginal", hp_marginal)
 
         # Getting the solution from GLPK
-
         ThermalGeneration = GLPKobj.GetThermalGeneration()
         RESGeneration = GLPKobj.GetRESGeneration()
         HydroGeneration = GLPKobj.GetHydroGeneration()
@@ -448,41 +530,153 @@ class pyeneHDF5Settings():
 
         else:
             LoadCurtailment = GLPKobj.GLPKobj.GetLoadCurtailmentNodes()
-        ActivePowerLosses = GLPKobj.GetActivePowerLosses()
         VoltageAngle = GLPKobj.GetVoltageAngle()
         ActivePowerFlow = GLPKobj.GetActivePowerFlow()
+        ThermalGenerationCurtailment = GLPKobj.GetThermalGenerationCurtailmentNodes()
+        RESGenerationCurtailment = GLPKobj.GetRESGenerationCurtailmentNodes()
+        HydroGenerationCurtailment = GLPKobj.GetHydroGenerationCurtailmentNodes()
+        Branches = EN.NM.ENetwork.Branch
+        if GLPKobj.FlagProblem and GLPKobj.LossesFlag:
+            ActivePowerLosses = GLPKobj.GetActivePowerLosses()
+        elif not GLPKobj.LossesFlag and GLPKobj.PercentageLosses is not None and \
+            GLPKobj.FlagProblem:
+            # Interpolation of losses
+            ActivePowerLosses = \
+                np.empty((len(GLPKobj.LongTemporalConnections),\
+                    GLPKobj.ShortTemporalConnections, \
+                    (GLPKobj.NumberContingencies + 1), \
+                    GLPKobj.NumberLinesPS))
+            for xh in GLPKobj.LongTemporalConnections:
+                for xt in range(GLPKobj.ShortTemporalConnections):
+                    FullLoss = 0
+                    # Add all power generation
+                    if GLPKobj.NumberConvGen > 0:
+                        for xn in range(GLPKobj.NumberConvGen):
+                            FullLoss += ThermalGeneration[xh, xt, xn]
+                    if GLPKobj.NumberRESGen > 0:
+                        for xn in range(GLPKobj.NumberRESGen):
+                            FullLoss += RESGeneration[xh, xt, xn]
+                    if GLPKobj.NumberHydroGen > 0:
+                        for xn in range(GLPKobj.NumberHydroGen):
+                            FullLoss += HydroGeneration[xh, xt, xn]
+                                        
+                    # Substract all power generation curtailment
+                    if GLPKobj.NumberConvGen > 0:
+                        for xn in range(GLPKobj.NumberConvGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= ThermalGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if GLPKobj.NumberRESGen > 0:
+                        for xn in range(GLPKobj.NumberRESGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= RESGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                    if GLPKobj.NumberHydroGen > 0:
+                        for xn in range(GLPKobj.NumberHydroGen):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss -= HydroGenerationCurtailment\
+                                    [xh, xt, xco, xn]
 
-        if ThermalGeneration is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Thermal_Generation", \
-                ThermalGeneration)
+                    # Substract demand
+                    for xn in range(GLPKobj.NumberNodesPS):
+                        if GLPKobj.NumberDemScenarios == 0:
+                            FullLoss -= GLPKobj.PowerDemandNode[xn] * \
+                                GLPKobj.MultScenariosDemand[xh, xn] * \
+                                GLPKobj.BaseUnitPower
+                        else:
+                            FullLoss -= GLPKobj.PowerDemandNode[xn] * \
+                                GLPKobj.MultScenariosDemand[xh, xt, xn] * \
+                                GLPKobj.BaseUnitPower
+
+                        # Curtailment
+                        if GLPKobj.FlagFeasibility:
+                            # Add load curtailment
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                FullLoss += LoadCurtailment[xh, xt, xco, xn]
+
+                    # Substract non-technical losses
+                    for xb in range(GLPKobj.NumberLinesPS):
+                        FullLoss -= Branches[xb].getLoss()
+
+                    # Allocate losses per line
+                    FullFlow = 0
+                    for xb in range(GLPKobj.NumberLinesPS):
+                        for xco in range(GLPKobj.NumberContingencies + 1):
+                            FullFlow += abs(ActivePowerFlow[xh, xt, xco, xb])
+                    if FullFlow > 0:
+                        for xb in range(GLPKobj.NumberLinesPS):
+                            for xco in range(GLPKobj.NumberContingencies + 1):
+                                aux = abs(ActivePowerFlow[xh, xt, xco, xb]) / FullFlow
+                            ActivePowerLosses[xh, xt, xco, xb] = FullLoss * aux + \
+                                Branches[xb].getLoss()
+        else:
+            ActivePowerLosses = \
+                np.zeros((len(GLPKobj.LongTemporalConnections),\
+                    GLPKobj.ShortTemporalConnections, \
+                    (GLPKobj.NumberContingencies + 1), \
+                    GLPKobj.NumberLinesPS))
         
-        if RESGeneration is not None:
-            self.filedetailedinfo.create_array(HDF5group, "RES_Generation", \
-                RESGeneration)
+        for xs in GLPKobj.LongTemporalConnections:
+            HDF5table = \
+                self.fileh.create_table(HDF5group,
+                                        "Scenario_{:02d}_RES".format(xs),
+                                        self.PyeneHDF5Results)
+            HDF5row = HDF5table.row
+            for xt in range(GLPKobj.ShortTemporalConnections):
+                HDF5row['time'] = xt
+                if RESGeneration is not None:
+                    for k in range(GLPKobj.NumberRESGen):
+                        HDF5row[str(GLPKobj.OriginalNumberRESGen[k])] = \
+                            RESGeneration[xs, xt, k]
+                HDF5row.append()
+            HDF5table.flush()
         
-        if HydroGeneration is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Hydro_Generation", \
-                HydroGeneration)
+        for xs in GLPKobj.LongTemporalConnections:
+            HDF5table = \
+                self.fileh.create_table(HDF5group,
+                                        "Scenario_{:02d}_Hydro".format(xs),
+                                        self.PyeneHDF5Results)
+            HDF5row = HDF5table.row
+            for xt in range(GLPKobj.ShortTemporalConnections):
+                HDF5row['time'] = xt
+                if HydroGeneration is not None:
+                    for k in range(GLPKobj.NumberHydroGen):
+                        HDF5row[str(GLPKobj.OriginalNumberHydroGen[k])] = \
+                            HydroGeneration[xs, xt, k]
+                HDF5row.append()
+            HDF5table.flush()
+
+        # if ThermalGeneration is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Thermal_Generation", \
+        #         ThermalGeneration)
         
-        if PumpOperation is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Pump_Operation", \
-                PumpOperation)
+        # if RESGeneration is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "RES_Generation", \
+        #         RESGeneration)
         
-        if LoadCurtailment is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Load_Curtailment", \
-                LoadCurtailment)
+        # if HydroGeneration is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Hydro_Generation", \
+        #         HydroGeneration)
         
-        if ActivePowerLosses is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Active_Power_Losses", \
-                ActivePowerLosses)
+        # if PumpOperation is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Pump_Operation", \
+        #         PumpOperation)
         
-        if VoltageAngle is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Voltage_Angle", \
-                VoltageAngle)
+        # if LoadCurtailment is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Load_Curtailment", \
+        #         LoadCurtailment)
         
-        if ActivePowerFlow is not None:
-            self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
-                ActivePowerFlow)
+        # if ActivePowerLosses is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Active_Power_Losses", \
+        #         ActivePowerLosses)
+        
+        # if VoltageAngle is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Voltage_Angle", \
+        #         VoltageAngle)
+        
+        # if ActivePowerFlow is not None:
+        #     self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
+        #         ActivePowerFlow)
 
 
 
