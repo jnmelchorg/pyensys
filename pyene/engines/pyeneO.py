@@ -329,6 +329,7 @@ class pyeneHDF5Settings():
         ThermalGenerationCurtailment = GLPKobj.GetThermalGenerationCurtailmentNodes()
         RESGenerationCurtailment = GLPKobj.GetRESGenerationCurtailmentNodes()
         HydroGenerationCurtailment = GLPKobj.GetHydroGenerationCurtailmentNodes()
+        ActivePowerFlow = GLPKobj.GetActivePowerFlow()
         Branches = EN.NM.ENetwork.Branch
         if GLPKobj.FlagProblem and GLPKobj.LossesFlag:
             ActivePowerLosses = GLPKobj.GetActivePowerLosses()
