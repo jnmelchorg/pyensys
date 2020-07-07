@@ -1119,34 +1119,63 @@ class Networkmodel():
                 # Limits for the thermal generators
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
-                        if self.ActiveConv[k]:
+                        if self.ActiveConv[k] and self.MinConvGen[k] != \
+                            self.MaxConvGen[k]:
                             self.solver.set_col_bnds(\
                                 str(self.thermalgenerators[i, j][0]), k,\
                                 'bounded', self.MinConvGen[k],\
                                 self.MaxConvGen[k])
+                        elif self.ActiveConv[k] and self.MinConvGen[k] == \
+                            self.MaxConvGen[k]:
+                            self.solver.set_col_bnds(\
+                                str(self.thermalgenerators[i, j][0]), k,\
+                                'fixed', self.MinConvGen[k],\
+                                self.MaxConvGen[k])
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.thermalgenerators[i, j][0]), k,\
+                                'fixed', 0, 0)
                 # Limits for the RES generators
                 if self.NumberRESGen > 0:
                     for k in range(self.NumberRESGen):
-                        self.solver.set_col_bnds(\
-                            str(self.RESgenerators[i, j][0]), k,\
-                            'bounded', self.MinRESGen[k],\
-                            self.RESScenarios[i, j, k] * \
-                                self.MaxRESGen[k])
+                        if self.MinRESGen[k] != (\
+                            self.RESScenarios[i, j, k] * self.MaxRESGen[k]):
+                            self.solver.set_col_bnds(\
+                                str(self.RESgenerators[i, j][0]), k,\
+                                'bounded', self.MinRESGen[k],\
+                                self.RESScenarios[i, j, k] * \
+                                    self.MaxRESGen[k])
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.RESgenerators[i, j][0]), k,\
+                                'fixed', self.MinRESGen[k],\
+                                self.MinRESGen[k])
 
                 # Limits for the Hydroelectric generators
                 if self.NumberHydroGen > 0:
                     for k in range(self.NumberHydroGen):
-                        self.solver.set_col_bnds(\
-                            str(self.Hydrogenerators[i, j][0]), k,\
-                            'bounded', self.MinHydroGen[k],\
-                            self.MaxHydroGen[k])
+                        if self.MinHydroGen[k] != self.MaxHydroGen[k]:
+                            self.solver.set_col_bnds(\
+                                str(self.Hydrogenerators[i, j][0]), k,\
+                                'bounded', self.MinHydroGen[k],\
+                                self.MaxHydroGen[k])
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.Hydrogenerators[i, j][0]), k,\
+                                'fixed', self.MinHydroGen[k],\
+                                self.MaxHydroGen[k])
                 # TODO: Modify information of storage, e.g. m.sNSto
                 # if self.NumberStorageDevices > 0:
                 if self.NumberPumps > 0:
                     for k in range(self.NumberPumps):
-                        self.solver.set_col_bnds(\
-                            str(self.pumpsvar[i, j][0]), k,\
-                            'bounded', 0, self.MaxPowerPumps[k])
+                        if self.MaxPowerPumps[k] != 0:
+                            self.solver.set_col_bnds(\
+                                str(self.pumpsvar[i, j][0]), k,\
+                                'bounded', 0, self.MaxPowerPumps[k])
+                        else:
+                            self.solver.set_col_bnds(\
+                                str(self.pumpsvar[i, j][0]), k,\
+                                'fixed', 0, 0)
 
     # Constraints
     def posconstraintsCommon(self):
