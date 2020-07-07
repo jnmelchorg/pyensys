@@ -527,10 +527,9 @@ class pyeneHDF5Settings():
         HydroGeneration = GLPKobj.GetHydroGeneration()
         PumpOperation = GLPKobj.GetPumpOperation()
         if GLPKobj.FlagProblem and GLPKobj.FlagFeasibility:
-            LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
-
+            LoadCurtailment = GLPKobj.GetLoadCurtailmentNodes()
         else:
-            LoadCurtailment = GLPKobj.GLPKobj.GetLoadCurtailmentNodes()
+            LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
         VoltageAngle = GLPKobj.GetVoltageAngle()
         ActivePowerFlow = GLPKobj.GetActivePowerFlow()
         ThermalGenerationCurtailment = GLPKobj.GetThermalGenerationCurtailmentNodes()
@@ -737,9 +736,9 @@ class PrintinScreen():
         HydroGeneration = obj.GetHydroGeneration()
         PumpOperation = obj.GetPumpOperation()
         if not obj.FlagProblem and obj.FlagFeasibility:
-            LoadCurtailment = obj.GetLoadCurtailmentSystemED()
-        elif obj.FlagProblem and obj.FlagFeasibility:
             LoadCurtailment = obj.GetLoadCurtailmentNodes()
+        elif obj.FlagProblem and obj.FlagFeasibility:
+            LoadCurtailment = obj.GetLoadCurtailmentSystemED()
         ThermalGenerationCurtailment = obj.GetThermalGenerationCurtailmentNodes()
         RESGenerationCurtailment = obj.GetRESGenerationCurtailmentNodes()
         HydroGenerationCurtailment = obj.GetHydroGenerationCurtailmentNodes()
