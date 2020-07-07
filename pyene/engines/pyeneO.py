@@ -106,6 +106,7 @@ class pyeneHDF5Settings():
         loss = Float32Col(dflt=1, pos=6)  # losses
         curtailment = Float32Col(dflt=1, pos=7)  # sCurtailment
         spill = Float32Col(dflt=1, pos=8)  # spilling
+    
 
     def Accumulate(self, EN, m):
         ''' Accumulate results '''
@@ -615,12 +616,20 @@ class pyeneHDF5Settings():
                     GLPKobj.ShortTemporalConnections, \
                     (GLPKobj.NumberContingencies + 1), \
                     GLPKobj.NumberLinesPS))
+            
+        data_descr_RES = dict(
+            time = Int16Col(dflt=1, pos=0)  # time period
+        )
+
+        for k in range(GLPKobj.NumberRESGen):
+            data_descr_RES[str(GLPKobj.OriginalNumberRESGen[k])] = \
+                Float32Col(dflt=1, pos=1+k)
         
         for xs in GLPKobj.LongTemporalConnections:
             HDF5table = \
                 self.fileh.create_table(HDF5group,
                                         "Scenario_{:02d}_RES".format(xs),
-                                        self.PyeneHDF5Results)
+                                        data_descr_RES)
             HDF5row = HDF5table.row
             for xt in range(GLPKobj.ShortTemporalConnections):
                 HDF5row['time'] = xt
@@ -631,11 +640,19 @@ class pyeneHDF5Settings():
                 HDF5row.append()
             HDF5table.flush()
         
+        data_descr_Hydro = dict(
+            time = Int16Col(dflt=1, pos=0)  # time period
+        )
+
+        for k in range(GLPKobj.NumberRESGen):
+            data_descr_Hydro[str(GLPKobj.OriginalNumberHydroGen[k])] = \
+                Float32Col(dflt=1, pos=1+k)
+        
         for xs in GLPKobj.LongTemporalConnections:
             HDF5table = \
                 self.fileh.create_table(HDF5group,
                                         "Scenario_{:02d}_Hydro".format(xs),
-                                        self.PyeneHDF5Results)
+                                        data_descr_Hydro)
             HDF5row = HDF5table.row
             for xt in range(GLPKobj.ShortTemporalConnections):
                 HDF5row['time'] = xt
