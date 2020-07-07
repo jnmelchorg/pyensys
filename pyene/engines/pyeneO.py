@@ -644,7 +644,7 @@ class pyeneHDF5Settings():
             time = Int16Col(dflt=1, pos=0)  # time period
         )
 
-        for k in range(GLPKobj.NumberRESGen):
+        for k in range(GLPKobj.NumberHydroGen):
             data_descr_Hydro[str(GLPKobj.OriginalNumberHydroGen[k])] = \
                 Float32Col(dflt=1, pos=1+k)
         
