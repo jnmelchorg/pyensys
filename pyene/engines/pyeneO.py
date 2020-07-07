@@ -791,9 +791,9 @@ class PrintinScreen():
         HydroGeneration = obj.GetHydroGeneration()
         PumpOperation = obj.GetPumpOperation()
         if not obj.FlagProblem and obj.FlagFeasibility:
-            LoadCurtailment = obj.GetLoadCurtailmentNodes()
-        elif obj.FlagProblem and obj.FlagFeasibility:
             LoadCurtailment = obj.GetLoadCurtailmentSystemED()
+        elif obj.FlagProblem and obj.FlagFeasibility:
+            LoadCurtailment = obj.GetLoadCurtailmentNodes()
         ThermalGenerationCurtailment = obj.GetThermalGenerationCurtailmentNodes()
         RESGenerationCurtailment = obj.GetRESGenerationCurtailmentNodes()
         HydroGenerationCurtailment = obj.GetHydroGenerationCurtailmentNodes()
