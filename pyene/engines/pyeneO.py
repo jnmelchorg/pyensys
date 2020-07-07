@@ -482,7 +482,7 @@ class pyeneHDF5Settings():
                 HDF5row['pump'] = auxvar
 
                 auxvar = 0
-                if EN.NM.settings['Losses']:
+                if EN.NM.settings['Losses'] and GLPKobj.PercentageLosses:
                     for k in range(GLPKobj.NumberContingencies + 1):
                         for ii in range(GLPKobj.NumberLinesPS):
                             auxvar += ActivePowerLosses[xs, xt, k, ii]
