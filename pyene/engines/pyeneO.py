@@ -411,13 +411,38 @@ class pyeneHDF5Settings():
                     GLPKobj.ShortTemporalConnections, \
                     (GLPKobj.NumberContingencies + 1), \
                     GLPKobj.NumberLinesPS))
+
+        data_descr = dict(
+            time = Int16Col(dflt=1, pos=0),  # time period
+            generation = Float32Col(dflt=1, pos=1),  # conventional generator
+            hydropower = Float32Col(dflt=1, pos=2),  # hydropower
+            RES = Float32Col(dflt=1, pos=3),  # RES generator
+            demand = Float32Col(dflt=1, pos=4),  # total demand
+            pump = Float32Col(dflt=1, pos=5),  # use of pumps
+            loss = Float32Col(dflt=1, pos=6),  # losses
+            curtailment = Float32Col(dflt=1, pos=7),  # sCurtailment
+            spill = Float32Col(dflt=1, pos=8),  # spilling
+        )
+
+        counter = 9
+
+        if RESGeneration is not None:
+            for k in range(GLPKobj.NumberRESGen):
+                data_descr['RES_Gen_{}_Pot_{}'.format(k, GLPKobj.MaxRESGen[k])] = \
+                    Float32Col(dflt=1, pos=counter+k)
+            counter = counter + GLPKobj.NumberRESGen
+        
+        if HydroGeneration is not None:
+            for k in range(GLPKobj.NumberHydroGen):
+                data_descr['Hydro_Gen_{}_Pot_{}'.format(k, GLPKobj.MaxHydroGen[k])] = \
+                    Float32Col(dflt=1, pos=counter+k)
         
 
         for xs in GLPKobj.LongTemporalConnections:
             HDF5table = \
                 self.fileh.create_table(HDF5group,
                                         "Scenario_{:02d}".format(xs),
-                                        self.PyeneHDF5Results)
+                                        data_descr)
             HDF5row = HDF5table.row
             for xt in range(GLPKobj.ShortTemporalConnections):
                 HDF5row['time'] = xt
@@ -460,7 +485,7 @@ class pyeneHDF5Settings():
                 if EN.NM.settings['Losses']:
                     for k in range(GLPKobj.NumberContingencies + 1):
                         for ii in range(GLPKobj.NumberLinesPS):
-                            auxvar += ActivePowerLosses[xs, xt, k]
+                            auxvar += ActivePowerLosses[xs, xt, k, ii]
                 HDF5row['loss'] = auxvar
 
                 auxvar = 0
@@ -471,6 +496,19 @@ class pyeneHDF5Settings():
                 if not GLPKobj.FlagProblem and LoadCurtailment is not None:
                     auxvar += LoadCurtailment[xs, xt]
                 HDF5row['curtailment'] = auxvar
+
+                if RESGeneration is not None:
+                    for k in range(GLPKobj.NumberRESGen):
+                        HDF5row['RES_Gen_{}_Pot_{}'.format(k, \
+                        GLPKobj.MaxRESGen[k])] = \
+                            RESGeneration[xs, xt, k]
+                
+                if HydroGeneration is not None:
+                    for k in range(GLPKobj.NumberHydroGen):
+                        HDF5row['Hydro_Gen_{}_Pot_{}'.format(k, \
+                        GLPKobj.MaxHydroGen[k])] = \
+                            HydroGeneration[xs, xt, k]
+
                 HDF5row.append()
             HDF5table.flush()
 
