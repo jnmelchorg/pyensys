@@ -19,6 +19,7 @@ from .pyeneN import ENetworkClass as dn  # Network cengine
 from .pyeneE import EnergyClass as de  # Energy engine
 from .pyeneH import HydrologyClass as hn  # Hydrology engine
 from .pyeneR import RESprofiles as rn  # RES engine
+from .pyene_Models import EnergyandNetwork, Networkmodel
 import json
 import os
 
@@ -322,10 +323,11 @@ class pyeneClass():
     def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
         # Specify buses
-        if 'buses' in kwarg:
-            auxbuses = kwarg.pop('buses')
-        else:
-            auxbuses = range(self.NM.ENetwork.get_NoBus())
+        if isinstance(m, ConcreteModel):
+            if 'buses' in kwarg:
+                auxbuses = kwarg.pop('buses')
+            else:
+                auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         values = [0, 0]
         value = 0
@@ -411,19 +413,29 @@ class pyeneClass():
         if self.NM.p['LLFea1'][bus] == 0:
             return 0
 
-        (auxtime, auxweight, auxscens,
-         auxOF) = self.get_timeAndScenario(*varg, **kwarg)
-
         value = 0
-        if self.NM.settings['Feasibility']:
-            for xh in auxscens:
-                acu = 0
-                for xt in auxtime:
-                    acu += auxweight[xt] * \
-                        m.vNFea[self.NM.get_ConFea(xh) + \
-                                self.NM.p['LLFea2'][bus], xt].value
-                value += acu*auxOF[xh]
-            value *= self.NM.ENetwork.get_Base()
+        if isinstance(m, ConcreteModel):
+            (auxtime, auxweight, auxscens,
+             auxOF) = self.get_timeAndScenario(*varg, **kwarg)
+
+            if self.NM.settings['Feasibility']:
+                for xh in auxscens:
+                    acu = 0
+                    for xt in auxtime:
+                        acu += auxweight[xt] * \
+                            m.vNFea[self.NM.get_ConFea(xh) + \
+                                    self.NM.p['LLFea2'][bus], xt].value
+                    value += acu*auxOF[xh]
+                value *= self.NM.ENetwork.get_Base()
+        elif isinstance(m, EnergyandNetwork) or isinstance(m, Networkmodel):
+            if m.FlagProblem and m.FlagFeasibility:
+                LoadCurtailment = m.GetLoadCurtailmentNodes()
+            else:
+                LoadCurtailment = m.GetLoadCurtailmentSystemED()
+            for xs in m.LongTemporalConnections:
+                for xt in range(m.ShortTemporalConnections):
+                    for k in range(m.NumberContingencies + 1):
+                        value += LoadCurtailment[xs, xt, k, bus]
 
         return value
 
