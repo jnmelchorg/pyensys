@@ -323,11 +323,10 @@ class pyeneClass():
     def get_AllDemandCurtailment(self, m, *varg, **kwarg):
         '''Get the kWh that had to be curtailed from all buses'''
         # Specify buses
-        if isinstance(m, ConcreteModel):
-            if 'buses' in kwarg:
-                auxbuses = kwarg.pop('buses')
-            else:
-                auxbuses = range(self.NM.ENetwork.get_NoBus())
+        if 'buses' in kwarg:
+            auxbuses = kwarg.pop('buses')
+        else:
+            auxbuses = range(self.NM.ENetwork.get_NoBus())
 
         values = [0, 0]
         value = 0
