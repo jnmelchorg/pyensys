@@ -467,13 +467,21 @@ class pyeneHDF5Settings():
 
                 HDF5row['spill'] = 0
 
-                auxvar = 0
-                for k in range(EN.NM.ENetwork.get_NoBus()):
-                    auxvar += EN.NM.busData[k] * \
-                        EN.NM.scenarios['Demand']\
-                            [EN.NM.busScenario[k][xs]] * \
-                                EN.NM.ENetwork.get_Base()
-                HDF5row['demand'] = auxvar
+                totaldemand = 0 
+                for k in range(EN.NM.ENetwork.get_NoBus()):               
+                    # TODO: Change the inputs of losses and demand scenarios
+                    # for parameters
+                    if GLPKobj.NumberDemScenarios == 0:
+                        totaldemand = totaldemand + \
+                            GLPKobj.PowerDemandNode[k] * \
+                            GLPKobj.MultScenariosDemand[xs, k] * \
+                                GLPKobj.BaseUnitPower
+                    else:
+                        totaldemand = totaldemand + \
+                            GLPKobj.PowerDemandNode[k] * \
+                            GLPKobj.MultScenariosDemand[xs, xt, k] * \
+                                GLPKobj.BaseUnitPower
+                HDF5row['demand'] = totaldemand                
 
                 auxvar = 0
                 if PumpOperation is not None:
