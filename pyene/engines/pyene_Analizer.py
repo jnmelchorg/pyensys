@@ -278,7 +278,8 @@ class PowerSystemReduction(ElectricityNetwork):
                             # to be connected to the supernode
                         'equivalent_reactive_power_demand' : None, # Equivalent reactive power demand
                             # to be connected to the supernode
-                        'thermal_limit_artificial_lines' : [],
+                        'artificial_lines_info' : [], # transformers are replaced with artificial 
+                            # lines with the same electrical characteristics
                         'equivalent_non_technical_losses_fix' : None,
                         'zone_supernode' : None
                     }
@@ -462,16 +463,22 @@ class PowerSystemReduction(ElectricityNetwork):
         number_lines = []
         for xnodespos in supernodes[pos_supernode]['coupling_buses']:
             new_lines.append(TransmissionLine())
-            new_lines[counter].set_element(name='shunt_susceptance', val=0)
-            new_lines[counter].set_element(name='resistance', val=0)
-            new_lines[counter].set_element(name='reactance', val=0.01)
+            new_lines[counter].set_element(name='shunt_susceptance', val=\
+                supernodes[pos_supernode]['artificial_lines_info']\
+                    [xcounter].get_element(name='shunt_susceptance'))
+            new_lines[counter].set_element(name='resistance', val=\
+                supernodes[pos_supernode]['artificial_lines_info']\
+                    [xcounter].get_element(name='resistance'))
+            new_lines[counter].set_element(name='reactance', val=\
+                supernodes[pos_supernode]['artificial_lines_info']\
+                    [xcounter].get_element(name='reactance'))
             new_lines[counter].set_element(name='number', val=number_line)
             new_lines[counter].set_element(name='long_term_thermal_limit', \
-                val=supernodes[pos_supernode]['thermal_limit_artificial_lines'][xcounter])
+                val=supernodes[pos_supernode]['artificial_lines_info']\
+                    [xcounter].get_element(name='long_term_thermal_limit'))
             new_lines[counter].set_element(name='non_technical_losses_fix', \
-                val=0)
-            new_lines[counter].set_element(name='non_technical_losses_fix', \
-                val=0)
+                val=supernodes[pos_supernode]['artificial_lines_info']\
+                    [xcounter].get_element(name='non_technical_losses_fix'))
             new_lines[counter].set_element(name='bus_number', \
                 val=[self._data['SupernodesNetworkInfo'][pos_supernode]\
                     ['coupling_buses'][xcounter].get_element(name='number'), \
@@ -566,10 +573,9 @@ class PowerSystemReduction(ElectricityNetwork):
                     flag_supernode=flag_supernode)
                 if  auxvoltage >= vol_kv and auxvoltage != \
                     self.get_element(name='voltagethreewindingtrafos'):
-                    supernode['thermal_limit_artificial_lines'].append(\
-                        self.get_object_elements(name_object=element_name, \
-                        name_element='long_term_thermal_limit', \
-                        pos_object=element_position))
+                    supernode['artificial_lines_info'].append(\
+                        self.get_objects(name=element_name, pos=\
+                            element_position))
             elif xauxlisbuses != bus_position and \
                 flags['bus'][xauxlisbuses] and \
                 auxvoltage >= vol_kv and \
@@ -577,10 +583,9 @@ class PowerSystemReduction(ElectricityNetwork):
                 and auxvoltage != self.get_element(\
                 name='voltagethreewindingtrafos'):
                     supernode['coupling_buses'].append(xauxlisbuses)
-                    supernode['thermal_limit_artificial_lines'].append(\
-                        self.get_object_elements(name_object=element_name, \
-                        name_element='long_term_thermal_limit', \
-                        pos_object=element_position))
+                    supernode['artificial_lines_info'].append(\
+                        self.get_objects(name=element_name, pos=\
+                            element_position))
         return flags, supernode, flag_supernode
 
     def __find_voltage_levels(self):
