@@ -188,6 +188,10 @@ class HydropowerConfig:
             self.settings['Min'] = hydro['Min'][No]
         else:
             self.settings['Min'] = 0
+        
+        aux = ['MUT', 'MDT']
+        for x in aux:
+            self.settings[x] = None
 
         # Default cost model
         self.cost['MODEL'] = 1
@@ -1047,7 +1051,7 @@ class Hydropower(GenClass):
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp', 'RES',
-               'Position', 'Min']
+               'Position', 'Min', 'MDT', 'MUT']
 
         # Get settings
         self.data = {}
