@@ -73,6 +73,7 @@ class pyeneNConfig:
                 'Number': 0,  # Number of hydropower plants
                 'Bus': [],  # Location (Bus) in the network
                 'Max': [],  # Capacity (MW)
+                'Min': [],  # Minimum generation
                 'Cost': [],  # Costs
                 'Ramp': [None],  # Ramp
                 'Baseload': [0],  # 0-1 for the use of water for baseload

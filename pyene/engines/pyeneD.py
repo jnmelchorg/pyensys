@@ -162,7 +162,7 @@ class HydropowerConfig:
     def __init__(self):
         # Basic settings
         aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp',
-               'RES', 'Position']
+               'RES', 'Position', 'Min']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -184,6 +184,10 @@ class HydropowerConfig:
 
         self.settings['Bus'] = hydro['Bus'][No]
         self.settings['Max'] = hydro['Max'][No]
+        if hydro['Min'] != []:
+            self.settings['Min'] = hydro['Min'][No]
+        else:
+            self.settings['Min'] = 0
 
         # Default cost model
         self.cost['MODEL'] = 1
@@ -1043,11 +1047,10 @@ class Hydropower(GenClass):
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp', 'RES',
-               'Position']
+               'Position', 'Min']
 
         # Get settings
         self.data = {}
-        self.data['Min'] = 0
         for xa in aux:
             self.data[xa] = obj.settings[xa]
 
