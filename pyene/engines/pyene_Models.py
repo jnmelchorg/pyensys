@@ -62,7 +62,7 @@ class Energymodel():
         # Definition of the mathematical formulation
         self.modeldefinitionEM()
         ret = self.solver.simplex()
-        assert ret == 0
+        assert ret == 0, "GLPK could not solve the problem"
 
         for i in range(self.NumberTrees):
             print("vector %d:" %(i))
@@ -880,7 +880,7 @@ class Networkmodel():
         else:
             self.EconomicDispatchModel()
         ret = self.solver.simplex()
-        assert ret == 0
+        assert ret == 0, "GLPK could not solve the problem"
 
 
         # for i in self.LongTemporalConnections:
@@ -3460,7 +3460,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # Definition of the mathematical formulation
         self.EnergyandNetworkModels()
         ret = self.solver.simplex()
-        assert ret == 0
+        assert ret == 0, "GLPK could not solve the problem"
 
         # for i in self.LongTemporalConnections:
         #     print('Case %d :' %(i))
