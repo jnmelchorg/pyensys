@@ -72,3 +72,4 @@ tests/json/Egypt.json
 pyene/engines/_glpk.cpython-37m-x86_64-linux-gnu.so
 tests/json/example.json
 tests/json/Myanmar_reduced.json
+tests/json/Kenya.m
