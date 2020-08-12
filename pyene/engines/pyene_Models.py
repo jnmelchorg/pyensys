@@ -11,6 +11,7 @@ the transmission system (Optimal Power Flow)
 """
 
 from ._glpk import GLPKSolver
+from .cpp_energy_wrapper import network_models_cpp
 import numpy as np
 import sys
 import math
@@ -853,7 +854,7 @@ class Networkmodel():
                             # Power demand at each node
         for i in range(self.NumberNodesPS):
             self.PowerDemandNode[i] = \
-                obj.busData[i]        
+                obj.busData[i]
         self.TypeNode = np.empty((self.NumberNodesPS)) # Type
                             # of node
         for i in range(self.NumberNodesPS):
@@ -1733,13 +1734,13 @@ class Networkmodel():
                 self.solver.set_row_bnds(str(self.powerbalance[i, j][0]), 0,\
                     'fixed', totaldemand, totaldemand)
 
-    ##############################
-    ###   OPTIMAL POWER FLOW   ###
-    ##############################
+    ########################################
+    ###   OPTIMAL POWER FLOW FULL MODEL  ###
+    ########################################
 
     def OptimalPowerFlowModel(self):
         """ This class method builds the optimisation model
-        for the economic dispatch problem """
+        for the optimal power flow problem """
 
         self.dnvariablesOPF()    # Function to determine de number of variables
         self.dnconstraintsOPF()  # Function to determine de number of constraints
@@ -2681,6 +2682,93 @@ class Networkmodel():
                                             [i, j, k, ii][0]), jj, 'lower', \
                                             self.ACoeffPWBranchLosses[jj]\
                                             * self.ResistanceBranch[ii], 0)
+
+    ########################################
+    ###   OPTIMAL POWER FLOW CPP MODELS  ###
+    ########################################
+
+    def OptimalPowerFlowModelCPP(self):
+        """ This class method builds the optimisation model
+        for the optimal power flow problem using a fast implementation of 
+        different mathematical models in c++ """
+
+        self.network_model = network_models_cpp()
+        self.set_parameters_cpp_models()
+        self.network_model.run_reduced_dc_opf_cpp()
+
+
+    def set_parameters_cpp_models(self):
+        """ This class method set all parameters in the c++ implementation """
+        # Information nodes
+        for ii in range(self.NumberNodesPS):
+            demand_vals = []
+            for i in self.LongTemporalConnections:
+                for j in range(self.ShortTemporalConnections):
+                    if self.NumberDemScenarios == 0:
+                        demand_vals.append(self.PowerDemandNode[ii] * \
+                            self.MultScenariosDemand[i, ii])
+                    else:
+                        demand_vals.append(self.PowerDemandNode[ii] * \
+                            self.MultScenariosDemand[i, j, ii])
+            self.network_model.add_bus_cpp(demand_vals, \
+                self.OriginalNumberNodes[ii], 'ac')
+        
+        # Information transmission lines
+        # TODO: implement the same for transformers
+        for xtl in range(self.NumberLinesPS):
+            self.network_model.add_branch_cpp([self.ReactanceBranch[xtl]], \
+                [self.ResistanceBranch[xtl]], [self.PowerRateLimitTL[xtl]], \
+                self.OriginalNumberBranchFrom[xtl], \
+                self.OriginalNumberBranchTo[xtl], xtl, 'ac_transmission_line')
+        
+        # Information for generators        
+        counter_gen = 0
+        if self.NumberConvGen > 0:
+            for xgen in range(self.NumberConvGen):
+                P_max = []
+                P_min = []
+                for i in self.LongTemporalConnections:
+                    for j in range(self.ShortTemporalConnections):
+                        P_max.append(self.MaxConvGen[xgen])
+                        P_min.append(self.MinConvGen[xgen])
+                self.network_model.add_generator_cpp(P_max, P_min, \
+                    self.OriginalNumberConvGen[xgen], counter_gen, 'conv', 0.0, \
+                    0.0, self.ACoeffPWConvGen[xgen,:], \
+                    self.BCoeffPWConvGen[xgen,:])
+                counter_gen += 1
+        if self.NumberHydroGen > 0:
+            for xgen in range(self.NumberHydroGen):
+                P_max = []
+                P_min = []
+                for i in self.LongTemporalConnections:
+                    for j in range(self.ShortTemporalConnections):
+                        P_max.append(self.MaxHydroGen[xgen])
+                        P_min.append(self.MinHydroGen[xgen])
+                self.network_model.add_generator_cpp(P_max, P_min, \
+                    self.OriginalNumberHydroGen[xgen], counter_gen, 'hydro', 0.0,
+                    0.0, self.ACoeffPWHydroGen[xgen,:], \
+                    self.BCoeffPWHydroGen[xgen,:])
+                counter_gen += 1
+        if self.NumberRESGen > 0:
+            for xgen in range(self.NumberRESGen):
+                P_max = []
+                P_min = []
+                for i in self.LongTemporalConnections:
+                    for j in range(self.ShortTemporalConnections):
+                        P_max.append(self.MaxRESGen[xgen]* \
+                            self.RESScenarios[i, j, xgen])
+                        P_min.append(self.MinRESGen[xgen])
+                self.network_model.add_generator_cpp(P_max, P_min, \
+                    self.OriginalNumberRESGen[xgen], counter_gen, 'RES', 0.0,
+                    0.0, self.ACoeffPWRESGen[xgen,:], \
+                    self.BCoeffPWRESGen[xgen,:])
+                counter_gen += 1
+        
+        self.network_model.set_integer_data_power_system_cpp("number periods",\
+            self.ShortTemporalConnections)
+        self.network_model.set_integer_data_power_system_cpp(\
+            "number representative days", len(self.LongTemporalConnections))
+        
 
 
     # Data inputs of Network model
