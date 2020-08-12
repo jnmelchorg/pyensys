@@ -73,3 +73,12 @@ pyene/engines/_glpk.cpython-37m-x86_64-linux-gnu.so
 tests/json/example.json
 tests/json/Myanmar_reduced.json
 tests/json/Kenya.m
+tests/json/DRC_reduced.json
+tests/json/DRC_reduced.m
+tests/json/DRC.json
+tests/json/DRC.m
+tests/json/Uganda.m
+pyene/engines/cpp_energy_wrapper.cpython-37m-x86_64-linux-gnu.so
+pyene/engines/cpp_energy_wrapper.html
+pyene/engines/cpp_energy_wrapper.cpp
+pyene/engines/energy_models.so
