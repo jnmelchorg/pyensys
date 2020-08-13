@@ -83,16 +83,23 @@ class reduced_dc_opf{
 
         vector< pair<int, int> > buses_g;       // * Nodes in the graph that  
                                                 // contain the buses
+                                                // first is the bus number
+                                                // second is the node number in the graph
         vector< pair<int, int> > branches_g;    // * Nodes in the graph that 
                                                 // contain the branches
+                                                // first is the branch number
+                                                // second is the branch number in the graph
         vector< pair<int, int> > generators_g;  // * Nodes in the graph that 
                                                 //contain the generators
+                                                // first is the generator number
+                                                // second is the generator number in the graph
 
         vector< vector<double> > susceptance_matrix;
         GraphType power_system_datastructure;
 
         int nodes_graph; // Number of nodes in graph
 
+        // General data power system
         map<string, int> integer_powersystem_data;
 
         // Elements Clp model
@@ -101,7 +108,27 @@ class reduced_dc_opf{
         vector<int> rows;
         vector<double> elements;
 
+        vector<double> objective;
+        vector<double> rowLower;
+        vector<double> rowUpper;
+        vector<double> colLower;
+        vector<double> colUpper;
+        // Network model
+
+        vector< pair<int, pair<int,double> > > networkmodel;   // This vector
+            // stores the position of columns in the first position, rows in
+            // the second position and values in the third position
+        int number_variables_nm;
+        int number_constraints_nm;
+
         ClpSimplex  model;
+
+        map<string, int> initial_position_variables;
+        map<string, int> initial_position_constraints;
+
+        void add_variables(string name, int number);
+        void add_constraints(string name, int number);
+
 
         void create_graph_database();
 
@@ -109,7 +136,13 @@ class reduced_dc_opf{
 
         void create_reduced_dc_opf_model();
 
-        void active_power_balance();
+        void declaration_variables();
+
+        void active_power_balance_ac();
+
+        void active_power_flow_limit_ac();
+
+        void active_power_generation_cost();
 
 
     public:

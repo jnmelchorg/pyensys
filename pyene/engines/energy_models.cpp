@@ -223,16 +223,42 @@ void reduced_dc_opf::create_susceptance_matrix(){
 }
 
 void reduced_dc_opf::create_reduced_dc_opf_model(){
-    active_power_balance();
+    number_variables_nm = 0;
+    number_constraints_nm = 0;
+    declaration_variables();
+    active_power_balance_ac();
+    active_power_flow_limit_ac();
+    active_power_generation_cost();
 }
 
-void reduced_dc_opf::active_power_balance(){
+void reduced_dc_opf::declaration_variables(){
+
+    for (size_t xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (size_t xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            string aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size());   // generation
+            aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size());    // voltage angle
+            aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size()); // Load curtailment
+            aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size()); // Generation curtailment
+            aux_name = "C_g("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size());   // Cost generation
+        }
+    }
+}
+
+void reduced_dc_opf::active_power_balance_ac(){
     /*
     This file constructs the active power balance constraint
     */
 
     vector< vector<int> > pos_gen(buses_g.size());
-    int num_LC_var = 0; // Calculate the number of load curtailment variables
     for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
     {
         AdjacencyIterator ai, a_end;
@@ -257,19 +283,148 @@ void reduced_dc_opf::active_power_balance(){
             }
         }
     }
+    
     for (size_t xrd = 0; xrd < 
         integer_powersystem_data["number representative days"]; xrd++)
     {
         for (size_t xp = 0; xp < 
             integer_powersystem_data["number periods"]; xp++)
         {
+            aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
             for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
             {
+                int pos_var = 0;
                 
+                // Generation
+                for (size_t xgen = 0; xgen < pos_gen[xnode].size(); xgen++)
+                {
+                    networkmodel.push_back(pair<int, pair<int,double> > (
+                        pos_var + pos_gen[xnode][xgen], 
+                        pair<int,double> (number_constraints_nm + xnode, 1.0 )));
+                }
+                pos_var += generators_g.size();
+                // Angles
+                for (size_t xang = 0; xang < buses_g.size(); xang++)
+                {
+                    if (susceptance_matrix[xnode][xang] > 1e-8)
+                        networkmodel.push_back(pair<int, pair<int,double> > (
+                            pos_var + xang, pair<int,double> (
+                            number_constraints_nm + xnode, 
+                            susceptance_matrix[xnode][xang])));
+                }
+                pos_var += buses_g.size();
+                // Load Curtailment
+                networkmodel.push_back(pair<int, pair<int,double> > (
+                    pos_var + xnode, pair<int,double> (
+                    number_constraints_nm + xnode, 1.0)));
+                pos_var += buses_g.size();
+                // Generation curtailment
+                for (size_t xgen = 0; xgen < pos_gen[xnode].size(); xgen++)
+                {
+                    networkmodel.push_back(pair<int, pair<int,double> > (
+                        pos_var + pos_gen[xnode][xgen], 
+                        pair<int,double> (number_constraints_nm + xnode,
+                        -1.0 )));
+                }
+            }
+            string aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size());   // generation
+            aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size());    // voltage angle
+            aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size()); // Load curtailment
+            aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size()); // Generation curtailment
+            aux_name = "PB("+to_string(xrd)+","+to_string(xp)+")";
+            add_constraints(aux_name, buses_g.size());
+        }
+    }
+}
+
+void reduced_dc_opf::active_power_flow_limit_ac(){
+    /*
+    This function constructs the active power flow limit constraint
+    */
+    for (size_t xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (size_t xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            string aux_name;
+            for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
+            {
+                int pos1 = -1, pos2 = -1;
+                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                {
+                    if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.from_bus == buses_g[xnode].first)
+                        pos1 = xnode;
+                    else if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.to_bus == buses_g[xnode].first)
+                        pos2 = xnode;
+                    if (pos1 != -1 && pos2 != -1) break;
+                }
+                aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
+                networkmodel.push_back(pair<int, pair<int,double> > (
+                        initial_position_variables[aux_name] + pos1, 
+                        pair<int,double> (number_constraints_nm + xbranch, 
+                        1.0 )));
+                networkmodel.push_back(pair<int, pair<int,double> > (
+                        initial_position_variables[aux_name] + pos2, 
+                        pair<int,double> (number_constraints_nm + xbranch, 
+                        -1.0 )));
+            }
+            aux_name = "TC("+to_string(xrd)+","+to_string(xp)+")";
+            add_constraints(aux_name, branches_g.size());
+        }
+    }
+}
+
+void reduced_dc_opf::active_power_generation_cost(){
+    /*
+    This function constructs the active power generation cost
+    */
+    string aux_name;
+    for (size_t xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (size_t xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            for (size_t xgen = 0; xgen < generators_g.size(); xgen++)
+            {
+                generator aux_gen = power_system_datastructure[generators_g[xgen].second].
+                    infor_generator;
+                for (size_t xpieces = 0; xpieces < aux_gen.piecewise.
+                    first.size(); xpieces++)
+                {
+                    aux_name = "C_g("+to_string(xrd)+","+to_string(xp)+")";
+                    networkmodel.push_back(pair<int, pair<int,double> > (
+                        initial_position_variables[aux_name] + xgen, 
+                        pair<int,double> (number_constraints_nm + xpieces, 
+                        aux_gen.piecewise.first[xpieces])));
+                }
+                aux_name = "GC("+to_string(xrd)+","+to_string(xp)+","+
+                    to_string(xgen)+")";
+                add_constraints(aux_name, aux_gen.piecewise.first.size());
             }
         }
     }
-        
+}
+
+void reduced_dc_opf::add_variables(string name, int number)
+{
+    initial_position_variables.insert(pair<string, int>(name, 
+        number+number_variables_nm));
+    number_variables_nm += number;
+}
+
+void reduced_dc_opf::add_constraints(string name, int number)
+{
+    initial_position_constraints.insert(pair<string, int>(name, 
+        number+number_constraints_nm));
+    number_constraints_nm += number;
 }
 
 
