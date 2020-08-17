@@ -4,7 +4,7 @@
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
-
+from libcpp cimport bool
 
 cdef extern from "energy_models.h":
     cdef cppclass reduced_dc_opf:
@@ -15,7 +15,7 @@ cdef extern from "energy_models.h":
         void add_generator(const vector[double] &Pmax, 
             const vector[double] &Pmin, int bn, int n, string t,
             double fc, double vc, const vector[double] &a_pwl, 
-            const vector[double] &b_pwl);
+            const vector[double] &b_pwl, bool is_active);
         void set_integer_data_power_system(string name, int value);
         void run_reduced_dc_opf();
 

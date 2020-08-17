@@ -4,6 +4,7 @@ from cpp_energy_wrapper cimport reduced_dc_opf
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp cimport bool
 
 cdef class network_models_cpp:
 
@@ -30,7 +31,7 @@ cdef class network_models_cpp:
         self.cpp_opf.add_branch(r, x, Pm, f, t, n, s)
     
     cpdef add_generator_cpp(self, P_max, P_min, bus_number, number, type_gen,\
-        fixed_cost, variable_cost, a_pwl, b_pwl):
+        fixed_cost, variable_cost, a_pwl, b_pwl, active):
         cdef vector[double] Pmax = P_max
         cdef vector[double] Pmin = P_min
         cdef int bn = bus_number
@@ -40,7 +41,8 @@ cdef class network_models_cpp:
         cdef double vc = variable_cost
         cdef vector[double] a = a_pwl
         cdef vector[double] b = b_pwl
-        self.cpp_opf.add_generator(Pmax, Pmin, bn, n, t, fc, vc, a, b)
+        cdef bool is_active = active
+        self.cpp_opf.add_generator(Pmax, Pmin, bn, n, t, fc, vc, a, b, is_active)
     
     cpdef set_integer_data_power_system_cpp(self, str name, value):
         cdef string n = name.encode('utf-8')
