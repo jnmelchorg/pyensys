@@ -2734,7 +2734,7 @@ class Networkmodel():
                 self.network_model.add_generator_cpp(P_max, P_min, \
                     self.OriginalNumberConvGen[xgen], counter_gen, 'conv', 0.0, \
                     0.0, self.ACoeffPWConvGen[xgen,:], \
-                    self.BCoeffPWConvGen[xgen,:])
+                    self.BCoeffPWConvGen[xgen,:], self.ActiveConv[xgen])
                 counter_gen += 1
         if self.NumberHydroGen > 0:
             for xgen in range(self.NumberHydroGen):
@@ -2747,7 +2747,7 @@ class Networkmodel():
                 self.network_model.add_generator_cpp(P_max, P_min, \
                     self.OriginalNumberHydroGen[xgen], counter_gen, 'hydro', 0.0,
                     0.0, self.ACoeffPWHydroGen[xgen,:], \
-                    self.BCoeffPWHydroGen[xgen,:])
+                    self.BCoeffPWHydroGen[xgen,:], True)
                 counter_gen += 1
         if self.NumberRESGen > 0:
             for xgen in range(self.NumberRESGen):
@@ -2761,7 +2761,7 @@ class Networkmodel():
                 self.network_model.add_generator_cpp(P_max, P_min, \
                     self.OriginalNumberRESGen[xgen], counter_gen, 'RES', 0.0,
                     0.0, self.ACoeffPWRESGen[xgen,:], \
-                    self.BCoeffPWRESGen[xgen,:])
+                    self.BCoeffPWRESGen[xgen,:], True)
                 counter_gen += 1
         
         self.network_model.set_integer_data_power_system_cpp("number periods",\
