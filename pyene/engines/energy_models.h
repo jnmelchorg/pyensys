@@ -9,6 +9,7 @@
 #include <map>
 #include <boost/graph/adjacency_list.hpp>
 #include "/home/tesla/coinbrew/dist/include/coin/ClpSimplex.hpp"
+#include "/home/tesla/coinbrew/dist/include/coin/CoinHelperFunctions.hpp"
 
 using namespace std;
 
@@ -76,6 +77,10 @@ typedef boost::adjacency_list<  boost::vecS, boost::vecS,
 
 typedef boost::graph_traits<GraphType>::adjacency_iterator AdjacencyIterator;
 
+class energy_tree{
+
+};
+
 class reduced_dc_opf{
 
     private:
@@ -103,8 +108,7 @@ class reduced_dc_opf{
         map<string, int> integer_powersystem_data;
 
         // Elements Clp model
-        vector<CoinBigIndex> start;
-        vector<int> length;
+        vector<int> columns;
         vector<int> rows;
         vector<double> elements;
 
@@ -113,15 +117,11 @@ class reduced_dc_opf{
         vector<double> rowUpper;
         vector<double> colLower;
         vector<double> colUpper;
-        // Network model
-
-        vector< pair<int, pair<int,double> > > networkmodel;   // This vector
-            // stores the position of columns in the first position, rows in
-            // the second position and values in the third position
+        
         int number_variables_nm;
         int number_constraints_nm;
 
-        ClpSimplex  model;
+        ClpSimplex  model_nm;
 
         map<string, int> initial_position_variables;
         map<string, int> initial_position_constraints;
@@ -144,6 +144,7 @@ class reduced_dc_opf{
 
         void active_power_generation_cost();
 
+        void objective_function_nm();
 
     public:
 
