@@ -82,3 +82,8 @@ pyene/engines/cpp_energy_wrapper.cpython-37m-x86_64-linux-gnu.so
 pyene/engines/cpp_energy_wrapper.html
 pyene/engines/cpp_energy_wrapper.cpp
 pyene/engines/energy_models.so
+pyene/engines/setup.py
+pyene/engines/cpp_energy_wrapper.egg-info/dependency_links.txt
+pyene/engines/cpp_energy_wrapper.egg-info/PKG-INFO
+pyene/engines/cpp_energy_wrapper.egg-info/SOURCES.txt
+pyene/engines/cpp_energy_wrapper.egg-info/top_level.txt
