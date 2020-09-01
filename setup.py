@@ -149,5 +149,28 @@ def findglpklibrarypath():
     
     return glpkpath
 
+def findboostheaderspath():
+    # Finding glpk header path
+    pythonpath = os.path.split(sys.executable)[0]
+    if len(pythonpath.rsplit('/b', 1)) > 1:
+        aux1 = pythonpath.rsplit('/b', 1)[1]
+        aux2 = pythonpath.rsplit('/b', 1)[0]
+        print(aux1)
+        print(aux2)
+        if aux1 == 'in':
+            pythonpath = aux2
+    trypaths = [pythonpath+'/include/boost',\
+                pythonpath+'\include\boost']
+    boostpath = None
+    for paths in trypaths:
+        if os.path.isdir(paths):
+            boostpath = paths[:-5]
+            break
+    if boostpath is None:
+        print('Path for boost headers have not been found in the predefined \
+            directories')
+    
+    return boostpath
+
 if __name__ == "__main__":
     setup_package()
