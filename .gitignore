@@ -87,3 +87,4 @@ pyene/engines/cpp_energy_wrapper.egg-info/dependency_links.txt
 pyene/engines/cpp_energy_wrapper.egg-info/PKG-INFO
 pyene/engines/cpp_energy_wrapper.egg-info/SOURCES.txt
 pyene/engines/cpp_energy_wrapper.egg-info/top_level.txt
+tests/json/EAPP_Reduced.json
