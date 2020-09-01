@@ -7,6 +7,7 @@
 #include <string>
 #include <utility>
 #include <map>
+#include <iomanip> 
 #include <boost/graph/adjacency_list.hpp>
 #include "/home/tesla/coinbrew/dist/include/coin/ClpSimplex.hpp"
 #include "/home/tesla/coinbrew/dist/include/coin/CoinHelperFunctions.hpp"
@@ -79,11 +80,50 @@ typedef boost::graph_traits<GraphType>::adjacency_iterator AdjacencyIterator;
 
 class energy_tree{
 
+    protected:
+
+        int nodes_tree;
+        int number_trees;
+        vector<vector<int> > LLEB;   // Link list energy balance
+        vector<vector<int> > LLEA;   // Link list energy aggregation
+        vector<double> energy_intake;   // entry of energy at each node of the tree
+        vector<double> energy_output;   // output of energy at each node of the tree
+        vector<double> weight_nodes;   // Weight of node (number of days, weeks, etc.)
+
+        void create_energy_tree_model();
+
+        void declaration_variables_em();
+
+        void energy_balance();
+
+        void energy_aggregation();
+
+        void objective_function_em();
+
+    
+    public:
+
+        energy_tree();
+        ~energy_tree();
+
+        void load_energy_tree_information(int number_nodes, int number_tree, 
+            const vector<vector<int> > &LLEB,
+            const vector<vector<int> > &LLEA,
+            const vector<double> &energy_intake,
+            const vector<double> &energy_output,
+            const vector<double> &weight_nodes);
+        
+        void run_energy_tree();
+        void get_energy_tree_solution(vector<double> &PartialStorage, 
+            vector<double> &TotalStorage, vector<double> &InputsTree,
+            vector<double> &OutputsTree);
+        double get_objective_function_em();
+
 };
 
 class reduced_dc_opf{
 
-    private:
+    protected:
         // All power system components are treated as nodes of a graph
 
         vector< pair<int, int> > buses_g;       // * Nodes in the graph that  
@@ -98,6 +138,8 @@ class reduced_dc_opf{
                                                 //contain the generators
                                                 // first is the generator number
                                                 // second is the generator number in the graph
+        
+        vector<branch> equivalent_branches;  
 
         vector< vector<double> > susceptance_matrix;
         GraphType power_system_datastructure;
@@ -107,28 +149,9 @@ class reduced_dc_opf{
         // General data power system
         map<string, int> integer_powersystem_data;
 
-        // Elements Clp model
-        vector<int> columns;
-        vector<int> rows;
-        vector<double> elements;
+        map<string, double> continuous_powersystem_data;
 
-        vector<double> objective;
-        vector<double> rowLower;
-        vector<double> rowUpper;
-        vector<double> colLower;
-        vector<double> colUpper;
-        
-        int number_variables_nm;
-        int number_constraints_nm;
-
-        ClpSimplex  model_nm;
-
-        map<string, int> initial_position_variables;
-        map<string, int> initial_position_constraints;
-
-        void add_variables(string name, int number);
-        void add_constraints(string name, int number);
-
+        void calculate_equivalent_ac_line();
 
         void create_graph_database();
 
@@ -136,7 +159,7 @@ class reduced_dc_opf{
 
         void create_reduced_dc_opf_model();
 
-        void declaration_variables();
+        void declaration_variables_dc_opf();
 
         void active_power_balance_ac();
 
@@ -163,7 +186,44 @@ class reduced_dc_opf{
             double fc, double vc, const vector<double> &a_pwl, 
             const vector<double> &b_pwl, bool is_active);
         void set_integer_data_power_system(string name, int value);
+        void set_continuous_data_power_system(string name, double value);
         void run_reduced_dc_opf();
+        void get_generation_solution(vector<double> &generation,
+            vector<double> &generation_curtailment, 
+            vector<double> &generation_cost);
+        void get_branch_solution(vector<double> &power_flow);
+        void get_node_solution(vector<double> &angle, 
+            vector<double> &load_curtailment);
+        double get_objective_function_nm();
+};
+
+class combined_energy_dc_opf_r1: public energy_tree, public reduced_dc_opf{
+    
+    protected:
+        vector< vector<int> > LLNodesAfter;
+        vector<int> ConnectionTreeGen;  // Connections
+                        // between the energy model and the network
+                        // model. This parameters connects the inputs 
+                        // of each tree with the outputs of its 
+                        // related hydro generator
+
+        void create_combined_energy_dc_opf_model();
+
+        void release_limits_energy_tree();
+
+        void energy_and_network_relation();
+
+        void objective_function_combined_energy_dc_opf();
+    
+    public:
+        combined_energy_dc_opf_r1();
+        ~combined_energy_dc_opf_r1();
+
+        void load_combined_energy_dc_opf_information(
+            const vector< vector<int> > &LLNA, const vector<int> &CTG);
+
+        void run_combined_energy_dc_opf_r1();
+        double get_objective_function_combined_energy_dc_opf_r1();
 };
 
 #endif
