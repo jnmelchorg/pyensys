@@ -1,0 +1,12 @@
+#prefix=/c/projects/dist
+prefix=${pcfiledir}/../..
+prefix=/c/projects/dist
+datarootdir=${prefix}/share
+datadir=${datarootdir}/coin-or-netlib
+
+Name: Netlib
+Description: Netlib models
+URL: https://github.com/coin-or-tools/Data-Netlib
+Version: trunk
+Libs:
+Cflags:

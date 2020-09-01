@@ -1,0 +1,15 @@
+#prefix=/c/projects/dist
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/coin-or
+
+Name: CoinUtils
+Description: COIN-OR Utilities
+URL: https://github.com/coin-or/CoinUtils
+Version: devel
+Cflags: -I${includedir}
+Libs: -L${libdir} -lCoinUtils
+Requires.private: coinasl coinglpk 
+#Libs: -L${libdir} -lCoinUtils   
+#Requires: coinasl coinglpk 

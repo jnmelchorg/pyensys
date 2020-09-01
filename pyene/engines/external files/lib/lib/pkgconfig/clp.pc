@@ -1,0 +1,15 @@
+#prefix=/c/projects/dist
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/coin-or
+
+Name: Clp
+Description: COIN-OR Linear Programming Solver
+URL: https://github.com/coin-or/Clp
+Version: devel
+Cflags: -I${includedir}
+Libs: -L${libdir} -lClp
+Requires.private: coinutils 
+#Libs: -L${libdir} -lClp  
+#Requires: coinutils 
