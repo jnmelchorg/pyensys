@@ -88,7 +88,7 @@ def setup_package():
 def parse_optional_arguments():
     config = {
         "glpk": True,
-        "clp": True,
+        "clp": False,
         "annotate": False,
         "profile": False,
         "trace": False,
@@ -98,9 +98,9 @@ def parse_optional_arguments():
         config["glpk"] = False
         sys.argv.remove("--without-glpk")
     
-    if "--without-clp" in sys.argv:
-        config["glpk"] = False
-        sys.argv.remove("--without-glpk")
+    if "--with-clp" in sys.argv:
+        config["clp"] = True
+        sys.argv.remove("--with-clp")
 
     if "--annotate" in sys.argv:
         config["annotate"] = True
