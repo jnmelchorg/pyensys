@@ -8,9 +8,9 @@
 #include <utility>
 #include <map>
 #include <iomanip> 
-#include <boost/graph/adjacency_list.hpp>
-#include "/home/tesla/coinbrew/dist/include/coin/ClpSimplex.hpp"
-#include "/home/tesla/coinbrew/dist/include/coin/CoinHelperFunctions.hpp"
+#include "external files/include/graph/adjacency_list.hpp"
+#include "ClpSimplex.hpp"
+#include "CoinHelperFunctions.hpp"
 
 using namespace std;
 

@@ -10,8 +10,8 @@ the transmission system (Optimal Power Flow)
 @author: Dr Jose Nicolas Melchor Gutierrez
 """
 
-from ._glpk import GLPKSolver
-from .cpp_energy_wrapper import network_models_cpp, energy_model_cpp, combined_energy_dc_opf_r1_cpp
+from .cython._glpk import GLPKSolver
+from .cython.cpp_energy_wrapper import network_models_cpp, energy_model_cpp, combined_energy_dc_opf_r1_cpp
 import numpy as np
 import sys
 import math
