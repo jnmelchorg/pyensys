@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext as _build_ext
 
@@ -61,28 +62,43 @@ def setup_package():
     if config["trace"]:
         compiler_directives["linetrace"] = True
     
+    metadata["ext_modules"] = ext_modules = []
+
     if config["glpk"]:
-        metadata["ext_modules"] = ext_modules = [
-        Extension("pyene.engines._glpk", ["pyene/engines/_glpk.pyx"],
+        ext_modules.append(Extension("pyene.engines.cython._glpk", ["pyene/engines/_glpk.pyx"],
         include_dirs=[findglpkheaderpath()],
         library_dirs=[findglpklibrarypath()], 
-        libraries=["glpk"],),
-        ]
+        libraries=["glpk"],))
+
+    if config["clp"]:
+        if platform.system() == "Linux":
+            libs_clp = ["/home/tesla/coinbrew/dist/lib"]
+        elif platform.system() == "Darwin":
+            libs_clp = ["pyene/engines/external files/lib/lib_osx10.14"]
+        elif platform.system() == "Windows":
+            libs_clp = ["pyene/engines/external files/lib/lib_win64"]
+        ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
+        include_dirs=["/home/tesla/coinbrew/dist/include/coin/",
+                      "pyene/engines/external files/include/graph"],
+        libraries=['Clp'],
+        library_dirs=libs_clp,))
 
     setup(**metadata)
 
 def parse_optional_arguments():
     config = {
         "glpk": True,
+        "clp": True,
         "annotate": False,
         "profile": False,
         "trace": False,
     }
 
-    if "--with-glpk" in sys.argv:
-        config["glpk"] = True
-        sys.argv.remove("--with-glpk")
-    elif "--without-glpk" in sys.argv:
+    if "--without-glpk" in sys.argv:
+        config["glpk"] = False
+        sys.argv.remove("--without-glpk")
+    
+    if "--without-clp" in sys.argv:
         config["glpk"] = False
         sys.argv.remove("--without-glpk")
 
@@ -148,29 +164,6 @@ def findglpklibrarypath():
             directories')
     
     return glpkpath
-
-def findboostheaderspath():
-    # Finding glpk header path
-    pythonpath = os.path.split(sys.executable)[0]
-    if len(pythonpath.rsplit('/b', 1)) > 1:
-        aux1 = pythonpath.rsplit('/b', 1)[1]
-        aux2 = pythonpath.rsplit('/b', 1)[0]
-        print(aux1)
-        print(aux2)
-        if aux1 == 'in':
-            pythonpath = aux2
-    trypaths = [pythonpath+'/include/boost',\
-                pythonpath+'\include\boost']
-    boostpath = None
-    for paths in trypaths:
-        if os.path.isdir(paths):
-            boostpath = paths[:-5]
-            break
-    if boostpath is None:
-        print('Path for boost headers have not been found in the predefined \
-            directories')
-    
-    return boostpath
 
 if __name__ == "__main__":
     setup_package()
