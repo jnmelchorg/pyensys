@@ -90,3 +90,5 @@ pyene/engines/cpp_energy_wrapper.egg-info/top_level.txt
 tests/json/EAPP_Reduced.json
 pyene/engines/cython/cpp_energy_wrapper.cpython-37m-x86_64-linux-gnu.so
 pyene/engines/cython/_glpk.cpython-37m-x86_64-linux-gnu.so
+tests/json/EAPP.json
+tests/json/EAPP.m
