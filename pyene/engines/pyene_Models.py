@@ -2839,13 +2839,13 @@ class Networkmodel():
                     
                 if self.NumberHydroGen > 0:
                     for k in range(self.NumberHydroGen):
-                        self.RESGenerationCostSolution[i, j, k] = \
+                        self.HydroGenerationCostSolution[i, j, k] = \
                             aux_gen_cost[counter]
                         counter += 1
                 
                 if self.NumberRESGen > 0:
                     for k in range(self.NumberRESGen):
-                        self.HydroGenerationCostSolution[i, j, k] = \
+                        self.RESGenerationCostSolution[i, j, k] = \
                             aux_gen_cost[counter]
                         counter += 1
         
@@ -4198,13 +4198,13 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                     
                 if self.NumberHydroGen > 0:
                     for k in range(self.NumberHydroGen):
-                        self.RESGenerationCostSolution[i, j, k] = \
+                        self.HydroGenerationCostSolution[i, j, k] = \
                             aux_gen_cost[counter]
                         counter += 1
                 
                 if self.NumberRESGen > 0:
                     for k in range(self.NumberRESGen):
-                        self.HydroGenerationCostSolution[i, j, k] = \
+                        self.RESGenerationCostSolution[i, j, k] = \
                             aux_gen_cost[counter]
                         counter += 1
         
