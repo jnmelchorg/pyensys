@@ -422,9 +422,13 @@ class pyeneHDF5Settings():
             loss = Float32Col(dflt=1, pos=6),  # losses
             curtailment = Float32Col(dflt=1, pos=7),  # sCurtailment
             spill = Float32Col(dflt=1, pos=8),  # spilling
+            thermal_cur = Float32Col(dflt=1, pos=9),  # spilling
+            hydro_cur = Float32Col(dflt=1, pos=10),  # spilling
+            RES_cur = Float32Col(dflt=1, pos=11),  # spilling
+
         )
 
-        counter = 9
+        counter = 12
 
         if RESGeneration is not None:
             for k in range(GLPKobj.NumberRESGen):
@@ -466,6 +470,30 @@ class pyeneHDF5Settings():
                 HDF5row['RES'] = auxvar
 
                 HDF5row['spill'] = 0
+
+                if ThermalGenerationCurtailment is not None:
+                    auxvar = 0
+                    for xco in range(GLPKobj.NumberContingencies + 1):
+                        for xconv in range(GLPKobj.NumberConvGen):
+                            auxvar += ThermalGenerationCurtailment[\
+                                xs, xt, xco, xconv]
+                HDF5row['thermal_cur'] = auxvar
+
+                if HydroGenerationCurtailment is not None:
+                    auxvar = 0
+                    for xco in range(GLPKobj.NumberContingencies + 1):
+                        for xhydro in range(GLPKobj.NumberHydroGen):
+                            auxvar += HydroGenerationCurtailment[\
+                                xs, xt, xco, xhydro]
+                HDF5row['hydro_cur'] = auxvar
+
+                if RESGenerationCurtailment is not None:
+                    auxvar = 0
+                    for xco in range(GLPKobj.NumberContingencies + 1):
+                        for xRES in range(GLPKobj.NumberRESGen):
+                            auxvar += RESGenerationCurtailment[\
+                                xs, xt, xco, xRES]
+                HDF5row['RES_cur'] = auxvar
 
                 totaldemand = 0 
                 for k in range(EN.NM.ENetwork.get_NoBus()):               
