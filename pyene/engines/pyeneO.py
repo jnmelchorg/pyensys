@@ -499,7 +499,7 @@ class pyeneHDF5Settings():
                 for k in range(EN.NM.ENetwork.get_NoBus()):
                     # TODO: Change the inputs of losses and demand scenarios
                     # for parameters
-                    if GLPKobj.TypeNode[ii] != 4:
+                    if GLPKobj.TypeNode[k] != 4:
                         if GLPKobj.NumberDemScenarios == 0:
                             totaldemand = totaldemand + \
                                 GLPKobj.PowerDemandNode[k] * \
