@@ -496,19 +496,20 @@ class pyeneHDF5Settings():
                 HDF5row['RES_cur'] = auxvar
 
                 totaldemand = 0 
-                for k in range(EN.NM.ENetwork.get_NoBus()):               
+                for k in range(EN.NM.ENetwork.get_NoBus()):
                     # TODO: Change the inputs of losses and demand scenarios
                     # for parameters
-                    if GLPKobj.NumberDemScenarios == 0:
-                        totaldemand = totaldemand + \
-                            GLPKobj.PowerDemandNode[k] * \
-                            GLPKobj.MultScenariosDemand[xs, k] * \
-                                GLPKobj.BaseUnitPower
-                    else:
-                        totaldemand = totaldemand + \
-                            GLPKobj.PowerDemandNode[k] * \
-                            GLPKobj.MultScenariosDemand[xs, xt, k] * \
-                                GLPKobj.BaseUnitPower
+                    if GLPKobj.TypeNode[ii] != 4:
+                        if GLPKobj.NumberDemScenarios == 0:
+                            totaldemand = totaldemand + \
+                                GLPKobj.PowerDemandNode[k] * \
+                                GLPKobj.MultScenariosDemand[xs, k] * \
+                                    GLPKobj.BaseUnitPower
+                        else:
+                            totaldemand = totaldemand + \
+                                GLPKobj.PowerDemandNode[k] * \
+                                GLPKobj.MultScenariosDemand[xs, xt, k] * \
+                                    GLPKobj.BaseUnitPower
                 HDF5row['demand'] = totaldemand                
 
                 auxvar = 0
@@ -917,11 +918,34 @@ class PrintinScreen():
                     obj.NumberLinesPS))
         # Printing results
 
+
         for xh in obj.LongTemporalConnections:
             print("\n% CASE:", xh)
 
             if self.PrintinScreenOptions['GenBus']:
                 print('\nFlow_EGen_Bus=', Generator.get_GenDataAll(), ';')
+            
+            print("\nDemand=[")
+            for k in range(self.NM.ENetwork.get_NoBus()):
+                if obj.TypeNode[k] != 4:
+                    for xt in range(obj.ShortTemporalConnections):
+                        # TODO: Change the inputs of losses and demand scenarios
+                        # for parameters
+                        if obj.NumberDemScenarios == 0:
+                            val = obj.PowerDemandNode[k] * \
+                                obj.MultScenariosDemand[xh, k] * \
+                                    obj.BaseUnitPower
+                            print("%8.4f " % val, end='')
+                        else:
+                            val = obj.PowerDemandNode[k] * \
+                                obj.MultScenariosDemand[xh, xt, k] * \
+                                    obj.BaseUnitPower
+                            print("%8.4f " % val, end='')
+                else:
+                    for xt in range(obj.ShortTemporalConnections):
+                        print("0.0 ", end='')
+                print()
+            print("];")
 
             if self.PrintinScreenOptions['Generation']:
                 print("\nFlow_EGen=[")
