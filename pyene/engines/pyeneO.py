@@ -504,12 +504,12 @@ class pyeneHDF5Settings():
                             totaldemand = totaldemand + \
                                 GLPKobj.PowerDemandNode[k] * \
                                 GLPKobj.MultScenariosDemand[xs, k] * \
-                                    GLPKobj.BaseUnitPower
+                                    GLPKobj.BaseUnitPower * GLPKobj.OFaux[xs]
                         else:
                             totaldemand = totaldemand + \
                                 GLPKobj.PowerDemandNode[k] * \
                                 GLPKobj.MultScenariosDemand[xs, xt, k] * \
-                                    GLPKobj.BaseUnitPower
+                                    GLPKobj.BaseUnitPower * GLPKobj.OFaux[xs]
                 HDF5row['demand'] = totaldemand                
 
                 auxvar = 0
