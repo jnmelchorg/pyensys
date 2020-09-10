@@ -926,6 +926,7 @@ class PrintinScreen():
                 print('\nFlow_EGen_Bus=', Generator.get_GenDataAll(), ';')
             
             print("\nDemand=[")
+            total_demand = 0
             for k in range(self.NM.ENetwork.get_NoBus()):
                 if obj.TypeNode[k] != 4:
                     for xt in range(obj.ShortTemporalConnections):
@@ -935,12 +936,14 @@ class PrintinScreen():
                             val = obj.PowerDemandNode[k] * \
                                 obj.MultScenariosDemand[xh, k] * \
                                     obj.BaseUnitPower
+                            total_demand += val
                             print("%8.4f " % val, end='')
                         else:
                             val = obj.PowerDemandNode[k] * \
                                 obj.MultScenariosDemand[xh, xt, k] * \
                                     obj.BaseUnitPower
                             print("%8.4f " % val, end='')
+                            total_demand += val
                 else:
                     for xt in range(obj.ShortTemporalConnections):
                         print("0.0 ", end='')
@@ -949,23 +952,29 @@ class PrintinScreen():
 
             if self.PrintinScreenOptions['Generation']:
                 print("\nFlow_EGen=[")
+                total_thermal_gen = 0.0
+                total_hydro_gen = 0.0
+                total_RES_gen = 0.0
                 if obj.NumberConvGen > 0:
                     for xn in range(obj.NumberConvGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % ThermalGeneration[xh, xt, xn], \
                                 end='')
+                            total_thermal_gen += ThermalGeneration[xh, xt, xn]
                         print()
                 if obj.NumberRESGen > 0:
                     for xn in range(obj.NumberRESGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % RESGeneration[xh, xt, xn], \
                                 end='')
+                            total_RES_gen += RESGeneration[xh, xt, xn]
                         print()
                 if obj.NumberHydroGen > 0:
                     for xn in range(obj.NumberHydroGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % HydroGeneration[xh, xt, xn], \
                                 end='')
+                            total_hydro_gen += HydroGeneration[xh, xt, xn]
                         print()
                 print("];")
 
@@ -1008,7 +1017,8 @@ class PrintinScreen():
                                 end='')
                         print()
                 print("];")
-
+            
+            total_losses = 0.0
             if self.PrintinScreenOptions['Losses'] and obj.FlagProblem:
                 print("\nEPower_Loss=[")
                 for xb in range(obj.NumberLinesPS):
@@ -1016,6 +1026,7 @@ class PrintinScreen():
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % ActivePowerLosses[xh, xt, xco, xb]\
                                 , end='')
+                            total_losses += ActivePowerLosses[xh, xt, xco, xb]
                     print()
                 print("];")
 
@@ -1028,6 +1039,7 @@ class PrintinScreen():
                         print()
                 print("];")
 
+            total_load_curtailment = 0.0
             if self.PrintinScreenOptions['Feasibility']:
                 print("\nFeas=[")
                 for xn in range(obj.NumberNodesPS):
@@ -1038,10 +1050,12 @@ class PrintinScreen():
                             else:
                                 aux = LoadCurtailment[xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
+                            total_load_curtailment += aux
                     print()
                 print("];")
             print()
 
+            total_thermal_cur = 0.0
             if self.PrintinScreenOptions['Feasibility']:
                 print("\nFeasTGC=[")
                 for xn in range(obj.NumberConvGen):
@@ -1054,10 +1068,13 @@ class PrintinScreen():
                                 aux = ThermalGenerationCurtailment\
                                     [xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
+                            total_thermal_cur += ThermalGenerationCurtailment\
+                                    [xh, xt, xco, xn]
                     print()
                 print("];")
             print()
 
+            total_RES_cur = 0.0
             if self.PrintinScreenOptions['Feasibility']:
                 print("\nFeasReGC=[")
                 for xn in range(obj.NumberRESGen):
@@ -1070,10 +1087,13 @@ class PrintinScreen():
                                 aux = RESGenerationCurtailment\
                                     [xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
+                            total_RES_cur += RESGenerationCurtailment\
+                                    [xh, xt, xco, xn]
                     print()
                 print("];")
             print()
 
+            total_hydro_cur = 0.0
             if self.PrintinScreenOptions['Feasibility']:
                 print("\nFeasHGC=[")
                 for xn in range(obj.NumberHydroGen):
@@ -1086,6 +1106,8 @@ class PrintinScreen():
                                 aux = HydroGenerationCurtailment\
                                     [xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
+                            total_hydro_cur += HydroGenerationCurtailment\
+                                    [xh, xt, xco, xn]
                     print()
                 print("];")
             print()
@@ -1097,6 +1119,15 @@ class PrintinScreen():
                 elif isinstance(obj, Networkmodel):
                     print("\nObjective Function = {}\n".format(\
                         obj.GetObjectiveFunctionNM()))
+            
+            print("\nTotal Demand= {}".format(total_demand))
+            print("\nTotal Thermal Gen= {}".format(total_thermal_gen))
+            print("\nTotal RES Gen= {}".format(total_RES_gen))
+            print("\nTotal Hydro Gen= {}".format(total_hydro_gen))
+            print("\nTotal Demand Curtailment= {}".format(total_load_curtailment))
+            print("\nTotal Thermal Curtailment= {}".format(total_thermal_cur))
+            print("\nTotal RES Curtailment= {}".format(total_RES_cur))
+            print("\nTotal Hydro Curtailment= {}".format(total_hydro_cur))
     
     def printallEnergyResults(self, obj=None):
         ''' This class method prints on the screen all results for the \
