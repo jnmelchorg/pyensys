@@ -660,8 +660,7 @@ void reduced_dc_opf::declaration_variables_dc_opf(){
                 if (power_system_datastructure[buses_g[xnode].second].info_bus.
                     active_power_demand[xrd*aux_count + xp] > 0)
                     colUpper[initial_position_variables[aux_name] + xnode] = 
-                        power_system_datastructure[buses_g[xnode].second].info_bus.
-                        active_power_demand[xrd*aux_count + xp];
+                        COIN_DBL_MAX;
                 else
                     colUpper[initial_position_variables[aux_name] + xnode] = 0.0;
             }
@@ -673,8 +672,7 @@ void reduced_dc_opf::declaration_variables_dc_opf(){
                 if (power_system_datastructure[generators_g[xgen].second].
                     infor_generator.minimum_generation[xrd*aux_count + xp] > 0)
                     colUpper[initial_position_variables[aux_name] + xgen] = 
-                        power_system_datastructure[generators_g[xgen].second].
-                        infor_generator.minimum_generation[xrd*aux_count + xp];
+                        COIN_DBL_MAX;
                 else
                     colUpper[initial_position_variables[aux_name] + xgen] = 0;
             }
