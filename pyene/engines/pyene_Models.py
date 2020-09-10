@@ -853,8 +853,11 @@ class Networkmodel():
                 np.empty((self.NumberLinesPS)) # Reactance of the transmission 
                                     # lines and transformers
             for i in range(self.NumberLinesPS):
+                # if obj.ENetwork.Branch[i].get_X() != 0:
                 self.ReactanceBranch[i] = \
                     obj.ENetwork.Branch[i].get_X()
+                # else:
+                #     self.ReactanceBranch[i] = 0.0001
             self.ResistanceBranch = \
                 np.empty((self.NumberLinesPS)) # Resistance of the transmission 
                                     # lines and transformers
@@ -935,6 +938,8 @@ class Networkmodel():
                     if self.TypeNode[j] == 4:
                         self.ActiveConv[i] = False
                     break
+        
+        self.OFaux = np.ones(len(self.LongTemporalConnections), dtype=float)
 
 
     def optimisationNM(self, solver_name=None):
@@ -3419,7 +3424,7 @@ class Networkmodel():
                             ThermalGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.thermalgenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower
+                                        self.BaseUnitPower * self.OFaux[i]
                 return ThermalGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.ThermalGenerationSolution
@@ -3439,7 +3444,7 @@ class Networkmodel():
                             RESGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.RESgenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower
+                                        self.BaseUnitPower * self.OFaux[i]
                 return RESGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.RESGenerationSolution
@@ -3459,7 +3464,7 @@ class Networkmodel():
                             HydroGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.Hydrogenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower
+                                        self.BaseUnitPower * self.OFaux[i]
                 return HydroGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.HydroGenerationSolution
@@ -3478,7 +3483,7 @@ class Networkmodel():
                         pumpsvarSolution[i, j, k] = \
                             self.solver.get_col_prim(\
                                 str(self.pumpsvar[i, j][0]), k) * \
-                                    self.BaseUnitPower
+                                    self.BaseUnitPower * self.OFaux[i]
             return pumpsvarSolution
         else:
             return None
@@ -3576,7 +3581,7 @@ class Networkmodel():
                                 LoadCurtailmentNodesSolution[i, j, k, ii] = \
                                     self.solver.get_col_prim(\
                                     str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
+                                        * self.BaseUnitPower * self.OFaux[i]
                 return LoadCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.LoadCurtailmentNodesSolution
@@ -3600,7 +3605,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.ThermalGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
+                                        * self.BaseUnitPower * self.OFaux[i]
                 return ThermalGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.ThermalGenerationCurtailmentNodesSolution
@@ -3624,7 +3629,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.RESGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
+                                        * self.BaseUnitPower * self.OFaux[i]
                 return RESGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.RESGenerationCurtailmentNodesSolution
@@ -3648,7 +3653,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.HydroGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
+                                        * self.BaseUnitPower * self.OFaux[i]
                 return HydroGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.HydroGenerationCurtailmentNodesSolution
@@ -3670,7 +3675,7 @@ class Networkmodel():
                                 ActivePowerFlowSolution[i, j, k, ii] = \
                                     self.solver.get_col_prim(\
                                     str(self.ActivePowerFlow[i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
+                                        * self.BaseUnitPower * self.OFaux[i]
                 return ActivePowerFlowSolution
             elif self.solver_problem == "CLP":
                 return self.ActivePowerFlowSolution
@@ -3691,7 +3696,7 @@ class Networkmodel():
                             ActivePowerLossesSolution[i, j, k, ii] = \
                                 self.solver.get_col_prim(\
                                 str(self.ActivePowerLosses[i, j, k][0]), ii)\
-                                    * self.BaseUnitPower
+                                    * self.BaseUnitPower * self.OFaux[i]
             return ActivePowerLossesSolution
         else:
             return None
@@ -3706,7 +3711,7 @@ class Networkmodel():
                     LoadCurtailmentSystemEDSolution[i, j] = \
                         self.solver.get_col_prim(\
                         str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-                        self.BaseUnitPower
+                        self.BaseUnitPower * self.OFaux[i]
             return LoadCurtailmentSystemEDSolution
         else:
             return None
@@ -3956,7 +3961,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         # TODO: explain the aggregated weights better
         
         WghtAgg = 0 + self.WeightNodes
-        OFaux = np.ones(len(self.LongTemporalConnections), dtype=float)
         xp = 0
         for xn in range(self.TreeNodes):
             aux = self.LLNodesAfter[xn][0]
@@ -3964,7 +3968,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 for xb in range(aux, self.LLNodesAfter[xn][1] + 1):
                     WghtAgg[xb] *= WghtAgg[xn]
             else:
-                OFaux[xp] = WghtAgg[xn]
+                self.OFaux[xp] = WghtAgg[xn]
                 xp += 1
 
         for i in self.LongTemporalConnections:
@@ -3974,25 +3978,25 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                     for k in range(self.NumberConvGen):
                         self.solver.set_obj_coef(\
                             str(self.thermalCG[i, j][0]),\
-                            k, OFaux[i] * self.TotalHoursPerPeriod[j])
+                            k, self.OFaux[i] * self.TotalHoursPerPeriod[j])
             # Cost for RES generation    
                 if self.NumberRESGen > 0: 
                     for k in range(self.NumberRESGen):
                         self.solver.set_obj_coef(\
                             str(self.RESCG[i, j][0]),\
-                            k, OFaux[i] * self.TotalHoursPerPeriod[j])
+                            k, self.OFaux[i] * self.TotalHoursPerPeriod[j])
             # Cost for Hydroelectric generation    
                 if self.NumberHydroGen > 0: 
                     for k in range(self.NumberHydroGen):
                         self.solver.set_obj_coef(\
                             str(self.HydroCG[i, j][0]),\
-                            k, OFaux[i] * self.TotalHoursPerPeriod[j])
+                            k, self.OFaux[i] * self.TotalHoursPerPeriod[j])
             # Operation cost of pumps
                 if self.NumberPumps > 0:
                     for k in range(self.NumberPumps):
                         self.solver.set_obj_coef(\
                             str(self.pumpsvar[i, j][0]),\
-                            k, -OFaux[i] * self.TotalHoursPerPeriod[j] \
+                            k, -self.OFaux[i] * self.TotalHoursPerPeriod[j] \
                                 * self.BaseUnitPower \
                                     * self.CostOperPumps[k])
             # Punitive cost for load curtailment
@@ -4002,35 +4006,35 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                         for ii in range(self.NumberNodesPS):
                             self.solver.set_obj_coef(\
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
-                                ii, OFaux[i] * self.TotalHoursPerPeriod[j] \
+                                ii, self.OFaux[i] * self.TotalHoursPerPeriod[j] \
                                     * self.PenaltyCurtailment)
                         if self.NumberConvGen > 0:
                             for ii in range(self.NumberConvGen):
                                 self.solver.set_obj_coef(\
                                     str(self.ThermalGenerationCurtailmentNode\
                                     [i, j, k][0]), ii, \
-                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
                                     self.PenaltyCurtailment)
                         if self.NumberRESGen > 0:
                             for ii in range(self.NumberRESGen):
                                 self.solver.set_obj_coef(\
                                     str(self.RESGenerationCurtailmentNode\
                                     [i, j, k][0]), ii, \
-                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
                                     self.PenaltyCurtailment)
                         if self.NumberHydroGen > 0:
                             for ii in range(self.NumberHydroGen):
                                 self.solver.set_obj_coef(\
                                     str(self.HydroGenerationCurtailmentNode\
                                     [i, j, k][0]), ii, \
-                                    OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
                                     self.PenaltyCurtailment)
                 elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
                     self.solver.set_obj_coef(\
                         str(self.loadcurtailmentsystem[i, j][0]),\
-                        0, OFaux[i] * self.TotalHoursPerPeriod[j] \
+                        0, self.OFaux[i] * self.TotalHoursPerPeriod[j] \
                             * self.PenaltyCurtailment)
     
     ####################################
