@@ -271,16 +271,6 @@ class Energymodel():
                 self.solver.set_row_bnds(str(self.treebalance[vectors][0]), \
                     nodes - 1, 'fixed', 0, 0)
 
-        # For verification
-        # TODO: include it in pytest
-        # for i in range(self.ne):
-        #       print("%d %d %d" %(self.ia[i], self.ja[i], self.ar[i]))
-        # for vectors in range(self.NumberTrees):
-        #     for nodes in range(1, self.TreeNodes):
-        #         print("%f" %(self.IntakeTree[nodes, vectors] - self.OutputTree[nodes, vectors]))            
-        # import sys
-        # sys.exit('hasta aqui')
-
     def Aggregation(self):
         """ This class method writes the aggregation constraints in glpk
         
@@ -327,16 +317,6 @@ class Energymodel():
             for nodes in range(1, self.TreeNodes):
                 self.solver.set_row_bnds(str(self.treeaggregation[vectors][0]), \
                     nodes - 1, 'fixed', 0.0, 0.0)
-
-        # For verification
-        # TODO: include it in pytest
-        # for i in range(self.ne):
-        #       print("%d %d %d" %(self.ia[i], self.ja[i], self.ar[i]))
-        # for vectors in range(self.NumberTrees):
-        #     for nodes in range(1, self.TreeNodes):
-        #         print("%f" %(self.IntakeTree[nodes, vectors] - self.OutputTree[nodes, vectors]))            
-        # import sys
-        # sys.exit('hasta aqui')
 
 
     # TODO: Modify Stochastic Aggregation constraint with new positions of 
@@ -809,7 +789,6 @@ class Networkmodel():
                     self.ActiveBranches[i, j] = \
                         obj.ENetwork.Branch[j].is_active(i) * \
                         obj.ENetwork.Branch[j].data['BR_STATUS']
-                    # print(self.ActiveBranches[i, j])
             self.PowerRateLimitTL = np.empty((self.NumberLinesPS)) # Thermal
                                 # limit of power transmission lines and 
                                 # transformers
@@ -913,7 +892,6 @@ class Networkmodel():
                         self.MultScenariosDemand[i, j, k] = \
                             obj.scenarios['Demand']\
                                 [j+obj.busScenario[k][i]]
-
         
         self.PowerDemandNode = np.empty((self.NumberNodesPS)) # Active
                             # Power demand at each node
@@ -1869,8 +1847,6 @@ class Networkmodel():
             self.activepowerlosses2constraints()
 
         self.solver.load_matrix(self.ne, self.ia, self.ja, self.ar)
-        # for xaux in range(self.ne):
-        #     print(self.ia[xaux], self.ja[xaux], self.ar[xaux])
 
     # Variables ED
 
@@ -2066,7 +2042,7 @@ class Networkmodel():
                                     str(self.HydroGenerationCurtailmentNode\
                                         [i, j, k][0]), ii, 'fixed', 0, 0)
                     for ii in range(self.NumberNodesPS):
-                        if self.TypeNode[ii] is not 3:
+                        if self.TypeNode[ii] != 3:
                             self.solver.set_col_bnds(\
                                 str(self.VoltageAngle[i, j, k][0]),\
                                     ii,'free', 0, 0)
@@ -3424,7 +3400,7 @@ class Networkmodel():
                             ThermalGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.thermalgenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower * self.OFaux[i]
+                                        self.BaseUnitPower
                 return ThermalGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.ThermalGenerationSolution
@@ -3444,7 +3420,7 @@ class Networkmodel():
                             RESGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.RESgenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower * self.OFaux[i]
+                                        self.BaseUnitPower
                 return RESGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.RESGenerationSolution
@@ -3464,7 +3440,7 @@ class Networkmodel():
                             HydroGenerationSolution[i, j, k] = \
                                 self.solver.get_col_prim(\
                                     str(self.Hydrogenerators[i, j][0]), k) * \
-                                        self.BaseUnitPower * self.OFaux[i]
+                                        self.BaseUnitPower
                 return HydroGenerationSolution
             elif self.solver_problem == "CLP":
                 return self.HydroGenerationSolution
@@ -3483,7 +3459,7 @@ class Networkmodel():
                         pumpsvarSolution[i, j, k] = \
                             self.solver.get_col_prim(\
                                 str(self.pumpsvar[i, j][0]), k) * \
-                                    self.BaseUnitPower * self.OFaux[i]
+                                    self.BaseUnitPower
             return pumpsvarSolution
         else:
             return None
@@ -3581,7 +3557,7 @@ class Networkmodel():
                                 LoadCurtailmentNodesSolution[i, j, k, ii] = \
                                     self.solver.get_col_prim(\
                                     str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
-                                        * self.BaseUnitPower * self.OFaux[i]
+                                        * self.BaseUnitPower
                 return LoadCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.LoadCurtailmentNodesSolution
@@ -3605,7 +3581,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.ThermalGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower * self.OFaux[i]
+                                        * self.BaseUnitPower
                 return ThermalGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.ThermalGenerationCurtailmentNodesSolution
@@ -3629,7 +3605,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.RESGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower * self.OFaux[i]
+                                        * self.BaseUnitPower
                 return RESGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.RESGenerationCurtailmentNodesSolution
@@ -3653,7 +3629,7 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.HydroGenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower * self.OFaux[i]
+                                        * self.BaseUnitPower
                 return HydroGenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
                 return self.HydroGenerationCurtailmentNodesSolution
@@ -3675,7 +3651,7 @@ class Networkmodel():
                                 ActivePowerFlowSolution[i, j, k, ii] = \
                                     self.solver.get_col_prim(\
                                     str(self.ActivePowerFlow[i, j, k][0]), ii)\
-                                        * self.BaseUnitPower * self.OFaux[i]
+                                        * self.BaseUnitPower
                 return ActivePowerFlowSolution
             elif self.solver_problem == "CLP":
                 return self.ActivePowerFlowSolution
@@ -3696,7 +3672,7 @@ class Networkmodel():
                             ActivePowerLossesSolution[i, j, k, ii] = \
                                 self.solver.get_col_prim(\
                                 str(self.ActivePowerLosses[i, j, k][0]), ii)\
-                                    * self.BaseUnitPower * self.OFaux[i]
+                                    * self.BaseUnitPower
             return ActivePowerLossesSolution
         else:
             return None
@@ -3711,7 +3687,7 @@ class Networkmodel():
                     LoadCurtailmentSystemEDSolution[i, j] = \
                         self.solver.get_col_prim(\
                         str(self.loadcurtailmentsystem[i, j][0]), 0) * \
-                        self.BaseUnitPower * self.OFaux[i]
+                        self.BaseUnitPower
             return LoadCurtailmentSystemEDSolution
         else:
             return None
