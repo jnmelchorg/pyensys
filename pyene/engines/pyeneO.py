@@ -504,12 +504,12 @@ class pyeneHDF5Settings():
                             totaldemand = totaldemand + \
                                 GLPKobj.PowerDemandNode[k] * \
                                 GLPKobj.MultScenariosDemand[xs, k] * \
-                                    GLPKobj.BaseUnitPower * GLPKobj.OFaux[xs]
+                                    GLPKobj.BaseUnitPower
                         else:
                             totaldemand = totaldemand + \
                                 GLPKobj.PowerDemandNode[k] * \
                                 GLPKobj.MultScenariosDemand[xs, xt, k] * \
-                                    GLPKobj.BaseUnitPower * GLPKobj.OFaux[xs]
+                                    GLPKobj.BaseUnitPower
                 HDF5row['demand'] = totaldemand                
 
                 auxvar = 0
@@ -916,6 +916,7 @@ class PrintinScreen():
                     obj.ShortTemporalConnections, \
                     (obj.NumberContingencies + 1), \
                     obj.NumberLinesPS))
+        
         # Printing results
 
 
