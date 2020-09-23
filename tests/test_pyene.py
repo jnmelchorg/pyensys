@@ -142,6 +142,9 @@ def test_pyene_Curtailment2Hydro():
     print('05: test_pyene_Curtailment2Hydro')
     conf = testConfig()
     # Consider single time step
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     conf.NM.settings['NoTime'] = 1  # Single period
     # Add hydropower plant
     conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
@@ -190,6 +193,10 @@ def test_pyene_AllHydro():
     '''
     print('06: test_pyene_AllHydro')
     conf = testConfig()
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     # Consider two time steps
     conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.NM.scenarios['Weights'] = [0.5, 1]  # Add weights to the time steps
@@ -259,6 +266,10 @@ def test_pyene_RESPump():
     '''
     print('07: test_pyene_RESPump')
     conf = testConfig()
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     conf.NM.settings['NoTime'] = 2  # Number of time steps
     conf.NM.scenarios['Weights'] = [0.5, 1]
     # Add hydropower plant
@@ -561,6 +572,10 @@ def test_pyene_SingleLP():
 def test_pyene_ENH():
     print('09: test_pyene_ENH')
     conf = testConfig()
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     # Hydropower
     conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
@@ -608,6 +623,10 @@ def test_pyene_ENH():
 def test_pyene_ENHStor():
     print('10: test_pyene_ENHStor')
     conf = testConfig()
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     # Hydropower
     conf.NM.hydropower['Number'] = 3  # Number of hydropower plants
     conf.NM.hydropower['Bus'] = [2, 3, 4]  # Location (bus) of hydro
@@ -658,6 +677,10 @@ def test_pyene_ENHStor():
 def test_pyene_ENHStorPump():
     print('11: test_pyene_ENHStorPump')
     conf = testConfig()
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
     # Scenarios
     conf.NM.scenarios['NoDem'] = 2  # Number of demand profiles
     conf.NM.scenarios['NoRES'] = 2  # Number of RES profiles
@@ -758,6 +781,10 @@ def test_pyene_Baseline():
     conf.NM.hydropower['Max'] = [1000, 1000, 1000]  # Generation capacity
     conf.NM.hydropower['Cost'] = [0.01, 0.01,  0.01]  # Costs
     conf.NM.hydropower['Baseload'] = [1, 1, 1]  # Baseload
+
+    conf.EM.settings['File'] = os.path.join(json_directory(),
+                                            'ResolutionTreeMonth01.json')
+
 
     # Study settings
     conf.NM.settings['NoTime'] = 24  # Number of time steps
