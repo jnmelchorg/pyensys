@@ -89,32 +89,14 @@ class Energymodel():
         self.coeffmatrixEM()
         self.Objective_functionEM()
 
-    def dnvariablesEM(self):
-        """ This class method determines the number of variables """
-        self.number_variablesEM += (self.TreeNodes) * 4 \
-            * self.NumberTrees
-
-    def dnconstraintsEM(self):
-        """ This class method determines the number of constraints """
-        # Number of constrains in the energy balance
-        self.number_constraintsEM += (self.TreeNodes - 1) * self.NumberTrees
-        self.number_constraintsEM += (self.TreeNodes - 1) * self.NumberTrees
-        # TODO: create a case for uncertainty
-        # if self.NumberNodesUnc != 0:
-        #     self.number_constraintsEM += (self.NumberNodesUnc+1) \
-        #         * self.NumberTrees
-
     def coeffmatrixEM(self):
         """ This class method contains the functions that allow building 
         the coefficient matrix (matrix A) for the simplex method """
         # The coefficient matrix is stored in CSR format (sparse matrix) to be
         # later added to glpk
-        self.ia = np.empty(self.number_constraintsEM*self.number_variablesEM\
-            , dtype=int) # Position in rows
-        self.ja = np.empty(self.number_constraintsEM*self.number_variablesEM\
-            , dtype=int) # Position in columns
-        self.ar = np.empty(self.number_constraintsEM*self.number_variablesEM\
-            , dtype=int) # Value
+        self.ia = [] # Position in rows
+        self.ja = [] # Position in columns
+        self.ar = [] # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
 
         self.constraintsEM()
@@ -193,40 +175,7 @@ class Energymodel():
                     str(self.OutputsTree[i][0]), j, 'fixed', \
                         self.OutputTree[j, i], self.OutputTree[j, i])
 
-    # Constraints EM
-    
-    def posconstraintsEM(self):
-        """ This class method creates the vectors that store the positions of 
-        contraints for the energy problem """
-        # Creating the matrices to store the position of constraints in
-        # matrix A
-        self.treebalance = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start position 
-                    # of the tree balance constraints (rows) 
-                    # for vector
-        self.treeaggregation = np.empty(self.NumberTrees, \
-            dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start position 
-                    # of the tree aggregation constraints (rows) 
-                    # for vector
-        
-    def constraintsEM(self):
-        """ This class method reserves the space in glpk for the constraints of
-        the energy problem """
-
-        self.posconstraintsEM()
-
-        for i in range(self.NumberTrees):
-            self.treebalance[i] = ('TB'+str(i), \
-                self.solver.add_rows('TB'+str(i), \
-                    (self.TreeNodes - 1)))  # Number of 
-                    # rows (constraints) in matrix A for the three balance
-                    # for each vector
-        for i in range(self.NumberTrees):
-            self.treeaggregation[i] = ('TA'+str(i), \
-                self.solver.add_rows('TA'+str(i), \
-                    (self.TreeNodes - 1)))  # Number of 
-                    # rows (constraints) in matrix A for the three aggregation
-                    # for each vector
+    # Constraints EM 
                 
     def Energybalance(self):
         """ This class method writes the energy balance in glpk
@@ -236,33 +185,45 @@ class Energymodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
+        self.treebalance = np.empty(self.NumberTrees, \
+            dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start position 
+                    # of the tree balance constraints (rows) 
+                    # for vector
+        
+        for i in range(self.NumberTrees):
+            self.treebalance[i] = ('TB'+str(i), \
+                self.solver.add_rows('TB'+str(i), \
+                    (self.TreeNodes - 1)))  # Number of 
+                    # rows (constraints) in matrix A for the three balance
+                    # for each vector
+
         # Generating the matrix A for the energy contraints
         for vectors in range(self.NumberTrees):
             for nodes in range(1, self.TreeNodes):
                 # Storing the Vin variables
-                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
-                self.ja[self.ne] = self.Partialstorage[vectors][1] + nodes
-                self.ar[self.ne] = 1
+                self.ia.append(self.treebalance[vectors][1] + nodes - 1)
+                self.ja.append(self.Partialstorage[vectors][1] + nodes)
+                self.ar.append(1)
                 # Storing the Vout variables
                 self.ne += 1
-                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
-                self.ar[self.ne] = -1
+                self.ia.append(self.treebalance[vectors][1] + nodes - 1)
+                self.ar.append(-1)
                 if(self.LLEB[nodes, 1] == 0):
-                    self.ja[self.ne] = self.Partialstorage[vectors][1] + \
-                            self.LLEB[nodes, 0]
+                    self.ja.append(self.Partialstorage[vectors][1] + \
+                        self.LLEB[nodes, 0])
                 elif(self.LLEB[nodes, 1] == 1):
-                    self.ja[self.ne] = self.Totalstorage[vectors][1] + \
-                            self.LLEB[nodes, 0]
+                    self.ja.append(self.Totalstorage[vectors][1] + \
+                        self.LLEB[nodes, 0])
                 # Storing the Inputs            
                 self.ne += 1
-                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
-                self.ja[self.ne] = self.InputsTree[vectors][1] + nodes
-                self.ar[self.ne] = -1
+                self.ia.append(self.treebalance[vectors][1] + nodes - 1)
+                self.ja.append(self.InputsTree[vectors][1] + nodes)
+                self.ar.append(-1)
                 # Storing the Outputs            
                 self.ne += 1
-                self.ia[self.ne] = self.treebalance[vectors][1] + nodes - 1
-                self.ja[self.ne] = self.OutputsTree[vectors][1] + nodes
-                self.ar[self.ne] = 1
+                self.ia.append(self.treebalance[vectors][1] + nodes - 1)
+                self.ja.append(self.OutputsTree[vectors][1] + nodes)
+                self.ar.append(1)
                 self.ne += 1
 
         # Defining the limits for the energy constraints
@@ -279,37 +240,49 @@ class Energymodel():
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
 
+        self.treeaggregation = np.empty(self.NumberTrees, \
+            dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start position 
+                    # of the tree aggregation constraints (rows) 
+                    # for vector
+        
+        for i in range(self.NumberTrees):
+            self.treeaggregation[i] = ('TA'+str(i), \
+                self.solver.add_rows('TA'+str(i), \
+                    (self.TreeNodes - 1)))  # Number of 
+                    # rows (constraints) in matrix A for the three aggregation
+                    # for each vector
+
         # Generating the matrix A for the aggregation contraints
         for vectors in range(self.NumberTrees):
             for nodes in range(1, self.TreeNodes):
                 # Storing the Vout variables
-                self.ia[self.ne] = self.treeaggregation[vectors][1] + nodes - 1
-                self.ja[self.ne] = self.Totalstorage[vectors][1] + nodes
-                self.ar[self.ne] = 1
+                self.ia.append(self.treeaggregation[vectors][1] + nodes - 1)
+                self.ja.append(self.Totalstorage[vectors][1] + nodes)
+                self.ar.append(1)
                 # Storing Vin or Vout variables
                 self.ne += 1
-                self.ia[self.ne] = self.treeaggregation[vectors][1] + nodes - 1
-                self.ar[self.ne] = -self.WeightNodes[self.LLEA\
-                    [nodes, 0]]
+                self.ia.append(self.treeaggregation[vectors][1] + nodes - 1)
+                self.ar.append(-self.WeightNodes[self.LLEA\
+                    [nodes, 0]])
                 if(self.LLEA[nodes, 2] == 0):
-                    self.ja[self.ne] = self.Partialstorage[vectors][1]\
-                        + self.LLEA[nodes, 1]
+                    self.ja.append(self.Partialstorage[vectors][1]\
+                        + self.LLEA[nodes, 1])
                 elif(self.LLEA[nodes, 2] == 1):
-                    self.ja[self.ne] = self.Totalstorage[vectors][1]\
-                        + self.LLEA[nodes, 1]
+                    self.ja.append(self.Totalstorage[vectors][1]\
+                        + self.LLEA[nodes, 1])
                 # Storing Vin or Vout variables
                 if(1 - self.WeightNodes[self.LLEA[nodes, 0]] != 0):
                     self.ne += 1
-                    self.ia[self.ne] = self.treeaggregation[vectors][1]\
-                        + nodes - 1
-                    self.ar[self.ne] = -(1 - self.WeightNodes\
-                        [self.LLEA[nodes, 0]])
+                    self.ia.append(self.treeaggregation[vectors][1]\
+                        + nodes - 1)
+                    self.ar.append(-(1 - self.WeightNodes\
+                        [self.LLEA[nodes, 0]]))
                     if(self.LLEB[self.LLEA[nodes, 0], 1] == 0):
-                        self.ja[self.ne] = self.Partialstorage[vectors][1] + \
-                            self.LLEB[self.LLEA[nodes, 0], 0]
+                        self.ja.append(self.Partialstorage[vectors][1] + \
+                            self.LLEB[self.LLEA[nodes, 0], 0])
                     elif(self.LLEB[self.LLEA[nodes, 0], 1] == 1):
-                        self.ja[self.ne] = self.Totalstorage[vectors][1] \
-                            + self.LLEB[self.LLEA[nodes, 0], 0]
+                        self.ja.append(self.Totalstorage[vectors][1] \
+                            + self.LLEB[self.LLEA[nodes, 0], 0])
                 self.ne += 1
 
         # Defining the limits for the aggregation constraints
@@ -948,59 +921,7 @@ class Networkmodel():
     ############################################
 
     # Number of variables and constraints
-    def dnvariablesCommon(self):
-        """ This class method determines the number of variables that 
-        are common for various problems """
-        # TODO: Create a variable for size last tree nodes
-        # len(self.LongTemporalConnections)
-        # TODO: Further analysis of energy storage variables and constraints
-        # Active power generation variables
-        self.number_variablesCommon = 0
-        self.number_variablesCommon += len(self.LongTemporalConnections) \
-            * (self.NumberConvGen + self.NumberRESGen + self.NumberHydroGen)\
-            * self.ShortTemporalConnections
-        # Generation cost variables
-        self.number_variablesCommon += len(self.LongTemporalConnections) \
-            * (self.NumberConvGen + self.NumberRESGen + self.NumberHydroGen)\
-            * self.ShortTemporalConnections
-        # Active power storage variables
-        self.number_variablesCommon += len(self.LongTemporalConnections) \
-            * self.NumberStorageDevices * self.ShortTemporalConnections
-        # Pumps variables
-        self.number_variablesCommon += len(self.LongTemporalConnections) \
-            * self.NumberPumps * self.ShortTemporalConnections
-
-    def dnconstraintsCommon(self):
-        """ This class method determines the number of constraints that 
-        are common for various problems """
-
-        self.number_constraintsCommon = 0
-        for i in range(self.NumberConvGen):
-            self.number_constraintsCommon += len(self.LongTemporalConnections) \
-            * self.ShortTemporalConnections * \
-                self.PWConvGen[i]       # Constraints 
-                                        # for the piecewise linearisation
-                                        # of the nonlinear generation cost
-                                        # for conventional generators
-        for i in range(self.NumberRESGen):
-            self.number_constraintsCommon += len(self.LongTemporalConnections) \
-            * self.ShortTemporalConnections * \
-                self.PWRESGen[i]        # Constraints 
-                                        # for the piecewise linearisation
-                                        # of the nonlinear generation cost
-                                        # for RES generators
-        for i in range(self.NumberHydroGen):
-            self.number_constraintsCommon += len(self.LongTemporalConnections) \
-            * self.ShortTemporalConnections * \
-                self.PWHydroGen[i]      # Constraints 
-                                        # for the piecewise linearisation
-                                        # of the nonlinear generation cost
-                                        # for Hydro generators
-        self.number_constraintsCommon += len(self.LongTemporalConnections) \
-            * (self.NumberConvGen + self.NumberRESGen + self.NumberHydroGen)\
-            * self.ShortTemporalConnections # Constraints 
-                                    # for the generation ramps
-
+ 
     # Variables
     def PosvariablesCommon(self):
         """ This class method creates the vector that stores the positions of 
@@ -1177,52 +1098,40 @@ class Networkmodel():
             contraints that are common for various problems """
             # Creating the matrices to store the position of constraints in
             # matrix A
-            if self.NumberConvGen > 0:
-                self.thermalpiecewisecost = \
-                    np.empty((len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, self.NumberConvGen),\
-                        dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
-                        # position of piecewise linearisation constraints 
-                        # (rows) for each tree node, for each period and 
-                        # for each thermal generator
-            if self.NumberRESGen > 0:
-                self.RESpiecewisecost = \
-                    np.empty((len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, self.NumberRESGen),\
-                        dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
-                        # position of piecewise linearisation constraints 
-                        # (rows) for each tree node, for each period and 
-                        # for each RES generator
-            if self.NumberHydroGen > 0:
-                self.Hydropiecewisecost = \
-                    np.empty((len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, self.NumberHydroGen),\
-                        dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
-                        # position of piecewise linearisation constraints 
-                        # (rows) for each tree node, for each period and 
-                        # for each Hydro generator
-            if self.NumberConvGen > 0:
-                self.thermalgenerationramps = \
-                    np.empty((len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections - 1),\
-                        dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
-                        # position of thermal generation ramps constraints 
-                        # (rows) for each tree node, for each period and for 
-                        # each thermal generator
-            if self.NumberHydroGen > 0:
-                self.Hydrogenerationramps = \
-                    np.empty((len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections - 1),\
-                        dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
-                        # position of Hydroelectrical generation ramps constraints
-                        # (rows) for each tree node, for each period and for 
-                        # each hydroelectrical generator
-            
-    def constraintsCommon(self):
-        """ This class method reserves the space in glpk for the constraints of
-        the economic dispatch problem """
 
-        self.posconstraintsED()
+    def piecewiselinearisationcost(self):
+        """ This class method writes the piecewise linearisarion of
+        the generation cost in glpk
+        
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
+
+        if self.NumberConvGen > 0:
+            self.thermalpiecewisecost = \
+                np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, self.NumberConvGen),\
+                    dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
+                    # position of piecewise linearisation constraints 
+                    # (rows) for each tree node, for each period and 
+                    # for each thermal generator
+        if self.NumberRESGen > 0:
+            self.RESpiecewisecost = \
+                np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, self.NumberRESGen),\
+                    dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
+                    # position of piecewise linearisation constraints 
+                    # (rows) for each tree node, for each period and 
+                    # for each RES generator
+        if self.NumberHydroGen > 0:
+            self.Hydropiecewisecost = \
+                np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, self.NumberHydroGen),\
+                    dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
+                    # position of piecewise linearisation constraints 
+                    # (rows) for each tree node, for each period and 
+                    # for each Hydro generator
 
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
@@ -1259,6 +1168,102 @@ class Networkmodel():
                             # for the piecewise linearisation constraints 
                             # of the generation cost for each period, 
                             # each tree node and each Hydro generator
+
+        # Generating the matrix A for the piecewise linearisation constraints of
+        # the generation cost
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                if self.NumberConvGen > 0:
+                    for k in range(self.NumberConvGen):
+                        for l in range(self.PWConvGen[k]):
+                        # Storing the generation cost variables
+                            self.ia.append(self.thermalpiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.thermalCG[i, j][1] + k)
+                            self.ar.append(1.0)
+                            self.ne += 1
+                        # Storing the generation variables
+                            self.ia.append(self.thermalpiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.thermalgenerators[i, j][1] + k)
+                            self.ar.append(-self.TotalHoursPerPeriod[j] * \
+                                self.ACoeffPWConvGen[k, l])
+                            self.ne += 1
+                        # Defining the resources (b) for the constraints
+                            self.solver.set_row_bnds(\
+                                str(self.thermalpiecewisecost[i, j, k][0]),\
+                                l, 'lower',\
+                                self.TotalHoursPerPeriod[j] * \
+                                self.BCoeffPWConvGen[k, l], 0)
+
+                if self.NumberRESGen > 0:
+                    for k in range(self.NumberRESGen):
+                        for l in range(self.PWRESGen[k]):
+                        # Storing the generation cost variables
+                            self.ia.append(self.RESpiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.RESCG[i, j][1] + k)
+                            self.ar.append(1.0)
+                            self.ne += 1
+                        # Storing the generation variables
+                            self.ia.append(self.RESpiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.RESgenerators[i, j][1] + k)
+                            self.ar.append(-self.TotalHoursPerPeriod[j] * \
+                                self.ACoeffPWRESGen[k, l])
+                            self.ne += 1
+                        # Defining the resources (b) for the constraints
+                            self.solver.set_row_bnds(\
+                                str(self.RESpiecewisecost[i, j, k][0]),\
+                                l, 'lower',\
+                                self.TotalHoursPerPeriod[j] * \
+                                self.BCoeffPWRESGen[k, l], 0)
+
+                if self.NumberHydroGen > 0:
+                    for k in range(self.NumberHydroGen):
+                        for l in range(self.PWHydroGen[k]):
+                        # Storing the generation cost variables
+                            self.ia.append(self.Hydropiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.HydroCG[i, j][1] + k)
+                            self.ar.append(1.0)
+                            self.ne += 1
+                        # Storing the generation variables
+                            self.ia.append(self.Hydropiecewisecost[i, j, k][1] + l)
+                            self.ja.append(self.Hydrogenerators[i, j][1] + k)
+                            self.ar.append(-self.TotalHoursPerPeriod[j] * \
+                                self.ACoeffPWHydroGen[k, l])
+                            self.ne += 1
+                        # Defining the resources (b) for the constraints
+                            self.solver.set_row_bnds(\
+                                str(self.Hydropiecewisecost[i, j, k][0]),\
+                                l, 'lower',\
+                                self.TotalHoursPerPeriod[j] * \
+                                self.BCoeffPWHydroGen[k, l], 0)
+
+    def generationrampsconstraints(self):
+        """ This class method writes the constraints for the generation ramps
+        in glpk
+        
+        First, it is reserved space in memory to store the constraints.
+        Second, the coefficients of the constraints are introduced
+        in the matrix of coefficients (matrix A).
+        Third, the bounds of the constraints are defined """
+
+        if self.NumberConvGen > 0:
+            self.thermalgenerationramps = \
+                np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections - 1),\
+                    dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
+                    # position of thermal generation ramps constraints 
+                    # (rows) for each tree node, for each period and for 
+                    # each thermal generator
+        if self.NumberHydroGen > 0:
+            self.Hydrogenerationramps = \
+                np.empty((len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections - 1),\
+                    dtype=[('napos', 'U80'), ('nupos', 'i4')]) # Start 
+                    # position of Hydroelectrical generation ramps constraints
+                    # (rows) for each tree node, for each period and for 
+                    # each hydroelectrical generator
+
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
                 if j > 0:
                     if self.NumberConvGen > 0:
                         self.thermalgenerationramps[i, j - 1] = \
@@ -1279,122 +1284,20 @@ class Networkmodel():
                                 # period, for each tree node and for each 
                                 # thermal generator
 
-
-    def piecewiselinearisationcost(self):
-        """ This class method writes the piecewise linearisarion of
-        the generation cost in glpk
-        
-        First, it is reserved space in memory to store the constraints.
-        Second, the coefficients of the constraints are introduced
-        in the matrix of coefficients (matrix A).
-        Third, the bounds of the constraints are defined """
-
-        # Generating the matrix A for the piecewise linearisation constraints of
-        # the generation cost
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                if self.NumberConvGen > 0:
-                    for k in range(self.NumberConvGen):
-                        for l in range(self.PWConvGen[k]):
-                        # Storing the generation cost variables
-                            self.ia[self.ne] = \
-                                self.thermalpiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = self.thermalCG[i, j][1] + k
-                            self.ar[self.ne] = 1.0
-                            self.ne += 1
-                        # Storing the generation variables
-                            self.ia[self.ne] = \
-                                self.thermalpiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = \
-                                self.thermalgenerators[i, j][1] + k
-                            self.ar[self.ne] = \
-                                -self.TotalHoursPerPeriod[j] * \
-                                self.ACoeffPWConvGen[k, l]
-                            self.ne += 1
-                        # Defining the resources (b) for the constraints
-                            self.solver.set_row_bnds(\
-                                str(self.thermalpiecewisecost[i, j, k][0]),\
-                                l, 'lower',\
-                                self.TotalHoursPerPeriod[j] * \
-                                self.BCoeffPWConvGen[k, l], 0)
-
-                if self.NumberRESGen > 0:
-                    for k in range(self.NumberRESGen):
-                        for l in range(self.PWRESGen[k]):
-                        # Storing the generation cost variables
-                            self.ia[self.ne] = \
-                                self.RESpiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = self.RESCG[i, j][1] + k
-                            self.ar[self.ne] = 1.0
-                            self.ne += 1
-                        # Storing the generation variables
-                            self.ia[self.ne] = \
-                                self.RESpiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = \
-                                self.RESgenerators[i, j][1] + k
-                            self.ar[self.ne] = \
-                                -self.TotalHoursPerPeriod[j] * \
-                                self.ACoeffPWRESGen[k, l]
-                            self.ne += 1
-                        # Defining the resources (b) for the constraints
-                            self.solver.set_row_bnds(\
-                                str(self.RESpiecewisecost[i, j, k][0]),\
-                                l, 'lower',\
-                                self.TotalHoursPerPeriod[j] * \
-                                self.BCoeffPWRESGen[k, l], 0)
-
-                if self.NumberHydroGen > 0:
-                    for k in range(self.NumberHydroGen):
-                        for l in range(self.PWHydroGen[k]):
-                        # Storing the generation cost variables
-                            self.ia[self.ne] = \
-                                self.Hydropiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = self.HydroCG[i, j][1] + k
-                            self.ar[self.ne] = 1.0
-                            self.ne += 1
-                        # Storing the generation variables
-                            self.ia[self.ne] = \
-                                self.Hydropiecewisecost[i, j, k][1] + l
-                            self.ja[self.ne] = \
-                                self.Hydrogenerators[i, j][1] + k
-                            self.ar[self.ne] = \
-                                -self.TotalHoursPerPeriod[j] * \
-                                self.ACoeffPWHydroGen[k, l]
-                            self.ne += 1
-                        # Defining the resources (b) for the constraints
-                            self.solver.set_row_bnds(\
-                                str(self.Hydropiecewisecost[i, j, k][0]),\
-                                l, 'lower',\
-                                self.TotalHoursPerPeriod[j] * \
-                                self.BCoeffPWHydroGen[k, l], 0)
-
-    def generationrampsconstraints(self):
-        """ This class method writes the constraints for the generation ramps
-        in glpk
-        
-        First, it is reserved space in memory to store the constraints.
-        Second, the coefficients of the constraints are introduced
-        in the matrix of coefficients (matrix A).
-        Third, the bounds of the constraints are defined """
-
         # Generating the matrix A for the generation ramps constraints
         for i in self.LongTemporalConnections:
             for j in range(1, self.ShortTemporalConnections):
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
                     # Storing the generation variables for current period
-                        self.ia[self.ne] = \
-                            self.thermalgenerationramps[i, j - 1][1] + k
-                        self.ja[self.ne] = \
-                            self.thermalgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
+                        self.ia.append(self.thermalgenerationramps[i, j - 1][1] + k)
+                        self.ja.append(self.thermalgenerators[i, j][1] + k)
+                        self.ar.append(1.0)
                         self.ne += 1
                     # Storing the generation variables for previous period
-                        self.ia[self.ne] = \
-                            self.thermalgenerationramps[i, j - 1][1] + k
-                        self.ja[self.ne] = \
-                            self.thermalgenerators[i, j - 1][1] + k
-                        self.ar[self.ne] = -1.0
+                        self.ia.append(self.thermalgenerationramps[i, j - 1][1] + k)
+                        self.ja.append(self.thermalgenerators[i, j - 1][1] + k)
+                        self.ar.append(-1.0)
                         self.ne += 1
                     # Defining the resources (b) for the constraints
                         self.solver.set_row_bnds(\
@@ -1404,18 +1307,14 @@ class Networkmodel():
                 if self.NumberHydroGen > 0:
                     for k in range(self.NumberHydroGen):
                     # Storing the generation variables for current period
-                        self.ia[self.ne] = \
-                            self.Hydrogenerationramps[i, j - 1][1] + k
-                        self.ja[self.ne] = \
-                            self.Hydrogenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
+                        self.ia.append(self.Hydrogenerationramps[i, j - 1][1] + k)
+                        self.ja.append(self.Hydrogenerators[i, j][1] + k)
+                        self.ar.append(1.0)
                         self.ne += 1
                     # Storing the generation variables for previous period
-                        self.ia[self.ne] = \
-                            self.Hydrogenerationramps[i, j - 1][1] + k
-                        self.ja[self.ne] = \
-                            self.Hydrogenerators[i, j - 1][1] + k
-                        self.ar[self.ne] = -1.0
+                        self.ia.append(self.Hydrogenerationramps[i, j - 1][1] + k)
+                        self.ja.append(self.Hydrogenerators[i, j - 1][1] + k)
+                        self.ar.append(-1.0)
                         self.ne += 1
                     # Defining the resources (b) for the constraints
                         self.solver.set_row_bnds(\
@@ -1500,52 +1399,19 @@ class Networkmodel():
         """ This class method builds the optimisation model
         for the economic dispatch problem """
 
-        self.dnvariablesED()    # Function to determine de number of variables
-        self.dnconstraintsED()  # Function to determine de number of constraints
-
         # define matrix of coeficients (matrix A)
         self.variablesED()
         self.coeffmatrixED()
         self.Objective_functionCommon()
-
-    def dnvariablesED(self):
-        """ This class method determines the number of variables for the 
-        economic dispatch problem """
-
-        self.number_variablesED = 0
-        self.dnvariablesCommon()
-        self.number_variablesED = self.number_variablesCommon
-        if self.FlagFeasibility:
-            # Load curtailment variables
-            self.number_variablesED += len(self.LongTemporalConnections) \
-                * self.ShortTemporalConnections
-            # Generation curtailment variables
-            self.number_variablesED += len(self.LongTemporalConnections) \
-                * self.ShortTemporalConnections
-
-    def dnconstraintsED(self):
-        """ This class method determines the number of constraints for the 
-        economic dispatch problem """
-
-        self.number_constraintsED = 0
-        self.dnconstraintsCommon()
-        self.number_constraintsED = self.number_constraintsCommon
-
-        self.number_constraintsED += len(self.LongTemporalConnections) * \
-            self.ShortTemporalConnections     # Constraints for power balance 
-                                        # of whole power system
 
     def coeffmatrixED(self):
         """ This class method contains the functions that allow building 
         the coefficient matrix (matrix A) for the simplex method """
         # The coefficient matrix is stored in CSR format (sparse matrix) to be
         # later added to glpk
-        self.ia = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in rows
-        self.ja = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsED * \
-            self.number_variablesED / 3), dtype=float) # Value
+        self.ia = []
+        self.ja = []
+        self.ar = []
         self.ne = 0 # Number of non-zero coefficients in matrix A
         
         self.constraintsED()
@@ -1594,38 +1460,7 @@ class Networkmodel():
                         'GCS'+str(i)+','+str(j),\
                         self.solver.add_cols('GCS'+str(i)+','+str(j), 1))    
 
-
-    # Constraints ED
-
-    def posconstraintsED(self):
-            """ This class method creates the vectors that store the positions of 
-            contraints for the ED problem """
-            # Creating the matrices to store the position of constraints in
-            # matrix A
-
-            self.posconstraintsCommon()
-
-            self.powerbalance = np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections), dtype=[('napos', 'U80'),\
-                    ('nupos', 'i4')]) # Start position 
-                        # of active power balance constraints (rows) 
-                        # for each tree node
-            
-    def constraintsED(self):
-        """ This class method reserves the space in glpk for the constraints of
-        the economic dispatch problem """
-
-        self.posconstraintsED()
-
-        self.constraintsCommon()
-
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                self.powerbalance[i, j] = ('PB'+str(i)+','+str(j),\
-                    self.solver.add_rows('PB'+str(i)+','+str(j), 1))  # Number of 
-                        # columns (constraints) in matrix A for the active 
-                        # power balance constraints fo each period and each 
-                        # tree node
+    # Constraints ED        
 
     def activepowerbalancesystem(self):
         """ This class method writes the power balance constraint in glpk
@@ -1635,66 +1470,77 @@ class Networkmodel():
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
 
+        self.powerbalance = np.empty((len(self.LongTemporalConnections),\
+            self.ShortTemporalConnections), dtype=[('napos', 'U80'),\
+            ('nupos', 'i4')]) # Start position 
+                    # of active power balance constraints (rows) 
+                    # for each tree node
+        
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                self.powerbalance[i, j] = ('PB'+str(i)+','+str(j),\
+                    self.solver.add_rows('PB'+str(i)+','+str(j), 1))  # Number of 
+                        # columns (constraints) in matrix A for the active 
+                        # power balance constraints fo each period and each 
+                        # tree node
+
+
         # Generating the matrix A for the active power balance constraints
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
             # Storing the thermal generation variables
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.thermalgenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
+                        self.ia.append(self.powerbalance[i, j][1])
+                        self.ja.append(self.thermalgenerators[i, j][1] + k)
+                        self.ar.append(1.0)
                         self.ne += 1
             # Storing the RES generation variables
                 if self.NumberRESGen > 0:
                     for k in range(self.NumberRESGen):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.RESgenerators[i, j][1] + k
+                        self.ia.append(self.powerbalance[i, j][1])
+                        self.ja.append(self.RESgenerators[i, j][1] + k)
                         self.ar[self.ne] = 1.0
                         self.ne += 1
             # Storing the Hydroelectric generation variables
                 if self.NumberHydroGen > 0:
                     for k in range(self.NumberHydroGen):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = \
-                            self.Hydrogenerators[i, j][1] + k
-                        self.ar[self.ne] = 1.0
+                        self.ia.append(self.powerbalance[i, j][1])
+                        self.ja.append(self.Hydrogenerators[i, j][1] + k)
+                        self.ar.append(1.0)
                         self.ne += 1
             # Storing variables for ESS
             # TODO: Modify the constraint for the first period
                 if self.NumberStorageDevices > 0:
                     if j > 0: # Start only after the first period
                         for k in range(self.NumberStorageDevices):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j][1] + k
-                            self.ar[self.ne] = self.EffStorage[k] \
-                                / self.TotalHoursPerPeriod[j - 1]
+                            self.ia.append(self.powerbalance[i, j][1])
+                            self.ja.append(self.ESS[i, j][1] + k)
+                            self.ar.append(self.EffStorage[k] \
+                                / self.TotalHoursPerPeriod[j - 1])
                             self.ne += 1
                         for k in range(self.NumberStorageDevices):
-                            self.ia[self.ne] = self.powerbalance[i, j][1]
-                            self.ja[self.ne] = self.ESS[i, j - 1][1] + k
-                            self.ar[self.ne] = \
-                                -self.EffStorage[k] \
-                                / self.TotalHoursPerPeriod[j - 1]
+                            self.ia.append(self.powerbalance[i, j][1])
+                            self.ja.append(self.ESS[i, j - 1][1] + k)
+                            self.ar.append(-self.EffStorage[k] \
+                                / self.TotalHoursPerPeriod[j - 1])
                             self.ne += 1
             # Storing the variables for load and generation curtailment
                 if self.FlagFeasibility:
-                    self.ia[self.ne] = self.powerbalance[i, j][1]
-                    self.ja[self.ne] = self.loadcurtailmentsystem[i, j][1]
-                    self.ar[self.ne] = 1.0
+                    self.ia.append(self.powerbalance[i, j][1])
+                    self.ja.append(self.loadcurtailmentsystem[i, j][1])
+                    self.ar.append(1.0)
                     self.ne += 1
-                    self.ia[self.ne] = self.powerbalance[i, j][1]
-                    self.ja[self.ne] = self.generationcurtailmentsystem[i, j][1]
-                    self.ar[self.ne] = -1.0
+                    self.ia.append(self.powerbalance[i, j][1])
+                    self.ja.append(self.generationcurtailmentsystem[i, j][1])
+                    self.ar.append(-1.0)
                     self.ne += 1
             # Storing the variables for pumps
                 if self.NumberPumps > 0:
                     for k in range(self.NumberPumps):
-                        self.ia[self.ne] = self.powerbalance[i, j][1]
-                        self.ja[self.ne] = self.pumpsvar[i, j][1] + k
-                        self.ar[self.ne] = -1.0
+                        self.ia.append(self.powerbalance[i, j][1])
+                        self.ja.append(self.pumpsvar[i, j][1] + k)
+                        self.ar.append(-1.0)
                         self.ne += 1
             # Defining the resources (b) for the constraints
                 totaldemand = 0                
@@ -1735,108 +1581,21 @@ class Networkmodel():
         """ This class method builds the optimisation model
         for the optimal power flow problem """
 
-        self.dnvariablesOPF()    # Function to determine de number of variables
-        self.dnconstraintsOPF()  # Function to determine de number of constraints
-
         # define matrix of coeficients (matrix A)
         self.variablesOPF()
         self.coeffmatrixOPF()
         self.Objective_functionCommon()
-
-    def dnvariablesOPF(self):
-        """ This class method determines the number of variables for the 
-        economic dispatch problem """
-
-        self.number_variablesOPF = 0
-        self.dnvariablesCommon()
-        self.number_variablesOPF = self.number_variablesCommon
-        # Active power flow variables
-        self.number_variablesOPF += self.NumberLinesPS * \
-            len(self.LongTemporalConnections) * \
-            (self.NumberContingencies + 1) \
-            * self.ShortTemporalConnections
-        if self.LossesFlag:
-            # Active power losses variables
-            self.number_variablesOPF += self.NumberLinesPS * \
-                len(self.LongTemporalConnections) * \
-                (self.NumberContingencies + 1) \
-                * self.ShortTemporalConnections
-        if self.FlagFeasibility:
-            # load curtailment variables
-            self.number_variablesOPF += self.NumberNodesPS * \
-                len(self.LongTemporalConnections) * \
-                (self.NumberContingencies + 1) \
-                * self.ShortTemporalConnections
-            # Thermal generation curtailment
-            if self.NumberConvGen > 0:
-                self.number_variablesOPF += self.NumberConvGen * \
-                    len(self.LongTemporalConnections) * \
-                    (self.NumberContingencies + 1) \
-                    * self.ShortTemporalConnections
-            # RES generation curtailment
-            if self.NumberRESGen > 0:
-                self.number_variablesOPF += self.NumberRESGen * \
-                    len(self.LongTemporalConnections) * \
-                    (self.NumberContingencies + 1) \
-                    * self.ShortTemporalConnections
-            # Hydro generation curtailment
-            if self.NumberHydroGen > 0:
-                self.number_variablesOPF += self.NumberHydroGen * \
-                    len(self.LongTemporalConnections) * \
-                    (self.NumberContingencies + 1) \
-                    * self.ShortTemporalConnections
-        # Voltage angle variables
-        self.number_variablesOPF += self.NumberNodesPS * \
-            len(self.LongTemporalConnections) * \
-            (self.NumberContingencies + 1) \
-            * self.ShortTemporalConnections
-
-    def dnconstraintsOPF(self):
-        """ This class method determines the number of constraints for the 
-        economic dispatch problem """
-
-        self.number_constraintsOPF = 0
-        self.dnconstraintsCommon()
-        self.number_constraintsOPF = self.number_constraintsCommon
-        # Constraint that relates the active power flow and the voltage angle
-        self.number_constraintsOPF += self.NumberLinesPS * \
-                len(self.LongTemporalConnections) * \
-                (self.NumberContingencies + 1) \
-                * self.ShortTemporalConnections
-        if self.LossesFlag:
-            # Constraint for losses linearization
-            self.number_constraintsOPF += self.NumberLinesPS * \
-                    len(self.LongTemporalConnections) * \
-                    (self.NumberContingencies + 1) \
-                    * self.ShortTemporalConnections * \
-                    self.NumberPiecesTLLosses
-            # Constraint for losses linearization
-            self.number_constraintsOPF += self.NumberLinesPS * \
-                    len(self.LongTemporalConnections) * \
-                    (self.NumberContingencies + 1) \
-                    * self.ShortTemporalConnections * \
-                    self.NumberPiecesTLLosses
-        # Active power balance constraint
-        self.number_constraintsOPF += self.NumberNodesPS * \
-                len(self.LongTemporalConnections) * \
-                (self.NumberContingencies + 1) \
-                * self.ShortTemporalConnections
 
     def coeffmatrixOPF(self):
         """ This class method contains the functions that allow building 
         the coefficient matrix (matrix A) for the simplex method """
         # The coefficient matrix is stored in CSR format (sparse matrix) to be
         # later added to glpk
-        self.ia = np.empty(math.ceil(self.number_constraintsOPF * \
-            self.number_variablesOPF / 2), dtype=int) # Position in rows
-        self.ja = np.empty(math.ceil(self.number_constraintsOPF * \
-            self.number_variablesOPF / 2), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsOPF * \
-            self.number_variablesOPF / 2), dtype=float) # Value
+        self.ia = [] # Position in rows
+        self.ja = [] # Position in columns
+        self.ar = [] # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
         
-        self.constraintsOPF()
-
         self.piecewiselinearisationcost()
         # self.generationrampsconstraints()
 
@@ -2053,150 +1812,6 @@ class Networkmodel():
 
     # Constraints OPF
 
-    def posconstraintsOPF(self):
-            """ This class method creates the vectors that store the positions of 
-            contraints for the ED problem """
-            # Creating the matrices to store the position of constraints in
-            # matrix A
-
-            self.posconstraintsCommon()
-
-            self.activepowerflowconstraint = np.empty(\
-                (len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1)), dtype=[('napos', 'U80'),\
-                ('nupos', 'i4')]) # Start position of active power flow 
-                                  # constraints (rows) per line
-            if self.LossesFlag:
-                self.activepowerlosses1 = np.empty(\
-                    (len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, \
-                    (self.NumberContingencies + 1), \
-                    self.NumberLinesPS), dtype=[('napos', 'U80'),\
-                    ('nupos', 'i4')]) # Start position of active power losses 
-                                      # constraints (rows) per line and per piece
-                self.activepowerlosses2 = np.empty(\
-                    (len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, \
-                    (self.NumberContingencies + 1), \
-                    self.NumberLinesPS), dtype=[('napos', 'U80'),\
-                    ('nupos', 'i4')]) # Start position of active power losses 
-                                      # constraints (rows) per line and per piece
-            
-    def constraintsOPF(self):
-        """ This class method reserves the space in glpk for the constraints of
-        the economic dispatch problem """
-
-        self.posconstraintsOPF()
-
-        self.constraintsCommon()
-
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                for k in range(self.NumberContingencies + 1):
-                    # Pre-contingency
-                    if k == 0:
-                        self.activepowerflowconstraint[i, j, k] = \
-                            ('activepowerflowconstraint'+str(i)+','+str(j)\
-                            +','+str(k), self.solver.add_rows(\
-                            'activepowerflowconstraint'+str(i)+','+str(j)\
-                            +','+str(k),self.NumberLinesPS))  # Number of
-                                # rows (constraints) in matrix A for the active 
-                                # power flow constraints per line
-                    # Post-contingency
-                    else:
-                        self.activepowerflowconstraint[i, j, k] = \
-                            ('activepowerflowconstraint'+str(i)+','+str(j)\
-                            +','+str(k),self.solver.add_rows(\
-                            'activepowerflowconstraint'+str(i)+','+str(j)\
-                            +','+str(k),self.NumberLinesPS - 1))  
-                                # Number of 
-                                # rows (constraints) in matrix A for the active 
-                                # power flow constraints per line
-                    if self.LossesFlag:
-                        # # Pre-contingency
-                        # if k == 0:
-                        #     for ii in range(self.NumberLinesPS):
-                        #         self.activepowerlosses1[i, j, k, ii] = \
-                        #             ('activepowerlosses1'+str(i)+','+str(j)\
-                        #             +','+str(k)+','+str(ii), \
-                        #             self.solver.add_rows(\
-                        #             'activepowerlosses1'+str(i)+','+str(j)\
-                        #             +','+str(k)+','+str(ii), \
-                        #             self.NumberPiecesTLLosses))
-                        #             # Number of rows (constraints) in matrix A 
-                        #             # for the active power losses constraints 
-                        #             # per line and per piece
-                        # # Post-contingency
-                        # else:
-                        for ii in range(self.NumberLinesPS):
-                            # If the line is active in the current contingency
-                            # then reserve the space
-                            if self.ActiveBranches[k, ii]:
-                                self.activepowerlosses1[i, j, k, ii] = \
-                                    ('activepowerlosses1'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii),\
-                                    self.solver.add_rows(\
-                                    'activepowerlosses1'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii), \
-                                    self.NumberPiecesTLLosses)) # Number
-                                        # of rows (constraints) in matrix A 
-                                        # for the active power losses 
-                                        # constraints per line 
-                                        # and per piece
-                            # If the line is not active in the current 
-                            # contingency then do not reserve space
-                            else:
-                                 self.activepowerlosses1[i, j, k, ii] = \
-                                    ('activepowerlosses1'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii), 0)
-                                        # Number
-                                        # of rows (constraints) in matrix A 
-                                        # for the active power losses 
-                                        # constraints per line 
-                                        # and per piece
-                        # Pre-contingency
-                        # if k == 0:
-                        #     for ii in range(self.NumberLinesPS):
-                        #         self.activepowerlosses2[i, j, k, ii] = \
-                        #             ('activepowerlosses2'+str(i)+','\
-                        #             +str(j)+','+str(k)+','+str(ii),\
-                        #             self.solver.add_rows(\
-                        #             'activepowerlosses2'+str(i)+','\
-                        #             +str(j)+','+str(k)+','+str(ii),\
-                        #                 self.NumberPiecesTLLosses))
-                        #     #         # Number of rows (constraints) in matrix A 
-                        #     #         # for the active power losses constraints 
-                        #     #         # per line and per piece
-                        # # Post-contingency
-                        # else:
-                        for ii in range(self.NumberLinesPS):
-                            # If the line is active in the current contingency
-                            # then reserve the space
-                            if self.ActiveBranches[k, ii]:
-                                self.activepowerlosses2[i, j, k, ii] = \
-                                    ('activepowerlosses2'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii), \
-                                    self.solver.add_rows(\
-                                    'activepowerlosses2'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii), \
-                                    self.NumberPiecesTLLosses)) # Number
-                                        # of rows (constraints) in matrix A 
-                                        # for the active power losses 
-                                        # constraints per line 
-                                        # and per piece
-                            # If the line is not active in the current 
-                            # contingency then do not reserve space
-                            else:
-                                 self.activepowerlosses2[i, j, k, ii] = \
-                                    ('activepowerlosses2'+str(i)+','\
-                                    +str(j)+','+str(k)+','+str(ii), 0)
-                                        # Number
-                                        # of rows (constraints) in matrix A 
-                                        # for the active power losses 
-                                        # constraints per line 
-                                        # and per piece
-
     def activepowerbalancepernode(self):
         """ This class method writes the power balance constraint in glpk
         
@@ -2236,36 +1851,30 @@ class Networkmodel():
                                 for jj in range(self.NumberConvGen):
                                     if self.OriginalNumberConvGen[jj] == \
                                         self.OriginalNumberNodes[ii]:
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.thermalgenerators[i, j][1] + jj
-                                        self.ar[self.ne] = 1.0
+                                        self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                        self.ja.append(self.thermalgenerators[i, j][1] + jj)
+                                        self.ar.append(1.0)
                                         self.ne += 1
                         # Storing the RES generation variables
                             if self.NumberRESGen > 0:
                                 for jj in range(self.NumberRESGen):
                                     if self.OriginalNumberRESGen[jj] == \
                                         self.OriginalNumberNodes[ii]:
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.RESgenerators[i, j][1] + jj
-                                        self.ar[self.ne] = 1.0
+                                        self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                        self.ja.append(self.RESgenerators[i, j][1] + jj)
+                                        self.ar.append(1.0)
                                         self.ne += 1
                         # Storing the Hydroelectric generation variables
                             if self.NumberHydroGen > 0:
                                 for jj in range(self.NumberHydroGen):
                                     if self.OriginalNumberHydroGen[jj] == \
                                         self.OriginalNumberNodes[ii]:
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.Hydrogenerators[i, j][1] + jj
-                                        self.ar[self.ne] = 1.0
+                                        self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                        self.ja.append(self.Hydrogenerators[i, j][1] + jj)
+                                        self.ar.append(1.0)
                                         self.ne += 1
                         # Storing variables for ESS
                         # TODO: Modify the constraint for the first period
@@ -2274,24 +1883,18 @@ class Networkmodel():
                             if self.NumberStorageDevices > 0:
                                 if j > 0: # Start only after the first period
                                     for jj in range(self.NumberStorageDevices):
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.ESS[i, j][1] + jj
-                                        self.ar[self.ne] = \
-                                            self.EffStorage[jj] \
-                                            / self.TotalHoursPerPeriod[j - 1]
+                                        self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                        self.ja.append(self.ESS[i, j][1] + jj)
+                                        self.ar.append(self.EffStorage[jj] \
+                                            / self.TotalHoursPerPeriod[j - 1])
                                         self.ne += 1
                                     for k in range(self.NumberStorageDevices):
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.ESS[i, j - 1][1] + jj
-                                        self.ar[self.ne] = \
-                                            -self.EffStorage[jj] \
-                                            / self.TotalHoursPerPeriod[j - 1]
+                                        self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                        self.ja.append(self.ESS[i, j - 1][1] + jj)
+                                        self.ar.append(-self.EffStorage[jj] \
+                                            / self.TotalHoursPerPeriod[j - 1])
                                         self.ne += 1
                         # Storing the variables for pumps
                         # TODO: create an input for storage without the 
@@ -2299,32 +1902,26 @@ class Networkmodel():
                             if self.NumberPumps > 0:
                                 for jj in range(self.NumberPumps):
                                     if self.MaxPowerPumps[jj] > 0:
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                                [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.pumpsvar[i, j][1] + jj
-                                        self.ar[self.ne] = -1.0
+                                        self.ia.append(self.activepowerbalancenode\
+                                                [i, j, k][1] + ii)
+                                        self.ja.append(self.pumpsvar[i, j][1] + jj)
+                                        self.ar.append(-1.0)
                                         self.ne += 1
                         # Storing the variables for active power flows
                             for jj in range(self.NumberLinesPS):
                                 if self.OriginalNumberBranchFrom[jj] ==\
                                     self.OriginalNumberNodes[ii]:
-                                    self.ia[self.ne] = \
-                                        self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerFlow[i, j, k][1] + jj
-                                    self.ar[self.ne] = -1.0
+                                    self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                    self.ja.append(self.ActivePowerFlow[i, j, k][1] + jj)
+                                    self.ar.append(-1.0)
                                     self.ne += 1
                                 if self.OriginalNumberBranchTo[jj] ==\
                                     self.OriginalNumberNodes[ii]:
-                                    self.ia[self.ne] = \
-                                        self.activepowerbalancenode\
-                                            [i, j, k][1] + ii
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerFlow[i, j, k][1] + jj
-                                    self.ar[self.ne] = 1.0
+                                    self.ia.append(self.activepowerbalancenode\
+                                            [i, j, k][1] + ii)
+                                    self.ja.append(self.ActivePowerFlow[i, j, k][1] + jj)
+                                    self.ar.append(1.0)
                                     self.ne += 1
                         # Storing the variables for active power losses
                             if self.LossesFlag:
@@ -2333,22 +1930,18 @@ class Networkmodel():
                                         self.OriginalNumberNodes[ii] or \
                                         self.OriginalNumberBranchTo[jj] ==\
                                         self.OriginalNumberNodes[ii]:
-                                        self.ia[self.ne] = \
-                                            self.activepowerbalancenode\
-                                                [i, j, k][1] + ii
-                                        self.ja[self.ne] = \
-                                            self.ActivePowerLosses[i, j, k][1]\
-                                                + jj
-                                        self.ar[self.ne] = -0.5
+                                        self.ia.append(self.activepowerbalancenode\
+                                                [i, j, k][1] + ii)
+                                        self.ja.append(self.ActivePowerLosses[i, j, k][1]\
+                                                + jj)
+                                        self.ar.append(-0.5)
                                         self.ne += 1
 
                         # Storing the variables for load curtailment
                             if self.FlagFeasibility:
-                                self.ia[self.ne] = \
-                                    self.activepowerbalancenode[i, j, k][1] + ii
-                                self.ja[self.ne] = \
-                                    self.LoadCurtailmentNode[i, j, k][1] + ii
-                                self.ar[self.ne] = 1.0
+                                self.ia.append(self.activepowerbalancenode[i, j, k][1] + ii)
+                                self.ja.append(self.LoadCurtailmentNode[i, j, k][1] + ii)
+                                self.ar.append(1.0)
                                 self.ne += 1
                                 # Storing the thermal generation curtailment 
                                 # variables
@@ -2356,13 +1949,11 @@ class Networkmodel():
                                     for jj in range(self.NumberConvGen):
                                         if self.OriginalNumberConvGen[jj] == \
                                             self.OriginalNumberNodes[ii]:
-                                            self.ia[self.ne] = \
-                                                self.activepowerbalancenode\
-                                                [i, j, k][1] + ii
-                                            self.ja[self.ne] = \
-                                                self.ThermalGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj
-                                            self.ar[self.ne] = -1.0
+                                            self.ia.append(self.activepowerbalancenode\
+                                                [i, j, k][1] + ii)
+                                            self.ja.append(self.ThermalGenerationCurtailmentNode\
+                                                [i, j, k][1] + jj)
+                                            self.ar.append(-1.0)
                                             self.ne += 1
                                 # Storing the RES generation curtailment 
                                 # variables
@@ -2370,13 +1961,11 @@ class Networkmodel():
                                     for jj in range(self.NumberRESGen):
                                         if self.OriginalNumberRESGen[jj] == \
                                             self.OriginalNumberNodes[ii]:
-                                            self.ia[self.ne] = \
-                                                self.activepowerbalancenode\
-                                                [i, j, k][1] + ii
-                                            self.ja[self.ne] = \
-                                                self.RESGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj
-                                            self.ar[self.ne] = -1.0
+                                            self.ia.append(self.activepowerbalancenode\
+                                                [i, j, k][1] + ii)
+                                            self.ja.append(self.RESGenerationCurtailmentNode\
+                                                [i, j, k][1] + jj)
+                                            self.ar.append(-1.0)
                                             self.ne += 1
                                 # Storing the Hydro generation curtailment 
                                 # variables
@@ -2384,13 +1973,11 @@ class Networkmodel():
                                     for jj in range(self.NumberHydroGen):
                                         if self.OriginalNumberHydroGen[jj] == \
                                             self.OriginalNumberNodes[ii]:
-                                            self.ia[self.ne] = \
-                                                self.activepowerbalancenode\
-                                                [i, j, k][1] + ii
-                                            self.ja[self.ne] = \
-                                                self.HydroGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj
-                                            self.ar[self.ne] = -1.0
+                                            self.ia.append(self.activepowerbalancenode\
+                                                [i, j, k][1] + ii)
+                                            self.ja.append(self.HydroGenerationCurtailmentNode\
+                                                [i, j, k][1] + jj)
+                                            self.ar.append(-1.0)
                                             self.ne += 1
 
                         # Defining the resources (b) for the constraints
@@ -2444,75 +2031,67 @@ class Networkmodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
-        # Generating the matrix A for the active power flow constraints
+
+        self.activepowerflowconstraint = np.empty(\
+            (len(self.LongTemporalConnections),\
+            self.ShortTemporalConnections, \
+            (self.NumberContingencies + 1)), dtype=[('napos', 'U80'),\
+            ('nupos', 'i4')]) # Start position of active power flow 
+                              # constraints (rows) per line
+        
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
                 for k in range(self.NumberContingencies + 1):
                     # Pre-contingency
-                    # if k == 0:
-                    #     for ii in range(self.NumberLinesPS):
-                    #     # Storing the active power flow variables
-                    #         self.ia[self.ne] = \
-                    #             self.activepowerflowconstraint[i, j, k][1] + ii
-                    #         self.ja[self.ne] = \
-                    #             self.ActivePowerFlow[i, j, k][1] + ii
-                    #         self.ar[self.ne] = 1.0
-                    #         self.ne += 1
-                    #     # Storing the voltage angle variables at end "from"
-                    #         self.ia[self.ne] = \
-                    #             self.activepowerflowconstraint[i, j, k][1] + ii
-                    #         self.ja[self.ne] = \
-                    #             self.VoltageAngle[i, j, k][1] + \
-                    #                 self.PosNumberBranchFrom[ii]
-                    #         self.ar[self.ne] = \
-                    #             -1.0/self.ReactanceBranch[ii]
-                    #         self.ne += 1
-                    #     # Storing the voltage angle variables at end "to"
-                    #         self.ia[self.ne] = \
-                    #             self.activepowerflowconstraint[i, j, k][1] + ii
-                    #         self.ja[self.ne] = \
-                    #             self.VoltageAngle[i, j, k][1] + \
-                    #                 self.PosNumberBranchTo[ii]
-                    #         self.ar[self.ne] = \
-                    #             1.0/self.ReactanceBranch[ii]
-                    #         self.ne += 1
+                    if k == 0:
+                        self.activepowerflowconstraint[i, j, k] = \
+                            ('activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k), self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.NumberLinesPS))  # Number of
+                                # rows (constraints) in matrix A for the active 
+                                # power flow constraints per line
+                    # Post-contingency
+                    else:
+                        self.activepowerflowconstraint[i, j, k] = \
+                            ('activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.solver.add_rows(\
+                            'activepowerflowconstraint'+str(i)+','+str(j)\
+                            +','+str(k),self.NumberLinesPS - 1))  
+                                # Number of 
+                                # rows (constraints) in matrix A for the active 
+                                # power flow constraints per line
 
-                    #     # Defining the resources (b) for the constraints
-                    #         self.solver.set_row_bnds(\
-                    #             str(self.activepowerflowconstraint[i, j, k][0]),\
-                    #                 ii, 'fixed', 0, 0)
-                    # # Post-contingency
-                    # else:
+        # Generating the matrix A for the active power flow constraints
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
                     counter = 0
                     for ii in range(self.NumberLinesPS):
                         if self.ActiveBranches[k, ii]:
                         # Storing the active power flow variables
-                            self.ia[self.ne] = \
+                            self.ia.append(\
                                 self.activepowerflowconstraint[i, j, k][1] \
-                                    + counter
-                            self.ja[self.ne] = \
-                                self.ActivePowerFlow[i, j, k][1] + ii
-                            self.ar[self.ne] = 1.0
+                                + counter)
+                            self.ja.append(\
+                                self.ActivePowerFlow[i, j, k][1] + ii)
+                            self.ar.append(1.0)
                             self.ne += 1
                         # Storing the voltage angle variables at end "from"
-                            self.ia[self.ne] = \
+                            self.ia.append(\
                                 self.activepowerflowconstraint[i, j, k][1] \
-                                    + counter
-                            self.ja[self.ne] = \
-                                self.VoltageAngle[i, j, k][1] + \
-                                    self.PosNumberBranchFrom[ii]
-                            self.ar[self.ne] = \
-                                -1.0/self.ReactanceBranch[ii]
+                                + counter)
+                            self.ja.append(self.VoltageAngle[i, j, k][1] + \
+                                self.PosNumberBranchFrom[ii])
+                            self.ar.append(-1.0/self.ReactanceBranch[ii])
                             self.ne += 1
                         # Storing the voltage angle variables at end "to"
-                            self.ia[self.ne] = \
+                            self.ia.append(\
                                 self.activepowerflowconstraint[i, j, k][1] \
-                                    + counter
-                            self.ja[self.ne] = \
-                                self.VoltageAngle[i, j, k][1] + \
-                                    self.PosNumberBranchTo[ii]
-                            self.ar[self.ne] = \
-                                1.0/self.ReactanceBranch[ii]
+                                + counter)
+                            self.ja.append(self.VoltageAngle[i, j, k][1] + \
+                                    self.PosNumberBranchTo[ii])
+                            self.ar.append(1.0/self.ReactanceBranch[ii])
                             self.ne += 1
                             
                         # Defining the resources (b) for the constraints
@@ -2528,80 +2107,67 @@ class Networkmodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
+
+        self.activepowerlosses1 = np.empty(\
+            (len(self.LongTemporalConnections),\
+            self.ShortTemporalConnections, \
+            (self.NumberContingencies + 1), \
+            self.NumberLinesPS), dtype=[('napos', 'U80'),\
+            ('nupos', 'i4')]) # Start position of active power losses 
+                              # constraints (rows) per line and per piece
+        
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    for ii in range(self.NumberLinesPS):
+                        # If the line is active in the current contingency
+                        # then reserve the space
+                        if self.ActiveBranches[k, ii]:
+                            self.activepowerlosses1[i, j, k, ii] = \
+                                ('activepowerlosses1'+str(i)+','\
+                                +str(j)+','+str(k)+','+str(ii),\
+                                self.solver.add_rows(\
+                                'activepowerlosses1'+str(i)+','\
+                                +str(j)+','+str(k)+','+str(ii), \
+                                self.NumberPiecesTLLosses)) # Number
+                                    # of rows (constraints) in matrix A 
+                                    # for the active power losses 
+                                    # constraints per line 
+                                    # and per piece
+
         # Generating the matrix A for the active power losses constraints
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
                 for k in range(self.NumberContingencies + 1):
-                    # Pre-contingency
-                    if k == 0:
-                        for ii in range(self.NumberLinesPS):
+                    for ii in range(self.NumberLinesPS):
+                        if self.ActiveBranches[k, ii]:
                             for jj in range(self.NumberPiecesTLLosses):
                             # Storing the active power losses variables
-                                self.ia[self.ne] = \
-                                    self.activepowerlosses1[i, j, k, ii][1] \
-                                        + jj
-                                self.ja[self.ne] = \
+                                self.ia.append(\
+                                    self.activepowerlosses1\
+                                        [i, j, k, ii][1] + jj)
+                                self.ja.append(\
                                     self.ActivePowerLosses[i, j, k][1] \
-                                        + ii
-                                self.ar[self.ne] = 1.0
+                                        + ii)
+                                self.ar.append(1.0)
                                 self.ne += 1
                             # Storing the active power flow variables
-                                self.ia[self.ne] = \
-                                    self.activepowerlosses1[i, j, k, ii][1] \
-                                        + jj
-                                self.ja[self.ne] = \
+                                self.ia.append(\
+                                    self.activepowerlosses1\
+                                        [i, j, k, ii][1] + jj)
+                                self.ja.append(\
                                     self.ActivePowerFlow[i, j, k][1] \
-                                        + ii
-                                self.ar[self.ne] = -self.BCoeffPWBranchLosses[jj]\
-                                    * self.ResistanceBranch[ii]
+                                        + ii)
+                                self.ar.append(\
+                                    -self.BCoeffPWBranchLosses[jj]\
+                                    * self.ResistanceBranch[ii])
                                 self.ne += 1
-
                             # Defining the resources (b) for the constraints
                                 self.solver.set_row_bnds(\
                                     str(self.activepowerlosses1\
                                         [i, j, k, ii][0]), jj, 'lower', \
                                         self.ACoeffPWBranchLosses[jj]\
                                         * self.ResistanceBranch[ii], 0)
-                                # print("{} ≤ {} - ({})*{} ≤ ∞".format(\
-                                #     self.ACoeffPWBranchLosses[jj]\
-                                #     * self.ResistanceBranch[ii], \
-                                #     str(self.ActivePowerLosses[i, j, k][0]+\
-                                #     ","+str(ii)),-self.BCoeffPWBranchLosses[jj]\
-                                #     * self.ResistanceBranch[ii],\
-                                #     str(self.ActivePowerFlow[i, j, k][0]+\
-                                #     ","+str(ii))))
-                    # Post-contingency
-                    else:
-                        for ii in range(self.NumberLinesPS):
-                            if self.ActiveBranches[k, ii]:
-                                for jj in range(self.NumberPiecesTLLosses):
-                                # Storing the active power losses variables
-                                    self.ia[self.ne] = \
-                                        self.activepowerlosses1\
-                                            [i, j, k, ii][1] + jj
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerLosses[i, j, k][1] \
-                                            + ii
-                                    self.ar[self.ne] = 1.0
-                                    self.ne += 1
-                                # Storing the active power flow variables
-                                    self.ia[self.ne] = \
-                                        self.activepowerlosses1\
-                                            [i, j, k, ii][1] + jj
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerFlow[i, j, k][1] \
-                                            + ii
-                                    self.ar[self.ne] = \
-                                        -self.BCoeffPWBranchLosses[jj]\
-                                        * self.ResistanceBranch[ii]
-                                    self.ne += 1
-
-                                # Defining the resources (b) for the constraints
-                                    self.solver.set_row_bnds(\
-                                        str(self.activepowerlosses1\
-                                            [i, j, k, ii][0]), jj, 'lower', \
-                                            self.ACoeffPWBranchLosses[jj]\
-                                            * self.ResistanceBranch[ii], 0)
 
     def activepowerlosses2constraints(self):
         """ This class method writes the active power losses constraints in glpk
@@ -2610,72 +2176,68 @@ class Networkmodel():
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
         Third, the bounds of the constraints are defined """
+
+        self.activepowerlosses2 = np.empty(\
+            (len(self.LongTemporalConnections),\
+            self.ShortTemporalConnections, \
+            (self.NumberContingencies + 1), \
+            self.NumberLinesPS), dtype=[('napos', 'U80'),\
+            ('nupos', 'i4')]) # Start position of active power losses 
+                              # constraints (rows) per line and per piece
+
+        for i in self.LongTemporalConnections:
+            for j in range(self.ShortTemporalConnections):
+                for k in range(self.NumberContingencies + 1):
+                    if self.LossesFlag:
+                        for ii in range(self.NumberLinesPS):
+                            # If the line is active in the current contingency
+                            # then reserve the space
+                            if self.ActiveBranches[k, ii]:
+                                self.activepowerlosses2[i, j, k, ii] = \
+                                    ('activepowerlosses2'+str(i)+','\
+                                    +str(j)+','+str(k)+','+str(ii), \
+                                    self.solver.add_rows(\
+                                    'activepowerlosses2'+str(i)+','\
+                                    +str(j)+','+str(k)+','+str(ii), \
+                                    self.NumberPiecesTLLosses)) # Number
+                                        # of rows (constraints) in matrix A 
+                                        # for the active power losses 
+                                        # constraints per line 
+                                        # and per piece
+
         # Generating the matrix A for the active power losses constraints
         for i in self.LongTemporalConnections:
             for j in range(self.ShortTemporalConnections):
                 for k in range(self.NumberContingencies + 1):
-                    # Pre-contingency
-                    if k == 0:
-                        for ii in range(self.NumberLinesPS):
+                    for ii in range(self.NumberLinesPS):
+                        if self.ActiveBranches[k, ii]:
                             for jj in range(self.NumberPiecesTLLosses):
                             # Storing the active power losses variables
-                                self.ia[self.ne] = \
-                                    self.activepowerlosses2[i, j, k, ii][1] \
-                                        + jj
-                                self.ja[self.ne] = \
+                                self.ia.append(\
+                                    self.activepowerlosses2\
+                                        [i, j, k, ii][1] + jj)
+                                self.ja.append(\
                                     self.ActivePowerLosses[i, j, k][1] \
-                                        + ii
-                                self.ar[self.ne] = 1.0
+                                        + ii)
+                                self.ar.append(1.0)
                                 self.ne += 1
                             # Storing the active power flow variables
-                                self.ia[self.ne] = \
-                                    self.activepowerlosses2[i, j, k, ii][1] \
-                                        + jj
-                                self.ja[self.ne] = \
+                                self.ia.append(\
+                                    self.activepowerlosses2\
+                                        [i, j, k, ii][1] + jj)
+                                self.ja.append(\
                                     self.ActivePowerFlow[i, j, k][1] \
-                                        + ii
-                                self.ar[self.ne] = self.BCoeffPWBranchLosses[jj]\
-                                    * self.ResistanceBranch[ii]
+                                        + ii)
+                                self.ar.append(\
+                                    self.BCoeffPWBranchLosses[jj]\
+                                    * self.ResistanceBranch[ii])
                                 self.ne += 1
-
                             # Defining the resources (b) for the constraints
                                 self.solver.set_row_bnds(\
                                     str(self.activepowerlosses2\
                                         [i, j, k, ii][0]), jj, 'lower', \
                                         self.ACoeffPWBranchLosses[jj]\
                                         * self.ResistanceBranch[ii], 0)
-                    # Post-contingency
-                    else:
-                        for ii in range(self.NumberLinesPS):
-                            if self.ActiveBranches[k, ii]:
-                                for jj in range(self.NumberPiecesTLLosses):
-                                # Storing the active power losses variables
-                                    self.ia[self.ne] = \
-                                        self.activepowerlosses2\
-                                            [i, j, k, ii][1] + jj
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerLosses[i, j, k][1] \
-                                            + ii
-                                    self.ar[self.ne] = 1.0
-                                    self.ne += 1
-                                # Storing the active power flow variables
-                                    self.ia[self.ne] = \
-                                        self.activepowerlosses2\
-                                            [i, j, k, ii][1] + jj
-                                    self.ja[self.ne] = \
-                                        self.ActivePowerFlow[i, j, k][1] \
-                                            + ii
-                                    self.ar[self.ne] = \
-                                        self.BCoeffPWBranchLosses[jj]\
-                                        * self.ResistanceBranch[ii]
-                                    self.ne += 1
-
-                                # Defining the resources (b) for the constraints
-                                    self.solver.set_row_bnds(\
-                                        str(self.activepowerlosses2\
-                                            [i, j, k, ii][0]), jj, 'lower', \
-                                            self.ACoeffPWBranchLosses[jj]\
-                                            * self.ResistanceBranch[ii], 0)
 
     ########################################
     ###   OPTIMAL POWER FLOW CPP MODELS  ###
@@ -3723,9 +3285,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     which provides the parameters for the model. Furthermore,
     the GLPKSolver class that contains the GLPK wrapper is imported """
 
-    number_variablesENM = 0
-    number_constraintsENM = 0
-
     def __init__(self, obj1=None, obj2=None, obj3=None):
         """
         Parameters
@@ -3772,50 +3331,11 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     def EnergyandNetworkModels(self):
         """ This class method builds the optimisation model
         for the energy and network related problems """
-        # Function to determine de number of variables in the energy model
-        self.dnvariablesEM()
-        # Function to determine de number of constraints in the energy 
-        # model
-        self.dnconstraintsEM()
-        # Creation of variables for the energy model in 
-        # glpk (matrix A)
         self.variablesEM()
 
-
         if self.FlagProblem:
-            # Function to determine de number of variables in the optimal
-            # power flow
-            self.dnvariablesOPF()
-            # Function to determine de number of constraints in the optimal
-            # power flow
-            self.dnconstraintsOPF()
-            # Number of variables in the Energy and Optimal Power Flow models
-            self.number_variablesENM = self.number_variablesOPF + \
-                self.number_variablesEM
-            # Number of constraints in the Energy and Optimal Power Flow models
-            self.number_constraintsENM = self.number_constraintsOPF + \
-                self.number_constraintsEM
-
-            # Creation of variables for the Optimal Power Flow in 
-            # glpk (matrix A)
             self.variablesOPF()
-
         else:
-            # Function to determine de number of variables in the economic 
-            # dispatch
-            self.dnvariablesED()
-            # Function to determine de number of constraints in the economic 
-            # dispatch
-            self.dnconstraintsED()
-            # Number of variables in the Energy and Economic Dispatch models
-            self.number_variablesENM = self.number_variablesED + \
-                self.number_variablesEM
-            # Number of constraints in the Energy and Economic Dispatch models
-            self.number_constraintsENM = self.number_constraintsED + \
-                self.number_constraintsEM
-
-            # Creation of variables for the economic dispatch in 
-            # glpk (matrix A)
             self.variablesED()
 
         self.coeffmatrixENM()
@@ -3827,30 +3347,23 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         the coefficient matrix (matrix A) for the simplex method """
         # The coefficient matrix is stored in CSR format (sparse matrix) 
         # to be later added to glpk
-        self.ia = np.empty(math.ceil(self.number_constraintsENM * \
-            1000), dtype=int) # Position in rows
-        self.ja = np.empty(math.ceil(self.number_constraintsENM * \
-            1000 ), dtype=int) # Position in columns
-        self.ar = np.empty(math.ceil(self.number_constraintsENM * \
-            1000), dtype=float) # Value
+        self.ia = [] # Position in rows
+        self.ja = [] # Position in columns
+        self.ar = [] # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
 
-
-        self.constraintsEM()
         self.Energybalance()
         self.Aggregation()
         # if self.NumberNodesUnc != 0:
         #     self.AggregationStochastic()
 
         if self.FlagProblem:
-            self.constraintsOPF()
             self.activepowerbalancepernode()
             self.activepowerflowconstraints()
             if self.LossesFlag:
                 self.activepowerlosses1constraints()
                 self.activepowerlosses2constraints()
         else:
-            self.constraintsED()
             self.activepowerbalancesystem()
 
         if self.NumberHydroGen > 0:
@@ -3910,17 +3423,16 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             # separate the data for this
             for j in self.LongTemporalConnections:
                 # Storing the variables for the total storage of the tree
-                self.ia[self.ne] = self.connectionNetworkandEnergy[i, j][1]
-                self.ja[self.ne] = self.OutputsTree[i][1] + \
-                    self.ConnectionTreeGen[j]
-                self.ar[self.ne] = 1.0
+                self.ia.append(self.connectionNetworkandEnergy[i, j][1])
+                self.ja.append(self.OutputsTree[i][1] + \
+                    self.ConnectionTreeGen[j])
+                self.ar.append(1.0)
                 self.ne += 1
                 for k in range(self.ShortTemporalConnections):
-                    self.ia[self.ne] = self.connectionNetworkandEnergy[i, j][1]
-                    self.ja[self.ne] = \
-                        self.Hydrogenerators[j, k][1] + i
-                    self.ar[self.ne] = -self.TotalHoursPerPeriod[k] * \
-                        self.BaseUnitPower
+                    self.ia.append(self.connectionNetworkandEnergy[i, j][1])
+                    self.ja.append(self.Hydrogenerators[j, k][1] + i)
+                    self.ar.append(-self.TotalHoursPerPeriod[k] * \
+                        self.BaseUnitPower)
                     self.ne += 1
                 # Defining the resources (b) for the constraints
                 self.solver.set_row_bnds(\
