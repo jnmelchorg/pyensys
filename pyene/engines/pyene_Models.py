@@ -11,11 +11,19 @@ the transmission system (Optimal Power Flow)
 """
 
 from .cython._glpk import GLPKSolver
-from .cython.cpp_energy_wrapper import network_models_cpp, energy_model_cpp, combined_energy_dc_opf_r1_cpp
 import numpy as np
 import sys
 import math
+import importlib
 
+try:
+    cpp_energy_wrapper = importlib.import_module(\
+        '.engines.cython.cpp_energy_wrapper', package="pyene")
+    network_models_cpp = cpp_energy_wrapper.network_models_cpp
+    energy_model_cpp = cpp_energy_wrapper.energy_model_cpp
+    combined_energy_dc_opf_r1_cpp = cpp_energy_wrapper.combined_energy_dc_opf_r1_cpp
+except ImportError as err:
+    print('Error:', err)
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.
