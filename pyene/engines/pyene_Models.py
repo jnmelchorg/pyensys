@@ -19,9 +19,7 @@ import importlib
 try:
     cpp_energy_wrapper = importlib.import_module(\
         '.engines.cython.cpp_energy_wrapper', package="pyene")
-    network_models_cpp = cpp_energy_wrapper.network_models_cpp
-    energy_model_cpp = cpp_energy_wrapper.energy_model_cpp
-    combined_energy_dc_opf_r1_cpp = cpp_energy_wrapper.combined_energy_dc_opf_r1_cpp
+    models_cpp = cpp_energy_wrapper.models_cpp_clp
 except ImportError as err:
     print('Error:', err)
 
@@ -390,7 +388,7 @@ class Energymodel():
         different mathematical models in c++ """
 
         self.solver_problem = "CLP"
-        self.energy_model = energy_model_cpp()
+        self.energy_model = models_cpp()
         self.set_parameters_cpp_energy_models()
         self.energy_model.run_energy_tree_cpp()
 
@@ -1373,24 +1371,11 @@ class Networkmodel():
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, self.TotalHoursPerPeriod[j] \
                                     * 100000000)
-                        if self.NumberConvGen > 0:
-                            for ii in range(self.NumberConvGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.ThermalGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.TotalHoursPerPeriod[j] * 100000000)
-                        if self.NumberRESGen > 0:
-                            for ii in range(self.NumberRESGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.RESGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.TotalHoursPerPeriod[j] * 100000000)
-                        if self.NumberHydroGen > 0:
-                            for ii in range(self.NumberHydroGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.HydroGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.TotalHoursPerPeriod[j] * 100000000)
+                        for ii in range(self.NumberNodesPS):
+                            self.solver.set_obj_coef(\
+                                str(self.GenerationCurtailmentNode\
+                                [i, j, k][0]), ii, \
+                                self.TotalHoursPerPeriod[j] * 100000000)
                 elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
@@ -1640,30 +1625,13 @@ class Networkmodel():
                 dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
                 # in matrix A (rows) of variables for load curtailment per
                 # node
-            if self.NumberConvGen > 0:
-                self.ThermalGenerationCurtailmentNode = np.empty((\
-                    len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, \
-                    (self.NumberContingencies + 1)),\
-                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
-                    # in matrix A (rows) of variables for thermal generation 
-                    # curtailment per node
-            if self.NumberRESGen > 0:
-                self.RESGenerationCurtailmentNode = np.empty((\
-                    len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, \
-                    (self.NumberContingencies + 1)),\
-                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
-                    # in matrix A (rows) of variables for RES generation 
-                    # curtailment per node
-            if self.NumberHydroGen > 0:
-                self.HydroGenerationCurtailmentNode = np.empty((\
-                    len(self.LongTemporalConnections),\
-                    self.ShortTemporalConnections, \
-                    (self.NumberContingencies + 1)),\
-                    dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
-                    # in matrix A (rows) of variables for RES generation 
-                    # curtailment per node
+            self.GenerationCurtailmentNode = np.empty((\
+                len(self.LongTemporalConnections),\
+                self.ShortTemporalConnections, \
+                (self.NumberContingencies + 1)),\
+                dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
+                # in matrix A (rows) of variables for generation 
+                # curtailment per node
         self.VoltageAngle = np.empty((len(self.LongTemporalConnections),\
             self.ShortTemporalConnections, (self.NumberContingencies + 1)),\
             dtype=[('napos', 'U80'),('nupos', 'i4')]) # Start position
@@ -1700,24 +1668,11 @@ class Networkmodel():
                             'LoadCurtailmentNode'+str(i)+',\
                                 '+str(j)+','+str(k),\
                             self.NumberNodesPS))
-                        if self.NumberConvGen > 0:
-                            self.ThermalGenerationCurtailmentNode[i, j, k] = \
-                                ('ThermalGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k), self.solver.add_cols(\
-                                'ThermalGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k),self.NumberConvGen))
-                        if self.NumberRESGen > 0:
-                            self.RESGenerationCurtailmentNode[i, j, k] = \
-                                ('RESGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k), self.solver.add_cols(\
-                                'RESGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k),self.NumberRESGen))
-                        if self.NumberHydroGen > 0:
-                            self.HydroGenerationCurtailmentNode[i, j, k] = \
-                                ('HydroGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k), self.solver.add_cols(\
-                                'HydroGenerationCurtailmentNode'+str(i)+',\
-                                '+str(j)+','+str(k),self.NumberHydroGen))
+                        self.GenerationCurtailmentNode[i, j, k] = \
+                            ('GenerationCurtailmentNode'+str(i)+',\
+                            '+str(j)+','+str(k), self.solver.add_cols(\
+                            'GenerationCurtailmentNode'+str(i)+',\
+                            '+str(j)+','+str(k), self.NumberNodesPS))
                     self.VoltageAngle[i, j, k] = \
                         ('VoltageAngle'+str(i)+','+str(j)+','+str(k),\
                         self.solver.add_cols(\
@@ -1778,36 +1733,38 @@ class Networkmodel():
                                 self.solver.set_col_bnds(\
                                     str(self.LoadCurtailmentNode[i, j, k][0]),\
                                     ii, 'fixed', 0, 0)
-                        if self.NumberConvGen > 0:
-                            for ii in range(self.NumberConvGen):
-                                if self.MinConvGen[ii] > 0:
-                                    self.solver.set_col_bnds(\
-                                    str(self.ThermalGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'bounded', 0, self.MinConvGen[ii])
-                                else:
-                                    self.solver.set_col_bnds(\
-                                    str(self.ThermalGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'fixed', 0, 0)
-                        if self.NumberRESGen > 0:
-                            for ii in range(self.NumberRESGen):
-                                if self.MinRESGen[ii] > 0:
-                                    self.solver.set_col_bnds(\
-                                    str(self.RESGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'lower', 0, 0)
-                                else:
-                                    self.solver.set_col_bnds(\
-                                    str(self.RESGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'fixed', 0, 0)
-                        if self.NumberHydroGen > 0:
-                            for ii in range(self.NumberHydroGen):
-                                if self.MinHydroGen[ii] > 0:
-                                    self.solver.set_col_bnds(\
-                                    str(self.HydroGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'lower', 0, 0)
-                                else:
-                                    self.solver.set_col_bnds(\
-                                    str(self.HydroGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii, 'fixed', 0, 0)
+                        for ii in range(self.NumberNodesPS):
+                            flag_gen = False
+                            if self.NumberConvGen > 0:
+                                for jj in range(self.NumberConvGen):
+                                    if self.OriginalNumberConvGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        flag_gen=True
+                                        break
+                            # Storing the RES generation curtailment 
+                            # variables
+                            if self.NumberRESGen > 0 and not flag_gen:
+                                for jj in range(self.NumberRESGen):
+                                    if self.OriginalNumberRESGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        flag_gen=True
+                                        break
+                            # Storing the Hydro generation curtailment 
+                            # variables
+                            if self.NumberHydroGen > 0 and not flag_gen:
+                                for jj in range(self.NumberHydroGen):
+                                    if self.OriginalNumberHydroGen[jj] == \
+                                        self.OriginalNumberNodes[ii]:
+                                        flag_gen=True
+                                        break
+                            if flag_gen:
+                                self.solver.set_col_bnds(\
+                                str(self.GenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, 'lower', 0.0, 0.0)
+                            else:
+                                self.solver.set_col_bnds(\
+                                str(self.GenerationCurtailmentNode\
+                                    [i, j, k][0]), ii, 'fixed', 0.0, 0.0)
                     for ii in range(self.NumberNodesPS):
                         if self.TypeNode[ii] != 3:
                             self.solver.set_col_bnds(\
@@ -1953,40 +1910,12 @@ class Networkmodel():
                                 self.ne += 1
                                 # Storing the thermal generation curtailment 
                                 # variables
-                                if self.NumberConvGen > 0:
-                                    for jj in range(self.NumberConvGen):
-                                        if self.OriginalNumberConvGen[jj] == \
-                                            self.OriginalNumberNodes[ii]:
-                                            self.ia.append(self.activepowerbalancenode\
-                                                [i, j, k][1] + ii)
-                                            self.ja.append(self.ThermalGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj)
-                                            self.ar.append(-1.0)
-                                            self.ne += 1
-                                # Storing the RES generation curtailment 
-                                # variables
-                                if self.NumberRESGen > 0:
-                                    for jj in range(self.NumberRESGen):
-                                        if self.OriginalNumberRESGen[jj] == \
-                                            self.OriginalNumberNodes[ii]:
-                                            self.ia.append(self.activepowerbalancenode\
-                                                [i, j, k][1] + ii)
-                                            self.ja.append(self.RESGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj)
-                                            self.ar.append(-1.0)
-                                            self.ne += 1
-                                # Storing the Hydro generation curtailment 
-                                # variables
-                                if self.NumberHydroGen > 0:
-                                    for jj in range(self.NumberHydroGen):
-                                        if self.OriginalNumberHydroGen[jj] == \
-                                            self.OriginalNumberNodes[ii]:
-                                            self.ia.append(self.activepowerbalancenode\
-                                                [i, j, k][1] + ii)
-                                            self.ja.append(self.HydroGenerationCurtailmentNode\
-                                                [i, j, k][1] + jj)
-                                            self.ar.append(-1.0)
-                                            self.ne += 1
+                                self.ia.append(self.activepowerbalancenode\
+                                    [i, j, k][1] + ii)
+                                self.ja.append(self.GenerationCurtailmentNode\
+                                    [i, j, k][1] + ii)
+                                self.ar.append(-1.0)
+                                self.ne += 1
 
                         # Defining the resources (b) for the constraints
                             totaldemand = 0                
@@ -2257,16 +2186,16 @@ class Networkmodel():
         different mathematical models in c++ """
 
         self.solver_problem = "CLP"
-        self.network_model = network_models_cpp()
+        self.network_model = models_cpp()
         self.set_parameters_cpp_models()
         self.network_model.run_reduced_dc_opf_cpp()
         # retrieving solution
-        aux_gen, aux_gen_cur , aux_gen_cost = \
+        aux_gen, aux_gen_cost = \
             self.network_model.get_generation_solution_cpp()
         
         aux_flows = self.network_model.get_branch_solution_cpp()
 
-        aux_angles, aux_load_cur = self.network_model.get_node_solution_cpp()
+        aux_angles, aux_load_cur, aux_gen_cur = self.network_model.get_node_solution_cpp()
         
         self.ThermalGenerationSolution = \
             np.empty((len(self.LongTemporalConnections),\
@@ -2281,21 +2210,11 @@ class Networkmodel():
                 self.ShortTemporalConnections, \
                     self.NumberHydroGen))
         
-        self.ThermalGenerationCurtailmentNodesSolution = \
+        self.GenerationCurtailmentNodesSolution = \
             np.empty((len(self.LongTemporalConnections),\
                 self.ShortTemporalConnections, \
                 (self.NumberContingencies + 1), \
-                self.NumberConvGen))
-        self.RESGenerationCurtailmentNodesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberRESGen))
-        self.HydroGenerationCurtailmentNodesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberHydroGen))
+                self.NumberNodesPS))
         
         self.ThermalGenerationCostSolution = \
             np.empty((len(self.LongTemporalConnections),\
@@ -2358,30 +2277,6 @@ class Networkmodel():
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
                         if self.ActiveConv[k]:
-                            self.ThermalGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                                aux_gen_cur[counter]
-                            counter += 1
-                        else:
-                            self.ThermalGenerationCurtailmentNodesSolution[i, j, 0, k] = 0.0
-                    
-                if self.NumberHydroGen > 0:
-                    for k in range(self.NumberHydroGen):
-                        self.HydroGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                            aux_gen_cur[counter]
-                        counter += 1
-                
-                if self.NumberRESGen > 0:
-                    for k in range(self.NumberRESGen):
-                        self.RESGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                            aux_gen_cur[counter]
-                        counter += 1
-        
-        counter = 0
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                if self.NumberConvGen > 0:
-                    for k in range(self.NumberConvGen):
-                        if self.ActiveConv[k]:
                             self.ThermalGenerationCostSolution[i, j, k] = \
                                 aux_gen_cost[counter]
                             counter += 1
@@ -2422,10 +2317,13 @@ class Networkmodel():
                                 aux_angles[counter]
                             self.LoadCurtailmentNodesSolution[i, j, k ,ii] = \
                                 aux_load_cur[counter]
+                            self.GenerationCurtailmentNodesSolution[i, j, k, ii] = \
+                                aux_gen_cur[counter]
                             counter += 1
                         else:
                             self.VoltageAngleSolution[i, j, k ,ii] =  0.0
                             self.LoadCurtailmentNodesSolution[i, j, k ,ii] =  0.0
+                            self.GenerationCurtailmentNodesSolution[i, j, k, ii] = 0.0
 
     def set_parameters_cpp_models(self):
         """ This class method set all parameters in the c++ implementation """
@@ -3134,75 +3032,27 @@ class Networkmodel():
         else:
             return None
 
-    def GetThermalGenerationCurtailmentNodes(self):
+    def GetGenerationCurtailmentNodes(self):
         if self.FlagProblem and self.FlagFeasibility:
             if self.solver_problem == "GLPK":
-                ThermalGenerationCurtailmentNodesSolution = \
+                GenerationCurtailmentNodesSolution = \
                     np.empty((len(self.LongTemporalConnections),\
                         self.ShortTemporalConnections, \
                         (self.NumberContingencies + 1), \
-                        self.NumberConvGen))
+                        self.NumberNodesPS))
                 for i in self.LongTemporalConnections:
                     for j in range(self.ShortTemporalConnections):
                         for k in range(self.NumberContingencies + 1):
-                            for ii in range(self.NumberConvGen):
-                                ThermalGenerationCurtailmentNodesSolution\
+                            for ii in range(self.NumberNodesPS):
+                                GenerationCurtailmentNodesSolution\
                                     [i, j, k, ii] = \
                                     self.solver.get_col_prim(\
-                                    str(self.ThermalGenerationCurtailmentNode\
+                                    str(self.GenerationCurtailmentNode\
                                         [i, j, k][0]), ii)\
                                         * self.BaseUnitPower
-                return ThermalGenerationCurtailmentNodesSolution
+                return GenerationCurtailmentNodesSolution
             elif self.solver_problem == "CLP":
-                return self.ThermalGenerationCurtailmentNodesSolution
-        else:
-            return None
-
-    def GetRESGenerationCurtailmentNodes(self):
-        if self.FlagProblem and self.FlagFeasibility:
-            if self.solver_problem == "GLPK":
-                RESGenerationCurtailmentNodesSolution = \
-                    np.empty((len(self.LongTemporalConnections),\
-                        self.ShortTemporalConnections, \
-                        (self.NumberContingencies + 1), \
-                        self.NumberRESGen))
-                for i in self.LongTemporalConnections:
-                    for j in range(self.ShortTemporalConnections):
-                        for k in range(self.NumberContingencies + 1):
-                            for ii in range(self.NumberRESGen):
-                                RESGenerationCurtailmentNodesSolution\
-                                    [i, j, k, ii] = \
-                                    self.solver.get_col_prim(\
-                                    str(self.RESGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
-                return RESGenerationCurtailmentNodesSolution
-            elif self.solver_problem == "CLP":
-                return self.RESGenerationCurtailmentNodesSolution
-        else:
-            return None
-    
-    def GetHydroGenerationCurtailmentNodes(self):
-        if self.FlagProblem and self.FlagFeasibility:
-            if self.solver_problem == "GLPK":
-                HydroGenerationCurtailmentNodesSolution = \
-                    np.empty((len(self.LongTemporalConnections),\
-                        self.ShortTemporalConnections, \
-                        (self.NumberContingencies + 1), \
-                        self.NumberHydroGen))
-                for i in self.LongTemporalConnections:
-                    for j in range(self.ShortTemporalConnections):
-                        for k in range(self.NumberContingencies + 1):
-                            for ii in range(self.NumberHydroGen):
-                                HydroGenerationCurtailmentNodesSolution\
-                                    [i, j, k, ii] = \
-                                    self.solver.get_col_prim(\
-                                    str(self.HydroGenerationCurtailmentNode\
-                                        [i, j, k][0]), ii)\
-                                        * self.BaseUnitPower
-                return HydroGenerationCurtailmentNodesSolution
-            elif self.solver_problem == "CLP":
-                return self.HydroGenerationCurtailmentNodesSolution
+                return self.GenerationCurtailmentNodesSolution
         else:
             return None
 
@@ -3282,7 +3132,6 @@ class Networkmodel():
             return self.solver.get_obj_val()
         elif self.solver_problem == "CLP":
             return self.network_model.get_objective_function_cpp()
-
 
 
 class EnergyandNetwork(Energymodel, Networkmodel):
@@ -3504,27 +3353,11 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                                 str(self.LoadCurtailmentNode[i, j, k][0]),\
                                 ii, self.OFaux[i] * self.TotalHoursPerPeriod[j] \
                                     * self.PenaltyCurtailment)
-                        if self.NumberConvGen > 0:
-                            for ii in range(self.NumberConvGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.ThermalGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
-                                    self.PenaltyCurtailment)
-                        if self.NumberRESGen > 0:
-                            for ii in range(self.NumberRESGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.RESGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
-                                    self.PenaltyCurtailment)
-                        if self.NumberHydroGen > 0:
-                            for ii in range(self.NumberHydroGen):
-                                self.solver.set_obj_coef(\
-                                    str(self.HydroGenerationCurtailmentNode\
-                                    [i, j, k][0]), ii, \
-                                    self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
-                                    self.PenaltyCurtailment)
+                            self.solver.set_obj_coef(\
+                                str(self.GenerationCurtailmentNode\
+                                [i, j, k][0]), ii, \
+                                self.OFaux[i] * self.TotalHoursPerPeriod[j] * \
+                                self.PenaltyCurtailment)
                 elif not self.FlagProblem and self.FlagFeasibility:
                 # Economic Dispatch
                 # TODO: Set a parameter penalty in pyeneN
@@ -3543,7 +3376,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         different mathematical models in c++ """
 
         self.solver_problem = "CLP"
-        self.combined_energy_dc_opf_r1 = combined_energy_dc_opf_r1_cpp()
+        self.combined_energy_dc_opf_r1 = models_cpp()
         self.set_parameters_cpp_combined_energy_dc_opf_r1_models()
         self.combined_energy_dc_opf_r1.run_combined_energy_dc_opf_r1_cpp()
 
@@ -3569,12 +3402,12 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 counter += 1
         
         # retrieving solution
-        aux_gen, aux_gen_cur , aux_gen_cost = \
+        aux_gen, aux_gen_cost = \
             self.combined_energy_dc_opf_r1.get_generation_solution_cpp()
         
         aux_flows = self.combined_energy_dc_opf_r1.get_branch_solution_cpp()
 
-        aux_angles, aux_load_cur = self.combined_energy_dc_opf_r1.get_node_solution_cpp()
+        aux_angles, aux_load_cur, aux_gen_cur = self.combined_energy_dc_opf_r1.get_node_solution_cpp()
         
         self.ThermalGenerationSolution = \
             np.empty((len(self.LongTemporalConnections),\
@@ -3589,21 +3422,11 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 self.ShortTemporalConnections, \
                     self.NumberHydroGen))
         
-        self.ThermalGenerationCurtailmentNodesSolution = \
+        self.GenerationCurtailmentNodesSolution = \
             np.empty((len(self.LongTemporalConnections),\
                 self.ShortTemporalConnections, \
                 (self.NumberContingencies + 1), \
-                self.NumberConvGen))
-        self.RESGenerationCurtailmentNodesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberRESGen))
-        self.HydroGenerationCurtailmentNodesSolution = \
-            np.empty((len(self.LongTemporalConnections),\
-                self.ShortTemporalConnections, \
-                (self.NumberContingencies + 1), \
-                self.NumberHydroGen))
+                self.NumberNodesPS))
         
         self.ThermalGenerationCostSolution = \
             np.empty((len(self.LongTemporalConnections),\
@@ -3666,30 +3489,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                 if self.NumberConvGen > 0:
                     for k in range(self.NumberConvGen):
                         if self.ActiveConv[k]:
-                            self.ThermalGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                                aux_gen_cur[counter]
-                            counter += 1
-                        else:
-                            self.ThermalGenerationCurtailmentNodesSolution[i, j, 0, k] = 0.0
-                    
-                if self.NumberHydroGen > 0:
-                    for k in range(self.NumberHydroGen):
-                        self.HydroGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                            aux_gen_cur[counter]
-                        counter += 1
-                
-                if self.NumberRESGen > 0:
-                    for k in range(self.NumberRESGen):
-                        self.RESGenerationCurtailmentNodesSolution[i, j, 0, k] = \
-                            aux_gen_cur[counter]
-                        counter += 1
-        
-        counter = 0
-        for i in self.LongTemporalConnections:
-            for j in range(self.ShortTemporalConnections):
-                if self.NumberConvGen > 0:
-                    for k in range(self.NumberConvGen):
-                        if self.ActiveConv[k]:
                             self.ThermalGenerationCostSolution[i, j, k] = \
                                 aux_gen_cost[counter]
                             counter += 1
@@ -3730,10 +3529,13 @@ class EnergyandNetwork(Energymodel, Networkmodel):
                                 aux_angles[counter]
                             self.LoadCurtailmentNodesSolution[i, j, k ,ii] = \
                                 aux_load_cur[counter]
+                            self.GenerationCurtailmentNodesSolution[i, j, k, ii] = \
+                                aux_gen_cur[counter]
                             counter += 1
                         else:
                             self.VoltageAngleSolution[i, j, k ,ii] =  0.0
                             self.LoadCurtailmentNodesSolution[i, j, k ,ii] =  0.0
+                            self.GenerationCurtailmentNodesSolution[i, j, k, ii] = 0.0
     
     def set_parameters_cpp_combined_energy_dc_opf_r1_models(self):
         """ This class method set all parameters in the c++ implementation """
@@ -3746,47 +3548,54 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         for vectors in range(self.NumberTrees):
             for nodes in range(self.TreeNodes):
                 aux_output.append(self.OutputTree[nodes, vectors])
+
         self.combined_energy_dc_opf_r1.load_energy_tree_information_cpp(\
             self.TreeNodes, self.NumberTrees, self.LLEB, self.LLEA, aux_intake, \
             aux_output, self.WeightNodes)
-        
+
         # Information nodes
+        slack = self.OriginalNumberNodes[0]
         for ii in range(self.NumberNodesPS):
-            demand_vals = []
-            for i in self.LongTemporalConnections:
-                for j in range(self.ShortTemporalConnections):
-                    if self.NumberDemScenarios == 0:
-                        demand_vals.append(self.PowerDemandNode[ii] * \
-                            self.MultScenariosDemand[i, ii])
-                    else:
-                        demand_vals.append(self.PowerDemandNode[ii] * \
-                            self.MultScenariosDemand[i, j, ii])
-            self.combined_energy_dc_opf_r1.add_bus_cpp(demand_vals, \
-                self.OriginalNumberNodes[ii], 'ac')
-        
+            if self.TypeNode[ii] != 4:
+                if self.TypeNode[ii] == 3:
+                    slack = self.OriginalNumberNodes[ii]
+                demand_vals = []
+                for i in self.LongTemporalConnections:
+                    for j in range(self.ShortTemporalConnections):
+                        if self.NumberDemScenarios == 0:
+                            demand_vals.append(self.PowerDemandNode[ii] * \
+                                self.MultScenariosDemand[i, ii])
+                        else:
+                            demand_vals.append(self.PowerDemandNode[ii] * \
+                                self.MultScenariosDemand[i, j, ii])
+                self.combined_energy_dc_opf_r1.add_bus_cpp(demand_vals, \
+                    self.OriginalNumberNodes[ii], 'ac')
+
         # Information transmission lines
         # TODO: implement the same for transformers
         for xtl in range(self.NumberLinesPS):
-            self.combined_energy_dc_opf_r1.add_branch_cpp([self.ReactanceBranch[xtl]], \
-                [self.ResistanceBranch[xtl]], [self.PowerRateLimitTL[xtl]], \
-                self.OriginalNumberBranchFrom[xtl], \
-                self.OriginalNumberBranchTo[xtl], xtl, 'ac_transmission_line')
+            if self.ActiveBranches[0, xtl]:
+                self.combined_energy_dc_opf_r1.add_branch_cpp([self.ReactanceBranch[xtl]], \
+                    [self.ResistanceBranch[xtl]], [self.PowerRateLimitTL[xtl]], \
+                    self.OriginalNumberBranchFrom[xtl], \
+                    self.OriginalNumberBranchTo[xtl], xtl, 'ac_transmission_line')
         
         # Information for generators        
         counter_gen = 0
         if self.NumberConvGen > 0:
             for xgen in range(self.NumberConvGen):
-                P_max = []
-                P_min = []
-                for i in self.LongTemporalConnections:
-                    for j in range(self.ShortTemporalConnections):
-                        P_max.append(self.MaxConvGen[xgen])
-                        P_min.append(self.MinConvGen[xgen])
-                self.combined_energy_dc_opf_r1.add_generator_cpp(P_max, P_min, \
-                    self.OriginalNumberConvGen[xgen], counter_gen, 'conv', 0.0, \
-                    0.0, self.ACoeffPWConvGen[xgen,:], \
-                    self.BCoeffPWConvGen[xgen,:], self.ActiveConv[xgen])
-                counter_gen += 1
+                if self.ActiveConv[xgen]:
+                    P_max = []
+                    P_min = []
+                    for i in self.LongTemporalConnections:
+                        for j in range(self.ShortTemporalConnections):
+                            P_max.append(self.MaxConvGen[xgen])
+                            P_min.append(self.MinConvGen[xgen])
+                    self.combined_energy_dc_opf_r1.add_generator_cpp(P_max, P_min, \
+                        self.OriginalNumberConvGen[xgen], counter_gen, 'conv', 0.0, \
+                        0.0, self.ACoeffPWConvGen[xgen,:], \
+                        self.BCoeffPWConvGen[xgen,:], self.ActiveConv[xgen])
+                    counter_gen += 1
         if self.NumberHydroGen > 0:
             for xgen in range(self.NumberHydroGen):
                 P_max = []
@@ -3819,6 +3628,13 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.ShortTemporalConnections)
         self.combined_energy_dc_opf_r1.set_integer_data_power_system_cpp(\
             "number representative days", len(self.LongTemporalConnections))
+        self.combined_energy_dc_opf_r1.set_integer_data_power_system_cpp(\
+            "slack bus", slack)
+        
+        self.combined_energy_dc_opf_r1.set_continuous_data_power_system_cpp(\
+            "total hours period", self.TotalHoursPerPeriod[0])
+        self.combined_energy_dc_opf_r1.set_continuous_data_power_system_cpp(\
+            "base power", self.BaseUnitPower)
 
         self.combined_energy_dc_opf_r1.load_combined_energy_dc_opf_information_cpp(\
             self.LLNodesAfter, self.ConnectionTreeGen)
