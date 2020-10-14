@@ -470,7 +470,7 @@ class pyeneHDF5Settings():
                     auxvar = 0
                     for xco in range(GLPKobj.NumberContingencies + 1):
                         for xnod in range(EN.NM.ENetwork.get_NoBus()):
-                            auxvar += ThermalGenerationCurtailment[\
+                            auxvar += GenerationCurtailment[\
                                 xs, xt, xco, xnod]
                 HDF5row['gen_cur'] = auxvar
 
