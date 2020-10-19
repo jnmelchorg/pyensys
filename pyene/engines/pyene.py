@@ -721,6 +721,8 @@ class pyeneClass():
         # Add time steps
         aux = self.EM.size['Scenarios']
         self.NM.scenarios['Number'] = aux
+        self.NM.scenarios['NoDem'] = aux
+
 
         if self.NM.scenarios['NoDem'] > 0:
             aux = self.NM.scenarios['Demand']

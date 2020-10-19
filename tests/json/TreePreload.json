@@ -1,0 +1,10 @@
+{
+    "0": {
+        "Title": "Month",
+        "Names": ["Typical"],
+        "Weights": [1],
+        "Inputs": [0],
+        "Outputs": [0],
+        "Uncertainty": false
+    }
+}

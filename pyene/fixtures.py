@@ -10,8 +10,9 @@ def json_directory():
 def fixed_config():
     '''Dedicated configuration for pytests '''
     conf = pyeneConfig()
+    #TODO: Don't load any file by default
     conf.EM.settings['File'] = os.path.join(json_directory(),
-                                            'ResolutionTreeMonth01.json')
+                                            'TreePreload.json')
     conf.NM.settings['File'] = os.path.join(json_directory(), 'case4.json')
 
     # Hydropower

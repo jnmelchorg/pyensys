@@ -94,3 +94,6 @@ tests/json/EAPP.json
 tests/json/EAPP.m
 pyene/engines/external files/*
 pyene/json/Ghana_energy-onlyExisting.json
+.coverage
+pyene/json/UKElectricityProfiles week.json
+tests/json/UKElectricityProfiles week.json

@@ -24,36 +24,36 @@ class pyeneEConfig:
         # Default time-step and map
         self.data = {}
         # Monthly resolution
-        NoVec = 3
-        aux = np.zeros(NoVec, dtype=float)
-        for x in range(NoVec):
-            aux[x] = 5+x
-        self.data["0"] = {
-                "Title": "Month",
-                "Names": ["typical"],
-                "Weights": [1],
-                "Inputs": aux,
-                "Outputs": np.zeros(NoVec, dtype=float),
-                "Uncertainty": False
-                }
-        # Typical number of weeks in a month
-        self.data["1"] = {
-                "Title": "Weeks",
-                "Names": ["typical"],
-                "Weights": [4.3333],
-                "Inputs": np.zeros(NoVec, dtype=float),
-                "Outputs": np.zeros(NoVec, dtype=float),
-                "Uncertainty": False
-                }
-        # Representation of a week
-        self.data["2"] = {
-                "Title": "Days",
-                "Names": ["Weekday", "Weekend"],
-                "Weights": [5, 2],
-                "Inputs": np.zeros((NoVec, 2), dtype=float),
-                "Outputs": np.zeros((NoVec, 2), dtype=float),
-                "Uncertainty": False
-                }
+        NoVec = 0
+        # aux = np.zeros(NoVec, dtype=float)
+        # for x in range(NoVec):
+        #     aux[x] = 5+x
+        # self.data["0"] = {
+        #         "Title": "Month",
+        #         "Names": ["typical"],
+        #         "Weights": [1],
+        #         "Inputs": aux,
+        #         "Outputs": np.zeros(NoVec, dtype=float),
+        #         "Uncertainty": False
+        #         }
+        # # Typical number of weeks in a month
+        # self.data["1"] = {
+        #         "Title": "Weeks",
+        #         "Names": ["typical"],
+        #         "Weights": [4.3333],
+        #         "Inputs": np.zeros(NoVec, dtype=float),
+        #         "Outputs": np.zeros(NoVec, dtype=float),
+        #         "Uncertainty": False
+        #         }
+        # # Representation of a week
+        # self.data["2"] = {
+        #         "Title": "Days",
+        #         "Names": ["Weekday", "Weekend"],
+        #         "Weights": [5, 2],
+        #         "Inputs": np.zeros((NoVec, 2), dtype=float),
+        #         "Outputs": np.zeros((NoVec, 2), dtype=float),
+        #         "Uncertainty": False
+        #         }
         # CONTROL SETTINGS AND OTHER INTERNAL DATA
         self.settings = {
                 'File': None,

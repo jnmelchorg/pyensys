@@ -327,9 +327,7 @@ class pyeneHDF5Settings():
         else:
             LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
         
-        ThermalGenerationCurtailment = GLPKobj.GetThermalGenerationCurtailmentNodes()
-        RESGenerationCurtailment = GLPKobj.GetRESGenerationCurtailmentNodes()
-        HydroGenerationCurtailment = GLPKobj.GetHydroGenerationCurtailmentNodes()
+        GenerationCurtailment = GLPKobj.GetGenerationCurtailmentNodes()
         ActivePowerFlow = GLPKobj.GetActivePowerFlow()
         Branches = EN.NM.ENetwork.Branch
         if GLPKobj.FlagProblem and GLPKobj.LossesFlag:
@@ -422,13 +420,10 @@ class pyeneHDF5Settings():
             loss = Float32Col(dflt=1, pos=6),  # losses
             curtailment = Float32Col(dflt=1, pos=7),  # sCurtailment
             spill = Float32Col(dflt=1, pos=8),  # spilling
-            thermal_cur = Float32Col(dflt=1, pos=9),  # spilling
-            hydro_cur = Float32Col(dflt=1, pos=10),  # spilling
-            RES_cur = Float32Col(dflt=1, pos=11),  # spilling
-
+            gen_cur = Float32Col(dflt=1, pos=9),  # spilling
         )
 
-        counter = 12
+        counter = 10
 
         if RESGeneration is not None:
             for k in range(GLPKobj.NumberRESGen):
@@ -471,29 +466,13 @@ class pyeneHDF5Settings():
 
                 HDF5row['spill'] = 0
 
-                if ThermalGenerationCurtailment is not None:
+                if GenerationCurtailment is not None:
                     auxvar = 0
                     for xco in range(GLPKobj.NumberContingencies + 1):
-                        for xconv in range(GLPKobj.NumberConvGen):
-                            auxvar += ThermalGenerationCurtailment[\
-                                xs, xt, xco, xconv]
-                HDF5row['thermal_cur'] = auxvar
-
-                if HydroGenerationCurtailment is not None:
-                    auxvar = 0
-                    for xco in range(GLPKobj.NumberContingencies + 1):
-                        for xhydro in range(GLPKobj.NumberHydroGen):
-                            auxvar += HydroGenerationCurtailment[\
-                                xs, xt, xco, xhydro]
-                HDF5row['hydro_cur'] = auxvar
-
-                if RESGenerationCurtailment is not None:
-                    auxvar = 0
-                    for xco in range(GLPKobj.NumberContingencies + 1):
-                        for xRES in range(GLPKobj.NumberRESGen):
-                            auxvar += RESGenerationCurtailment[\
-                                xs, xt, xco, xRES]
-                HDF5row['RES_cur'] = auxvar
+                        for xnod in range(EN.NM.ENetwork.get_NoBus()):
+                            auxvar += GenerationCurtailment[\
+                                xs, xt, xco, xnod]
+                HDF5row['gen_cur'] = auxvar
 
                 totaldemand = 0 
                 for k in range(EN.NM.ENetwork.get_NoBus()):
@@ -831,9 +810,7 @@ class PrintinScreen():
             LoadCurtailment = obj.GetLoadCurtailmentSystemED()
         elif obj.FlagProblem and obj.FlagFeasibility:
             LoadCurtailment = obj.GetLoadCurtailmentNodes()
-        ThermalGenerationCurtailment = obj.GetThermalGenerationCurtailmentNodes()
-        RESGenerationCurtailment = obj.GetRESGenerationCurtailmentNodes()
-        HydroGenerationCurtailment = obj.GetHydroGenerationCurtailmentNodes()
+        GenerationCurtailment = obj.GetGenerationCurtailmentNodes()
         VoltageAngle = obj.GetVoltageAngle()
         ActivePowerFlow = obj.GetActivePowerFlow()
 
@@ -916,6 +893,7 @@ class PrintinScreen():
                     obj.ShortTemporalConnections, \
                     (obj.NumberContingencies + 1), \
                     obj.NumberLinesPS))
+        
         # Printing results
 
 
@@ -926,6 +904,8 @@ class PrintinScreen():
                 print('\nFlow_EGen_Bus=', Generator.get_GenDataAll(), ';')
             
             print("\nDemand=[")
+            total_demand = 0
+            total_demand_hours = [0 for _ in range(24)]
             for k in range(self.NM.ENetwork.get_NoBus()):
                 if obj.TypeNode[k] != 4:
                     for xt in range(obj.ShortTemporalConnections):
@@ -935,12 +915,16 @@ class PrintinScreen():
                             val = obj.PowerDemandNode[k] * \
                                 obj.MultScenariosDemand[xh, k] * \
                                     obj.BaseUnitPower
+                            total_demand += val
+                            total_demand_hours[xt] += val
                             print("%8.4f " % val, end='')
                         else:
                             val = obj.PowerDemandNode[k] * \
                                 obj.MultScenariosDemand[xh, xt, k] * \
                                     obj.BaseUnitPower
                             print("%8.4f " % val, end='')
+                            total_demand += val
+                            total_demand_hours[xt] += val
                 else:
                     for xt in range(obj.ShortTemporalConnections):
                         print("0.0 ", end='')
@@ -949,23 +933,35 @@ class PrintinScreen():
 
             if self.PrintinScreenOptions['Generation']:
                 print("\nFlow_EGen=[")
+                total_thermal_gen = 0.0
+                total_hydro_gen = 0.0
+                total_RES_gen = 0.0
+                total_thermal_gen_hours = [0 for _ in range(24)]
+                total_hydro_gen_hours = [0 for _ in range(24)]
+                total_RES_gen_hours = [0 for _ in range(24)]
                 if obj.NumberConvGen > 0:
                     for xn in range(obj.NumberConvGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % ThermalGeneration[xh, xt, xn], \
                                 end='')
+                            total_thermal_gen += ThermalGeneration[xh, xt, xn]
+                            total_thermal_gen_hours[xt] += ThermalGeneration[xh, xt, xn]
                         print()
                 if obj.NumberRESGen > 0:
                     for xn in range(obj.NumberRESGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % RESGeneration[xh, xt, xn], \
                                 end='')
+                            total_RES_gen += RESGeneration[xh, xt, xn]
+                            total_RES_gen_hours[xt] += RESGeneration[xh, xt, xn]
                         print()
                 if obj.NumberHydroGen > 0:
                     for xn in range(obj.NumberHydroGen):
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % HydroGeneration[xh, xt, xn], \
                                 end='')
+                            total_hydro_gen += HydroGeneration[xh, xt, xn]
+                            total_hydro_gen_hours[xt] += HydroGeneration[xh, xt, xn]
                         print()
                 print("];")
 
@@ -1008,7 +1004,8 @@ class PrintinScreen():
                                 end='')
                         print()
                 print("];")
-
+            
+            total_losses = 0.0
             if self.PrintinScreenOptions['Losses'] and obj.FlagProblem:
                 print("\nEPower_Loss=[")
                 for xb in range(obj.NumberLinesPS):
@@ -1016,6 +1013,7 @@ class PrintinScreen():
                         for xt in range(obj.ShortTemporalConnections):
                             print("%8.4f " % ActivePowerLosses[xh, xt, xco, xb]\
                                 , end='')
+                            total_losses += ActivePowerLosses[xh, xt, xco, xb]
                     print()
                 print("];")
 
@@ -1028,6 +1026,8 @@ class PrintinScreen():
                         print()
                 print("];")
 
+            total_load_curtailment = 0.0
+            total_load_curtailment_hours = [0 for _ in range(24)]
             if self.PrintinScreenOptions['Feasibility']:
                 print("\nFeas=[")
                 for xn in range(obj.NumberNodesPS):
@@ -1038,54 +1038,29 @@ class PrintinScreen():
                             else:
                                 aux = LoadCurtailment[xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
+                            total_load_curtailment += aux
+                            total_load_curtailment_hours[xt] += aux
                     print()
                 print("];")
             print()
 
+            total_gen_cur = 0.0
+            total_gen_cur_hours = [0 for _ in range(24)]
             if self.PrintinScreenOptions['Feasibility']:
-                print("\nFeasTGC=[")
-                for xn in range(obj.NumberConvGen):
+                print("\nFeasGC=[")
+                for xn in range(obj.NumberNodesPS):
                     for xco in range(obj.NumberContingencies + 1):
                         for xt in range(obj.ShortTemporalConnections):
-                            if not obj.FlagFeasibility and \
-                                obj.NumberConvGen > 0:
+                            if not obj.FlagFeasibility:
                                 aux = 0
                             else:
-                                aux = ThermalGenerationCurtailment\
+                                aux = GenerationCurtailment\
                                     [xh, xt, xco, xn]
                             print("%8.4f " % aux, end='')
-                    print()
-                print("];")
-            print()
-
-            if self.PrintinScreenOptions['Feasibility']:
-                print("\nFeasReGC=[")
-                for xn in range(obj.NumberRESGen):
-                    for xco in range(obj.NumberContingencies + 1):
-                        for xt in range(obj.ShortTemporalConnections):
-                            if not obj.FlagFeasibility and \
-                                obj.NumberRESGen > 0:
-                                aux = 0
-                            else:
-                                aux = RESGenerationCurtailment\
+                            total_gen_cur += GenerationCurtailment\
                                     [xh, xt, xco, xn]
-                            print("%8.4f " % aux, end='')
-                    print()
-                print("];")
-            print()
-
-            if self.PrintinScreenOptions['Feasibility']:
-                print("\nFeasHGC=[")
-                for xn in range(obj.NumberHydroGen):
-                    for xco in range(obj.NumberContingencies + 1):
-                        for xt in range(obj.ShortTemporalConnections):
-                            if not obj.FlagFeasibility and \
-                                obj.NumberHydroGen > 0:
-                                aux = 0
-                            else:
-                                aux = HydroGenerationCurtailment\
+                            total_gen_cur_hours[xt] += GenerationCurtailment\
                                     [xh, xt, xco, xn]
-                            print("%8.4f " % aux, end='')
                     print()
                 print("];")
             print()
@@ -1097,6 +1072,20 @@ class PrintinScreen():
                 elif isinstance(obj, Networkmodel):
                     print("\nObjective Function = {}\n".format(\
                         obj.GetObjectiveFunctionNM()))
+            
+            print("\nTotal Demand= {}".format(total_demand))
+            print("\nTotal Thermal Gen= {}".format(total_thermal_gen))
+            print("\nTotal RES Gen= {}".format(total_RES_gen))
+            print("\nTotal Hydro Gen= {}".format(total_hydro_gen))
+            print("\nTotal Demand Curtailment= {}".format(total_load_curtailment))
+            print("\nTotal Generation Curtailment= {}".format(total_gen_cur))
+            print("\nTotal Demand hours= {}".format(total_demand_hours))
+            print("\nTotal Thermal Gen hours= {}".format(total_thermal_gen_hours))
+            print("\nTotal RES Gen hours= {}".format(total_RES_gen_hours))
+            print("\nTotal Hydro Gen hours= {}".format(total_hydro_gen_hours))
+            print("\nTotal Demand Curtailment hours= {}".format(total_load_curtailment_hours))
+            print("\nTotal Generation Curtailment hours= {}".format(total_gen_cur_hours))
+
     
     def printallEnergyResults(self, obj=None):
         ''' This class method prints on the screen all results for the \
