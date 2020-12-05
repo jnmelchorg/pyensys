@@ -43,6 +43,14 @@ cdef extern from "energy_models.h":
             const vector[ vector[int] ] &LLNA, const vector[int] &CTG)
         void run_combined_energy_dc_opf_r1()
         double get_objective_function_combined_energy_dc_opf_r1()
+
+        void run_iterative_reduced_dc_opf()
+
+        void run_iterative_reduced_dc_opf_v2()
+
+        void run_iterative_combined_energy_dc_opf()
+
+        void run_iterative_combined_energy_dc_opf_v2()
         
 
 cdef extern from "energy_models.cpp":

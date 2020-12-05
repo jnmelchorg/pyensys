@@ -87,15 +87,26 @@ cdef class models_cpp_clp():
             LLEB_cpp, LLEA_cpp, energy_intake, energy_output, weight_nodes)
 
 
-
     cpdef run_reduced_dc_opf_cpp(self):
         self.cpp_mod.run_reduced_dc_opf()
+    
+    cpdef run_iterative_reduced_dc_opf_cpp(self):
+        self.cpp_mod.run_iterative_reduced_dc_opf()
+    
+    cpdef run_iterative_reduced_dc_opf_v2_cpp(self):
+        self.cpp_mod.run_iterative_reduced_dc_opf_v2()
 
     cpdef run_energy_tree_cpp(self):
         self.cpp_mod.run_energy_tree()
     
     cpdef run_combined_energy_dc_opf_r1_cpp(self):
         self.cpp_mod.run_combined_energy_dc_opf_r1()
+    
+    cpdef run_iterative_combined_energy_dc_opf_cpp(self):
+        self.cpp_mod.run_iterative_combined_energy_dc_opf()
+    
+    cpdef run_iterative_combined_energy_dc_opf_v2_cpp(self):
+        self.cpp_mod.run_iterative_combined_energy_dc_opf_v2()
 
 
 
