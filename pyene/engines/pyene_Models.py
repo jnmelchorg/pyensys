@@ -65,7 +65,7 @@ class Energymodel():
         # Creation of model instance
         if solver_name == "GLPK":
             self.solver_problem = "GLPK"
-            self.solver = GLPKSolver(message_level='all')       
+            self.solver = GLPKSolver(message_level='all')
             # Definition of minimisation problem
             self.solver.set_dir('min')
             # Definition of the mathematical formulation
@@ -78,18 +78,9 @@ class Energymodel():
             print("incorrect solver has been selected")
         
 
-
-
     def modeldefinitionEM(self):
         """ This class method build and solve the optimisation problem,
          to be expanded with a general optimisation problem """
-        # TODO: create functions such as posvariables and variables in a 
-        # similar way than the network model
-        self.dnvariablesEM()    # Function to determine de number 
-                                # of variables
-        self.dnconstraintsEM()  # Function to determine de number 
-                                # of constraints
-
         # define matrix of coeficients (matrix A)
         self.variablesEM()
         self.coeffmatrixEM()
@@ -105,7 +96,6 @@ class Energymodel():
         self.ar = [] # Value
         self.ne = 0 # Number of non-zero coefficients in matrix A
 
-        self.constraintsEM()
         self.Energybalance()
         self.Aggregation()
         # if self.NumberNodesUnc != 0:
@@ -412,7 +402,7 @@ class Energymodel():
                 self.InputsTreeSolution[i, j] = aux_in[counter]
                 self.OutputsTreeSolution[i, j] = aux_out[counter]
                 counter += 1
-    
+
     def set_parameters_cpp_energy_models(self):
         """ This class method set all parameters in the c++ implementation """
         # Information nodes
@@ -489,7 +479,8 @@ class Energymodel():
                         self.solver.get_col_prim(str(\
                         self.Partialstorage[i][0]), j)
             return PartialStorageSolution
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.PartialStorageSolution
     
     def GetTotalStorage(self):
@@ -502,7 +493,8 @@ class Energymodel():
                         self.solver.get_col_prim(str(\
                         self.Totalstorage[i][0]), j)
             return TotalStorageSolution
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.TotalStorageSolution
 
     def GetInputsTree(self):
@@ -515,7 +507,8 @@ class Energymodel():
                         self.solver.get_col_prim(str(\
                         self.InputsTree[i][0]), j)
             return InputsTreeSolution
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.InputsTreeSolution
 
     def GetOutputsTree(self):
@@ -528,7 +521,8 @@ class Energymodel():
                         self.solver.get_col_prim(str(\
                         self.OutputsTree[i][0]), j)
             return OutputsTreeSolution
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.OutputsTreeSolution
     
     def GetEnergybalanceDual(self):
@@ -597,6 +591,8 @@ class Networkmodel():
         self.FlagProblem = obj.settings['Flag'] # Flag that indicates
                             # if the problem to solve is the economic
                             # dispatch or the optimal power flow
+                            # False = Economic Dispatch
+                            # True = Optimal Power Flow
         
         self.FlagFeasibility = obj.settings['Feasibility'] # Flag that 
                             # indicates if the problem should include
@@ -610,7 +606,8 @@ class Networkmodel():
         
         # TODO: Generalise inputs as a list of values
         if self.NumberConvGen > 0:
-            self.ActiveConv = np.ones(self.NumberConvGen, dtype=bool)
+            self.ActiveConv = np.ones(self.NumberConvGen, dtype=bool) # Array of boolean parameter 
+                                                                        # indicating if power plan is active or not
             for i in range(self.NumberConvGen):
                 self.ActiveConv[i] = obj.Gen.Conv[i].data['GEN']
             self.PWConvGen = np.empty((self.NumberConvGen), dtype=np.int_) # Number of pieces of
@@ -916,6 +913,13 @@ class Networkmodel():
             ret = self.solver.simplex()
             assert ret == 0, "GLPK could not solve the problem"
         elif solver_name == "CLP":
+            self.solver_problem = "CLP"
+            self.OptimalPowerFlowModelCPP()
+        elif solver_name == "CLP-I":
+            self.solver_problem = "CLP-I"
+            self.OptimalPowerFlowModelCPP()
+        elif solver_name == "CLP-IR":
+            self.solver_problem = "CLP-IR"
             self.OptimalPowerFlowModelCPP()
         else:
             print("incorrect solver has been selected")
@@ -1099,11 +1103,6 @@ class Networkmodel():
                                 'fixed', 0, 0)
 
     # Constraints
-    def posconstraintsCommon(self):
-            """ This class method creates the vectors that store the positions of 
-            contraints that are common for various problems """
-            # Creating the matrices to store the position of constraints in
-            # matrix A
 
     def piecewiselinearisationcost(self):
         """ This class method writes the piecewise linearisarion of
@@ -1696,6 +1695,13 @@ class Networkmodel():
                                 self.PowerRateLimitTL[ii])
                         # If the line is not active in the current contingency 
                         # then fix the active power flow to zero
+                        elif self.ActiveBranches[k, ii] and \
+                            self.PowerRateLimitTL[ii] == 100:
+                            self.solver.set_col_bnds(\
+                                str(self.ActivePowerFlow[i, j, k][0]), ii,\
+                                'free', \
+                                -self.PowerRateLimitTL[ii],\
+                                self.PowerRateLimitTL[ii])
                         else:
                             self.solver.set_col_bnds(\
                                 str(self.ActivePowerFlow[i, j, k][0]), ii,\
@@ -2185,10 +2191,15 @@ class Networkmodel():
         for the optimal power flow problem using a fast implementation of 
         different mathematical models in c++ """
 
-        self.solver_problem = "CLP"
         self.network_model = models_cpp()
         self.set_parameters_cpp_models()
-        self.network_model.run_reduced_dc_opf_cpp()
+        if self.solver_problem == "CLP":
+            self.network_model.run_reduced_dc_opf_cpp()
+        elif self.solver_problem == "CLP-I":
+            self.network_model.run_iterative_reduced_dc_opf_cpp()
+        elif self.solver_problem == "CLP-IR":
+            self.network_model.run_iterative_reduced_dc_opf_v2_cpp()
+            
         # retrieving solution
         aux_gen, aux_gen_cost = \
             self.network_model.get_generation_solution_cpp()
@@ -2870,7 +2881,8 @@ class Networkmodel():
                                     str(self.thermalgenerators[i, j][0]), k) * \
                                         self.BaseUnitPower
                 return ThermalGenerationSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.ThermalGenerationSolution
         else:
             return None
@@ -2890,7 +2902,8 @@ class Networkmodel():
                                     str(self.RESgenerators[i, j][0]), k) * \
                                         self.BaseUnitPower
                 return RESGenerationSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.RESGenerationSolution
         else:
             return None
@@ -2910,7 +2923,8 @@ class Networkmodel():
                                     str(self.Hydrogenerators[i, j][0]), k) * \
                                         self.BaseUnitPower
                 return HydroGenerationSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.HydroGenerationSolution
         else:
             return None
@@ -2946,7 +2960,8 @@ class Networkmodel():
                                 self.solver.get_col_prim(\
                                     str(self.thermalCG[i, j][0]), k)
                 return ThermalGenerationCostSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.ThermalGenerationCostSolution
         else:
             return None
@@ -2965,7 +2980,8 @@ class Networkmodel():
                                 self.solver.get_col_prim(\
                                     str(self.RESCG[i, j][0]), k)
                 return RESGenerationCostSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.RESGenerationCostSolution
         else:
             return None
@@ -2984,7 +3000,8 @@ class Networkmodel():
                                 self.solver.get_col_prim(\
                                     str(self.HydroCG[i, j][0]), k)
                 return HydroGenerationCostSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.HydroGenerationCostSolution
         else:
             return None
@@ -3005,7 +3022,8 @@ class Networkmodel():
                                     self.solver.get_col_prim(\
                                     str(self.VoltageAngle[i, j, k][0]), ii)
                 return VoltageAngleSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.VoltageAngleSolution
         else:
             return None
@@ -3027,7 +3045,8 @@ class Networkmodel():
                                     str(self.LoadCurtailmentNode[i, j, k][0]), ii)\
                                         * self.BaseUnitPower
                 return LoadCurtailmentNodesSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.LoadCurtailmentNodesSolution
         else:
             return None
@@ -3051,7 +3070,8 @@ class Networkmodel():
                                         [i, j, k][0]), ii)\
                                         * self.BaseUnitPower
                 return GenerationCurtailmentNodesSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.GenerationCurtailmentNodesSolution
         else:
             return None
@@ -3073,7 +3093,8 @@ class Networkmodel():
                                     str(self.ActivePowerFlow[i, j, k][0]), ii)\
                                         * self.BaseUnitPower
                 return ActivePowerFlowSolution
-            elif self.solver_problem == "CLP":
+            elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
                 return self.ActivePowerFlowSolution
         else:
             return None
@@ -3130,7 +3151,8 @@ class Networkmodel():
     def GetObjectiveFunctionNM(self):
         if self.solver_problem == "GLPK":
             return self.solver.get_obj_val()
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.network_model.get_objective_function_cpp()
 
 
@@ -3181,6 +3203,13 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             ret = self.solver.simplex()
             assert ret == 0, "GLPK could not solve the problem"
         elif solver_name == "CLP":
+            self.solver_problem = "CLP"
+            self.Energy_OPF_R1CPP()
+        elif solver_name == "CLP-I":
+            self.solver_problem = "CLP-I"
+            self.Energy_OPF_R1CPP()
+        elif solver_name == "CLP-IR":
+            self.solver_problem = "CLP-IR"
             self.Energy_OPF_R1CPP()
         else:
             print("incorrect solver has been selected")
@@ -3375,10 +3404,15 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         for the optimal power flow problem using a fast implementation of 
         different mathematical models in c++ """
 
-        self.solver_problem = "CLP"
         self.combined_energy_dc_opf_r1 = models_cpp()
         self.set_parameters_cpp_combined_energy_dc_opf_r1_models()
-        self.combined_energy_dc_opf_r1.run_combined_energy_dc_opf_r1_cpp()
+        if self.solver_problem == "CLP":
+            self.combined_energy_dc_opf_r1.run_combined_energy_dc_opf_r1_cpp()
+        elif self.solver_problem == "CLP-I":
+            self.combined_energy_dc_opf_r1.run_iterative_combined_energy_dc_opf_cpp()
+        elif self.solver_problem == "CLP-IR":
+            self.combined_energy_dc_opf_r1.run_iterative_combined_energy_dc_opf_v2_cpp()
+        
 
         # Retrieving solution
         aux_par, aux_tot, aux_in, aux_out = \
@@ -3642,5 +3676,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
     def GetObjectiveFunctionENM(self):
         if self.solver_problem == "GLPK":
             return self.solver.get_obj_val()
-        elif self.solver_problem == "CLP":
+        elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
+                or self.solver_problem == "CLP-IR":
             return self.combined_energy_dc_opf_r1.get_objective_function_combined_energy_dc_opf_r1_cpp()
