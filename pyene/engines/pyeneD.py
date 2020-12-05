@@ -953,7 +953,8 @@ class GenClass:
             # Select number of pieces for the approximation
             if xLen == 0:  # Default case
                 Delta = self.data['Max']
-                Delta /= 3
+                if(self.cost['COST'][0] != 0):
+                    Delta /= 3
             elif xLen == 1:  # Single value for all generators
                 Delta = sett['Pieces'][0]
             else:  # Predefined number of pieces
