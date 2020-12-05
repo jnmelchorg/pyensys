@@ -26,7 +26,9 @@ void models_cpp::add_constraints(string name, int number)
 
 models_cpp::models_cpp(){ };
 
-models_cpp::~models_cpp() { };
+models_cpp::~models_cpp() { 
+    delete[] solution;
+};
 
 // Energy tree formulation
 
@@ -229,13 +231,15 @@ void models_cpp::run_energy_tree(){
 
     // Solve
     model.primal();
+
+    solution = model.primalColumnSolution();
+    objective_function = model.objectiveValue();
 }
 
 void models_cpp::get_energy_tree_solution(vector<double> &PartialStorage, 
     vector<double> &TotalStorage, vector<double> &InputsTree,
     vector<double> &OutputsTree)
 {
-    const double * solution = model.primalColumnSolution();
     string aux_name;
     for (int xtr = 0; xtr < number_trees; xtr++)
     {
@@ -259,7 +263,7 @@ void models_cpp::get_energy_tree_solution(vector<double> &PartialStorage,
 
 double models_cpp::get_objective_function_em()
 {
-    return model.objectiveValue();
+    return objective_function;
 }
 
 
@@ -845,6 +849,8 @@ void models_cpp::run_reduced_dc_opf(){
     /* This function calls all functions to create the model and run the DC
     OPF with the reduced model */
 
+    type_OPF = 1;
+
     create_graph_database();
     create_susceptance_matrix();
     create_reduced_dc_opf_model();
@@ -873,12 +879,777 @@ void models_cpp::run_reduced_dc_opf(){
 
     // Solve
     model.primal();
+
+    solution = model.primalColumnSolution();
+    objective_function = model.objectiveValue();
+}
+
+// Iterative functions
+
+/*** Functions to create iterative models for the optimal power flow
+ and the combined energy tree - OPF ***/
+
+void models_cpp::solve_iterative_models(){
+/*  This function performs the following actions:
+    1. Determine which constraints are unfeasible with the 
+    current solution
+    2. Update the model with the unfeasible constraints
+    3. Solve the updated model
+    4. Repeat 1- 3 until the solution is feasible for all constraints
+*/
+
+    // matrix data
+    CoinBigIndex num_elements = rows.size();
+    
+    CoinPackedMatrix matrix(true, rows.data(), columns.data(), elements.data(), 
+        num_elements);
+    
+    model.loadProblem(matrix, colLower.data(), colUpper.data(), objective.data(),
+                       rowLower.data(), rowUpper.data());
+
+    vector< pair<double, int> > weight(number_constraints);
+    vector<int> active_rows(number_constraints, numeric_limits<int>::max());
+    int numberSort = 0;
+
+    int iRow, iColumn;
+    // Set up initial list
+    numberSort = 0;
+    for (iRow = 0; iRow < number_constraints; iRow++)
+        if (rowLower[iRow] == rowUpper[iRow])
+            active_rows[numberSort++] = iRow;
+    
+    // load the biggest piece of the piecewise linearisation of the generation cost
+    string aux_name;
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            for (size_t xgen = 0; xgen < generators_g.size(); xgen++)
+            {
+                generator aux_gen = power_system_datastructure[
+                    generators_g[xgen].second].infor_generator;
+                string aux_name = "GC("+to_string(xrd)+","+to_string(xp)+","+
+                    to_string(xgen)+")";
+                active_rows[numberSort++] = initial_position_constraints[
+                    aux_name] + aux_gen.piecewise.first.size() - 1;
+            }
+        }
+    }
+                
+    vector<int> whichColumns(number_variables);
+    for (iColumn = 0; iColumn < number_variables; iColumn++)
+         whichColumns[iColumn] = iColumn;
+
+    vector<double> solution_rows(number_constraints, 0.0);
+
+    // Flag that indicates if the solution is feasible for all constraints or not
+    bool infeasible_solution = true;
+    iterations_opt = 0; // Number of iterations in the iterative process
+    int max_rows_iter = max((int)floor(number_constraints/40), 1);
+    while (infeasible_solution)
+    {
+        // Order in descending order the list of rows
+        sort(active_rows.begin(), active_rows.end());
+
+        ClpSimplex small_dc_model(&model, numberSort, active_rows.data(), 
+            number_variables, whichColumns.data());
+        if (iterations_opt == 0)
+        {
+            small_dc_model.primal();
+        }
+        else {
+            ClpSolve solveOptions;
+            solveOptions.setSolveType(ClpSolve::useDual);
+            small_dc_model.setLogLevel(0);
+            small_dc_model.initialSolve(solveOptions);
+        }
+
+        iterations_opt++;
+
+        std::fill(solution_rows.begin(), solution_rows.end(), 0.0);
+
+        model.times(1.0, small_dc_model.primalColumnSolution(), solution_rows.data());
+
+        for (iRow = 0; iRow < number_constraints; iRow++){
+            weight[iRow].first = -max(max(solution_rows[iRow] - rowUpper[iRow],
+                                    rowLower[iRow] - solution_rows[iRow]), 0.0);
+            weight[iRow].second = iRow;
+            if(abs(weight[iRow].first) < 1e-6) weight[iRow].first = 0.0;
+        }
+        
+        infeasible_solution = false;
+        for (iRow = 0; iRow < number_constraints; iRow++){
+            if(weight[iRow].first < 0.0){
+                infeasible_solution = true;
+                break;
+            }
+        }
+
+        if (infeasible_solution)
+        {
+            sort(weight.begin(), weight.end());
+            for (iRow = 0; iRow < max_rows_iter; iRow++)
+                active_rows[numberSort++] = weight[iRow].second;            
+        }
+        else{
+            double *solution_copy = small_dc_model.primalColumnSolution();
+            solution = new double[number_variables];
+            for (int sol = 0; sol < number_variables; sol++)
+                solution[sol] = solution_copy[sol];
+            objective_function = small_dc_model.objectiveValue();
+        }
+    }
+}
+
+// Reduced OPF - Iterative
+
+/**** Functions to create the iterative network model ****/
+
+void models_cpp::run_iterative_reduced_dc_opf(){
+    /* This function calls all functions to create the model and run the DC
+    OPF with the reduced model and in an iterative way. The non-binding constraints
+    (power flow limits) are introduced iteratively in CLP and the problem is 
+    reoptimised using the dual simplex method */
+
+    type_OPF = 2;
+
+    create_graph_database();
+    create_susceptance_matrix();
+    create_reduced_dc_opf_model();
+
+    solve_iterative_models();
+}
+
+// Reduced OPF version 2
+
+/**** Functions to create the reduced network model ****/
+
+void models_cpp::create_inverse_susceptance_matrix(){
+    /*
+    This function creates the susceptance matrix for the DC OPF
+    */
+    mat mat_susceptance(buses_g.size(), buses_g.size(), arma::fill::zeros);
+    vector<double> diag_vals(buses_g.size(), 0.0);
+    susceptance_matrix.resize(
+        buses_g.size(),vector<double> (buses_g.size(),0.0));
+    int pos1 = -1;
+    int pos2 = -1;
+    for (size_t i = 0; i < branches_g.size(); i++)
+    {
+        pos1 = -1;
+        pos2 = -1;
+        for (size_t j = 0; j < buses_g.size(); j++)
+        {
+            if (power_system_datastructure[branches_g[i].second].
+                info_branch.from_bus == buses_g[j].first)
+                pos1 = j;
+            else if (power_system_datastructure[branches_g[i].second].
+                info_branch.to_bus == buses_g[j].first)
+                pos2 = j;
+            if(pos1 != -1 && pos2 != -1) break;
+        }
+        mat_susceptance(pos1, pos2) += 1.0/power_system_datastructure[
+            branches_g[i].second].info_branch.reactance[0];
+        mat_susceptance(pos2, pos1) += 1.0/power_system_datastructure[
+            branches_g[i].second].info_branch.reactance[0];
+        mat_susceptance(pos1, pos1) -= 1.0/power_system_datastructure[
+            branches_g[i].second].info_branch.reactance[0];
+        mat_susceptance(pos2, pos2) -= 1.0/power_system_datastructure[
+            branches_g[i].second].info_branch.reactance[0]; 
+    }
+    
+    int slack_pos = 0;
+    for (size_t i = 0; i < buses_g.size(); i++)
+    {
+        if (buses_g[i].first == integer_powersystem_data["slack bus"])
+        {
+            slack_pos = i;
+            break;
+        }
+    }
+
+    mat_susceptance.shed_row(slack_pos);
+    mat_susceptance.shed_col(slack_pos);
+
+    mat inverse;
+    inverse_susceptance_completed = true;
+    inverse_susceptance_completed = arma::inv(inverse, mat_susceptance);
+    
+    if (inverse_susceptance_completed)
+        inverse_mat_sustance = sp_mat(inverse);
+}
+
+void models_cpp::create_dc_opf_model_v2(){
+    number_variables = 0;
+    number_constraints = 0;
+    declaration_variables_dc_opf_v2();
+    active_power_balance_ac_system();
+    active_power_flow_limit_ac_v2();
+    active_power_generation_cost();
+    objective_function_nm();  
+}
+
+void models_cpp::declaration_variables_dc_opf_v2(){
+
+    string aux_name;
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size());   // generation
+            aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size()); // Load curtailment
+            aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, buses_g.size()); // Generation curtailment
+            aux_name = "C_g("+to_string(xrd)+","+to_string(xp)+")";
+            add_variables(aux_name, generators_g.size());   // Cost generation
+        }
+    }
+    // Declaration limit variables
+
+    int aux_count = integer_powersystem_data["number periods"];
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            // maximum and minimum active power generation
+            for (size_t xgen = 0; xgen < generators_g.size(); xgen++)
+            {
+                if(power_system_datastructure[generators_g[xgen].second].
+                    infor_generator.is_active)
+                {
+                    colLower.push_back(
+                        power_system_datastructure[generators_g[xgen].second].
+                        infor_generator.minimum_generation[xrd*aux_count + xp]);
+                    colUpper.push_back
+                        (power_system_datastructure[generators_g[xgen].second].
+                        infor_generator.maximum_generation[xrd*aux_count + xp]);
+                }
+                else
+                {
+                    colLower.push_back(0.0);
+                    colUpper.push_back(0.0);
+                }                
+            }
+
+            // maximum and minimum load curtailment
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                colLower.push_back(0.0);
+                if (power_system_datastructure[buses_g[xnode].second].info_bus.
+                    active_power_demand[xrd*aux_count + xp] > 0)
+                    colUpper.push_back(COIN_DBL_MAX);
+                else
+                    colUpper.push_back(0.0);
+            }
+
+            // maximum and minimum generation curtailment
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                colLower.push_back(0.0);
+                bool flag_gen = false;
+                AdjacencyIterator ai, a_end;
+                boost::tie(ai, a_end) = boost::adjacent_vertices(buses_g[xnode].second, 
+                    power_system_datastructure);
+                for (; ai != a_end; ai++) {
+                    if(power_system_datastructure[*ai].type == "generator")
+                    {
+                        colUpper.push_back(COIN_DBL_MAX);
+                        flag_gen = true;
+                        break;
+                    }
+                }
+                if (!flag_gen)
+                    colUpper.push_back(0.0);
+            }
+
+            // maximum and minimum generation cost
+            aux_name = "C_g("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xgen = 0; xgen < generators_g.size(); xgen++)
+            {
+                colLower.push_back(0.0);
+                colUpper.push_back(COIN_DBL_MAX);
+            }
+        }
+    }
+}
+
+void models_cpp::active_power_balance_ac_system(){
+    /*
+    This file constructs the active power balance constraint
+    */
+
+    // definition of constraint
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            string aux_name;
+            // Generation
+            aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xgen = 0; xgen < generators_g.size(); 
+                xgen++)
+            {
+                rows.push_back(number_constraints);
+                columns.push_back(initial_position_variables[aux_name] + 
+                    xgen);
+                elements.push_back(1.0);
+            }
+            
+            // Load Curtailment
+            aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                rows.push_back(number_constraints);
+                columns.push_back(initial_position_variables[aux_name] + xnode);
+                elements.push_back(1.0);
+            }
+
+            // Generation curtailment
+            aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                rows.push_back(number_constraints);
+                columns.push_back(initial_position_variables[aux_name] +
+                    xnode);
+                elements.push_back(-1.0);
+            }
+            aux_name = "PB("+to_string(xrd)+","+to_string(xp)+")";
+            add_constraints(aux_name, 1);
+        }
+    }
+
+    // definition of limits for constraints
+    int aux_count = integer_powersystem_data["number periods"];
+    double total_demand;
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            total_demand = 0;
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                total_demand += power_system_datastructure[buses_g[xnode].second].info_bus.
+                    active_power_demand[xrd*aux_count + xp];
+            }
+            rowLower.push_back(total_demand);
+            rowUpper.push_back(total_demand);
+        }
+    }
+}
+
+void models_cpp::active_power_flow_limit_ac_v2(){
+    /*
+    This function constructs the active power flow limit constraint
+    */
+    // Determining generators per node
+    vector< vector<int> > pos_gen(buses_g.size());
+    for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+    {
+        AdjacencyIterator ai, a_end;
+        boost::tie(ai, a_end) = boost::adjacent_vertices(buses_g[xnode].second, 
+            power_system_datastructure);
+        for (; ai != a_end; ai++) {
+            if(power_system_datastructure[*ai].type == "generator")
+            {
+                for (size_t xgen = 0; xgen < generators_g.size(); 
+                    xgen++)
+                {
+                    if (power_system_datastructure[*ai].
+                        infor_generator.number == generators_g[xgen].
+                        first && power_system_datastructure[*ai].
+                        infor_generator.is_active)
+                    {
+                        pos_gen[xnode].push_back(xgen);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // Finding position slack bus
+    int slack_pos;
+    for (size_t i = 0; i < buses_g.size(); i++)
+    {
+        if (buses_g[i].first == integer_powersystem_data["slack bus"])
+        {
+            slack_pos = i;
+            break;
+        }
+    }
+    int aux_count = integer_powersystem_data["number periods"];
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            string aux_name;
+            for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
+            {
+                int pos1 = -1, pos2 = -1;
+                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                {
+                    if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.from_bus == buses_g[xnode].first)
+                        pos1 = xnode;
+                    else if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.to_bus == buses_g[xnode].first)
+                        pos2 = xnode;
+                    if (pos1 != -1 && pos2 != -1) break;
+                }
+                int counter = 0;
+                double value_ope = 0.0;
+                // Substracting the elements of the matrix
+                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                {
+                    if (buses_g[xnode].first != 
+                        integer_powersystem_data["slack bus"])
+                    {
+                        if (pos1 != slack_pos && pos2 != slack_pos){
+                            if (pos1 > slack_pos && pos2 > slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1 - 1, counter) - 
+                                    inverse_mat_sustance(pos2 - 1, counter);
+                            else if (pos1 < slack_pos && pos2 > slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1, counter) - 
+                                    inverse_mat_sustance(pos2 - 1, counter);
+                            else if (pos1 > slack_pos && pos2 < slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1 - 1, counter) - 
+                                    inverse_mat_sustance(pos2, counter);
+                            else if (pos1 < slack_pos && pos2 < slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1, counter) - 
+                                    inverse_mat_sustance(pos2, counter);
+                        }
+                        if (pos1 == slack_pos && pos2 != slack_pos){
+                            if (pos2 > slack_pos)
+                                value_ope = 
+                                    -inverse_mat_sustance(pos2 - 1, counter);
+                            else if (pos2 < slack_pos)
+                                value_ope = 
+                                    -inverse_mat_sustance(pos2, counter);
+                        }
+                        if (pos1 != slack_pos && pos2 == slack_pos){
+                            if (pos1 > slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1 - 1, counter);
+                            else if (pos1 < slack_pos)
+                                value_ope = 
+                                    inverse_mat_sustance(pos1, counter);
+                        }
+                        counter++;
+                    }
+                    if (value_ope != 0.0)
+                    {
+                        // Generation
+                        aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+                        for (size_t xgen = 0; xgen < pos_gen[xnode].size(); xgen++)
+                        {
+                            rows.push_back(number_constraints + xbranch);
+                            columns.push_back(initial_position_variables[aux_name] + 
+                                pos_gen[xnode][xgen]);
+                            elements.push_back(-value_ope * (
+                                1.0/power_system_datastructure[
+                                branches_g[xbranch].second].info_branch.
+                                reactance[0]));
+                        }
+                        // Load Curtailment
+                        aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+                        rows.push_back(number_constraints + xbranch);
+                        columns.push_back(initial_position_variables[aux_name] + xnode);
+                        elements.push_back(-value_ope * (
+                            1.0/power_system_datastructure[
+                            branches_g[xbranch].second].info_branch.
+                            reactance[0]));
+                        // Generation curtailment
+                        aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+                        rows.push_back(number_constraints + xbranch);
+                        columns.push_back(initial_position_variables[aux_name] +
+                            xnode);
+                        elements.push_back(value_ope * (
+                            1.0/power_system_datastructure[
+                            branches_g[xbranch].second].info_branch.
+                            reactance[0]));
+                    }
+                    value_ope = 0.0;
+                }
+            }
+            aux_name = "TC("+to_string(xrd)+","+to_string(xp)+")";
+            add_constraints(aux_name, branches_g.size());
+        }
+    }
+
+    // Limits constraint
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            vec active_dem(buses_g.size() - 1);
+            int counter = 0;
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                if (buses_g[xnode].first != integer_powersystem_data["slack bus"])
+                {
+                    active_dem(counter) = 
+                        power_system_datastructure[buses_g[xnode].second].
+                        info_bus.active_power_demand[xrd*aux_count + xp];
+                    counter++;
+                }
+            }
+            vec constant_product = inverse_mat_sustance * active_dem;
+            string aux_name = "TC("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
+            {
+                int pos1 = -1, pos2 = -1;
+                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                {
+                    if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.from_bus == buses_g[xnode].first)
+                        pos1 = xnode;
+                    else if (power_system_datastructure[branches_g[xbranch].second].
+                        info_branch.to_bus == buses_g[xnode].first)
+                        pos2 = xnode;
+                    if (pos1 != -1 && pos2 != -1) break;
+                }
+                double value_ope = 0.0;
+                if (pos1 != slack_pos && pos2 != slack_pos){
+                    if (pos1 > slack_pos && pos2 > slack_pos)
+                        value_ope = 
+                            constant_product(pos1 - 1) - 
+                            constant_product(pos2 - 1);
+                    else if (pos1 < slack_pos && pos2 > slack_pos)
+                        value_ope = 
+                            constant_product(pos1) - 
+                            constant_product(pos2 - 1);
+                    else if (pos1 > slack_pos && pos2 < slack_pos)
+                        value_ope = 
+                            constant_product(pos1 - 1) - 
+                            constant_product(pos2);
+                    else if (pos1 < slack_pos && pos2 < slack_pos)
+                        value_ope = 
+                            constant_product(pos1) - 
+                            constant_product(pos2);
+                }
+                if (pos1 == slack_pos && pos2 != slack_pos){
+                    if (pos2 > slack_pos)
+                        value_ope = 
+                            -constant_product(pos2 - 1);
+                    else if (pos2 < slack_pos)
+                        value_ope = 
+                            -constant_product(pos2);
+                }
+                if (pos1 != slack_pos && pos2 == slack_pos){
+                    if (pos1 > slack_pos)
+                        value_ope = 
+                            constant_product(pos1 - 1);
+                    else if (pos1 < slack_pos)
+                        value_ope = 
+                            constant_product(pos1);
+                }
+
+                rowLower.push_back(
+                    -power_system_datastructure[branches_g[xbranch].second].
+                    info_branch.maximum_P_flow[0] - (value_ope * (
+                    1.0/power_system_datastructure[branches_g[xbranch].second].
+                    info_branch.reactance[0])));
+                rowUpper.push_back(
+                    power_system_datastructure[branches_g[xbranch].second].
+                    info_branch.maximum_P_flow[0] - (value_ope * (
+                    1.0/power_system_datastructure[branches_g[xbranch].second].
+                    info_branch.reactance[0])));
+            }
+        }
+    }
+}
+
+void models_cpp::run_iterative_reduced_dc_opf_v2(){
+    /* This function calls all functions to create the model and run the DC
+    OPF with the reduced model and in an iterative way. The non-binding constraints
+    (power flow limits) are introduced iteratively in CLP and the problem is 
+    reoptimised using the dual simplex method */
+
+    type_OPF = 3;
+
+    create_graph_database();
+    create_inverse_susceptance_matrix();
+    if (inverse_susceptance_completed)
+    {
+        create_dc_opf_model_v2();
+        solve_iterative_models();
+    }   
+}
+
+vector<double> models_cpp::calculate_angles(){
+    /* This function calculate the value of the voltage angles */
+
+    vector<double> generation;
+    vector<double> generation_curtailment;
+    vector<double> load_curtailment;
+    // Determining generators per node
+    vector< vector<int> > pos_gen(buses_g.size());
+    for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+    {
+        AdjacencyIterator ai, a_end;
+        boost::tie(ai, a_end) = boost::adjacent_vertices(buses_g[xnode].second, 
+            power_system_datastructure);
+        for (; ai != a_end; ai++) {
+            if(power_system_datastructure[*ai].type == "generator")
+            {
+                for (size_t xgen = 0; xgen < generators_g.size(); 
+                    xgen++)
+                {
+                    if (power_system_datastructure[*ai].
+                        infor_generator.number == generators_g[xgen].
+                        first && power_system_datastructure[*ai].
+                        infor_generator.is_active)
+                    {
+                        pos_gen[xnode].push_back(xgen);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // Extracting generation
+    string aux_name;
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xgen = 0; xgen < generators_g.size(); xgen++)
+                generation.push_back(solution[
+                    initial_position_variables[aux_name]+xgen]);
+        }
+    }
+
+    // Calculating net generation
+    vector<double> net_generation;
+    double net_gen_node;
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            string aux_name;
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                // Generation
+                net_gen_node = 0.0;
+                aux_name = "P_g("+to_string(xrd)+","+to_string(xp)+")";
+                for (size_t xgen = 0; xgen < pos_gen[xnode].size(); xgen++)
+                {
+                    net_gen_node += generation[
+                        xrd * integer_powersystem_data["number representative days"] + 
+                        xp * integer_powersystem_data["number periods"] + 
+                        pos_gen[xnode][xgen]];
+                }
+                net_generation.push_back(net_gen_node);
+            }
+        }
+    }
+
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            aux_name = "P_lc("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                load_curtailment.push_back(solution[
+                    initial_position_variables[aux_name]+xnode]);
+        }
+    }
+
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            aux_name = "P_gc("+to_string(xrd)+","+to_string(xp)+")";
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                generation_curtailment.push_back(solution[
+                    initial_position_variables[aux_name]+xnode]);
+        }
+    }
+    // Finding position slack bus
+    int slack_pos;
+    for (size_t i = 0; i < buses_g.size(); i++)
+    {
+        if (buses_g[i].first == integer_powersystem_data["slack bus"])
+        {
+            slack_pos = i;
+            break;
+        }
+    }
+
+    vector<double> angle;
+    int aux_count = integer_powersystem_data["number periods"];
+    int aux_count1 = integer_powersystem_data["number periods"];
+    for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+    {
+        for (int xp = 0; xp < 
+            integer_powersystem_data["number periods"]; xp++)
+        {
+            vec angle_partial(buses_g.size() - 1);
+            vec balance(buses_g.size() - 1);
+            int counter = 0;
+            string aux_name;
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                if (xnode != slack_pos)
+                {
+                    balance(counter) = power_system_datastructure[buses_g[
+                        xnode].second].info_bus.active_power_demand[
+                        xrd*aux_count + xp] - net_generation[
+                        xrd*aux_count + xp*aux_count1 + xnode] - 
+                        load_curtailment[xrd*aux_count + xp*aux_count1 + xnode] +
+                        generation_curtailment[
+                        xrd*aux_count + xp*aux_count1 + xnode];
+                        counter++;
+                }
+            }
+            counter = 0;
+            angle_partial = inverse_mat_sustance * balance;
+            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+            {
+                if (xnode != slack_pos)
+                {
+                    angle.push_back(angle_partial(counter));
+                    counter++;
+                }
+                else angle.push_back(0.0);
+            }
+        }
+    }
+    return angle;
 }
 
 void models_cpp::get_generation_solution(vector<double> &generation,
     vector<double> &generation_cost)
 {
-    const double * solution = model.primalColumnSolution();
     string aux_name;
     for (int xrd = 0; xrd < 
         integer_powersystem_data["number representative days"]; xrd++)
@@ -904,48 +1675,85 @@ void models_cpp::get_generation_solution(vector<double> &generation,
                 generation_cost.push_back(solution[
                     initial_position_variables[aux_name]+xgen]);
         }
-    }
+    }    
 }
 
 void models_cpp::get_branch_solution(vector<double> &power_flow)
 {
-    const double * solution = model.primalColumnSolution();
     string aux_name;
-    for (int xrd = 0; xrd < 
-        integer_powersystem_data["number representative days"]; xrd++)
+    if (type_OPF == 1 || type_OPF == 2)
     {
-        for (int xp = 0; xp < 
-            integer_powersystem_data["number periods"]; xp++)
+        for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
         {
-            for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
+            for (int xp = 0; xp < 
+                integer_powersystem_data["number periods"]; xp++)
             {
-                int pos1 = -1, pos2 = -1;
-                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
                 {
-                    if (power_system_datastructure[branches_g[xbranch].second].
-                        info_branch.from_bus == buses_g[xnode].first)
-                        pos1 = xnode;
-                    else if (power_system_datastructure[branches_g[xbranch].second].
-                        info_branch.to_bus == buses_g[xnode].first)
-                        pos2 = xnode;
-                    if (pos1 != -1 && pos2 != -1) break;
+                    int pos1 = -1, pos2 = -1;
+                    for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                    {
+                        if (power_system_datastructure[branches_g[xbranch].second].
+                            info_branch.from_bus == buses_g[xnode].first)
+                            pos1 = xnode;
+                        else if (power_system_datastructure[branches_g[xbranch].second].
+                            info_branch.to_bus == buses_g[xnode].first)
+                            pos2 = xnode;
+                        if (pos1 != -1 && pos2 != -1) break;
+                    }
+                    aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
+                    power_flow.push_back((solution[
+                        initial_position_variables[aux_name]+pos1] - solution[
+                        initial_position_variables[aux_name]+pos2])*
+                        (1.0/power_system_datastructure[
+                        branches_g[xbranch].second].info_branch.reactance[0]) * 
+                        continuous_powersystem_data["base power"]);
                 }
-                aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
-                power_flow.push_back((solution[
-                    initial_position_variables[aux_name]+pos1] - solution[
-                    initial_position_variables[aux_name]+pos2])*
-                    (1.0/power_system_datastructure[
-                    branches_g[xbranch].second].info_branch.reactance[0]) * 
-                    continuous_powersystem_data["base power"]);
             }
         }
     }
+    else if (type_OPF == 3)
+    {
+        vector<double> angle = calculate_angles();
+        int aux_count = integer_powersystem_data["number periods"];
+        int aux_count1 = integer_powersystem_data["number periods"];
+        for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
+        {
+            for (int xp = 0; xp < 
+                integer_powersystem_data["number periods"]; xp++)
+            {
+                for (size_t xbranch = 0; xbranch < branches_g.size(); xbranch++)
+                {
+                    int pos1 = -1, pos2 = -1;
+                    for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                    {
+                        if (power_system_datastructure[branches_g[xbranch].second].
+                            info_branch.from_bus == buses_g[xnode].first)
+                            pos1 = xnode;
+                        else if (power_system_datastructure[branches_g[xbranch].second].
+                            info_branch.to_bus == buses_g[xnode].first)
+                            pos2 = xnode;
+                        if (pos1 != -1 && pos2 != -1) break;
+                    }
+                    power_flow.push_back((angle[
+                        xrd*aux_count + xp*aux_count1 + pos1] - angle[
+                        xrd*aux_count + xp*aux_count1 + pos2]) *
+                        (1.0/power_system_datastructure[
+                        branches_g[xbranch].second].info_branch.reactance[0]) * 
+                        continuous_powersystem_data["base power"]);
+                }
+            }
+        }
+    } 
+    
 }
 
 void models_cpp::get_node_solution(vector<double> &angle, 
     vector<double> &generation_curtailment, vector<double> &load_curtailment)
 {
-    const double * solution = model.primalColumnSolution();
+    
     string aux_name;
     for (int xrd = 0; xrd < 
         integer_powersystem_data["number representative days"]; xrd++)
@@ -973,23 +1781,30 @@ void models_cpp::get_node_solution(vector<double> &angle,
                     continuous_powersystem_data["base power"]);
         }
     }
-    for (int xrd = 0; xrd < 
-        integer_powersystem_data["number representative days"]; xrd++)
+    if (type_OPF == 1 || type_OPF == 2)
     {
-        for (int xp = 0; xp < 
-            integer_powersystem_data["number periods"]; xp++)
+        for (int xrd = 0; xrd < 
+        integer_powersystem_data["number representative days"]; xrd++)
         {
-            aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
-            for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
-                angle.push_back(solution[initial_position_variables[aux_name]+
-                    xnode]);
+            for (int xp = 0; xp < 
+                integer_powersystem_data["number periods"]; xp++)
+            {
+                aux_name = "theta("+to_string(xrd)+","+to_string(xp)+")";
+                for (size_t xnode = 0; xnode < buses_g.size(); xnode++)
+                    angle.push_back(solution[initial_position_variables[aux_name]+
+                        xnode]);
+            }
         }
     }
+    else if (type_OPF == 3)
+    {
+        angle = calculate_angles();
+    }    
 }
 
 double models_cpp::get_objective_function_nm()
 {
-    return model.objectiveValue();
+    return objective_function;
 }
 
 // Combined Energy Tree and reduced DC OPF
@@ -1015,6 +1830,26 @@ void models_cpp::create_combined_energy_dc_opf_model(){
     energy_and_network_relation();
     release_limits_energy_tree();
     objective_function_combined_energy_dc_opf();
+}
+
+void models_cpp::create_combined_energy_dc_opf_model_v2(){
+    number_variables = 0;
+    number_constraints = 0;
+    create_graph_database();
+    create_inverse_susceptance_matrix();
+    if (inverse_susceptance_completed)
+    {
+        declaration_variables_em();
+        declaration_variables_dc_opf_v2();
+        energy_balance();
+        energy_aggregation();
+        active_power_balance_ac_system();
+        active_power_flow_limit_ac_v2();
+        active_power_generation_cost();
+        energy_and_network_relation();
+        release_limits_energy_tree();
+        objective_function_combined_energy_dc_opf();
+    }
 }
 
 void models_cpp::release_limits_energy_tree(){
@@ -1137,6 +1972,8 @@ void models_cpp::objective_function_combined_energy_dc_opf(){
 
 void models_cpp::run_combined_energy_dc_opf_r1(){
 
+    type_OPF = 1;
+
     create_combined_energy_dc_opf_model();
 
     // matrix data
@@ -1163,9 +2000,37 @@ void models_cpp::run_combined_energy_dc_opf_r1(){
 
     // Solve
     model.primal();
+
+    solution = model.primalColumnSolution();
+    objective_function = model.objectiveValue();
+}
+
+void models_cpp::run_iterative_combined_energy_dc_opf(){
+    /* This function calls all functions to create the model and run the DC
+    OPF with the reduced model and in an iterative way. The non-binding constraints
+    (power flow limits) are introduced iteratively in CLP and the problem is 
+    reoptimised using the dual simplex method */
+    
+    type_OPF = 2;
+
+    create_combined_energy_dc_opf_model();
+    solve_iterative_models();
+}
+
+void models_cpp::run_iterative_combined_energy_dc_opf_v2(){
+    /* This function calls all functions to create the model and run the DC
+    OPF with the second reduced model and in an iterative way. The non-binding constraints
+    (power flow limits) are introduced iteratively in CLP and the problem is 
+    reoptimised using the dual simplex method */
+
+    type_OPF = 3;
+
+    create_combined_energy_dc_opf_model_v2();
+    if (inverse_susceptance_completed)
+        solve_iterative_models();
 }
 
 double models_cpp::get_objective_function_combined_energy_dc_opf_r1()
 {
-    return model.objectiveValue();
+    return objective_function;
 }

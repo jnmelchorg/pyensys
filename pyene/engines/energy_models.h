@@ -7,12 +7,18 @@
 #include <string>
 #include <utility>
 #include <map>
-#include <iomanip> 
+#include <iomanip>
+#include <limits>
+#include <algorithm>
+#include <cmath>
+#include <armadillo>
 #include "external files/include/graph/adjacency_list.hpp"
 #include "ClpSimplex.hpp"
 #include "CoinHelperFunctions.hpp"
+#include "CoinTime.hpp"
 
 using namespace std;
+using namespace arma;
 
 
 // Data structures - power system information
@@ -97,6 +103,9 @@ class models_cpp{
         map<string, int> initial_position_variables;
         map<string, int> initial_position_constraints;
 
+        double * solution;
+        double objective_function;
+
         // Functions for all models
         void add_variables(string name, int number);
         void add_constraints(string name, int number);
@@ -122,6 +131,11 @@ class models_cpp{
         void objective_function_em();
 
         // Reduced DC OPF v1
+
+        int type_OPF;                   // Type 1 - Full DC OPF
+                                        // Type 2 - Iterative DC OPF
+                                        // Type 3 - Iterative reduced DC OPF
+
         // All power system components are treated as nodes of a graph
 
         vector< pair<int, int> > buses_g;       // * Nodes in the graph that  
@@ -165,6 +179,23 @@ class models_cpp{
 
         void objective_function_nm();
 
+        // Reduced DC OPF v2
+
+        bool inverse_susceptance_completed;
+        sp_mat inverse_mat_sustance;    // Inverse of susceptance matrix
+
+        void create_inverse_susceptance_matrix();
+
+        void declaration_variables_dc_opf_v2();
+
+        void active_power_balance_ac_system();
+
+        void active_power_flow_limit_ac_v2();
+
+        void create_dc_opf_model_v2();
+
+        vector<double> calculate_angles();
+
         // Combined energy tree and reduced DC OPF v1
         vector< vector<int> > LLNodesAfter;
         vector<int> ConnectionTreeGen;  // Connections
@@ -175,11 +206,20 @@ class models_cpp{
 
         void create_combined_energy_dc_opf_model();
 
+        void create_combined_energy_dc_opf_model_v2();
+
         void release_limits_energy_tree();
 
         void energy_and_network_relation();
 
         void objective_function_combined_energy_dc_opf();
+
+        // Iterative optimisation
+
+        int iterations_opt; // Number of iterations to solve the iterative
+            // dc opf model
+
+        void solve_iterative_models();
     
     public:
 
@@ -225,12 +265,26 @@ class models_cpp{
             vector<double> &load_curtailment);
         double get_objective_function_nm();
 
+        // Reduced DC OPF v1 - iterative
+
+        void run_iterative_reduced_dc_opf();
+
+        // Reduced DC OPF v2 - iterative
+
+        void run_iterative_reduced_dc_opf_v2();
+
         // Combined energy tree and reduced DC OPF v1
         void load_combined_energy_dc_opf_information(
             const vector< vector<int> > &LLNA, const vector<int> &CTG);
 
         void run_combined_energy_dc_opf_r1();
         double get_objective_function_combined_energy_dc_opf_r1();
+
+        // Combined energy tree and reduced DC OPF v1 - Iterative
+        void run_iterative_combined_energy_dc_opf();
+
+        // Combined energy tree and reduced DC OPF v2 - Iterative
+        void run_iterative_combined_energy_dc_opf_v2();
 };
 
 #endif
