@@ -80,8 +80,8 @@ def setup_package():
         ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
         include_dirs=["/home/tesla/coinbrew/dist/include/coin/",
                       "pyene/engines/external files/include/graph"],
-        libraries=['Clp'],
-        library_dirs=libs_clp,))
+        libraries=['Clp', 'armadillo'],
+        library_dirs=["/home/tesla/coinbrew/dist/lib"],))
 
     setup(**metadata)
 
