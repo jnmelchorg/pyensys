@@ -12,7 +12,7 @@
 #include <algorithm>
 #include <cmath>
 #include <armadillo>
-#include "external files/include/graph/adjacency_list.hpp"
+#include "boost/graph/adjacency_list.hpp"
 #include "ClpSimplex.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinTime.hpp"
