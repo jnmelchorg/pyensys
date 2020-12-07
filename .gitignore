@@ -97,3 +97,4 @@ pyene/json/Ghana_energy-onlyExisting.json
 .coverage
 pyene/json/UKElectricityProfiles week.json
 tests/json/UKElectricityProfiles week.json
+pyene/engines/cython/cpp_energy_wrapper.cp37-win_amd64.pyd
