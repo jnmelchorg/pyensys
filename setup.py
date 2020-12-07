@@ -71,24 +71,32 @@ def setup_package():
         libraries=["glpk"],))
 
     if config["clp"]:
-        if platform.system() == "Linux":
-            libs_clp = ["/home/tesla/coinbrew/dist/lib"]
-        elif platform.system() == "Darwin":
-            libs_clp = ["pyene/engines/external files/lib/lib_osx10.14"]
-        elif platform.system() == "Windows":
-            libs_clp = ["pyene/engines/external files/lib/lib_win64"]
-        ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
-        include_dirs=["/home/tesla/coinbrew/dist/include/coin/",
-                      "pyene/engines/external files/include/graph"],
-        libraries=['Clp', 'armadillo'],
-        library_dirs=["/home/tesla/coinbrew/dist/lib"],))
-
+        if platform.system() == "Windows":
+            ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
+            include_dirs=[os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\armadillo-10.1.2\include',
+                      os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\boost_1_74_0',
+                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\CoinUtils\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\BuildTools\headers"],
+            libraries=['libClp', 'libCoinUtils', 'libopenblas'],
+            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\lib",  os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\\armadillo-10.1.2\lib_win64"],
+            define_macros= [('ARMA_DONT_USE_WRAPPER', None),
+                            ('ARMA_USE_LAPACK', None),
+                            ('ARMA_USE_BLAS', None)]))
+        elif platform.system() == "Linux":
+            ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
+            include_dirs=["pyene/engines/external files/boost_1_74_0",
+                      "pyene/engines/external files/Clp/include",
+                      "pyene/engines/external files/CoinUtils/include",
+                      "pyene/engines/external files/BuildTools/headers"],
+            libraries=['Clp', 'armadillo'],
+            ))
     setup(**metadata)
 
 def parse_optional_arguments():
     config = {
         "glpk": True,
-        "clp": False,
+        "clp": True,
         "annotate": False,
         "profile": False,
         "trace": False,
@@ -98,9 +106,9 @@ def parse_optional_arguments():
         config["glpk"] = False
         sys.argv.remove("--without-glpk")
     
-    if "--with-clp" in sys.argv:
-        config["clp"] = True
-        sys.argv.remove("--with-clp")
+    if "--without-clp" in sys.argv:
+        config["clp"] = False
+        sys.argv.remove("--without-clp")
 
     if "--annotate" in sys.argv:
         config["annotate"] = True
@@ -125,9 +133,9 @@ def findglpkheaderpath():
         print(aux2)
         if aux1 == 'in':
             pythonpath = aux2
-    trypaths = [pythonpath+'\Library\include\glpk.h',\
-                pythonpath+'\include\glpk.h', \
-                pythonpath+'/Library/include/glpk.h',\
+    trypaths = [pythonpath+'/Library/include/glpk.h',
+                pythonpath+'/include/glpk.h',
+                pythonpath+'/Library/include/glpk.h',
                 pythonpath+'/include/glpk.h']
     glpkpath = None
     for paths in trypaths:
@@ -150,9 +158,9 @@ def findglpklibrarypath():
         print(aux2)
         if aux1 == 'in':
             pythonpath = aux2
-    trypaths = [pythonpath+'\Library\lib\glpk.lib',\
-                pythonpath+'\libs\glpk.lib',\
-                pythonpath+'/Library/lib/libglpk.so',\
+    trypaths = [pythonpath+'/Library/lib/glpk.lib',
+                pythonpath+'/libs/glpk.lib',
+                pythonpath+'/Library/lib/libglpk.so',
                 pythonpath+'/lib/libglpk.so']
     glpkpath = None
     for paths in trypaths:
