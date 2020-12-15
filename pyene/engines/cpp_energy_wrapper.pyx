@@ -1,6 +1,6 @@
 # distutils: language = c++
 
-from cpp_energy_wrapper cimport models_cpp
+from pyene.engines.cpp_energy_wrapper cimport models_cpp
 
 from libcpp.string cimport string
 from libcpp.vector cimport vector
