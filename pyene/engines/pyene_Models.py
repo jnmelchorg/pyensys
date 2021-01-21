@@ -10,11 +10,17 @@ the transmission system (Optimal Power Flow)
 @author: Dr Jose Nicolas Melchor Gutierrez
 """
 
+from collections import namedtuple
+from networkx.algorithms.centrality.betweenness import _accumulate_endpoints
+from pyomo.core.expr.numvalue import value
+from tables import node, parameters
 from .cython._glpk import GLPKSolver
 import numpy as np
 import sys
-import math
 import importlib
+import networkx as nx
+from dataclasses import dataclass
+
 
 try:
     cpp_energy_wrapper = importlib.import_module(\
@@ -22,6 +28,29 @@ try:
     models_cpp = cpp_energy_wrapper.models_cpp_clp
 except ImportError as err:
     print('Error:', err)
+
+@dataclass
+class tree_parameters:
+    name                :   str     = None      # Name parameter
+    level               :   int     = None      # Level in the tree
+    name_node           :   str     = None      # Name of level, e.g. summer, weekday
+    value               :   float   = None      # Value of parameter
+
+class tree_variables:
+    name                :   str     = None      # Name parameter
+    level               :   int     = None      # Level in the tree
+    name_node           :   str     = None      # Name of level, e.g. summer, weekday
+    value               :   float   = None      # Value of the solution for this specific variable
+    max                 :   float   = None      # Upper limit of the variable
+    min                 :   float   = None      # Lower limit of the variable
+
+@dataclass
+class nodes_info_tree:
+    level               :   int     = None      # Level in the tree
+    name_node           :   str     = None      # Name of level, e.g. summer, weekday
+    node                :   int     = None      # Number of node in graph
+    parameters          :   list    = None      # Parameters associated to the node in the graph
+    variables           :   list    = None      # Variables associated to the node in the graph
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.
@@ -42,6 +71,10 @@ class Energymodel():
         """
         # Storing data input - Parameters
         assert obj is not None   # If the object is empty then raise an error
+
+        self.tree_parameters = []
+        self.tree_variables = []
+
         self.TreeNodes = obj.LL['NosBal'] + 1  # Number of nodes in the 
                                                 # temporal tree
         self.NumberTrees = obj.size['Vectors'] # Number of temporal trees
@@ -58,6 +91,85 @@ class Energymodel():
                                 # for uncertainty in the temporal tree
         self.LLNodesUnc = obj.p['LLTS3'] # Link List to connect the nodes
                                 # with uncertainty in the temporal tree
+
+    def _create_nodes_graph(self):
+
+        # Getting levels of symetric tree
+        levels = []
+        for parameter in self.tree_parameters:
+            if parameter.level not in levels:
+                levels.append(parameter.level)
+        levels.sort()
+
+        # Getting elements per level
+        elements_levels = []
+        for level in levels:
+            elements_level = []
+            for parameter in self.tree_parameters:
+                if parameter.level == level and parameter.name_node not in elements_level:
+                    elements_level.append(parameter.name_node)
+            elements_levels.append(elements_level)
+
+        # Creating nodes
+        nodes_graph = []
+        counter = 0
+        nodes_levels = 1
+        # Creating list of nodes
+        for level, names in zip(levels, elements_levels):
+            # Creating nodes
+            for _ in range(nodes_levels):
+                for name in names:
+                    node = nodes_info_tree
+                    node.node = counter
+                    counter = counter + 1
+                    node.level = level
+                    node.name_node = name
+                    nodes_graph.append(node)
+            nodes_levels = nodes_levels * len(names)
+
+        # Adding parameters to nodes
+
+        for node_g in nodes_graph:
+            for parameter in self.tree_parameters:
+                if parameter.level == node_g.level and node_g.name_node == parameter.name_node:
+                    node_g.parameters.append(parameter)
+                    break
+        
+        # Adding nodes to graph
+        for node_g in nodes_graph:
+            self.network.add_node(node_g.node, obj=node_g)
+        
+        return levels, elements_levels
+
+    def _create_edges_graph(self, levels, elements_levels):
+        # Creating branches of graph
+        branches_graph = []
+        connected_nodes = [False for _ in len(self.network)]
+        for level in range(len(levels) - 1):
+            for node_g in self.network.nodes(data=True):
+                if node_g['obj'].type == "generator":
+                    for aux in self.network.nodes(data=True):
+                        if aux.type == "bus" and node_g.bus == aux.bus:
+                            branches_graph.append([aux.node, node_g.node])
+                            break
+                elif node_g['obj'].type == "branch":
+                    flag = [False, False]
+                    for aux in self.network.nodes(data=True):
+                        if aux['obj'].type == "bus" and node_g['obj'].ends[0] == aux['obj'].bus:
+                            branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                            flag[0] = True
+                        elif aux['obj'].type == "bus" and node_g['obj'].ends[1] == aux['obj'].bus:
+                            branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                            flag[1] = True
+                        if flag[0] and flag[1]:
+                            break
+        for branches in  branches_graph:
+            self.network.add_edge(branches[0], branches[1])
+
+    def _create_graph(self):
+        self.network = nx.MultiDiGraph()
+        levels, elements_levels = self._create_nodes_graph()
+        self._create_edges_graph(levels, elements_levels)
 
     def optimisationEM(self, solver_name=None):
         """ This class method solve the optimisation problem """
@@ -536,9 +648,48 @@ class Energymodel():
                     self.treebalance[i][0]), j - 1)
         return EnergybalanceDualSolution
 
+@dataclass
+class network_variable:
+    name                :   str     = None      # Name of the variable
+    alternative_names   :   tuple   = None      # Alternative names of the variable
+    position_tree       :   dict    = None      # Position in the energy tree - representative days
+    hour                :   int     = None      # Hour of the solution in case of multiple hours
+    ID                  :   str     = None      # ID of element
+    type                :   str     = None      # Type of element, e.g. bus, branch
+    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
+    value               :   float   = None      # Value of the solution for this specific variable
+    max                 :   float   = None      # Upper limit of the variable
+    min                 :   float   = None      # Lower limit of the variable
+
+@dataclass
+class network_parameter:
+    name                :   str     = None      # Name of the parameter
+    alternative_names   :   tuple   = None      # Alternative names of the parameter
+    position_tree       :   dict    = None      # Position in the energy tree - representative days
+                                                # in case of parameters changing in time
+    hour                :   int     = None      # Hour of the parameter in case of parameters 
+                                                # changing in time
+    ID                  :   str     = None      # ID of element
+    type                :   str     = None      # Type of element, e.g. bus, branch
+    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
+    bus                 :   int     = None      # Number of the bus (node) that the element is 
+                                                # related
+    ends                :   list    = None      # list of ends for branches in format [from, to]
+    value               :   float   = None      # Value of the solution for this specific variable
+
+@dataclass
+class nodes_info_network:
+    type                :   str     = None      # Type of element, e.g. bus, branch, generator
+    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
+    ID                  :   str     = None      # ID of element
+    node                :   int     = None      # Number of node in graph
+    parameters          :   list    = None      # Parameters associated to the node in the graph
+    variables           :   list    = None      # Variables associated to the node in the graph
+    bus                 :   int     = None      # Number of the bus related to the graph's node
+    ends                :   list    = None      # list of ends for branches in format [from, to]
 
 class Networkmodel():
-    """ This class builds and solve the network model(NM) using the gplk wrapper.
+    """ This class builds and solve the network model(NM).
 
     The information of the pyeneClass is passed to this class,
     which provides the parameters for the model. Furthermore,
@@ -551,6 +702,9 @@ class Networkmodel():
         obj : Network object
             Information of the power system
         """
+
+        self.network_parameters = []
+        self.network_variables = []
 
         # Storing data input - Parameters
         assert obj is not None  # If the object is empty then raise an error
@@ -895,6 +1049,72 @@ class Networkmodel():
         
         self.OFaux = np.ones(len(self.LongTemporalConnections), dtype=float)
 
+    def _create_nodes_graph(self):
+        nodes_graph = []
+        exist = False
+        counter = 0
+        # Creating list of nodes  and adding parameters
+        for parameter in self.network_parameters:
+            if nodes_graph:
+                for node_g in nodes_graph:
+                    if node_g.ID == parameter.ID:
+                        exist = True
+                        node_g.parameters.append(parameter)
+                        break
+            if not exist:
+                node = nodes_info_network
+                node.node = counter
+                node.type = parameter.type
+                node.sub_type = parameter.sub_type
+                node.ID = parameter.ID
+                node.parameters = [parameter]
+                node.bus = parameter.bus
+                node.ends = parameter.ends
+                counter += 1
+                nodes_graph.append(node)
+            exist = False
+        
+        # Adding variables to nodes
+        # for variable in self.network_variables:
+        #     for node_g in nodes_graph:
+        #         if node_g.ID == variable.ID:
+        #             if node_g.variables:
+        #                 node_g.variables.append(variable)
+        #             else:
+        #                 node_g.variables = [variable]
+        #             break
+        
+        # Adding nodes to graph
+        for node_g in nodes_graph:
+            self.network.add_node(node_g.node, obj=node_g)
+
+    def _create_edges_graph(self):
+        # Creating branches of graph
+        branches_graph = []
+        for node_g in self.network.nodes(data=True):
+            if node_g['obj'].type == "generator":
+                for aux in self.network.nodes(data=True):
+                    if aux.type == "bus" and node_g.bus == aux.bus:
+                        branches_graph.append([aux.node, node_g.node])
+                        break
+            elif node_g['obj'].type == "branch":
+                flag = [False, False]
+                for aux in self.network.nodes(data=True):
+                    if aux['obj'].type == "bus" and node_g['obj'].ends[0] == aux['obj'].bus:
+                        branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                        flag[0] = True
+                    elif aux['obj'].type == "bus" and node_g['obj'].ends[1] == aux['obj'].bus:
+                        branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                        flag[1] = True
+                    if flag[0] and flag[1]:
+                        break
+        for branches in  branches_graph:
+            self.network.add_edge(branches[0], branches[1])
+
+    def _create_graph(self):
+        self.network = nx.MultiGraph()
+        self._create_nodes_graph()
+        self._create_edges_graph()
 
     def optimisationNM(self, solver_name=None):
         """ This class method solve the optimisation problem """
@@ -2865,6 +3085,117 @@ class Networkmodel():
             original_number_nodes
 
     # Data outputs of Energy model
+
+    def _calculate_tree_position(self):
+
+        pass
+
+    def get_value(self, ID=None, position_tree={}, hour=None, type=None):
+        ''' This function retrieves the values of variables and parameters 
+        
+            Parameters
+            ----------
+            Mandatory:
+            ID              :   Unique ID of the network element
+            name            :   Name of variable or parameter to be retrieved
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree. If the value does not vary with
+                                the energy tree then this value should be left in {}
+            hour            :   integer that indicates the specific hour of the requested data. If
+                                the data does not change in time then this input must be left in
+                                None
+            type            :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+        '''
+        for node in self.network.nodes(data=True):
+            if node['obj'].ID == ID:
+                if type == "parameter":
+                    for parameter in node['obj'].parameters:
+                        flag = True
+                        for key, value in parameter.position_tree.items():
+                            if position_tree[key] != value:
+                                flag = False
+                                break
+                        if flag and hour == parameter.hour:
+                            return parameter.value
+                if type == "variable":
+                    for parameter in node['obj'].parameters:
+                        flag = True
+                        for key, value in parameter.position_tree.items():
+                            if position_tree[key] != value:
+                                flag = False
+                                break
+                        if flag and hour == parameter.hour:
+                            return parameter.value
+        return None
+
+    def get_accumulated_value(self, **kwargs):
+        ''' This function retrieves the values of variables and parameters 
+
+            Description
+            ----------
+            * If list of IDs is provided then type and subtype are ignored and a list of type_data
+            with "name" is returned
+            * If IDs is 'all' and type and subtype are provided then a list of type_data
+            with "name" for all elements of the same type and subtype is returned
+            * If IDs is 'all' and only type is provided then a list of type_data
+            with "name" for all elements of the same type and all subtypes is returned
+            * If hour is 'all' then a list of all hours is returned
+            * If hour is a list then a list of those hours is returned
+            * If hour is an integer then a list of an specific hour is returned
+            * If position_tree is provided then a list for that specific position in the tree 
+            is provided
+
+            Parameters
+            ----------
+            Mandatory:
+            IDs             :   List of unique IDs of network elements
+            type            :   Type of element to be retrieved, e.g. branch, nodes
+            subtype         :   Subtype of element to be retrieved, e.g. thermal, hydro
+            name            :   Name of variable or parameter to be retrieved
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree. If the value does not vary with
+                                the energy tree then this value should be left in None
+            hour            :   integer that indicates the specific hour of the requested data. If
+                                the data does not change in time then this input must be left in
+                                None
+            type_data       :   This refers to the type of data to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+            
+        '''
+        IDs             = kwargs.pop('IDs', None)
+        type            = kwargs.pop('type', None)
+        subtype         = kwargs.pop('subtype', None)
+        name            = kwargs.pop('name', None)
+        position_tree   = kwargs.pop('position_tree', None)
+        hour            = kwargs.pop('hour', None)
+        type_data       = kwargs.pop('type_data', None)
+
+        if isinstance(IDs, list):
+            for id in IDs:
+                for node in self.network.nodes(data=True):
+                    if node['obj'].ID == id:
+                        if type_data == "parameter":
+                            for parameter in node['obj'].parameters:
+                                flag = True
+                                for key, value in parameter.position_tree.items():
+                                    if position_tree[key] != value:
+                                        flag = False
+                                        break
+                                if flag and hour == parameter.hour:
+                                    return parameter.value
+                        if type_data == "variable":
+                            for parameter in node['obj'].parameters:
+                                flag = True
+                                for key, value in parameter.position_tree.items():
+                                    if position_tree[key] != value:
+                                        flag = False
+                                        break
+                                if flag and hour == parameter.hour:
+                                    return parameter.value
+        pass
 
     def GetThermalGeneration(self):
         if self.NumberConvGen > 0:
