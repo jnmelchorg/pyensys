@@ -1015,15 +1015,24 @@ class pyeneClass():
                     NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
                     NoLink, Nohr)
 
-    def run(self, m):
+    def run(self, solver=None):
         ''' Run integrated pyene model '''
-        # Build pyomo model
-        m = self.build_Mod(m)
+        if solver == "pyomo":
+            # Build pyomo model
+            m = ConcreteModel()
+            m = self.build_Mod(m)
 
-        # Run pyomo model
-        (m, results) = self.Run_Mod(m)
+            # Run pyomo model
+            (m, results) = self.Run_Mod(m)
 
-        return m
+            return m
+        else:
+            from pyene.engines.pyene_Models import EnergyandNetwork
+
+            ENMod = EnergyandNetwork(self.EN.EM, self.EN.NM, self.EN)
+            ENMod.optimisationENM()
+
+            return ENMod
 
     def Run_Mod(self, m):
         ''' Run pyomo model '''
@@ -1165,3 +1174,18 @@ class pyeneClass():
         mod = ENM.addCon(mod)
 
         return mod
+
+
+    # TODO: Generalise this functions
+    def set_element_status(self, ID=None, status=True, typ=None):
+        ''' This function sets the status of the element "typ" to on or off '''
+        if typ == "branch":
+            if ID:
+                self.NM.ENetwork.Branch[ID].data['BR_STATUS'] = status
+            else:
+                raise ValueError("ID -->{}<--- is not valid to set the status of the branch".format(ID))
+        if typ == "generator":
+            if ID:
+                self.NM.Gen.Conv[ID].data['GEN'] = status
+            else:
+                raise ValueError("ID -->{}<--- is not valid to set the status of the generator".format(ID))
