@@ -10,7 +10,8 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 import numpy as np
 from tables import Int16Col, Float32Col, StringCol, IsDescription, open_file
 import os
-from .pyene_Models import *
+from pyomo.core import ConcreteModel
+from .pyene_Models import EnergyandNetwork, Networkmodel
 
 class pyeneOConfig:
     ''' Default settings used for this class '''
@@ -30,8 +31,7 @@ class pyeneOConfig:
         self.data['curtailment'] = 0
         self.data['spill'] = 0
         self.data['OF'] = 0
-        self.data['pyomodel'] = None
-        self.data['GLPKmodel'] = None
+        self.data['model'] = None
 
         self.time = {}
         self.time['All'] = 0
@@ -186,7 +186,13 @@ class pyeneHDF5Settings():
                                                     self.time['glpk']])
             fileh.close()
 
-    def saveResults(self, EN, m, SimNo):
+    def saveResults(self, EN, model, SimNo):
+        if isinstance(model, ConcreteModel):
+            self.saveResultspyomo( EN, model, SimNo)
+        elif isinstance(model, EnergyandNetwork) or isinstance(model, Networkmodel):
+            self.saveResultsGLPK(EN, model, SimNo)
+
+    def saveResultspyomo(self, EN, m, SimNo):
         ''' Save results of each iteration '''
 
         # Accumulate data
@@ -748,8 +754,6 @@ class pyeneHDF5Settings():
         # if ActivePowerFlow is not None:
         #     self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
         #         ActivePowerFlow)
-
-
 
     def terminate(self):
 
