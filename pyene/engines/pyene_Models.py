@@ -137,37 +137,35 @@ class Energymodel():
         
         # Adding nodes to graph
         for node_g in nodes_graph:
-            self.network.add_node(node_g.node, obj=node_g)
+            self.tree.add_node(node_g.node, obj=node_g)
         
         return levels, elements_levels
 
     def _create_edges_graph(self, levels, elements_levels):
         # Creating branches of graph
         branches_graph = []
-        connected_nodes = [False for _ in len(self.network)]
-        for level in range(len(levels) - 1):
-            for node_g in self.network.nodes(data=True):
-                if node_g['obj'].type == "generator":
-                    for aux in self.network.nodes(data=True):
-                        if aux.type == "bus" and node_g.bus == aux.bus:
-                            branches_graph.append([aux.node, node_g.node])
+        connected_nodes = [False for _ in len(self.tree)]
+        for aux in range(len(levels) - 1):
+            for elements_pre in elements_levels[aux]:
+                for elements_pos in elements_levels[aux + 1]:
+                    origin = None
+                    destiny = None
+                    for pos, node_g in enumerate(self.tree.nodes(data=True)):
+                        if node_g['obj'].level == levels[aux] and node_g['obj'].name_node == elements_pre and not connected_nodes[pos]:
+                            connected_nodes[pos] = True
+                            origin = node_g['obj'].node
+                        elif node_g['obj'].level == levels[aux] and node_g['obj'].name_node == elements_pos and not connected_nodes[pos]:
+                            connected_nodes[pos] = True
+                            destiny = node_g['obj'].node
+                        if origin and destiny:
+                            branches_graph = [origin, destiny]
                             break
-                elif node_g['obj'].type == "branch":
-                    flag = [False, False]
-                    for aux in self.network.nodes(data=True):
-                        if aux['obj'].type == "bus" and node_g['obj'].ends[0] == aux['obj'].bus:
-                            branches_graph.append([aux['obj'].node, node_g['obj'].node])
-                            flag[0] = True
-                        elif aux['obj'].type == "bus" and node_g['obj'].ends[1] == aux['obj'].bus:
-                            branches_graph.append([aux['obj'].node, node_g['obj'].node])
-                            flag[1] = True
-                        if flag[0] and flag[1]:
-                            break
+
         for branches in  branches_graph:
-            self.network.add_edge(branches[0], branches[1])
+            self.tree.add_edge(branches[0], branches[1])
 
     def _create_graph(self):
-        self.network = nx.MultiDiGraph()
+        self.tree = nx.MultiDiGraph()
         levels, elements_levels = self._create_nodes_graph()
         self._create_edges_graph(levels, elements_levels)
 
@@ -651,7 +649,6 @@ class Energymodel():
 @dataclass
 class network_variable:
     name                :   str     = None      # Name of the variable
-    alternative_names   :   tuple   = None      # Alternative names of the variable
     position_tree       :   dict    = None      # Position in the energy tree - representative days
     hour                :   int     = None      # Hour of the solution in case of multiple hours
     ID                  :   str     = None      # ID of element
@@ -664,7 +661,6 @@ class network_variable:
 @dataclass
 class network_parameter:
     name                :   str     = None      # Name of the parameter
-    alternative_names   :   tuple   = None      # Alternative names of the parameter
     position_tree       :   dict    = None      # Position in the energy tree - representative days
                                                 # in case of parameters changing in time
     hour                :   int     = None      # Hour of the parameter in case of parameters 
@@ -2642,8 +2638,73 @@ class Networkmodel():
             "base power", self.BaseUnitPower)
         
 
-
     # Data inputs of Network model
+
+    def set_value_network(self, ID=None, name=None, position_tree=None, hour=None, typ=None, value=None):
+        ''' This function set the value of a variable or parameter.
+
+            ----------
+            Description:\\
+            * If the parameter or variable exist then the value is overwritten\\
+            * If the parameter or variable does not exist then the value is created
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            ID              :   Unique ID of the network element\\
+            name            :   Name of variable or parameter to be retrieved\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree. If the value does not vary with
+                                the energy tree then this value should be left in None\\
+            hour            :   integer that indicates the specific hour of the requested data. If
+                                the data does not change in time then this input must be left in
+                                None\\
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other types will not
+                                be accepted
+            value           :   Value to be set on the variable or parameter
+        '''
+        for node in self.network.nodes(data=True):
+            if node['obj'].ID == ID and typ == "parameter":
+                exist = False
+                for parameter in node['obj'].parameters:
+                    if parameter.name == name and (not hour or hour == parameter.hour) and position_tree == parameter.position_tree:
+                        exist = True
+                        parameter.value = value
+                        break
+                if not exist:
+                    parameter = network_parameter
+                    parameter.name = name
+                    parameter.position_tree = position_tree
+                    parameter.hour = hour
+                    parameter.bus = node.bus
+                    parameter.ends = node.ends
+                    parameter.type = node.type
+                    parameter.sub_type = node.sub_type
+                    parameter.ID = node.ID
+                    parameter.value = value
+                    node.parameters.append(parameter)
+            if node['obj'].ID == ID and typ == "variable":
+                exist = False
+                for variable in node['obj'].variables:
+                    if variable.name == name and (not hour or hour == variable.hour) and position_tree == variable.position_tree:
+                        exist = True
+                        variable.value = value
+                        break
+                if not exist:
+                    variable = network_variable
+                    variable.name = name
+                    variable.position_tree = position_tree
+                    variable.hour = hour
+                    variable.bus = node.bus
+                    variable.ends = node.ends
+                    variable.type = node.type
+                    variable.sub_type = node.sub_type
+                    variable.ID = node.ID
+                    variable.value = value
+                    node.variables.append(variable)
+    
+
 
     def SetLongTemporalConnections(self, \
         long_temporal_connections=None):
@@ -3086,116 +3147,241 @@ class Networkmodel():
 
     # Data outputs of Energy model
 
-    def _calculate_tree_position(self):
+    def _get_initial_tree_node(self, position_tree=None):
+        ''' This function retrieves the position of the node in the energy tree that the user 
+            requires
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree. If the value does not vary with
+                                the energy tree then this value should be left in None
+        '''
+        number_node = None
+        initial = True
+        for value in position_tree.values():
+            if initial:
+                for node in self.tree.nodes(data=True):
+                    if node['obj'].name_node == value:
+                        number_node = node['obj'].node
+                        break
+                initial = False
+            else:
+                for node in self.tree.successors(number_node):
+                    if node['obj'].name_node == value:
+                        number_node = node['obj'].node
+                        break
+        return number_node
+    
+    def _calculate_value_tree(self, number_node=None, ID=None, name=None, position_tree=None, hour=None, typ=None, flag=False):
+        ''' This function retrieves the value of variables or parameters based on a given position 
+            of the energy tree
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            number_node     :   Number of the node in the energy tree that corresponds to the 
+                                specific position that the user wants to retreive the information\\
+            ID              :   Unique ID of the network element\\
+            name            :   Name of variable or parameter to be retrieved\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree. If the value does not vary with
+                                the energy tree then this value should be left in None \\
+            hour            :   integer that indicates the specific hour of the requested data. If
+                                the data does not change in time then this input must be left in
+                                None\\
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted\\
+            flag            :   Boolean variable indicating if the recursive function is pointing to 
+                                the original node or one of its succesors
+        '''
+        value_node = 0
+        original_number_node = -1
+        inner_flag = False
+        if not flag:
+            original_number_node = number_node
+        for node in self.tree.successors(number_node):
+            flag = True
+            inner_flag = True
+            position_tree[str(node['obj'].level)] = node['obj'].name_node
+            value_node += self._calculate_value_tree(node['obj'].node, ID, position_tree, hour, typ, flag)
+            del position_tree[str(node['obj'].level)]
+        
+        if not inner_flag:
+            for node in self.network.nodes(data=True):
+                if node['obj'].ID == ID and typ == "parameter":
+                    for parameter in node['obj'].parameters:
+                        if parameter.name == name and (not hour or hour == parameter.hour) and position_tree == parameter.position_tree:
+                            value_node = parameter.value
+                if node['obj'].ID == ID and typ == "variable":
+                    for variable in node['obj'].variables:
+                        if variable.name == name and (not hour or hour == variable.hour) and position_tree == variable.position_tree:
+                            value_node = variable.value
+        
+        if flag and original_number_node != number_node:
+            for parameter in self.tree[number_node]['obj'].parameters:
+                if parameter.name == "weight":
+                    value_node = value_node * parameter.value
+                    break
 
-        pass
+        return value_node
 
-    def get_value(self, ID=None, position_tree={}, hour=None, type=None):
+    def get_value_network(self, ID=None, name=None, position_tree=None, hour=None, typ=None):
         ''' This function retrieves the values of variables and parameters 
         
             Parameters
             ----------
-            Mandatory:
-            ID              :   Unique ID of the network element
-            name            :   Name of variable or parameter to be retrieved
+            Mandatory:\\
+            ID              :   Unique ID of the network element\\
+            name            :   Name of variable or parameter to be retrieved\\
             position_tree   :   Dictionary containing information of the location of the information
                                 in relation with the energy tree. If the value does not vary with
-                                the energy tree then this value should be left in {}
+                                the energy tree then this value should be left in None\\
             hour            :   integer that indicates the specific hour of the requested data. If
                                 the data does not change in time then this input must be left in
-                                None
-            type            :   This refers to the type of element to be retrieved. This value
+                                None\\
+            typ             :   This refers to the type of element to be retrieved. This value
                                 can be either "variable" or "parameter". Other values will not
                                 be accepted
         '''
-        for node in self.network.nodes(data=True):
-            if node['obj'].ID == ID:
-                if type == "parameter":
+        if not position_tree:
+            for node in self.network.nodes(data=True):
+                if node['obj'].ID == ID and typ == "parameter":
                     for parameter in node['obj'].parameters:
-                        flag = True
-                        for key, value in parameter.position_tree.items():
-                            if position_tree[key] != value:
-                                flag = False
-                                break
-                        if flag and hour == parameter.hour:
+                        if parameter.name == name and (not hour or hour == parameter.hour):
                             return parameter.value
-                if type == "variable":
-                    for parameter in node['obj'].parameters:
-                        flag = True
-                        for key, value in parameter.position_tree.items():
-                            if position_tree[key] != value:
-                                flag = False
-                                break
-                        if flag and hour == parameter.hour:
-                            return parameter.value
+                if node['obj'].ID == ID and typ == "variable":
+                    for variable in node['obj'].variables:
+                        if variable.name == name and (not hour or hour == variable.hour):
+                            return variable.value
+        else:
+            number_node = self._get_initial_tree_node(position_tree)
+            return self._calculate_value_tree(number_node, ID, position_tree, hour, typ, False)
+        
         return None
 
-    def get_accumulated_value(self, **kwargs):
-        ''' This function retrieves the values of variables and parameters 
+    def _get_all_hours(self, ID=None, name=None, type_data=None):
+        ''' This function return a list with all the hours in which a parameter or variable
+            changes
+
+            Parameters
+            ----------
+            Mandatory:\\
+            IDs             :   List of unique IDs of network elements\\
+            name            :   Name of variable or parameter to be retrieved\\
+            type_data       :   This refers to the type of data to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+        '''
+        hours = []
+        for node in self.network.nodes(data=True):
+            if node.ID == ID and type_data == "parameter":
+                for parameter in node.parameters:
+                    if parameter.name == name and parameter.hour is not None and parameter.hour not in hours:
+                        hours.append(parameter.hour)
+            elif node.ID == ID and type_data == "variable":
+                for variable in node.variables:
+                    if variable.name == name and variable.hour is not None and variable.hour not in hours:
+                        hours.append(variable.hour)
+        hours.sort()
+        return hours
+
+    def _get_all_IDs(self, typ=None, subtype=None):
+        ''' This function return a list with all IDs that correspond to the indicated type and subtype
+
+            Parameters
+            ----------
+            Mandatory:\\
+            typ            :   Type of element to be retrieved, e.g. branch, nodes\\
+            subtype         :   Subtype of element to be retrieved, e.g. thermal, hydro
+        '''
+        IDs = []
+        for node in self.network.nodes(data=True):
+            if (subtype == "all" and node.typ == typ) or (subtype == node.sub_type and node.typ == typ):
+                IDs.append(node.ID)
+            else:
+                raise ValueError('Incorrect values for this function, check description')
+        return IDs
+
+    def get_values_network(self, **kwargs):
+        ''' This function retrieves the values of variables and parameters
 
             Description
             ----------
             * If list of IDs is provided then type and subtype are ignored and a list of type_data
-            with "name" is returned
+            with "name" is returned\\
             * If IDs is 'all' and type and subtype are provided then a list of type_data
-            with "name" for all elements of the same type and subtype is returned
-            * If IDs is 'all' and only type is provided then a list of type_data
-            with "name" for all elements of the same type and all subtypes is returned
-            * If hour is 'all' then a list of all hours is returned
-            * If hour is a list then a list of those hours is returned
-            * If hour is an integer then a list of an specific hour is returned
+            with "name" for all elements of the same type and subtype is returned\\
+            * If IDs and suttype are 'all' and only type is provided then a list of type_data
+            with "name" for all elements of the same type and all subtypes is returned\\
+            * If hour is 'all' then a list of all hours is returned\\
+            * If hour is a list then a list of those hours is returned\\
+            * If hour is an integer then a list of an specific hour is returned\\
             * If position_tree is provided then a list for that specific position in the tree 
-            is provided
+            is provided\\
 
             Parameters
             ----------
-            Mandatory:
-            IDs             :   List of unique IDs of network elements
-            type            :   Type of element to be retrieved, e.g. branch, nodes
-            subtype         :   Subtype of element to be retrieved, e.g. thermal, hydro
-            name            :   Name of variable or parameter to be retrieved
+            Mandatory:\\
+            IDs             :   List of unique IDs of network elements\\
+            typ            :   Type of element to be retrieved, e.g. branch, nodes\\
+            subtype         :   Subtype of element to be retrieved, e.g. thermal, hydro\\
+            name            :   Name of variable or parameter to be retrieved\\
             position_tree   :   Dictionary containing information of the location of the information
                                 in relation with the energy tree. If the value does not vary with
-                                the energy tree then this value should be left in None
-            hour            :   integer that indicates the specific hour of the requested data. If
+                                the energy tree then this value should be left in None\\
+            hours           :   integer that indicates the specific hour of the requested data. If
                                 the data does not change in time then this input must be left in
-                                None
+                                None\\
             type_data       :   This refers to the type of data to be retrieved. This value
                                 can be either "variable" or "parameter". Other values will not
                                 be accepted
             
         '''
         IDs             = kwargs.pop('IDs', None)
-        type            = kwargs.pop('type', None)
+        typ             = kwargs.pop('typ', None)
         subtype         = kwargs.pop('subtype', None)
         name            = kwargs.pop('name', None)
         position_tree   = kwargs.pop('position_tree', None)
-        hour            = kwargs.pop('hour', None)
+        hours            = kwargs.pop('hours', None)
         type_data       = kwargs.pop('type_data', None)
-
-        if isinstance(IDs, list):
+        
+        elements = []
+        if isinstance(IDs, list) and isinstance(hours, list):
             for id in IDs:
-                for node in self.network.nodes(data=True):
-                    if node['obj'].ID == id:
-                        if type_data == "parameter":
-                            for parameter in node['obj'].parameters:
-                                flag = True
-                                for key, value in parameter.position_tree.items():
-                                    if position_tree[key] != value:
-                                        flag = False
-                                        break
-                                if flag and hour == parameter.hour:
-                                    return parameter.value
-                        if type_data == "variable":
-                            for parameter in node['obj'].parameters:
-                                flag = True
-                                for key, value in parameter.position_tree.items():
-                                    if position_tree[key] != value:
-                                        flag = False
-                                        break
-                                if flag and hour == parameter.hour:
-                                    return parameter.value
-        pass
+                for hour in hours:
+                    elements.append(self.get_value_network(id, name, position_tree, hour, type_data))
+        elif isinstance(IDs, list) and hours == "all":
+            for id in IDs:
+                hours = self._get_all_hours(self, name, type_data)
+                for hour in hours:
+                    elements.append(self.get_value_network(id, name, position_tree, hour, type_data))
+        elif isinstance(IDs, list) and not isinstance(hours, list) and hours is not None:
+            for id in IDs:
+                elements.append(self.get_value_network(id, name, position_tree, hours, type_data))
+        elif IDs == "all" and isinstance(hours, list):
+            IDs = self._get_all_IDs(typ=typ, subtype=subtype)
+            for id in IDs:
+                for hour in hours:
+                    elements.append(self.get_value_network(id, name, position_tree, hour, type_data))
+        elif IDs == "all" and hours == "all":
+            IDs = self._get_all_IDs(typ=typ, subtype=subtype)
+            for id in IDs:
+                hours = self._get_all_hours(self, name, type_data)
+                for hour in hours:
+                    elements.append(self.get_value_network(id, name, position_tree, hour, type_data))
+        elif IDs == "all" and not isinstance(hours, list) and hours is not None:
+            IDs = self._get_all_IDs(typ=typ, subtype=subtype)
+            for id in IDs:
+                elements.append(self.get_value_network(id, name, position_tree, hours, type_data))
+        else:
+            raise ValueError('Incorrect values for this function, check description')
+
+        return np.array(elements)
+
+
 
     def GetThermalGeneration(self):
         if self.NumberConvGen > 0:
