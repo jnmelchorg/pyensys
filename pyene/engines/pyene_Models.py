@@ -14,13 +14,13 @@ from collections import namedtuple
 from networkx.algorithms.centrality.betweenness import _accumulate_endpoints
 from pyomo.core.expr.numvalue import value
 from tables import node, parameters
-from .cython._glpk import GLPKSolver
+from pyene.engines.cython._glpk import GLPKSolver
 import numpy as np
 import sys
 import importlib
 import networkx as nx
 from dataclasses import dataclass
-
+from typing import Any
 
 try:
     cpp_energy_wrapper = importlib.import_module(\
@@ -28,6 +28,14 @@ try:
     models_cpp = cpp_energy_wrapper.models_cpp_clp
 except ImportError as err:
     print('Error:', err)
+
+@dataclass
+class model_options_parameter:
+    name                :   str     = None      # Name parameter
+    value               :   Any     = None      # Value of parameter
+    engine              :   str     = None      # Indicates if the problem should be solved in the 
+                                                # energy engine or in the FutureDAMS integrated 
+                                                # framework
 
 @dataclass
 class tree_parameters:
@@ -51,6 +59,12 @@ class nodes_info_tree:
     node                :   int     = None      # Number of node in graph
     parameters          :   list    = None      # Parameters associated to the node in the graph
     variables           :   list    = None      # Variables associated to the node in the graph
+
+class models():
+    def __init__(self):
+        self.model_options = []
+        self.tree_parameters = []
+        self.network_parameters = []
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.
@@ -91,6 +105,7 @@ class Energymodel():
                                 # for uncertainty in the temporal tree
         self.LLNodesUnc = obj.p['LLTS3'] # Link List to connect the nodes
                                 # with uncertainty in the temporal tree
+
 
     def _create_nodes_graph(self):
 
@@ -168,6 +183,9 @@ class Energymodel():
         self.tree = nx.MultiDiGraph()
         levels, elements_levels = self._create_nodes_graph()
         self._create_edges_graph(levels, elements_levels)
+
+    def initialise(self):
+        pass
 
     def optimisationEM(self, solver_name=None):
         """ This class method solve the optimisation problem """
@@ -577,7 +595,115 @@ class Energymodel():
             "No value for the link list of the energy aggregation constraint"
         self.LLEB = LLEA_connections
 
+
+
     # Data outputs of Energy model
+
+    def _recursive_get_tree(self, number_node=None, name=None, position_tree=None, typ=None, level=None, current_position_tree=None):
+        ''' This function search and retrieves the values of variables and parameters 
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            name            :   Name of variable or parameter to be retrieved\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree.\\
+            name_node       :   Name of level, e.g. summer, weekday.\\                        
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+            number_node     :   Number of node in the tree
+            level           :   level in the tree to be analysed
+        '''
+        if position_tree.get(str(level), None):
+            current_position_tree[str(level)] = position_tree.get(str(level), None)
+        if current_position_tree == position_tree and typ=="parameters":
+            for parameter in self.tree[number_node]["obj"].parameters:
+                if parameter.name == name:
+                    return parameter.value
+        elif current_position_tree == position_tree and typ=="variables":
+            for variable in self.tree[number_node]["obj"].variables:
+                if variable.name == name:
+                    return variable.value
+        else:
+            level = level + 1
+            for node in self.tree.successors(number_node):
+                if position_tree[str(level)] == node.name_node:
+                    return self._recursive_get_tree(node.node, name, position_tree, typ, level, current_position_tree)
+
+    def get_value_tree(self, name=None, position_tree=None, typ=None):
+        ''' This function retrieves the values of variables and parameters 
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            name            :   Name of variable or parameter to be retrieved\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree.\\
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+        '''
+        for node in self.tree.nodes(data=True):
+            if node.level == 0:
+                return self._recursive_get_tree(node.node, name, position_tree, typ, 0, {})        
+        return None
+    
+    def _recursive_set_tree(self, number_node=None, name=None, position_tree=None, typ=None, level=None, current_position_tree=None, value=None):
+        ''' This function search and retrieves the values of variables and parameters 
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            name            :   Name of variable or parameter to be retrieved\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree.\\
+            name_node       :   Name of level, e.g. summer, weekday.\\                        
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted
+            number_node     :   Number of node in the tree
+            level           :   level in the tree to be analysed
+        '''
+        if position_tree.get(str(level), None):
+            current_position_tree[str(level)] = position_tree.get(str(level), None)
+        if current_position_tree == position_tree and typ=="parameters":
+            for parameter in self.tree[number_node]["obj"].parameters:
+                if parameter.name == name:
+                    parameter.value = value
+                    return
+        elif current_position_tree == position_tree and typ=="variables":
+            for variable in self.tree[number_node]["obj"].variables:
+                if variable.name == name:
+                    variable.value = value
+                    return
+        else:
+            level = level + 1
+            for node in self.tree.successors(number_node):
+                if position_tree[str(level)] == node.name_node:
+                    self._recursive_set_tree(node.node, name, position_tree, typ, level, current_position_tree)
+                    return
+
+    def set_value_tree(self, name=None, position_tree=None, typ=None, value=None):
+        ''' This function retrieves the values of variables and parameters 
+        
+            Parameters
+            ----------
+            Mandatory:\\
+            name            :   Name of variable or parameter to be set\\
+            position_tree   :   Dictionary containing information of the location of the information
+                                in relation with the energy tree.\\
+            typ             :   This refers to the type of element to be retrieved. This value
+                                can be either "variable" or "parameter". Other values will not
+                                be accepted \\
+            value           :   value to be set in the energy tree
+        '''
+        for node in self.tree.nodes(data=True):
+            if node.level == 0:
+                return self._recursive_set_tree(node.node, name, position_tree, typ, 0, {}, value)        
+        return None    
+
+
 
     def GetPartialStorage(self):
         if self.solver_problem == "GLPK":
@@ -653,7 +779,6 @@ class network_variable:
     hour                :   int     = None      # Hour of the solution in case of multiple hours
     ID                  :   str     = None      # ID of element
     type                :   str     = None      # Type of element, e.g. bus, branch
-    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
     value               :   float   = None      # Value of the solution for this specific variable
     max                 :   float   = None      # Upper limit of the variable
     min                 :   float   = None      # Lower limit of the variable
@@ -666,17 +791,13 @@ class network_parameter:
     hour                :   int     = None      # Hour of the parameter in case of parameters 
                                                 # changing in time
     ID                  :   str     = None      # ID of element
-    type                :   str     = None      # Type of element, e.g. bus, branch
-    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
-    bus                 :   int     = None      # Number of the bus (node) that the element is 
-                                                # related
-    ends                :   list    = None      # list of ends for branches in format [from, to]
-    value               :   float   = None      # Value of the solution for this specific variable
+    type                :   str     = None      # Type of element, e.g. bus, branch                                                # related
+    value               :   Any     = None      # Value of specific parameter
 
 @dataclass
 class nodes_info_network:
     type                :   str     = None      # Type of element, e.g. bus, branch, generator
-    sub_type            :   str     = None      # Sub type of element, e.g. thermal, hydro
+    subtype             :   str     = None      # Sub type of element, e.g. thermal, hydro
     ID                  :   str     = None      # ID of element
     node                :   int     = None      # Number of node in graph
     parameters          :   list    = None      # Parameters associated to the node in the graph
@@ -1061,7 +1182,7 @@ class Networkmodel():
                 node = nodes_info_network
                 node.node = counter
                 node.type = parameter.type
-                node.sub_type = parameter.sub_type
+                node.subtype = parameter.subtype
                 node.ID = parameter.ID
                 node.parameters = [parameter]
                 node.bus = parameter.bus
@@ -1088,19 +1209,19 @@ class Networkmodel():
         # Creating branches of graph
         branches_graph = []
         for node_g in self.network.nodes(data=True):
-            if node_g['obj'].type == "generator":
+            if node_g[1]['obj'].type == "generator":
                 for aux in self.network.nodes(data=True):
-                    if aux.type == "bus" and node_g.bus == aux.bus:
-                        branches_graph.append([aux.node, node_g.node])
+                    if aux[1]['obj'].type == "bus" and node_g[1].bus == aux[1]['obj'].bus:
+                        branches_graph.append([aux[1]['obj'].node, node_g[1].node])
                         break
-            elif node_g['obj'].type == "branch":
+            elif node_g[1]['obj'].type == "branch":
                 flag = [False, False]
                 for aux in self.network.nodes(data=True):
-                    if aux['obj'].type == "bus" and node_g['obj'].ends[0] == aux['obj'].bus:
-                        branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                    if aux[1]['obj'].type == "bus" and node_g[1]['obj'].ends[0] == aux[1]['obj'].bus:
+                        branches_graph.append([aux[1]['obj'].node, node_g[1]['obj'].node])
                         flag[0] = True
-                    elif aux['obj'].type == "bus" and node_g['obj'].ends[1] == aux['obj'].bus:
-                        branches_graph.append([aux['obj'].node, node_g['obj'].node])
+                    elif aux[1]['obj'].type == "bus" and node_g[1]['obj'].ends[1] == aux[1]['obj'].bus:
+                        branches_graph.append([aux[1]['obj'].node, node_g[1]['obj'].node])
                         flag[1] = True
                     if flag[0] and flag[1]:
                         break
@@ -2680,7 +2801,7 @@ class Networkmodel():
                     parameter.bus = node.bus
                     parameter.ends = node.ends
                     parameter.type = node.type
-                    parameter.sub_type = node.sub_type
+                    parameter.subtype = node.subtype
                     parameter.ID = node.ID
                     parameter.value = value
                     node.parameters.append(parameter)
@@ -2699,7 +2820,7 @@ class Networkmodel():
                     variable.bus = node.bus
                     variable.ends = node.ends
                     variable.type = node.type
-                    variable.sub_type = node.sub_type
+                    variable.subtype = node.subtype
                     variable.ID = node.ID
                     variable.value = value
                     node.variables.append(variable)
@@ -3229,8 +3350,8 @@ class Networkmodel():
         return value_node
 
     def get_value_network(self, ID=None, name=None, position_tree=None, hour=None, typ=None):
-        ''' This function retrieves the values of variables and parameters 
-        
+        ''' This function retrieves the values of variables and parameters
+
             Parameters
             ----------
             Mandatory:\\
@@ -3248,18 +3369,18 @@ class Networkmodel():
         '''
         if not position_tree:
             for node in self.network.nodes(data=True):
-                if node['obj'].ID == ID and typ == "parameter":
-                    for parameter in node['obj'].parameters:
+                if node[1]['obj'].ID == ID and typ == "parameter":
+                    for parameter in node[1]['obj'].parameters:
                         if parameter.name == name and (not hour or hour == parameter.hour):
                             return parameter.value
-                if node['obj'].ID == ID and typ == "variable":
-                    for variable in node['obj'].variables:
+                if node[1]['obj'].ID == ID and typ == "variable":
+                    for variable in node[1]['obj'].variables:
                         if variable.name == name and (not hour or hour == variable.hour):
                             return variable.value
         else:
             number_node = self._get_initial_tree_node(position_tree)
             return self._calculate_value_tree(number_node, ID, position_tree, hour, typ, False)
-        
+
         return None
 
     def _get_all_hours(self, ID=None, name=None, type_data=None):
@@ -3299,7 +3420,7 @@ class Networkmodel():
         '''
         IDs = []
         for node in self.network.nodes(data=True):
-            if (subtype == "all" and node.typ == typ) or (subtype == node.sub_type and node.typ == typ):
+            if (subtype == "all" and node.typ == typ) or (subtype == node.subtype and node.typ == typ):
                 IDs.append(node.ID)
             else:
                 raise ValueError('Incorrect values for this function, check description')
