@@ -100,6 +100,11 @@ def parse_optional_arguments():
     return config
 
 def findglpkheaderpath():
+    inc_arg = "-I"
+    for arg in sys.argv:
+        if arg.startswith(inc_arg) and len(arg) > len(inc_arg):
+            return arg[len(inc_arg):]
+
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
     if len(pythonpath.rsplit('/b', 1)) > 1:
@@ -125,6 +130,11 @@ def findglpkheaderpath():
     return glpkpath
 
 def findglpklibrarypath():   
+    lib_arg = "-L"
+    for arg in sys.argv:
+        if arg.startswith(lib_arg) and len(arg) > len(lib_arg):
+            return arg[len(lib_arg):]
+
     # Finding glpk header path
     pythonpath = os.path.split(sys.executable)[0]
     if len(pythonpath.rsplit('/b', 1)) > 1:
