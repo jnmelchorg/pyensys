@@ -124,6 +124,12 @@ cdef extern from "glpk.h":
     int GLP_ON = 1
     int GLP_OFF = 0
 
+    int GLP_BS = 1 # basic variable
+    int GLP_NL = 2 # non-basic variable having active lower bound
+    int GLP_NU = 3 # non-basic variable having active upper bound 
+    int GLP_NF = 4 # non-basic free variable
+    int GLP_NS = 5 # non-basic fixed variable
+
     glp_prob* glp_create_prob()
     void glp_init_smcp(glp_smcp *parm)
     void glp_erase_prob(glp_prob *P)
@@ -173,6 +179,8 @@ cdef extern from "glpk.h":
     void glp_set_col_stat(glp_prob *P, int i, int state)
 
     double glp_get_obj_val(glp_prob *P)
+
+    double glp_get_row_dual(glp_prob *P, int i)
 
 message_levels = {
     'off': GLP_MSG_OFF,

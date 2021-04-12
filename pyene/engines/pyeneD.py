@@ -42,12 +42,13 @@ class BusConfig:
 
         #  Optional data - not included in all files
         if 'BUS_NAME' in mpc.keys():
-            self.settings['Name'] = mpc['BUS_NAME'][No]
+            if mpc['BUS_NAME'] != []:
+                self.settings['Name'] = mpc['BUS_NAME'][No]
         if 'BUS_X' in mpc.keys():
             self.settings['BUS_X'] = mpc['BUS_X'][No]
             self.settings['BUS_Y'] = mpc['BUS_Y'][No]
-        if 'Load_type' in mpc.keys():
-            self.settings['Load_Type'] = mpc['Load_type'][No]
+        if 'Load_Type' in mpc.keys():
+            self.settings['Load_Type'] = mpc['Load_Type'][No]
         if 'Loss_Fix' in mpc.keys():
             self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
         else:
@@ -60,7 +61,7 @@ class BranchConfig:
         # Basic settings
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
                'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP',
-               'T_BUS', 'Loss_Fix']
+               'T_BUS', 'Loss_Fix', 'MTTF', 'MTTR']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -72,9 +73,11 @@ class BranchConfig:
         self.settings['Position'] = No
 
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
-               'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS']
+               'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP', 'T_BUS', 'MTTF',
+               'MTTR']
         for x in aux:
-            self.settings[x] = mpc[x][No]
+            if x in mpc:
+                self.settings[x] = mpc[x][No]
 
         if 'Loss_Fix' in mpc.keys():
             self.settings['Loss_Fix'] = mpc['Loss_Fix'][No]
@@ -86,10 +89,10 @@ class ConventionalConfig:
     ''' Conventnional generator '''
     def __init__(self):
         # Basic settings
-        aux = ['Ancillary', 'APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
+        aux = ['Ancillary', 'APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
                'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
                'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
-               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT']
+               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT', 'GEN', 'MTTF', 'MTTR']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -105,11 +108,13 @@ class ConventionalConfig:
 
         # Generator settings - from mat power file
         self.settings['Position'] = No
-        aux = ['APF', 'GEN', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
+        aux = ['APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
                'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX', 'QG', 'QMAX',
-               'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG']
+               'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG',
+               'GEN', 'MTTF', 'MTTR']
         for x in aux:
-            self.settings[x] = mpc['gen'][x][No]
+            if x in mpc['gen']:
+                self.settings[x] = mpc['gen'][x][No]
 
         # Generator costs - from mat power file
         aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
@@ -157,7 +162,7 @@ class HydropowerConfig:
     def __init__(self):
         # Basic settings
         aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp',
-               'RES', 'Position']
+               'RES', 'Position', 'Min']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -179,6 +184,14 @@ class HydropowerConfig:
 
         self.settings['Bus'] = hydro['Bus'][No]
         self.settings['Max'] = hydro['Max'][No]
+        if hydro['Min'] != []:
+            self.settings['Min'] = hydro['Min'][No]
+        else:
+            self.settings['Min'] = 0
+        
+        aux = ['MUT', 'MDT']
+        for x in aux:
+            self.settings[x] = None
 
         # Default cost model
         self.cost['MODEL'] = 1
@@ -228,7 +241,7 @@ class Branch:
         '''
 
         aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
-               'BR_B', 'Loss_Fix']
+               'BR_B', 'Loss_Fix', 'BR_STATUS', 'MTTF', 'MTTR']
 
         # Get settings
         self.data = {}
@@ -294,6 +307,10 @@ class Branch:
     def get_BusT(self):
         ''' Get bus number at end (to) of the branch '''
         return self.data['T_BUS']
+
+    def getLoss(self):
+        ''' Return non technical losses in the bus '''
+        return self.data['Loss_Fix']
 
     def get_N1(self, x=':'):
         ''' Get values for a single N-1 condition '''
@@ -647,16 +664,16 @@ class ElectricityNetwork:
             ob.set_N1(ob.get_Pos(), 0)
 
         # Are all the loads the same type?
-        aux = len(sett['Load_type'])
+        aux = len(sett['Load_Type'])
         if aux == 1:
-            if sett['Load_type'][0] == 1:
+            if sett['Load_Type'][0] == 1:
                 # An update is only needed if the loads are rural
                 for ob in self.Bus:
-                    ob.set_LT(sett['Load_type'])
+                    ob.set_LT(sett['Load_Type'])
         elif aux > 1:
             # Update a set of the buses
             xb = 0
-            for val in sett['Load_type']:
+            for val in sett['Load_Type']:
                 self.Bus[xb].set_LT(val)
                 xb += 1
 
@@ -709,11 +726,26 @@ class GenClass:
 
     def cNEGenC_rule(self, m, xc, xt, ConC, ConG, w):
         ''' Piece wise cost estimation '''
-        if xc < self.pyomo['NoPieces']:
-            return m.vNGCost[ConC+self.pyomo['vNGen'], xt]/w >= \
-                m.vNGen[ConG+self.pyomo['vNGen'], xt] * \
-                self.cost['LCost'][xc][0]+self.cost['LCost'][xc][1]
+        (flg, x1,  x2, M1, M2) = self.cNEGenC_Auxrule(xc, ConC, ConG)
+        if flg:
+            return m.vNGCost[x1, xt]/w >= m.vNGen[x2, xt]*M1 + M2
         return Constraint.Skip
+
+    def cNEGenC_Auxrule(self, xc, ConC, ConG):
+        ''' Auxiliary for cNEGenC_rule '''
+        flg = xc < self.pyomo['NoPieces']
+        if flg:
+            x1 = ConC+self.pyomo['vNGen']
+            x2 = ConG+self.pyomo['vNGen']
+            M1 = self.cost['LCost'][xc][0]
+            M2 = self.cost['LCost'][xc][1]
+        else:
+            x1 = 0
+            x2 = 0
+            M1 = 0
+            M2 = 0
+
+        return flg, x1, x2, M1, M2
 
     def cNEGMax_rule(self, m, xt, ConG):
         ''' Maximum generation capacity '''
@@ -921,7 +953,8 @@ class GenClass:
             # Select number of pieces for the approximation
             if xLen == 0:  # Default case
                 Delta = self.data['Max']
-                Delta /= 3
+                if(self.cost['COST'][0] != 0):
+                    Delta /= 3
             elif xLen == 1:  # Single value for all generators
                 Delta = sett['Pieces'][0]
             else:  # Predefined number of pieces
@@ -974,15 +1007,16 @@ class Conventional(GenClass):
         ''' Initialise generator class
 
         The class can use the following parameters:
-        ['APF', 'GEN', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
-        'QC2MIN', 'QC2MAX', 'QG', 'QMAX', 'QMIN', 'RAMP_AGC',
+        ['APF', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
+        'QC2MIN', 'QC2MAX', 'QG', 'RAMP_AGC',
         'RAMP_10', 'RAMP_30', 'RAMP_Q', 'RES', 'VG']
         However, only the ones that are currently used are passed
         ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position',
-               'VG', 'PG', 'QG', 'MDT', 'MUT']
+               'VG', 'PG', 'QG', 'MDT', 'MUT', 'QMAX', 'QMIN', 'GEN', 'MTTF',
+               'MTTR']
 
         # Get settings
         self.data = {}
@@ -991,6 +1025,7 @@ class Conventional(GenClass):
         for xa in aux:
             self.data[xa] = obj.settings[xa]
         self.data['Bus'] = obj.settings['GEN_BUS']
+
 
         aux = ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         self.cost = {}
@@ -1017,11 +1052,10 @@ class Hydropower(GenClass):
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'Bus', 'Max', 'Ramp', 'RES',
-               'Position']
+               'Position', 'Min', 'MDT', 'MUT']
 
         # Get settings
         self.data = {}
-        self.data['Min'] = 0
         for xa in aux:
             self.data[xa] = obj.settings[xa]
 
@@ -1203,6 +1237,11 @@ class Generators:
         ''' Generation costs - Piece-wise estimation '''
         (xa, xp) = self._GClass(xg)
         return getattr(self, xa)[xp].cNEGenC_rule(m, xc, xt, ConC, ConG, w)
+
+    def cNEGenC_Auxrule(self, xg, xc, ConC, ConG):
+        ''' Auxiliar for Generation costs - Piece-wise estimation '''
+        (xa, xp) = self._GClass(xg)
+        return getattr(self, xa)[xp].cNEGenC_Auxrule(xc, ConC, ConG)
 
     def cNEGMax_rule(self, m, xg, xt, ConG):
         ''' Maximum generation capacity '''

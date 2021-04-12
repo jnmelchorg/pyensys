@@ -22,21 +22,26 @@ before_script:
   - chmod 644 ~/.ssh/known_hosts
 
   # Install the required utilties and pipenv
-  - apt-get update -qq && apt-get install -y glpk-utils
-  - pip install pyomo click numpy pandas networkx pytest pytest-cov pypsa tables
+  - apt-get update -qq
+  - apt-get install -y glpk-utils libgl1-mesa-glx libegl1-mesa libxrandr2 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6 wget
+  - wget https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh
+  - bash Anaconda3-2020.02-Linux-x86_64.sh -b
+  - eval "$(/root/anaconda3/bin/conda shell.bash hook)"
+  - conda init
+  - source /root/.bashrc
+  - conda install -c conda-forge pyomo pytest-cov pypsa glpk
+  - conda install -c anaconda click numpy pandas networkx pytest pytables
 
 test:test:
   stage: test
   script:
-    - pip install .
+    - python setup.py develop --with-glpk
     - pytest tests --cov=pyene
-
 
 test:run:
   stage: test
   script:
-    - pip install .
+    - python setup.py develop --with-glpk
     - pyene run-e
     - pyene run-n
     - pyene run-en
-
