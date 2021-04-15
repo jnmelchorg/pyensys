@@ -966,7 +966,7 @@ class models{
         void load_bool(const std::string& na, const bool& val, const bool& is_vector);
         void load_string(const std::string& na, const std::string& val, const bool& is_vector);
         void set_parameter(const std::string& typ);
-        void update_parameter(const std::string& graph_name, const std::string& energy_or_water);
+        int update_parameter();
 
         void return_outputs(std::vector<double>& values, std::vector<int>& starts, std::vector< std::vector< std::vector< std::string> > >& characteristics);
 

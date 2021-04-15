@@ -363,7 +363,14 @@ int models::declare_balance_tree_variables(const std::string& id)
         additional_characteristics.push_back(characteristic("name", std::string("input"), false));
         std::vector<information> multi_info = grafos.get("tree", node, "vertex").get_multi_info(additional_characteristics, "parameters", false);
         if (multi_info.size() == 1) 
-            create_problem_element("input", boost::get<double>(multi_info[0].get_value()) , boost::get<double>(multi_info[0].get_value()), extra_characteristics, node, "tree", "vertex", "variables", 0.0);
+        {
+            position_matrix = create_problem_element("input", boost::get<double>(multi_info[0].get_value()) , boost::get<double>(multi_info[0].get_value()), extra_characteristics, node, "tree", "vertex", "variables", 0.0);
+            information new_info = multi_info[0];
+            new_info.set_characteristic(characteristic("column", position_matrix, true), true);
+            graph_data vertex = grafos.get("tree", node, "vertex");
+            vertex.replace_information(multi_info[0], new_info, "parameters");
+            grafos.set("tree", node, vertex, "vertex");
+        }
         else
         {
             std::cout << "Incoherent data for input, impossible to create balance tree model" << std::endl;
@@ -1418,7 +1425,15 @@ int models::recursive_balance_tree_search(information& info, std::vector<informa
     std::string type_e = boost::get<std::string>(info.get_characteristic("type element").get_value());
     if (type_e == "parameters")
     {
-        std::vector<information> m_info = grafo[v_number].get_multi_info(std::vector<characteristic>({n_c}), type_e, false);
+        std::vector<information> m_info;
+        if (info.exist("reference"))
+        {
+            characteristic reference = characteristic("reference", boost::get<std::string>(info.get_characteristic("reference").get_value()), false);
+            m_info = grafo[v_number].get_multi_info(std::vector<characteristic>({n_c, reference}), type_e, false);
+        }
+        else
+            m_info = grafo[v_number].get_multi_info(std::vector<characteristic>({n_c}), type_e, false);
+
         if (m_info.size() > 1 || m_info.size() == 0)
         {
             std::cout << "WARNING! Problem with recursive function for the balance tree" << std::endl;
@@ -1845,6 +1860,7 @@ void models::initialise()
         problem_matrix.add_active("column", iColumn);
     solver.load_model(problem_matrix);
     solver.solve("initial solve");
+    store_solution();
 }
 
 void models::store_solution()
@@ -2397,23 +2413,78 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
     characteristics = characteristics_return;
 }
 
-void models::update_parameter(const std::string& graph_name, const std::string& energy_or_water)
+int models::update_parameter()
 {
-    if (energy_or_water == "energy")
+    if (boost::get<std::string>(candidate.get_characteristic("problem").get_value()) == "BT")
     {
-        double Sbase = boost::get<double>(data_parameters.get_parameter_type(std::vector<characteristic>{characteristic("name", std::string("Sbase"), false)}, "model").get_value());
-        candidate.set_value(boost::get<double>(candidate.get_value()) * Sbase);
-    }
-
-    if (graph_name == "tree")
-    {
-        for (int node = 0; node < grafos.number_nodes("tree"); node++)
+        if (boost::get<std::string>(candidate.get_characteristic("resource").get_value()) == "energy")
         {
-            graph_data vertex = grafos.get("tree", node, "vertex");
-            std::vector<information> m_info = vertex.get_multi_info(candidate.get_characteristics(), "parameters", true);
-            if (m_info.size())
-            vertex.update_value(candidate, "parameters");
+            double Sbase = boost::get<double>(data_parameters.get_parameter_type(std::vector<characteristic>{characteristic("name", std::string("Sbase"), false)}, "model").get_value());
+            candidate.set_value(boost::get<double>(candidate.get_value()) / Sbase);
+        }
+        std::vector<information> storage;
+        information info_search;
+        info_search.set_characteristic(characteristic("vertex number", 0, false), false);
+        characteristic c_pos;
+        c_pos.set_name("current position");
+        info_search.set_characteristic(c_pos, false);
+        characteristic f_pos;
+        f_pos.set_name("final position");
+        f_pos.insert(candidate.get_characteristic("pt").get_values());
+        info_search.set_characteristic(f_pos, false);
+        info_search.set_characteristic(characteristic("name characteristic", candidate.get_characteristic("name").get_value(), false), false);
+        info_search.set_characteristic(characteristic("type element", std::string("parameters"), false), false);
+        if (candidate.exist("reference")) info_search.set_characteristic(candidate.get_characteristic("reference"), false);
+        int code = recursive_balance_tree_search(info_search, storage);
+
+        int vertex_number = -1;
+        for (information& st : storage)
+            if (st.get_characteristic("name_node").get_value() == candidate.get_characteristic("name_node").get_value())
+                vertex_number = boost::get<int>(st.get_characteristic("vertex number").get_value());
+        if (vertex_number == -1)
+        {
+            std::cout << "Incoherent data for name *" << candidate.get_characteristic("name").get_value() << "* in data *parameters*." << std::endl;
+            return -1;
+        }
+
+        graph_data vertex = grafos.get("tree", vertex_number, "vertex");
+        std::vector<characteristic> charac;
+        charac.push_back(candidate.get_characteristic("name"));
+        if (candidate.exist("reference")) charac.push_back(candidate.get_characteristic("reference"));
+        std::vector<information> m_info = vertex.get_multi_info(charac, "parameters", true);
+        if (m_info.size() > 1 || m_info.size() == 0)
+        {
+            std::cout << "Incoherent data for name *" << candidate.get_characteristic("name").get_value() << "* in data *parameters*." << std::endl;
+            return -1;
+        }
+        information new_info = m_info[0];
+        new_info.set_value(candidate.get_value());
+        vertex.update_value(new_info, "parameters");
+        grafos.set("tree", vertex_number, vertex, "vertex");
+        vertex = grafos.get("tree", vertex_number, "vertex");
+
+        for (const value_T& column: new_info.get_characteristic("column").get_values())
+        {
+            if (boost::get<std::string>(candidate.get_characteristic("name").get_value()) == "input")
+            {
+                std::vector<characteristic> extra_characteristics_tree;
+                extra_characteristics_tree.push_back(characteristic("position matrix", column, false));
+                m_info = vertex.get_multi_info(extra_characteristics_tree, "variables", false);
+                if (m_info.size() > 1 || m_info.size() == 0)
+                {
+                    std::cout << "Incoherent data for name *" << candidate.get_characteristic("name").get_value() << "* in data *variables*." << std::endl;
+                    return -1;
+                }
+                value_T min = candidate.get_value();
+                value_T max = candidate.get_value();
+                value_T cost = m_info[0].get_characteristic("cost").get_value();
+                std::string name = boost::get<std::string>(m_info[0].get_characteristic("name").get_value());
+                int code = update_bnds_obj(vertex, "tree", "vertex", vertex_number, name, "variables", extra_characteristics_tree, false, max, min, cost, true);
+                if (code != 0) return code;
+            }
         }
     }
+
+    return 0;
 
 }
