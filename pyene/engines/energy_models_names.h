@@ -191,7 +191,18 @@ std::set<std::string> string_outputs = {
     "type information",
     "reference",
     "data device",
-    "function"
+    "function",
+    "output file name"
+};
+
+// END POINTS
+std::set<std::string> string_endpoints = {
+    "problem",
+    "reference",
+    "name",
+    "pt",
+    "resource",
+    "name_node"
 };
 
 // ACCUMULATED VALUES
@@ -246,6 +257,7 @@ void concatenate_names()
     string_parameters.insert(string_tree_characteristics.begin(), string_tree_characteristics.end());
     string_parameters.insert(string_connections.begin(), string_connections.end());
     string_parameters.insert(string_outputs.begin(), string_outputs.end());
+    string_parameters.insert(string_endpoints.begin(), string_endpoints.end());
 
     bool_parameters.insert(bool_parameters_nodes.begin(), bool_parameters_nodes.end());
     bool_parameters.insert(bool_parameters_branches.begin(), bool_parameters_branches.end());
