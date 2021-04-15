@@ -225,4 +225,9 @@ cdef class models_cpp():
         cdef vector[ vector[ vector[ string] ] ] characteristics
         self.cpp_mod.return_outputs(values, starts, characteristics)
         return values, starts, characteristics
+    
+    cpdef update_parameter(self):
+        cdef int code
+        code = self.cpp_mod.update_parameter()
+        return code
 
