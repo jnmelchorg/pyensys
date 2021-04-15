@@ -124,12 +124,12 @@ class pyene2excel():
                 else:
                     word = ""
                 
-                ws = wb.create_sheet(i_n+word)
+                ws = wb.create_sheet()
                 ws.cell(row=1, column=1, value=i_n)
                 for key, val in table_columns.items():
-                    ws.cell(row=1, column=val, value=key)
+                    ws.cell(row=2, column=val, value=key)
 
-                aux = 2
+                aux = 3
                 is_end = False
                 while not is_end:
                     is_end = True

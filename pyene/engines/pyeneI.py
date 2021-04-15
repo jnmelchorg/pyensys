@@ -1538,7 +1538,8 @@ class excel2pyene:
         while value_id:
             for col, name in enumerate(parameters_list):
                 value = sheet.cell(row=counter, column=col + 1).value
-                if col + 1 != col_id and not self._revise_parameters(model.network_parameters, value_id, name, value) and name is not None:
+                # if col + 1 != col_id and not self._revise_parameters(model.network_parameters, value_id, name, value) and name is not None:
+                if col + 1 != col_id and name is not None:
                     model.network_parameters.append(network_parameter(ID=value_id, type=typ, name=name, value=value))
             counter = counter + 1
             value_id = sheet.cell(row=counter, column=col_id).value
@@ -1641,7 +1642,7 @@ class excel2pyene:
         group=None
         zone=None
 
-        valid_types = ["bus", "branch", "generators"]
+        valid_types = ["bus", "branch", "generator"]
         parameter_elements = self.parameters_names_nodes.copy()
         parameter_elements.update(self.parameters_names_branches)
         parameter_elements.update(self.parameters_names_generators)
@@ -1660,17 +1661,19 @@ class excel2pyene:
             elif typ=="branch" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
                 value = sheet.cell(row=rows, column=2).value
                 rows = rows + 1
-                if isinstance(value, str) and self.accepted_types_branches.get(value.lower(), None) is not None:
-                    subtype = value.lower()
-                else:
-                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for branches".format(value))
+                subtype = value.lower()
+                # if isinstance(value, str) and self.accepted_types_branches.get(value.lower(), None) is not None:
+                #     subtype = value.lower()
+                # else:
+                #     print("WARNING! Subtype {} does not exist in the list of valid subtypes for branches".format(value))
             elif typ=="generator" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
                 value = sheet.cell(row=rows, column=2).value
                 rows = rows + 1
-                if isinstance(value, str) and self.accepted_types_generators.get(value.lower(), None) is not None:
-                    subtype = value.lower()
-                else:
-                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for generators".format(value))
+                subtype = value.lower()
+                # if isinstance(value, str) and self.accepted_types_generators.get(value.lower(), None) is not None:
+                #     subtype = value.lower()
+                # else:
+                #     print("WARNING! Subtype {} does not exist in the list of valid subtypes for generators".format(value))
             elif typ=="bus" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype" and sheet.cell(row=rows, column=2).value is not None:
                 rows = rows + 1
                 print("WARNING! buses does not have any subtype")
@@ -1807,20 +1810,9 @@ class excel2pyene:
             if connection.get_characteristic("ID") == "all":
                 list_IDs = []
                 for param in model.network_parameters:
-                    if connection.get_characteristic("type") != "N/A" and param.type == connection.get_characteristic("type") and param.ID not in list_IDs and connection.get_characteristic("subtype") != "N/A":
-                        for param_c in model.network_parameters:
-                            if param_c.ID == param.ID and param_c.name == "subtype" and param.value in connection.get_characteristic("subtype") and param.ID not in list_IDs:
-                                list_IDs.append(param.ID)
-                    elif connection.get_characteristic("type") != "N/A" and param.type == connection.get_characteristic("type") and param.ID not in list_IDs and connection.get_characteristic("group") != "N/A":
-                        for param_c in model.network_parameters:
-                            if param_c.ID == param.ID and param_c.name == "group" and param.value == connection.get_characteristic("group") and param.ID not in list_IDs:
-                                list_IDs.append(param.ID)
-                    elif connection.get_characteristic("type") != "N/A" and param.type == connection.get_characteristic("type") and param.ID not in list_IDs and connection.get_characteristic("zone") != "N/A":
-                        for param_c in model.network_parameters:
-                            if param_c.ID == param.ID and param_c.name == "zone" and param.value == connection.get_characteristic("zone") and param.ID not in list_IDs:
-                                list_IDs.append(param_c.ID)
-                    elif connection.get_characteristic("type") != "N/A" and param.type == connection.get_characteristic("type") and param.ID not in list_IDs:
-                        list_IDs.append(param.ID)
+                    if connection.exist("type") and connection.get_characteristic("type") != "N/A" and param.type == connection.get_characteristic("type") and param.ID not in list_IDs and ((connection.exist("subtype") and connection.get_characteristic("subtype") != "N/A" and param.name == "subtype" and param.value in connection.get_characteristic("subtype")) or (connection.exist("group") and connection.get_characteristic("group") != "N/A" and param.name == "group" and param.value == connection.get_characteristic("group")) or (connection.exist("zone") and connection.get_characteristic("zone") != "N/A" and param.name == "zone" and param.value ==connection.get_characteristic("zone")) or (not connection.exist("subtype") and not connection.exist("group") and not connection.exist("zone"))):
+                        list_IDs.append(param.ID)                            
+
                 for id in list_IDs:
                     new_connection = copy.deepcopy(connection)
                     new_connection.update_characteristic("ID", id)
@@ -2112,7 +2104,21 @@ class excel2pyene:
             if parameter.type == profile.type and parameter.name == profile.name and ((parameter.position_tree == profile.position_tree and parameter.hour == profile.hour) or (parameter.position_tree is None and parameter.hour == profile.hour)):
                 exist = True
                 list_remove.append(pos)
-                print("WARNING! parameter {} has been already set with the representative day {} and hour {}.".format(parameter.name, parameter.position_tree, parameter.hour))
+                if profile.subtype is None:
+                    print("WARNING! parameter {} has been already set with the representative day {} and hour {}.".format(parameter.name, parameter.position_tree, parameter.hour))
+
+        if profile.subtype is not None:
+            exist = False
+            new_list_remove = []
+            for remove in list_remove:
+                ID = model.network_parameters[remove].ID
+                for pos, parameter in enumerate(model.network_parameters):
+                    if parameter.name == "subtype" and profile.subtype is not None and profile.subtype == parameter.value and parameter.ID == ID:
+                        exist = True
+                        new_list_remove.append(pos)
+                        print("WARNING! parameter {} has been already set with the representative day {} and hour {}.".format(model.network_parameters[remove].name, model.network_parameters[remove].position_tree, model.network_parameters[remove].hour))
+                        break
+            list_remove = new_list_remove
         if exist:
             print("The values will be updated with the most up-to-date information. Check your profile inputs to avoid duplications or errors.")
         # Removing parameters from model
