@@ -331,7 +331,8 @@ double_model_characteristics = [
 
 string_model_characteristics = [
     "solver",
-    "engine"
+    "engine",
+    "output file name"
 ]
 
 bool_model_parameters = copy.copy(problems_names_system)
@@ -601,6 +602,12 @@ class models():
 
     def get_outputs(self):
         return self.model.return_outputs()
+    
+    def update_parameter(self, information):
+        self.model.create_parameter()
+        for key, val in information.items():
+            self.model.load_value(val[0], key.encode('utf-8'), val[1])
+        return self.model.update_parameter()
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.

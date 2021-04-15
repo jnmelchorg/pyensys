@@ -1060,6 +1060,9 @@ class pyeneClass():
     
     def save_outputs(self, sim_no=None):
         self.save_solution.save_results(model=self.mod_cython_cpp, sim_no=sim_no)
+    
+    def update_parameter(self, information):
+        return self.mod_cython_cpp.update_parameter(information=information)
 
     def Run_Mod(self, m):
         ''' Run pyomo model '''
