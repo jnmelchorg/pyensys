@@ -15,6 +15,9 @@
 #include "ClpSimplex.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinTime.hpp"
+#include <map>
+#include <chrono>
+#include <future>
 
 typedef boost::variant<bool, int, double, std::string> value_T;
 
@@ -37,7 +40,7 @@ class characteristic
             }
         }
         
-        void push_back(value_T& val){values.push_back(val);}
+        void push_back(const value_T& val){values.push_back(val);}
         void insert(const std::vector<value_T>& vec){values.insert(values.end(), vec.begin(), vec.end());}
         void set_name(const std::string& na) {name = na;}
         void set_value(const value_T& val){value = val;}
@@ -167,6 +170,48 @@ class parameters
                 return get_parameter(characteristics, outputs);
         }
 
+        std::vector<information> get_multi_parameter(const std::vector<characteristic>& characteristics, const std::vector<information>& parameters, const bool silent) const
+        {
+            std::vector<information> m_info;
+            for (const information& param : parameters)
+            {
+                if (is_subset(characteristics, param.get_characteristics()))
+                    m_info.push_back(param);
+            }
+            if (m_info.size() > 0) return m_info;
+            if (!silent)
+            {
+                std::cout << "WARNING! information with the following characteristics not found: " << std::endl;
+                for (const characteristic& cha : characteristics)
+                {
+                    std::cout << cha.get_name() << " : ";
+                    if (cha.get_values().size() > 0)
+                    {
+                        std::cout << "[.";
+                        for (value_T& val : cha.get_values()) 
+                            std::cout << val << ".";
+                        std::cout << "]" << std::endl;
+                    }
+                    else std::cout << cha.get_value() << std::endl;
+                }
+            }
+            return std::vector<information>();
+        }
+
+        std::vector<information> get_multi_parameter_type(const std::vector<characteristic>& characteristics, const std::string& type_var, const bool silent)
+        {
+            if (type_var == "network")
+                return get_multi_parameter(characteristics, network_parameters, silent);
+            else if (type_var == "tree")
+                return get_multi_parameter(characteristics, tree_parameters, silent);
+            else if (type_var == "model")
+                return get_multi_parameter(characteristics, model_parameters, silent);
+            else if (type_var == "connections")
+                return get_multi_parameter(characteristics, connections, silent);
+            else if (type_var == "outputs")
+                return get_multi_parameter(characteristics, outputs, silent);
+        }
+
         std::vector<information> get_all_parameters_type(const std::string& type_var)
         {
             if (type_var == "network")
@@ -188,15 +233,15 @@ class parameters
 
         void push_back(information& param, const std::string& type_var)
         {
-            if (type_var == "network" && !exist(param, network_parameters))
+            if (type_var == "network")
                 network_parameters.push_back(param);
-            else if (type_var == "tree" && !exist(param, tree_parameters))
+            else if (type_var == "tree")
                 tree_parameters.push_back(param);
-            else if (type_var == "model" && !exist(param, model_parameters))
+            else if (type_var == "model")
                 model_parameters.push_back(param);
-            else if (type_var == "connections" && !exist(param, connections))
+            else if (type_var == "connections")
                 connections.push_back(param);
-            else if (type_var == "outputs" && !exist(param, outputs))
+            else if (type_var == "outputs")
                 outputs.push_back(param);
         }
     private:
@@ -266,6 +311,7 @@ class graph_data
             if (nameinfo == "parameters") elements = parameters;
             else if (nameinfo == "variables") elements = variables;
             else if (nameinfo == "constraints") elements = constraints;
+            else if (nameinfo == "binary variables") elements = binary_variables;
             else
             {
                 std::cout << "Incorrect data type has been provided";
@@ -295,6 +341,7 @@ class graph_data
             if (nameinfo == "parameters") elements = parameters;
             else if (nameinfo == "variables") elements = variables;
             else if (nameinfo == "constraints") elements = constraints;
+            else if (nameinfo == "binary variables") elements = binary_variables;
             else
             {
                 std::cout << "Incorrect data type has been provided";
@@ -329,13 +376,14 @@ class graph_data
             if (nameinfo == "parameters") return parameters;
             else if (nameinfo == "variables") return variables;
             else if (nameinfo == "constraints") return constraints;
+            else if (nameinfo == "binary variables") return binary_variables;
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
             return std::vector<information>();
         }
-        characteristic get_characteristic(const std::string& na)
+        characteristic get_characteristic (const std::string& na) const
         {
-            for (characteristic& cha: characteristics)
+            for (const characteristic& cha: characteristics)
                 if (cha.get_name() == na) return cha;
             std::cout << "Characteristic with name *" << na << "* does not exist" << std::endl;
             return characteristic("N/A", std::string("N/A"), false);
@@ -347,6 +395,7 @@ class graph_data
             if (dataname == "characteristics") characteristics.clear();
             else if (dataname == "parameters") parameters.clear();
             else if (dataname == "variables") variables.clear();
+            else if (dataname == "binary variables") binary_variables.clear();
             else if (dataname == "all")
             {
                 characteristics.clear();
@@ -380,6 +429,7 @@ class graph_data
             if (name == "parameters") parameters=info;
             else if (name == "variables") variables=info;
             else if (name == "constraints") constraints=info;
+            else if (name == "binary variables") binary_variables=info;
         }
         void replace_information(const information& old_info, const information& new_info, const std::string& nameinfo)
         {
@@ -402,6 +452,12 @@ class graph_data
                 if (position == -1) return;
                 constraints[position] = new_info;
             }
+            else if (nameinfo == "binary variables")
+            {
+                position = get_position_information(old_info, binary_variables);
+                if (position == -1) return;
+                binary_variables[position] = new_info;
+            }
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
         }
@@ -413,6 +469,8 @@ class graph_data
                 update_info_value(element, variables);
             else if (nameinfo == "constraints")
                 update_info_value(element, constraints);
+            else if (nameinfo == "binary variables")
+                update_info_value(element, binary_variables);
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
         }
@@ -424,6 +482,8 @@ class graph_data
                 variables.push_back(element);
             else if (nameinfo == "constraints" && !exist(element, constraints))
                 constraints.push_back(element);
+            else if (nameinfo == "binary variables" && !exist(element, binary_variables))
+                binary_variables.push_back(element);
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
         }
@@ -433,6 +493,7 @@ class graph_data
             if (nameinfo == "parameters") elements = &parameters;
             else if (nameinfo == "variables") elements = &variables;
             else if (nameinfo == "constraints") elements = &constraints;
+            else if (nameinfo == "binary variables") elements = &binary_variables;
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
             
@@ -467,6 +528,7 @@ class graph_data
             if (nameinfo == "parameters") elements = &parameters;
             else if (nameinfo == "variables") elements = &variables;
             else if (nameinfo == "constraints") elements = &constraints;
+            else if (nameinfo == "binary variables") elements = &binary_variables;
             else
                 std::cout << "name of information *" << nameinfo << "* not identified" << std::endl;
             
@@ -601,6 +663,7 @@ class graph_data
         std::vector<information> parameters;
         std::vector<information> variables;
         std::vector<information> constraints;
+        std::vector<information> binary_variables;
 };
 
 class matrix_representation
@@ -834,11 +897,20 @@ class graphs
                 std::cout << "Invalid graph name *" << graphname << "*." << std::endl;
             return GraphType();
         }
+        std::vector<int> get_positions(const std::string& graphname, const std::string& type)
+        {
+            if (graph_elements_positions[graphname].find(type) == graph_elements_positions[graphname].end()) return std::vector<int>();
+            return graph_elements_positions[graphname][type];
+        }
 
         void add_vertex(const std::string& graphname, const graph_data& node)
         {
             if (graphname == "tree") boost::add_vertex(node, tree_data);
-            else if (graphname == "network") boost::add_vertex(node, network_data);
+            else if (graphname == "network") 
+            {
+                graph_elements_positions[graphname][boost::get<std::string>(node.get_characteristic("type").get_value())].push_back(boost::num_vertices(network_data));
+                boost::add_vertex(node, network_data);
+            }
         }
         void add_edge(const std::string& graphname, const int& A, const int &B, const graph_data& branch)
         {
@@ -885,6 +957,7 @@ class graphs
     private:
         GraphType tree_data;
         GraphType network_data;
+        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int> > > graph_elements_positions;
 };
 
 class clp_model
@@ -953,6 +1026,83 @@ class clp_model
         std::vector<int> active_columns;
 };
 
+class MOEA
+{
+    public:
+        void create_data_set(const std::string& name_information)
+        {
+            data[name_information] = std::vector<information>();
+        }
+        void push_back(const std::string& name_information, const information& info)
+        {
+            std::map<std::string, std::vector<information> >::iterator it = data.find(name_information);
+            if (it != data.end() && !exist_in_set(info, it -> second))
+                it -> second.push_back(info);
+            else if (it == data.end())
+                std::cout << "WARNING! Information with name *" << name_information << "* does not exist in the MOEA class." << std::endl;
+            else
+            {
+                std::cout << "WARNING! Information with characteristics the following characteristics already exist:" << std::endl;
+                for (characteristic& cha : info.get_characteristics())
+                {
+                    std::cout << cha.get_name() << " : ";
+                    if (cha.get_values().size() > 0)
+                    {
+                        std::cout << "[.";
+                        for (value_T& val : cha.get_values()) 
+                            std::cout << val << ".";
+                        std::cout << "]" << std::endl;
+                    }
+                    else std::cout << cha.get_value() << std::endl;
+                }
+                std::cout << std::endl;
+            }
+        }
+        std::vector<information> get_data_set(const std::string& name_information)
+        {
+            std::map<std::string, std::vector<information> >::iterator it = data.find(name_information);
+            if (it != data.end())
+                return data[name_information];
+            else if (it == data.end())
+                std::cout << "WARNING! Information with name *" << name_information << "* does not exist in the MOEA class." << std::endl;
+            return std::vector<information>();
+        }
+    private:
+        bool is_subset(const std::vector<characteristic>& A, const std::vector<characteristic>& B) const
+        {
+            bool equal = true;
+            std::vector<characteristic> Ch1 = A;
+            std::vector<characteristic> Ch2 = B;
+            for (characteristic& cha : Ch1)
+            {
+                bool found_equal = false;
+                for (characteristic& param_cha : Ch2)
+                {
+                    if (cha.get_name() == param_cha.get_name() && cha.get_value() == param_cha.get_value() && cha.get_values() == param_cha.get_values())
+                    {
+                        found_equal = true;
+                        break;
+                    }
+                }
+                if(!found_equal)
+                {
+                    equal = false;
+                    break;
+                }
+            }
+            return equal;
+        }
+        bool exist_in_set(const information& info, std::vector<information>& input) const
+        {
+            for (information& in : input)
+                if (is_subset(in.get_characteristics(), info.get_characteristics()))
+                    return true;
+            return false;
+        }
+        
+        std::map<std::string, std::vector<information> > data;
+};
+
 class models{
 
     public:
@@ -967,6 +1117,8 @@ class models{
         void load_string(const std::string& na, const std::string& val, const bool& is_vector);
         void set_parameter(const std::string& typ);
         int update_parameter();
+        void get_MOEA_variables(std::vector<std::string>& IDs, std::vector<std::string>& names, std::vector<double>& min, std::vector<double>& max);
+        void get_moea_objectives(std::vector<std::string>& names);
 
         void return_outputs(std::vector<double>& values, std::vector<int>& starts, std::vector< std::vector< std::vector< std::string> > >& characteristics);
 
@@ -983,6 +1135,7 @@ class models{
         graphs grafos;
         matrix_representation problem_matrix;
         clp_model solver;
+        MOEA moea_model;
 
         void load_parameter(const std::string& na, const value_T& val, const bool& is_vector);
 
@@ -1013,7 +1166,11 @@ class models{
         std::vector< std::pair<value_T, value_T> > breakpoints_piecewise_linearisation(const information& info, const value_T max, const value_T min);
         int declare_dc_opf_variables(const std::vector<value_T>& pt, const double hour);
         int declare_dc_opf_constraints(const std::vector<value_T>& pt, const double hour);
-        int create_dc_opf_matrix(const std::vector<value_T>& pt, const double hour);
+        int connections_parameters_variables_dc_opf(const information& subscripts);
+
+        int get_position_matrix_dc_opf(const std::string& name_constraint, const graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con);
+
+        std::pair< int, std::vector<information> > create_dc_opf_matrix(const std::vector<information>& subscripts);
 
         int declare_dc_opf_tree_links_constraints(const std::vector<value_T>& pt);
         int create_dc_opf_tree_links_matrix(const std::vector<value_T>& pt);
@@ -1026,6 +1183,10 @@ class models{
 
         void accumulate_unique_characteristics_outputs(std::vector<information>& information_required, const information& output, const std::string& name);
 
-        
+        int create_moea_problem();
+        int declare_moea_variables();
+        int declare_moea_objectives();
+
+
 
 };
