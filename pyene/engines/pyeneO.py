@@ -60,6 +60,9 @@ class pyeneSave():
             self.fileh5.save_results(model, sim_no)
         if self.save_excel:
             self.fileexcel.save_results(model, sim_no)
+    
+    def close_output_files(self):
+        self.fileh5.terminate(new_implementation=True)
 
 class pyene2excel():
 
@@ -1166,12 +1169,15 @@ class pyeneHDF5Settings():
         #     self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
         #         ActivePowerFlow)
 
-    def terminate(self):
+    def terminate(self, new_implementation=False):
 
-        if self.settings['Directory1'] is None:
-            return
-        self.fileh.close()
-        self.filedetailedinfo.close()
+        if not new_implementation:
+            if self.settings['Directory1'] is None:
+                return
+            self.fileh.close()
+            self.filedetailedinfo.close()
+        else:
+            self.fileh.close()
 
 class PrintinScreen():
     '''This class contains all definitions that allows printing on the screen any 
