@@ -66,6 +66,8 @@ cdef extern from "energy_models2.h":
         void load_string(const string& na, const string& val, const bool& is_vector);
         void set_parameter(const string& typ);
         int update_parameter();
+        void get_MOEA_variables(vector[string]& IDs, vector[string]& names, vector[double]& min, vector[double]& max);
+        void get_moea_objectives(vector[string]& names);
 
         void initialise();
         void evaluate();

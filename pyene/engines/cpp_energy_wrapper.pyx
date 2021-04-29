@@ -1,4 +1,5 @@
 # distutils: language = c++
+# cython: profile=True
 
 from pyene.engines.cpp_energy_wrapper cimport models
 
@@ -161,8 +162,6 @@ import copy
 #        return sol_angle, sol_load_cur, sol_gen_cur
 
 
-
-
 cdef class models_cpp():
     cdef models* cpp_mod
 
@@ -230,4 +229,17 @@ cdef class models_cpp():
         cdef int code
         code = self.cpp_mod.update_parameter()
         return code
+
+    cpdef get_MOEA_variables(self):
+        cdef vector[string] IDs
+        cdef vector[string] names
+        cdef vector[double] min_bnd
+        cdef vector[double] max_bnd
+        self.cpp_mod.get_MOEA_variables(IDs, names, min_bnd, max_bnd)
+        return IDs, names, min_bnd, max_bnd
+
+    cpdef get_moea_objectives(self):
+        cdef vector[string] names
+        self.cpp_mod.get_moea_objectives(names)
+        return names
 
