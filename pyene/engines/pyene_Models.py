@@ -61,6 +61,7 @@ class parameters:
     connections         :   list    = field(default_factory=list)       # list of data with connections
     functions           :   list    = field(default_factory=list)       # list of data with functions
     outputs             :   list    = field(default_factory=list)       # list of data with output options
+    data                :   dict    = field(default_factory=dict)       # dictionary with information
 
 @dataclass
 class model_options_parameter:
@@ -322,7 +323,9 @@ problems_names_system = [
 
 bool_model_characteristics = [
     "loss",
-    "multiperiod"
+    "multiperiod",
+    "MOEA",
+    "representative periods"
 ]
 
 double_model_characteristics = [
@@ -567,7 +570,6 @@ class models():
             self.model.set_parameter(b"model")
     
     def _load2cpp(self, name=None):
-        
         if name == "connections":
             elements = self.data.connections
         elif name == "functions":
@@ -575,27 +577,45 @@ class models():
             name = "network"
         elif name == "outputs":
             elements = self.data.outputs
+        else:
+            elements = self.data.data.get(name, None)
+            if (name == "bus" or name == "generator" or name == "branch") : name = "network"
+        counter = 0
         for element in elements:
             self.model.create_parameter()
             for cha in element.characteristics:
                 self.model.load_value(cha.data_type, cha.name.encode('utf-8'), cha.value)
             self.model.load_value(element.data_type, b"value", element.value)
             self.model.set_parameter(name.encode('utf-8'))
+            counter = counter + 1
 
     def _load_information_cpp(self):
-        self._load_network_information_cpp()
+        # self._load_network_information_cpp()
         self._load_tree_information_cpp()
         self._load_model_information_cpp()
         self._load2cpp("connections")
         self._load2cpp("functions")
         self._load2cpp("outputs")
+        import cProfile, pstats, io
+        pr = cProfile.Profile()
+        pr.enable()
+        self._load2cpp("bus")
+        self._load2cpp("generator")
+        self._load2cpp("branch")
+        pr.disable()
+        pr.dump_stats('profile_dump')
 
     def initialise(self):
         # self._create_graph_tree()
         # self._create_graph_network()
         self.model = models_cpp()
+        import time
+        begin = time.time()
         self._load_information_cpp()
+        print("TIEMPO LOAD INFO {}".format(begin - time.time()))
+        begin = time.time()
         self.model.initialise()
+        print("TIEMPO initialise {}".format(begin - time.time()))
     
     def evaluate(self):
         self.model.evaluate()
@@ -608,6 +628,17 @@ class models():
         for key, val in information.items():
             self.model.load_value(val[0], key.encode('utf-8'), val[1])
         return self.model.update_parameter()
+    
+    def get_moea_variables(self):
+        ids, names, min_bnd, max_bnd = self.model.get_MOEA_variables()
+        ids_decoded = [ID.decode('utf-8') for ID in ids]
+        names_decoded = [name.decode('utf-8') for name in names]
+        return ids_decoded, names_decoded, min_bnd, max_bnd
+    
+    def get_moea_objectives(self):
+        names = self.model.get_moea_objectives()
+        names_decoded = [name.decode('utf-8') for name in names]
+        return names_decoded
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.
