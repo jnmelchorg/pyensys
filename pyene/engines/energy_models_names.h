@@ -159,7 +159,9 @@ std::set<std::string> string_tree_characteristics = {
 
 std::set<std::string> bool_model_characteristics = {
     "loss",
-    "multiperiod"
+    "multiperiod",
+    "MOEA",
+    "representative periods"
 };
 
 std::set<std::string> double_model_characteristics = {
