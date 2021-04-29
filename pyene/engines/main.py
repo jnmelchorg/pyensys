@@ -12,7 +12,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 # convert in or long into float before performing divissions
 from __future__ import division
 from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
-                       NonNegativeReals, minimize
+NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
 from pyene.engines.pyeneN import ENetworkClass as dn  # Network cengine
@@ -871,12 +871,13 @@ class pyeneClass():
             
             from .pyene_Models import models
             self.mod_cython_cpp = models()
-
+            # import time
+            # begin = time.time()
             if file_extension == ".xlsx":
                 from .pyeneI import excel2pyene as e2p
                 read = e2p()
                 read.read_excel(energy_file=path, model=self.mod_cython_cpp)
-            
+            # print("TIEMPO EXCEL {}".format(begin - time.time()))
             self.mod_cython_cpp.initialise()
             outpput_file_name = "outputs"
             for options in self.mod_cython_cpp.model_options:
@@ -1053,16 +1054,25 @@ class pyeneClass():
             ENMod.optimisationENM()
 
             return ENMod
-
-        from .pyene_Models import models
-        if isinstance(self.mod_cython_cpp, models):
-            self.mod_cython_cpp.evaluate()
+        else:
+            from .pyene_Models import models
+            if isinstance(self.mod_cython_cpp, models):
+                self.mod_cython_cpp.evaluate()
     
     def save_outputs(self, sim_no=None):
         self.save_solution.save_results(model=self.mod_cython_cpp, sim_no=sim_no)
     
     def update_parameter(self, information):
         return self.mod_cython_cpp.update_parameter(information=information)
+    
+    def get_moea_variables(self):
+        return self.mod_cython_cpp.get_moea_variables()
+    
+    def get_moea_objectives(self):
+        return self.mod_cython_cpp.get_moea_objectives()
+    
+    def close_output_files(self):
+        self.save_solution.close_output_files()
 
     def Run_Mod(self, m):
         ''' Run pyomo model '''
