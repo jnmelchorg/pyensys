@@ -12,12 +12,14 @@
 #include <boost/tuple/tuple.hpp>
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/variant.hpp"
+#include "boost/functional/hash.hpp"
 #include "ClpSimplex.hpp"
 #include "CoinHelperFunctions.hpp"
 #include "CoinTime.hpp"
-#include <map>
 #include <chrono>
 #include <future>
+#include <list>
+#include <boost/unordered_map.hpp>
 
 typedef boost::variant<bool, int, double, std::string> value_T;
 
@@ -124,10 +126,57 @@ class information
             }
             if (exist) characteristics.erase(characteristics.begin()+pos);
         }
+    
     private:
         std::vector<characteristic> characteristics;
         value_T value;
 };
+
+// custom specialization of std::hash in namespace std
+namespace boost
+{
+    template<> struct hash<information>
+    {
+        std::size_t operator()(information const& info) const noexcept
+        {
+            std::list<std::size_t> h;
+            for (const characteristic& cha : info.get_characteristics())
+            {
+                h.push_back(boost::hash_value(cha.get_name()));
+                h.push_back(boost::hash_value(cha.get_value()));
+                for (const value_T& val : cha.get_values())
+                    h.push_back(boost::hash_value(val));
+            }
+            std::size_t h1 = 0;
+            for (std::list<std::size_t>::iterator it = h.begin(); it != h.end(); ++it)
+            {
+                boost::hash_combine(h1, *it);
+            }
+            return h1;
+        }
+    };
+}
+
+namespace std
+{
+    template<> struct equal_to<information>
+    {
+        bool operator()(information const& lhs, information const& rhs) const
+        {
+            std::vector<characteristic> characteristics1 = lhs.get_characteristics();
+            std::vector<characteristic> characteristics2 = rhs.get_characteristics();
+            std::vector<characteristic>::iterator first1 = characteristics1.begin();
+            std::vector<characteristic>::iterator last1 = characteristics1.end();
+            std::vector<characteristic>::iterator first2 = characteristics2.begin();
+            for (; first1 != last1; ++first1, ++first2) {
+                if (!(first1->get_name() == first2->get_name() && first1->get_value() == first2->get_value() && first1->get_values() == first2->get_values())) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    };
+}
 
 class parameters
 {
@@ -559,6 +608,22 @@ class graph_data
             }
         }
 
+        void insert(const std::string& nameinfo, const information& key, information& element)
+        {
+            graph_info[nameinfo][key] = element;
+        }
+        
+        information find(const std::string& nameinfo, const information& key)
+        {
+            if (graph_info[nameinfo].find(key) != graph_info[nameinfo].end())
+            {
+                information info = graph_info[nameinfo][key];
+                return info;
+            }
+            else
+                return information();
+        }
+
     private:
         bool is_subset(const std::vector<characteristic>& A, const std::vector<characteristic>& B) const
         {
@@ -664,6 +729,7 @@ class graph_data
         std::vector<information> variables;
         std::vector<information> constraints;
         std::vector<information> binary_variables;
+        boost::unordered_map<std::string, boost::unordered_map<information, information> > graph_info;
 };
 
 class matrix_representation
@@ -954,10 +1020,128 @@ class graphs
             else
                 std::cout << "Invalid graph name *" << graphname << "* and/or invalid component *" << component << "*." << std::endl;
         }
+
+        void insert2component(const std::string& graphname, const int& pos, const std::string& component, const std::string& nameinfo, const information& key, information& element)
+        {
+            if (graphname == "network" && component == "vertex") network_data[pos].insert(nameinfo, key, element);
+        }
+        information find_component_information(const std::string& graphname, const int& pos, const std::string& component, const std::string& nameinfo, const information& key)
+        {
+            if (graphname == "network" && component == "vertex") return network_data[pos].find(nameinfo, key);
+        }
+    
+        void push_back_info(const std::string& graphname, const int& pos, const std::string& component, information& element, const std::string& nameinfo, const std::vector< std::pair<characteristic, bool> >& m_cha)
+        {
+            if (graphname == "tree" && component == "vertex") tree_data[pos].push_back(element, nameinfo, m_cha);
+            else if (graphname == "network" && component == "vertex") network_data[pos].push_back(element, nameinfo, m_cha);
+            else if (graphname == "tree" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(tree_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                    {
+                        tree_data[*ei].push_back(element, nameinfo, m_cha);
+                        return;
+                    }
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else if (graphname == "network" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(network_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                    {
+                        network_data[*ei].push_back(element, nameinfo, m_cha);
+                        return;
+                    }
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else
+                std::cout << "Invalid graph name *" << graphname << "* and/or invalid component *" << component << "*." << std::endl;
+        }
+
+        void push_back_info(const std::string& graphname, const int& pos, const std::string& component, information& element, const std::string& nameinfo)
+        {
+            if (graphname == "tree" && component == "vertex") tree_data[pos].push_back(element, nameinfo);
+            else if (graphname == "network" && component == "vertex") network_data[pos].push_back(element, nameinfo);
+            else if (graphname == "tree" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(tree_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                    {
+                        tree_data[*ei].push_back(element, nameinfo);
+                        return;
+                    }
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else if (graphname == "network" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(network_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                    {
+                        network_data[*ei].push_back(element, nameinfo);
+                        return;
+                    }
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else
+                std::cout << "Invalid graph name *" << graphname << "* and/or invalid component *" << component << "*." << std::endl;
+        }
+    
+        std::vector<information> get_multi_info (const std::string& graphname, const int& pos, const std::string& component, const std::vector<characteristic>& characteristics, const std::string& nameinfo, const bool silent) const
+        {
+            if (graphname == "tree" && component == "vertex") return tree_data[pos].get_multi_info(characteristics, nameinfo, silent);
+            else if (graphname == "network" && component == "vertex") return network_data[pos].get_multi_info(characteristics, nameinfo, silent);
+            else if (graphname == "tree" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(tree_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                        return tree_data[*ei].get_multi_info(characteristics, nameinfo, silent);
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else if (graphname == "network" && component == "edge")
+            {
+                int counter = 0;
+                edge_iterator ei,ei_end;
+                for (boost::tie(ei, ei_end) = boost::edges(network_data); ei != ei_end; ++ei)
+                {
+                    if (counter == pos)
+                        return network_data[*ei].get_multi_info(characteristics, nameinfo, silent);
+                    else counter++;
+                }
+                std::cout << "Invalid edge position *" << pos << "* for graph *" << graphname << "*." << std::endl;
+            }
+            else
+                std::cout << "Invalid graph name *" << graphname << "* and/or invalid component *" << component << "*." << std::endl;
+        }
+    
     private:
         GraphType tree_data;
         GraphType network_data;
-        std::unordered_map<std::string, std::unordered_map<std::string, std::vector<int> > > graph_elements_positions;
+        boost::unordered_map<std::string, boost::unordered_map<std::string, std::vector<int> > > graph_elements_positions;
 };
 
 class clp_model
@@ -1148,7 +1332,8 @@ class models{
         std::vector< std::vector<characteristic> > names_levels_tree();
 
         int create_problem_element(const std::string& name_var, const double max, const double min, std::vector<std::pair<characteristic, bool> >& extra_characteristics, const int node_graph, const std::string& name_graph, const std::string& graph_component, const std::string& type_info, const double cost);
-        std::pair<information, int> get_information(const graph_data &vertex, const std::string& name_info, const std::vector<characteristic>& extra_characteristics, const std::string& name_datainfo, bool silent);
+
+        std::pair<information, int> get_information(const graph_data &vertex, const std::string& name_info, const std::vector<characteristic>& extra_characteristics, const std::string& name_datainfo, bool silent, const int pos=-1, const std::string name_graph = "", const std::string component = "");
 
         std::pair<std::vector<std::vector<double> >, int> create_dc_opf_susceptance_matrix(const std::vector<value_T>& pt, const double hour);
 
@@ -1168,7 +1353,7 @@ class models{
         int declare_dc_opf_constraints(const std::vector<value_T>& pt, const double hour);
         int connections_parameters_variables_dc_opf(const information& subscripts);
 
-        int get_position_matrix_dc_opf(const std::string& name_constraint, const graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con);
+        int get_position_matrix_dc_opf(const std::string& name_constraint, graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con);
 
         std::pair< int, std::vector<information> > create_dc_opf_matrix(const std::vector<information>& subscripts);
 
@@ -1186,7 +1371,5 @@ class models{
         int create_moea_problem();
         int declare_moea_variables();
         int declare_moea_objectives();
-
-
 
 };
