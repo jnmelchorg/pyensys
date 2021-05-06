@@ -99,3 +99,4 @@ tests/json/UKElectricityProfiles week.json
 pyene/engines/cython/cpp_energy_wrapper.cp37-win_amd64.pyd
 profile_dump
 pyene/json/EAPP_Reduced_v23022020.json
+/.vs
