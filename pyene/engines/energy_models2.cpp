@@ -317,12 +317,13 @@ int models::create_problem_element(const std::string& name_var, const double max
     information info;
     int position;
     graph_data data = grafos.get(name_graph, node_graph, graph_component);
-    info.set_characteristics(grafos.get(name_graph, node_graph, graph_component).get_characteristics());
+    info.set_characteristics(data.get_characteristics());
     info.set_characteristic(characteristic("name", name_var, false), false);
     if (max == COIN_DBL_MAX) info.set_characteristic(characteristic("max", std::string("infinite"), false), false);
     else info.set_characteristic(characteristic("max", max, false), false);
     if (min == -COIN_DBL_MAX) info.set_characteristic(characteristic("min", std::string("-infinite"), false), false);
     else info.set_characteristic(characteristic("min", min, false), false);
+
     if (type_info == "variables")
     {
         info.set_characteristic(characteristic("cost", cost, false), false);
@@ -337,8 +338,18 @@ int models::create_problem_element(const std::string& name_var, const double max
     for (const std::pair<characteristic, bool>& charac : extra_characteristics)
         info.set_characteristic(charac.first, charac.second);
     info.set_value(0.0);
-    data.push_back(info, type_info);
-    grafos.set(name_graph, node_graph, data, graph_component);
+    grafos.push_back_info(name_graph, node_graph, graph_component, info, type_info);
+    // data.push_back(info, type_info);
+    // grafos.set(name_graph, node_graph, data, graph_component);
+
+    // Test hash tables
+    information set;
+    set.set_characteristic(characteristic("name", name_var, false), false);
+    if (info.exist("pt")) set.set_characteristic(info.get_characteristic("pt"), true);
+    if (info.exist("hour")) set.set_characteristic(info.get_characteristic("hour"), false);
+    if (info.exist("piece")) set.set_characteristic(info.get_characteristic("piece"), false);
+
+    grafos.insert2component(name_graph, node_graph, graph_component, type_info, set, info);
     return position;
 }
 
@@ -410,19 +421,36 @@ int models::declare_balance_tree_constraints(const std::string& id)
     return 0;
 }
 
-std::pair<information, int> models::get_information(const graph_data &data, const std::string& name_info, const std::vector<characteristic>& extra_characteristics, const std::string& name_datainfo, bool silent)
+std::pair<information, int> models::get_information(const graph_data &data, const std::string& name_info, const std::vector<characteristic>& extra_characteristics, const std::string& name_datainfo, bool silent, const int pos, const std::string name_graph, const std::string component)
 {
-    std::vector<characteristic> characteristics = data.get_characteristics();
-    characteristics.push_back(characteristic("name", name_info, false));
-    characteristics.insert(characteristics.end(), extra_characteristics.begin(), extra_characteristics.end());
-    std::vector<information> info = data.get_multi_info(characteristics, name_datainfo, silent);
-    if (info.size() > 1)
-    {
-        if (!silent) std::cout << "Incoherent data for name *" << name_info << "* in data *" << name_datainfo << "*." << std::endl;
-        return std::make_pair(information(), -3);
+    if (pos == -1)
+    {    
+        std::vector<characteristic> characteristics = data.get_characteristics();
+        characteristics.push_back(characteristic("name", name_info, false));
+        characteristics.insert(characteristics.end(), extra_characteristics.begin(), extra_characteristics.end());
+        std::vector<information> info = data.get_multi_info(characteristics, name_datainfo, silent);
+        if (info.size() > 1)
+        {
+            if (!silent) std::cout << "Incoherent data for name *" << name_info << "* in data *" << name_datainfo << "*." << std::endl;
+            return std::make_pair(information(), -3);
+        }
+        if (info.size() == 0) return std::make_pair(information(), 0);
+        return std::make_pair(info[0], 0);
     }
-    if (info.size() == 0) return std::make_pair(information(), 0);
-    return std::make_pair(info[0], 0);
+    else
+    {
+        std::vector<characteristic> characteristics = grafos.get(name_graph, pos, component).get_characteristics();
+        characteristics.push_back(characteristic("name", name_info, false));
+        characteristics.insert(characteristics.end(), extra_characteristics.begin(), extra_characteristics.end());
+        std::vector<information> info = grafos.get_multi_info(name_graph, pos, component, characteristics, name_datainfo, silent);
+        if (info.size() > 1)
+        {
+            if (!silent) std::cout << "Incoherent data for name *" << name_info << "* in data *" << name_datainfo << "*." << std::endl;
+            return std::make_pair(information(), -3);
+        }
+        if (info.size() == 0) return std::make_pair(information(), 0);
+        return std::make_pair(info[0], 0);
+    }
 }
 
 int models::create_balance_tree_matrix(const std::string& id)
@@ -721,7 +749,6 @@ int models::declare_dc_opf_variables(const std::vector<value_T>& pt, const doubl
             info = get_information(vertex, "cost function", std::vector<characteristic>(), "parameters", true);
             if ((info.first.get_characteristics().size() == 0 && info.second != 0) || info.first.get_characteristics().size() > 0)
             {
-                vertex = grafos.get("network", node, "vertex");
                 if (info.second != 0)
                     info = get_information(vertex, "cost function", characteristics, "parameters", false);
                 if (info.second != 0) return -6;
@@ -729,8 +756,7 @@ int models::declare_dc_opf_variables(const std::vector<value_T>& pt, const doubl
                 {
                     std::pair<std::vector< std::pair<characteristic, bool> >, int> pw = piecewise_linearisation(info.first, max, min);
                     if (pw.second != 0) return pw.second;
-                    vertex.push_back(info.first, "parameters", pw.first);
-                    grafos.set("network", node, vertex, "vertex");
+                    grafos.push_back_info("network", node, "vertex", info.first, "parameters", pw.first);
                 }
                 // Active power generation cost
                 if (status == true)
@@ -999,13 +1025,21 @@ std::pair<std::vector<std::vector<double> >, int> models::create_dc_opf_suscepta
     return std::make_pair(susceptance_matrix, 0);
 }
 
-int models::get_position_matrix_dc_opf(const std::string& name_var_con, const graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con)
+int models::get_position_matrix_dc_opf(const std::string& name_var_con, graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con)
 {
-    std::pair<information, int> info = get_information(vertex, name_var_con, std::vector<characteristic>(), var_con, true);
-    if (info.second != 0)
-        info = get_information(vertex, name_var_con, characteristics, var_con, false);
-    if (info.second != 0) return -1;
-    return boost::get<int>(info.first.get_characteristic("position matrix").get_value());
+    information info2;
+    info2.set_characteristics(characteristics);
+
+    information set;
+    set.set_characteristic(characteristic("name", name_var_con, false), false);
+    if (info2.exist("pt")) set.set_characteristic(info2.get_characteristic("pt"), true);
+    if (info2.exist("hour")) set.set_characteristic(info2.get_characteristic("hour"), false);
+    if (info2.exist("piece")) set.set_characteristic(info2.get_characteristic("piece"), false);
+
+    info2 = vertex.find(var_con, set);
+
+    if (info2.get_characteristics().size() == 0) return -1;
+    return boost::get<int>(info2.get_characteristic("position matrix").get_value());
 }
 
 std::pair< int, std::vector<information> >  models::create_dc_opf_matrix(const std::vector<information>& subscripts){
@@ -1448,7 +1482,6 @@ int models::create_dc_opf_model()
         if (periods.size() == 0)
         {
             std::cout << "WARNING! The problem *balance tree* has been passed but the software could not find any representative days in the data" << std::endl;
-            std::cout << "here" << std::endl;
             return -4;
         }
     }
@@ -1545,6 +1578,7 @@ int models::create_dc_opf_model()
     }
     std::pair<int, std::vector<information>> task = create_dc_opf_matrix(subscripts);
     if (task.first != 0) return task.first;
+    
     matrix_coefficient_info.push_back(task.second);
 
     for (std::vector<information>& all_info : matrix_coefficient_info)
