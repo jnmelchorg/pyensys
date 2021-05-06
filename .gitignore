@@ -97,6 +97,5 @@ pyene/json/Ghana_energy-onlyExisting.json
 pyene/json/UKElectricityProfiles week.json
 tests/json/UKElectricityProfiles week.json
 pyene/engines/cython/cpp_energy_wrapper.cp37-win_amd64.pyd
-pyene/engines/debugger.py
 profile_dump
 pyene/json/EAPP_Reduced_v23022020.json
