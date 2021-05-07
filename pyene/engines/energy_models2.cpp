@@ -22,15 +22,7 @@ void models::load_parameter(const std::string& na, const value_T& val, const boo
     if (na == "value")
         candidate.set_value(val);
     else
-    {
         candidate.set_characteristic(characteristic(na, val, is_vector), is_vector);
-        // if (all_parameters.find(na) != all_parameters.end())
-        // {
-        //     candidate.set_characteristic(characteristic(na, val, is_vector), is_vector);
-        // }
-        // else
-        //     std::cout << "name *" << na << "* is not a valid name" << std::endl;
-    } 
 };
 
 void models::load_double(const std::string& na, const double& val, const bool& is_vector)
