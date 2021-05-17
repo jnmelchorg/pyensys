@@ -624,6 +624,16 @@ class graph_data
                 return information();
         }
 
+        void update_information_value(const std::string& nameinfo, const information& key, const value_T& new_value)
+        {
+            if (graph_info[nameinfo].find(key) != graph_info[nameinfo].end())
+            {
+                information info = graph_info[nameinfo][key];
+                info.set_value(new_value);
+                graph_info[nameinfo][key] = info;
+            }
+        }
+
     private:
         bool is_subset(const std::vector<characteristic>& A, const std::vector<characteristic>& B) const
         {
@@ -759,11 +769,13 @@ class matrix_representation
             rows.push_back(row);
             columns.push_back(column);
         }
-        void add_active(const std::string& name, const int& column_or_row)
+        
+        void add_active(const std::string& name, const int& column_or_row, const information& info = information())
         {
-            if (name == "row") active_rows.push_back(column_or_row);
-            if (name == "column") active_columns.push_back(column_or_row);
+            if (name == "row") active_rows[info].push_back(column_or_row);
+            if (name == "column") active_columns[info].push_back(column_or_row);
         }
+        
         void update_variable(const int column, const double& upper, const double& lower, const double& cost)
         {
             colLower[column] = lower;
@@ -836,8 +848,6 @@ class matrix_representation
         {
             if (name == "columns") return columns;
             else if (name == "rows") return rows;
-            else if (name == "active constraints") return active_rows;
-            else if (name == "active variables") return active_columns;
             else
                 std::cout << "Invalid name *" << name << "*. " << std::endl;
             return std::vector<int>();
@@ -874,6 +884,11 @@ class matrix_representation
                 }
             }
         }
+        boost::unordered_map<information, std::vector<int> > get_active_rows_columns(const std::string& name) const 
+        {
+            if (name == "active constraints") return active_rows;
+            else if (name == "active variables") return active_columns;
+        }
     private:
         std::vector<int> columns;
         std::vector<int> rows;
@@ -883,8 +898,10 @@ class matrix_representation
         std::vector<double> rowUpper;
         std::vector<double> colLower;
         std::vector<double> colUpper;
-        std::vector<int> active_rows;
-        std::vector<int> active_columns;
+        // std::vector<int> active_rows;
+        // std::vector<int> active_columns;
+        boost::unordered_map<information, std::vector<int> > active_rows;
+        boost::unordered_map<information, std::vector<int> > active_columns;
         int number_variables;
         int number_constraints;
 };
@@ -1025,11 +1042,17 @@ class graphs
         {
             if (graphname == "network" && component == "vertex") network_data[pos].insert(nameinfo, key, element);
         }
+        
         information find_component_information(const std::string& graphname, const int& pos, const std::string& component, const std::string& nameinfo, const information& key)
         {
             if (graphname == "network" && component == "vertex") return network_data[pos].find(nameinfo, key);
         }
     
+        void update_information_value(const std::string& graphname, const int& pos, const std::string& component, const std::string& nameinfo, const information& key, const value_T& new_value)
+        {
+            if (graphname == "network" && component == "vertex") network_data[pos].update_information_value(nameinfo, key, new_value);
+        }
+
         void push_back_info(const std::string& graphname, const int& pos, const std::string& component, information& element, const std::string& nameinfo, const std::vector< std::pair<characteristic, bool> >& m_cha)
         {
             if (graphname == "tree" && component == "vertex") tree_data[pos].push_back(element, nameinfo, m_cha);
@@ -1137,7 +1160,7 @@ class graphs
             else
                 std::cout << "Invalid graph name *" << graphname << "* and/or invalid component *" << component << "*." << std::endl;
         }
-    
+
     private:
         GraphType tree_data;
         GraphType network_data;
@@ -1153,8 +1176,8 @@ class clp_model
 
             model.loadProblem(matrix, problem_matrix.get_values("variables lower").data(), problem_matrix.get_values("variables upper").data(), problem_matrix.get_values("cost").data(), problem_matrix.get_values("constraints lower").data(), problem_matrix.get_values("constraints upper").data());
 
-            active_rows = problem_matrix.get_positions("active constraints");
-            active_columns = problem_matrix.get_positions("active variables");
+            active_rows = problem_matrix.get_active_rows_columns("active constraints");
+            active_columns = problem_matrix.get_active_rows_columns("active variables");
         }
         void setColBounds (int elementIndex, double newlower, double newupper) {model.setColumnBounds(elementIndex, newlower, newupper);}
         void setRowBounds (int elementIndex, double newlower, double newupper) {model.setRowBounds(elementIndex, newlower, newupper);}
@@ -1165,10 +1188,13 @@ class clp_model
         }
 
         ClpSimplex get_model() const {return model;}
-        void solve(const std::string& name_method)
+        void solve(const std::string& name_method, const information& subscripts)
         {
-
-            ClpSimplex reduced_model(&model, active_rows.size(), active_rows.data(), active_columns.size(), active_columns.data());
+            ClpSimplex reduced_model(&model, active_rows[subscripts].size(), active_rows[subscripts].data(), active_columns[subscripts].size(), active_columns[subscripts].data());
+            // for (auto& val : active_rows[subscripts])
+            //     std::cout << val << std::endl;
+            // for (auto& val : active_columns[subscripts])
+            //     std::cout << val << std::endl;
             /* +1 to minimize, -1 to maximize, and 0 to ignore */
             reduced_model.setOptimizationDirection(1);
             /*
@@ -1190,12 +1216,12 @@ class clp_model
             }
             double * solution = model.primalColumnSolution();
             const double * smallSolution = reduced_model.primalColumnSolution();
-            for (size_t j = 0; j < active_columns.size(); j++) {
-                 solution[active_columns[j]] = smallSolution[j];
-                 model.setColumnStatus(active_columns[j], reduced_model.getColumnStatus(j));
+            for (size_t j = 0; j < active_columns[subscripts].size(); j++) {
+                 solution[active_columns[subscripts][j]] = smallSolution[j];
+                 model.setColumnStatus(active_columns[subscripts][j], reduced_model.getColumnStatus(j));
             }
-            for (size_t iRow = 0; iRow < active_rows.size(); iRow++) {
-                 model.setRowStatus(active_rows[iRow], reduced_model.getRowStatus(iRow));
+            for (size_t iRow = 0; iRow < active_rows[subscripts].size(); iRow++) {
+                 model.setRowStatus(active_rows[subscripts][iRow], reduced_model.getRowStatus(iRow));
             }
         }
         std::vector<double> get_solution()
@@ -1206,8 +1232,8 @@ class clp_model
     private:
         ClpSimplex  model;
         double objective_function;
-        std::vector<int> active_rows;
-        std::vector<int> active_columns;
+        boost::unordered_map<information, std::vector<int> > active_rows;
+        boost::unordered_map<information, std::vector<int> > active_columns;
 };
 
 class MOEA
@@ -1314,7 +1340,9 @@ class models{
         const double PENALTY = 1000000.0;
         const double TOLERANCE_REACTANCE = 1e-8;
 
-        information candidate;
+        int number_times_optimisation;
+
+        information candidate, last_subscript;
         parameters data_parameters;
         graphs grafos;
         matrix_representation problem_matrix;
@@ -1349,8 +1377,8 @@ class models{
         int convert2per_unit();
         std::pair<std::vector<std::pair<characteristic, bool>>, int> piecewise_linearisation(information& info, const value_T max, const value_T min);
         std::vector< std::pair<value_T, value_T> > breakpoints_piecewise_linearisation(const information& info, const value_T max, const value_T min);
-        int declare_dc_opf_variables(const std::vector<value_T>& pt, const double hour);
-        int declare_dc_opf_constraints(const std::vector<value_T>& pt, const double hour);
+        int declare_dc_opf_variables(const std::vector<information>& subscripts);
+        int declare_dc_opf_constraints(const std::vector<information>& subscripts);
         int connections_parameters_variables_dc_opf(const information& subscripts);
 
         int get_position_matrix_dc_opf(const std::string& name_constraint, graph_data& vertex, const std::vector<characteristic>& characteristics, const std::string& var_con);
