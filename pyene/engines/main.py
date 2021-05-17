@@ -1036,7 +1036,7 @@ class pyeneClass():
                     NoRESP, LLRESType, LLRESPeriod, RESProfs, RESBus, RESLink,
                     NoLink, Nohr)
 
-    def run(self, solver=None):
+    def run(self, solver=None, subscripts={}):
         ''' Run integrated pyene model '''
         if solver == "pyomo":
             # Build pyomo model
@@ -1057,7 +1057,7 @@ class pyeneClass():
         else:
             from .pyene_Models import models
             if isinstance(self.mod_cython_cpp, models):
-                self.mod_cython_cpp.evaluate()
+                self.mod_cython_cpp.evaluate(subscripts=subscripts)
     
     def save_outputs(self, sim_no=None):
         self.save_solution.save_results(model=self.mod_cython_cpp, sim_no=sim_no)
