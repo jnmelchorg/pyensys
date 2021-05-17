@@ -1442,7 +1442,7 @@ int models::create_dc_opf_model()
     std::vector< std::vector<value_T> > periods(1, std::vector<value_T>());
     std::vector<double> hours (1, -1.0);
 
-    information info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("BT"), false), characteristic("engine", std::string("pyene"), false)}),"model");
+    information info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("representative periods"), false)}),"model");
     if (info.get_characteristics().size() > 0 && boost::get<bool>(info.get_value()))
     {
         periods.clear();
