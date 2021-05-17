@@ -11,7 +11,8 @@ begin = time.time()
 # path = "C:\\Users\\f09903jm\\Downloads pc\\EAPP_pyene.xlsx"
 # path = "C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\EAPP\\EAPP Data\\EAPP\\EAPP_1h.xlsx"
 
-path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Pyene\\Inputs\\Pyene format proposal v1.xlsx'
+# path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Pyene\\Inputs\\Pyene format proposal v1.xlsx'
+path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Case4m.xlsx'
 
 opt = pyeneClass()
 opt.initialise(path=path)
