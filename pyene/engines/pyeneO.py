@@ -11,7 +11,7 @@ import numpy as np
 from tables import Int16Col, Float32Col, StringCol, IsDescription, open_file
 import os
 from pyomo.core import ConcreteModel
-from .pyene_Models import EnergyandNetwork, Networkmodel
+from .pyene_Models import EnergyandNetwork, Networkmodel, characteristic
 from openpyxl import Workbook
 
 class pyeneOConfig:
@@ -86,10 +86,15 @@ class pyene2excel():
             if out.exist("data device") and out.get_characteristic("data device") == ["excel"]:
                 information_name.append(out.get_characteristic("name")[0])
                 information_problem.append(out.get_characteristic("problem")[0])
-                if out.exist("pt"):
-                    information_position_tree.append(out.get_characteristic("pt"))
-                else:
-                    information_position_tree.append(None)
+                #TODO: Generalise subscripts
+                subscripts = model.get_latest_subscripts()
+                for key, value in subscripts.items():
+                    if key == "pt":
+                        information_position_tree.append(value[0])
+                # if out.exist("pt"):
+                #     information_position_tree.append(out.get_characteristic("pt"))
+                # else:
+                #     information_position_tree.append(None)
 
         used_values = [False for _ in range(len(values))]
         for i_n, i_p, i_pt in zip(information_name, information_problem, information_position_tree):
@@ -350,10 +355,15 @@ class pyeneHDF5Settings():
             if out.exist("data device") and out.get_characteristic("data device") == ["h5"]:
                 information_name.append(out.get_characteristic("name")[0])
                 information_problem.append(out.get_characteristic("problem")[0])
-                if out.exist("pt"):
-                    information_position_tree.append(out.get_characteristic("pt"))
-                else:
-                    information_position_tree.append(None)
+                #TODO: Generalise subscripts
+                subscripts = model.get_latest_subscripts()
+                for key, value in subscripts.items():
+                    if key == "pt":
+                        information_position_tree.append(value[0])
+                # if out.exist("pt"):
+                #     information_position_tree.append(out.get_characteristic("pt"))
+                # else:
+                #     information_position_tree.append(None)
 
         used_values = [False for _ in range(len(values))]
         for i_n, i_p, i_pt in zip(information_name, information_problem, information_position_tree):
