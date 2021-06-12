@@ -3444,7 +3444,7 @@ class EnergyandNetwork(Energymodel, Networkmodel):
         """ This class method solve the optimisation problem """
         # Creation of model instance
         self.solver = GLPKSolver(message_level='off', \
-            simplex_method='dualprimal')       
+            simplex_method='dualprimal')
         # Definition of minimisation problem
         self.solver.set_dir('min')
         # Definition of the mathematical formulation

@@ -60,7 +60,7 @@ class BranchConfig:
     def __init__(self):
         # Basic settings
         aux = ['ANGMAX', 'ANGMIN', 'BR_B', 'BR_R', 'BR_STATUS', 'BR_X',
-               'Number', 'F_BUS', 'RATE_A', 'RATE_A', 'RATE_C', 'TAP',
+               'Number', 'F_BUS', 'RATE_A', 'RATE_B', 'RATE_C', 'TAP',
                'T_BUS', 'Loss_Fix']
         self.settings = {}
         for x in aux:
@@ -858,7 +858,7 @@ class GenClass:
         return self.data['Min']
 
     def get_NoPieces(self):
-        ''' Get number of pices used for piece-wise cost estimations '''
+        ''' Get number of pieces used for piece-wise cost estimations '''
         return self.pyomo['NoPieces']
 
     def get_P(self):
