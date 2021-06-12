@@ -10,7 +10,7 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 import numpy as np
 from tables import Int16Col, Float32Col, StringCol, IsDescription, open_file
 import os
-
+from .pyene_Models import *
 
 class pyeneOConfig:
     ''' Default settings used for this class '''
@@ -513,6 +513,7 @@ class PrintinScreen():
                 'GenBus': True,
                 'UC': True,
                 'SoC': True,
+                'OF': True
                 }
         self.lossesresultsOPF = None
     def printlosses(self):
@@ -623,11 +624,15 @@ class PrintinScreen():
                                 aux = abs(ActivePowerFlow[xh, xt, xco, xb]) / FullFlow
                             ActivePowerLosses[xh, xt, xco, xb] = FullLoss * aux + \
                                 Branches[xb].getLoss()
-
+        else:
+            ActivePowerLosses = \
+                np.zeros((len(obj.LongTemporalConnections),\
+                    obj.ShortTemporalConnections, \
+                    (obj.NumberContingencies + 1), \
+                    obj.NumberLinesPS))
         # Printing results
 
         for xh in obj.LongTemporalConnections:
-            self.printallEnergyResults(obj)
             print("\n% CASE:", xh)
 
             if self.PrintinScreenOptions['GenBus']:
@@ -728,54 +733,62 @@ class PrintinScreen():
                 print("];")
             print()
 
-            # if self.PrintinScreenOptions['Feasibility']:
-            #     print("\nFeasTGC=[")
-            #     for xn in range(obj.NumberConvGen):
-            #         for xco in range(obj.NumberContingencies + 1):
-            #             for xt in range(obj.ShortTemporalConnections):
-            #                 if not obj.FlagFeasibility and \
-            #                     self.NumberConvGen > 0:
-            #                     aux = 0
-            #                 else:
-            #                     aux = ThermalGenerationCurtailment\
-            #                         [xh, xt, xco, xn]
-            #                 print("%8.4f " % aux, end='')
-            #         print()
-            #     print("];")
-            # print()
+            if self.PrintinScreenOptions['Feasibility']:
+                print("\nFeasTGC=[")
+                for xn in range(obj.NumberConvGen):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            if not obj.FlagFeasibility and \
+                                self.NumberConvGen > 0:
+                                aux = 0
+                            else:
+                                aux = ThermalGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                            print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+            print()
 
-            # if self.PrintinScreenOptions['Feasibility']:
-            #     print("\nFeasReGC=[")
-            #     for xn in range(obj.NumberRESGen):
-            #         for xco in range(obj.NumberContingencies + 1):
-            #             for xt in range(obj.ShortTemporalConnections):
-            #                 if not obj.FlagFeasibility and \
-            #                     self.NumberRESGen > 0:
-            #                     aux = 0
-            #                 else:
-            #                     aux = RESGenerationCurtailment\
-            #                         [xh, xt, xco, xn]
-            #                 print("%8.4f " % aux, end='')
-            #         print()
-            #     print("];")
-            # print()
+            if self.PrintinScreenOptions['Feasibility']:
+                print("\nFeasReGC=[")
+                for xn in range(obj.NumberRESGen):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            if not obj.FlagFeasibility and \
+                                self.NumberRESGen > 0:
+                                aux = 0
+                            else:
+                                aux = RESGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                            print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+            print()
 
-            # if self.PrintinScreenOptions['Feasibility']:
-            #     print("\nFeasHGC=[")
-            #     for xn in range(obj.NumberHydroGen):
-            #         for xco in range(obj.NumberContingencies + 1):
-            #             for xt in range(obj.ShortTemporalConnections):
-            #                 if not obj.FlagFeasibility and \
-            #                     self.NumberHydroGen > 0:
-            #                     aux = 0
-            #                 else:
-            #                     aux = HydroGenerationCurtailment\
-            #                         [xh, xt, xco, xn]
-            #                 print("%8.4f " % aux, end='')
-            #         print()
-            #     print("];")
-            # print()
+            if self.PrintinScreenOptions['Feasibility']:
+                print("\nFeasHGC=[")
+                for xn in range(obj.NumberHydroGen):
+                    for xco in range(obj.NumberContingencies + 1):
+                        for xt in range(obj.ShortTemporalConnections):
+                            if not obj.FlagFeasibility and \
+                                self.NumberHydroGen > 0:
+                                aux = 0
+                            else:
+                                aux = HydroGenerationCurtailment\
+                                    [xh, xt, xco, xn]
+                            print("%8.4f " % aux, end='')
+                    print()
+                print("];")
+            print()
 
+            if self.PrintinScreenOptions['OF']:
+                if isinstance(obj, EnergyandNetwork):
+                    print("\nObjective Function = {}\n".format(\
+                        obj.GetObjectiveFunctionENM()))
+                elif isinstance(obj, Networkmodel):
+                    print("\nObjective Function = {}\n".format(\
+                        obj.GetObjectiveFunctionNM()))
+    
     def printallEnergyResults(self, obj=None):
         ''' This class method prints on the screen all results for the \
             energy model'''
@@ -804,19 +817,20 @@ class PrintinScreen():
             print('No object with GLPK results has been passed - Aborting \
                 printing of results')
             return
-        
-        self.printallEnergyResults(obj)
-        self.printallNetworkResult(obj)
-
-        InputsTree = obj.GetInputsTree()
-        OutputsTree = obj.GetOutputsTree()
-        print('Water outputs:')
-        for xn in range(obj.TreeNodes):
-            for xv in range(obj.NumberTrees):
-                print("%8.4f " % OutputsTree[xv, xn], end='')
-            print('')
-        print('Water inputs:')
-        for xn in range(obj.TreeNodes):
-            for xv in range(obj.NumberTrees):
-                print("%8.4f " % InputsTree[xv, xn], end='')
-            print('')
+        if isinstance(obj, EnergyandNetwork) or isinstance(obj, Networkmodel):
+            self.printallNetworkResult(obj)
+        if isinstance(obj, EnergyandNetwork):
+            self.printallEnergyResults(obj)
+    
+            InputsTree = obj.GetInputsTree()
+            OutputsTree = obj.GetOutputsTree()
+            print('Water outputs:')
+            for xn in range(obj.TreeNodes):
+                for xv in range(obj.NumberTrees):
+                    print("%8.4f " % OutputsTree[xv, xn], end='')
+                print('')
+            print('Water inputs:')
+            for xn in range(obj.TreeNodes):
+                for xv in range(obj.NumberTrees):
+                    print("%8.4f " % InputsTree[xv, xn], end='')
+                print('')

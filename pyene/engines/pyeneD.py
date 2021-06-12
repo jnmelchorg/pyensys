@@ -90,7 +90,7 @@ class ConventionalConfig:
         aux = ['Ancillary', 'APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2',
                'PG', 'PMAX', 'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX',
                'QG', 'QMAX', 'QMIN', 'Ramp', 'RAMP_AGC', 'RAMP_10', 'RAMP_30',
-               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT']
+               'RAMP_Q', 'RES', 'VG', 'MDT', 'MUT', 'GEN']
         self.settings = {}
         for x in aux:
             self.settings[x] = None
@@ -108,7 +108,8 @@ class ConventionalConfig:
         self.settings['Position'] = No
         aux = ['APF', 'GEN_BUS', 'MBASE', 'PC1', 'PC2', 'PG', 'PMAX',
                'PMIN', 'QC1MIN', 'QC1MAX', 'QC2MIN', 'QC2MAX', 'QG', 'QMAX',
-               'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG']
+               'QMIN', 'RAMP_AGC', 'RAMP_10', 'RAMP_30', 'RAMP_Q', 'VG',
+               'GEN']
         for x in aux:
             self.settings[x] = mpc['gen'][x][No]
 
@@ -229,7 +230,7 @@ class Branch:
         '''
 
         aux = ['BR_R', 'BR_X', 'F_BUS', 'Position', 'RATE_A', 'T_BUS', 'TAP',
-               'BR_B', 'Loss_Fix']
+               'BR_B', 'Loss_Fix', 'BR_STATUS']
 
         # Get settings
         self.data = {}
@@ -995,14 +996,14 @@ class Conventional(GenClass):
 
         The class can use the following parameters:
         ['APF', 'MBASE', 'PC1', 'PC2', 'PG', 'QC1MIN', 'QC1MAX',
-        'QC2MIN', 'QC2MAX', 'QG', 'QMAX', 'QMIN', 'RAMP_AGC',
+        'QC2MIN', 'QC2MAX', 'QG', 'RAMP_AGC',
         'RAMP_10', 'RAMP_30', 'RAMP_Q', 'RES', 'VG']
         However, only the ones that are currently used are passed
         ['COST', 'MODEL', 'NCOST', 'SHUTDOWN', 'STARTUP']
         '''
         # Parameters currently in use
         aux = ['Ancillary', 'Baseload', 'PMAX', 'PMIN', 'Ramp', 'Position',
-               'VG', 'PG', 'QG', 'MDT', 'MUT']
+               'VG', 'PG', 'QG', 'MDT', 'MUT', 'QMAX', 'QMIN', 'GEN']
 
         # Get settings
         self.data = {}
