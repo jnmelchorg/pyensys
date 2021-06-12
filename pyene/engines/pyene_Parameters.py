@@ -469,10 +469,13 @@ class ElectricityNetwork(_CommonMethods):
     
     def update_all_positions(self):
         ''' Update the position of all nodes, transmission lines, etc. '''
-        for xobj in self.__objects.keys():
+        all_obj = ['bus']
+        all_obj.extend(self.get_generation_types_names())
+        all_obj.extend(self.get_series_elements_names())
+        for xobj in all_obj:
             self.__update_positions_objects(name_object=xobj)
         # Updating the positions related to the bus object
-        for xobj in self.__objects.keys():
+        for xobj in all_obj:
             if xobj != 'bus':
                 self.__update_relative_position_objects(name_object1='bus', \
                     name_element1='number', name_object2=xobj, \
@@ -523,12 +526,15 @@ class ElectricityNetwork(_CommonMethods):
             for xobj2 in self.__objects[name_object2]:
                 aux1 = xobj2.get_element(name=name_element2)
                 if isinstance(aux1, list):
+                    aux_bool = [False for _ in aux1]
                     aux3 = []
                     for xobj1 in self.__objects[name_object1]:
                         for aux2 in range(len(aux1)):
                             if aux1[aux2] == xobj1.get_element(\
-                                name=name_element1):
+                                name=name_element1) and not aux_bool[aux2]:
+                                aux_bool[aux2] = True
                                 aux3.append(xobj1.get_element(name='position'))
+                                break
                     xobj2.set_element(name=name_position_element, val=aux3)
                 else:
                     for xobj1 in self.__objects[name_object1]:

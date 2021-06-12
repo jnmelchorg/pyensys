@@ -19,6 +19,7 @@ except ImportError:
     print('pypsa has not been installed - functionalities unavailable')
 
 from pyene.engines.pyeneD import ElectricityNetwork, Generators
+from .pyene_Parameters import ElectricityNetwork as ENet
 
 
 class EInterfaceClass:
@@ -747,3 +748,140 @@ class any2json:
         filepath = os.path.join(folder_path, name_json+'.json')
         with open(filepath, 'w') as json_file:
             json.dump(jsonformat, json_file, indent=4)
+
+class pyene2any:
+
+    def pyene2matpower(self, folder_path=None, name_matpower=None, ob=None):
+        ''' This class method converts pyene data to matpower files with the 
+        format required by matpower
+        
+        - The path must have the following characteristics:
+            * folder_path = path\\to\\folder for windows
+            * folder_path = path/to/folder for linux
+        - The extension .m must not be included in name_matpower
+        - The object needs to be a class or subclass of ElectricityNetwork
+            of pyene_Parameters.py
+        '''
+
+        assert folder_path != None, 'No directory path has been pass to load\
+            the matpower file'
+        assert name_matpower != None, 'No file name has been pass to load\
+            the matpower file'
+        assert isinstance(ob, ENet), 'No valid object has been passed'
+        
+        filepath = os.path.join(folder_path, name_matpower+'.m')
+
+        f= open(filepath,"w+")
+
+        f.write("function mpc = Egypt_reduced\n\n")
+        f.write("mpc.version = '2';\n\n")
+        f.write("mpc.baseMVA = {0};\n\n".format(\
+            ob.get_element(name='baseMVA')))
+        f.write("mpc.bus = [\n")
+        for x in range(ob.get_no_objects(name='bus')):
+            f.write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\
+                \t{11}\t{12};\n".format(\
+                ob.get_object_elements(name_object='bus', \
+                name_element='number', pos_object=x),
+                ob.get_object_elements(name_object='bus', \
+                name_element='type', pos_object=x),
+                ob.get_object_elements(name_object='bus', \
+                name_element='active_power_demand_peak', pos_object=x) * \
+                ob.get_element(name='baseMVA'),
+                ob.get_object_elements(name_object='bus', \
+                name_element='reactive_power_demand_peak', pos_object=x) * \
+                ob.get_element(name='baseMVA'),
+                0, 0, 0, 0, 0,
+                ob.get_object_elements(name_object='bus', \
+                name_element='voltage_kv', pos_object=x),
+                0,
+                ob.get_object_elements(name_object='bus', \
+                name_element='maximum_voltage_magnitude', pos_object=x),
+                ob.get_object_elements(name_object='bus', \
+                name_element='minimum_voltage_magnitude', pos_object=x)))
+        f.write("];\n\n")
+
+        f.write("mpc.gen = [\n")
+        for x in range(ob.get_no_objects(name='conv')):
+            f.write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\
+                \t{11}\t{12}\t{13}\t{14}\t{15}\t{16}\t{17}\t{18}\t{19}\t{20}\
+                ;\n".format(\
+                ob.get_object_elements(name_object='conv', \
+                name_element='bus_number', pos_object=x),
+                0, 0,
+                ob.get_object_elements(name_object='conv', \
+                name_element='maximum_reactive_power_generation', pos_object=x),
+                ob.get_object_elements(name_object='conv', \
+                name_element='minimum_reactive_power_generation', pos_object=x),
+                0, 0,
+                ob.get_object_elements(name_object='conv', \
+                name_element='status', pos_object=x),
+                ob.get_object_elements(name_object='conv', \
+                name_element='maximum_active_power_generation', pos_object=x) \
+                * ob.get_element(name='baseMVA'),
+                ob.get_object_elements(name_object='conv', \
+                name_element='minimum_active_power_generation', pos_object=x) \
+                * ob.get_element(name='baseMVA'),
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+        f.write("];\n\n")
+
+        f.write("mpc.branch = [\n")
+        for x in range(ob.get_no_objects(name='transmissionline')):
+            aux = ob.get_object_elements(name_object='transmissionline', \
+                name_element='bus_number', pos_object=x)
+            f.write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\
+                \t{11}\t{12};\n".format(\
+                aux[0], aux[1],
+                ob.get_object_elements(name_object='transmissionline', \
+                name_element='resistance', pos_object=x),
+                ob.get_object_elements(name_object='transmissionline', \
+                name_element='reactance', pos_object=x),
+                ob.get_object_elements(name_object='transmissionline', \
+                name_element='shunt_susceptance', pos_object=x),
+                ob.get_object_elements(name_object='transmissionline', \
+                name_element='long_term_thermal_limit', pos_object=x) \
+                * ob.get_element(name='baseMVA'),
+                0, 0, 0, 0,
+                ob.get_object_elements(name_object='transmissionline', \
+                name_element='status', pos_object=x),
+                0, 0))
+        for x in range(ob.get_no_objects(name='transformers')):
+            aux = ob.get_object_elements(name_object='transformers', \
+                name_element='bus_number', pos_object=x)
+            f.write("\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}\t{10}\
+                \t{11}\t{12};\n".format(\
+                aux[0], aux[1],
+                ob.get_object_elements(name_object='transformers', \
+                name_element='resistance', pos_object=x),
+                ob.get_object_elements(name_object='transformers', \
+                name_element='reactance', pos_object=x),
+                ob.get_object_elements(name_object='transformers', \
+                name_element='shunt_susceptance', pos_object=x),
+                ob.get_object_elements(name_object='transformers', \
+                name_element='long_term_thermal_limit', pos_object=x) \
+                * ob.get_element(name='baseMVA'),
+                0, 0,
+                ob.get_object_elements(name_object='transformers', \
+                name_element='tap', pos_object=x),
+                0,
+                ob.get_object_elements(name_object='transformers', \
+                name_element='status', pos_object=x),
+                -360, 360))
+        f.write("];\n\n")
+
+        f.write("mpc.gencost = [\n")
+        for x in range(ob.get_no_objects(name='conv')):
+            f.write("\t{0}\t{1}\t{2}\t{3}".format(\
+                2, 0, 0,
+                len(ob.get_object_elements(name_object='conv', \
+                name_element='cost_function_parameters', pos_object=x)),
+                ))
+            aux = ob.get_object_elements(name_object='conv', \
+                name_element='cost_function_parameters', pos_object=x)
+            for y in aux:
+                f.write("\t{0}".format(y))
+            f.write(";\n")
+
+        f.write("];\n\n")
+
+        f.close()
