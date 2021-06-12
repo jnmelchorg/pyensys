@@ -1,0 +1,26 @@
+{
+    "0": {
+        "Title": "Month",
+        "Names": ["Typical"],
+        "Weights": [1],
+        "Inputs": [0],
+        "Outputs": [0],
+        "Uncertainty": false
+    },
+    "1": {
+        "Title": "Weeks",
+        "Names": ["Typical"],
+        "Weights": [4.25],
+        "Inputs": [0],
+        "Outputs": [0],
+        "Uncertainty": false
+    },
+    "2": {
+        "Title": "Days",
+        "Names": ["Weekday"],
+        "Weights": [5],
+        "Inputs": [0],
+        "Outputs": [0],
+        "Uncertainty": false
+    }
+}

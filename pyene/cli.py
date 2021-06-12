@@ -3,7 +3,7 @@ import numpy as np
 import cProfile
 import os
 from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
-    test_pyenetest
+    test_pyenetest, hydro_example_tobeerased, test_pyeneRES
 from .engines.pyene import pyeneConfig
 
 
@@ -13,7 +13,7 @@ pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 @click.group()
 @click.option('--init', is_flag=False, type=bool,
               help='Take the settings from __init__')
-@click.option('--hydro', default=3, help='Number of hydropower plants')
+@click.option('--hydro', default=0, help='Number of hydropower plants')
 @click.option('--profile/--no-profile', default=False)
 @pass_conf
 def cli(conf, **kwargs):
@@ -116,7 +116,14 @@ def _update_config_pyeneN(conf, kwargs):
             conf.EN.solverselection['pyomo'] = aux
             conf.EN.solverselection['glpk'] = False        
 
+    # TODO: THIS NEED TO BE REMOVED - IT'S COMPLETELY HARDCODED AND CAN CAUSE 
+    # THAT THE CODE CRASHES IN THE FUTURE
+    if 'baseline' in kwargs.keys():
+        aux = kwargs.pop('baseline')
+        conf.NM.hydropower['Baseload'] = [aux, aux]
+
     return conf
+
 
 
 @cli.command('run-e')
@@ -142,6 +149,8 @@ def energy_balance_pyeneE(conf, **kwargs):
 @click.option('--feas', default=False, type=bool,
               help='Consider feasibility constratints')
 @click.option('--time', default=1, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
 @pass_conf
 def network_simulation_pyeneE(conf, **kwargs):
     """Prepare electricity network simulation"""
@@ -178,6 +187,59 @@ def network_simulation_pyeneEN(conf, **kwargs):
     conf = _update_config_pyeneN(conf, kwargs)
 
     test_pyene(conf)
+
+@cli.command('run-res')
+@click.option('--tree', default='ResolutionTreeMonth01.json',
+              help='Time resolution tree file')
+@click.option('--Pump', default=0, help='Number of pumps')
+@click.option('--sec', default=[], type=list,
+              help='Include N-1 security constraints')
+@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json', help='Network model file')
+@click.option('--res', default=2,
+              help='Number of RES generators')
+@click.option('--time', default=24,
+              help='Number of time steps')
+@click.option('--loss', default=False,
+              type=bool, help='Estimate losses')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
+@click.option('--feas', default=True, type=bool,
+              help='Consider feasibility constraints')
+
+
+@pass_conf
+def network_simulation_pyeneEN(conf, **kwargs):
+    ''' Prepare Network Simulation '''
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    test_pyeneRES(conf)
+
+@cli.command('run-example-hydro')
+@click.option('--tree', default='TreeMonth01_01RD.json',
+              help='Time resolution tree file')
+@click.option('--network', default='caseGhana_Sim40_BSec_ManualV02.json',
+              help='Network model file')
+@click.option('--Pump', default=0, help='Number of pumps')
+@click.option('--res', default=0, help='Number of RES generators')
+@click.option('--sec', default=[], type=list,
+              help='Include N-1 security constraints')
+@click.option('--loss', default=True, type=bool,
+              help='Estimate losses')
+@click.option('--feas', default=True, type=bool,
+              help='Consider feasibility constraints')
+@click.option('--time', default=24, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
+@click.option('--baseline', default=0, type=float,
+              help='Fraction assigned to baseline of hydro electrical generators')
+@pass_conf
+def network_simulation_pyeneEN(conf, **kwargs):
+    """Prepare energy balance and network simulation """
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    hydro_example_tobeerased(conf)
 
 @cli.command('run-ac')
 @click.option('--tree', default='ResolutionTreeMonth01.json',

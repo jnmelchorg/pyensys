@@ -7,9 +7,13 @@ engine.
 
 """
 from .engines.pyene import pyeneClass, pyeneConfig
+from .fixtures import json_directory
+from .engines.pyene import pyeneClass as pe
 from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 from .engines.pyeneO import PrintinScreen as PSc
+import os
+import json
 
 
 def get_pyene(conf=None):
@@ -277,7 +281,102 @@ def test_pyene(conf):
         curAll.value = value, values
         print('Total curtailment:', curAll.value)
 
+def test_pyeneRES(conf):
+    '''
+    A case study with 2 PV generators located at two buses for 2 representative winter days
+    '''
 
+    # Initialise simulation methods
+    conf.HM.settings['Flag'] = False
+    conf.NM.settings['Flag'] = True
+    conf.NM.settings['Losses'] = False
+    conf.NM.settings['Feasibility'] = True
+    #conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
+    conf.NM.settings['NoTime'] = 24
+    conf.NM.scenarios['Weights'] = [1 for _ in range(conf.NM.settings['NoTime'])]
+
+    # RES generators
+    conf.NM.RES['Number'] = 2  # Number of RES generators
+    conf.NM.RES['Bus'] = [1, 4]  # Location (bus) of generators
+    conf.NM.RES['Max'] = [10, 15]  # Generation capacity
+    conf.NM.RES['Cost'] = [0.001, 0.001]  # Costs
+
+    # Create object
+    EN = pe(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Demand profile
+    fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    Eprofiles = json.load(open(fileName))
+    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    if conf.NM.scenarios['NoDem'] == 2:
+        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+
+    # RES profile
+    resInNode = _node()
+    for xr in range(conf.NM.RES['Number']):
+        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+        resInNode.index = xr + 1
+        EN.set_RES(resInNode.index, resInNode.value)
+
+    # Solve the model and generate results
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    print('Spill ', EN.get_AllRES(m))
+    print('OF   : ', m.OF.expr())
+
+def hydro_example_tobeerased(conf):
+    """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
+        IN A FUTURE RELEASE"""
+    # Disable pyeneH
+    conf.HM.settings['Flag'] = False
+
+    conf.NM.settings['Flag'] = True
+    conf.NM.settings['Losses'] = False
+    conf.NM.settings['Feasibility'] = True
+    conf.NM.settings['NoTime'] = 24  # Single period
+    conf.NM.scenarios['Weights'] = [1 for _ in range(24)]  # Add weights 
+        # to the time steps
+
+    # Adding hydropower plants
+    conf.NM.hydropower['Number'] = 2  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [1, 5]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [200, 200]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.001, 0.001]  # Costs
+
+    # Create object
+    EN = pyeneClass(conf.EN)
+
+    # Initialise with selected configuration
+    EN.initialise(conf)
+
+    # Single demand node (first scenario)
+    demandNode = _node()
+    demandNode.value = [0.3333, 0.2623, 0.2350, 0.2240, 0.2240, 
+        0.2514, 0.3825, 0.6284, 0.6503, 0.5574, 0.5301, 0.5137, 
+        0.5355, 0.5027, 0.4918, 0.5464, 0.7760, 0.9891, 1.0000, 
+        0.9399, 0.8634, 0.8142, 0.6885, 0.4918]
+    demandNode.index = 1
+    EN.set_Demand(demandNode.index, demandNode.value)
+
+    # Several hydro nodes
+    hydroInNode = _node()
+    for xh in range(EN.NM.hydropower['Number']):
+        hydroInNode.value = 10000
+        hydroInNode.index = xh+1
+        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
+    
+    # Run integrated pyene
+    m = ConcreteModel()
+    m = EN.run(m)
+    EN.Print_ENSim(m)
+    print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    print('Spill ', EN.get_AllRES(m))
+    print('OF   : ', m.OF.expr())
 
 
 def test_pyenetest(mthd):

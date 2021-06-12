@@ -443,7 +443,7 @@ class pyeneHDF5Settings():
         RESGeneration = GLPKobj.GetRESGeneration()
         HydroGeneration = GLPKobj.GetHydroGeneration()
         PumpOperation = GLPKobj.GetPumpOperation()
-        if GLPKobj.FlagProblem and GLPK.FlagFeasibility:
+        if GLPKobj.FlagProblem and GLPKobj.FlagFeasibility:
             LoadCurtailment = GLPKobj.GetLoadCurtailmentSystemED()
 
         else:
