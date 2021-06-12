@@ -285,15 +285,18 @@ def test_pyeneRES(conf):
     '''
     A case study with 2 PV generators located at two buses for 2 representative winter days
     '''
-
+    # TODO THIS NEEDS TO BE ERASED IN A FUTURE RELEASE
     # Initialise simulation methods
     conf.HM.settings['Flag'] = False
     conf.NM.settings['Flag'] = True
     conf.NM.settings['Losses'] = False
     conf.NM.settings['Feasibility'] = True
+    conf.NM.settings['NoGenerators'] = 12
     #conf.NM.settings['File'] = os.path.join(json_directory(), 'caseGhana_Sim40_BSec_ManualV02.json')
     conf.NM.settings['NoTime'] = 24
     conf.NM.scenarios['Weights'] = [1 for _ in range(conf.NM.settings['NoTime'])]
+    #conf.NM.scenarios['Number'] = 4  # Four scenarios including winter weekday/weekend and summer weekday/weekend
+    conf.NM.scenarios['NoDem'] = 2  # Four demand profiles (repeated once) including winter weekday/weekend and summer weekday/weekend
 
     # RES generators
     conf.NM.RES['Number'] = 2  # Number of RES generators
@@ -301,25 +304,71 @@ def test_pyeneRES(conf):
     conf.NM.RES['Max'] = [10, 15]  # Generation capacity
     conf.NM.RES['Cost'] = [0.001, 0.001]  # Costs
 
+    # Hydro generators
+    conf.NM.hydropower['Number'] = 1  # Number of hydropower plants
+    conf.NM.hydropower['Bus'] = [5]  # Location (bus) of hydro
+    conf.NM.hydropower['Max'] = [200]  # Generation capacity
+    conf.NM.hydropower['Cost'] = [0.001]  # Costs
+
     # Create object
     EN = pe(conf.EN)
 
     # Initialise with selected configuration
     EN.initialise(conf)
 
+    ################### case 1 - Winter scenarios ###########################
+
+    # # Demand profile
+    # fileName = os.path.join(json_directory(), 'TimeSeries.json')
+    # Eprofiles = json.load(open(fileName))
+    # EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    # if conf.NM.scenarios['NoDem'] == 2:
+    #     EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+    #
+    # # RES profile
+    # resInNode = _node()
+    # for xr in range(EN.NM.RES['Number']):
+    #     resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+    #     resInNode.index = xr + 1
+    #     EN.set_RES(resInNode.index, resInNode.value)
+    #
+    # # Hydro profile
+    # hydroInNode = _node()
+    # for xh in range(EN.NM.hydropower['Number']):
+    #     hydroInNode.value = 1000  # Winter dry seasons MWh
+    #     hydroInNode.index = xh + 1
+    #     EN.set_Hydro(hydroInNode.index, hydroInNode.value)
+    #
+    # # Solve the model and generate results
+    # m = ConcreteModel()
+    # m = EN.run(m)
+    # EN.Print_ENSim(m)
+    # print('Total curtailment:', EN.get_AllDemandCurtailment(m))
+    # print('Spill ', EN.get_AllRES(m))
+    # print('OF   : ', m.OF.expr())
+
+    ################### case 2 - Summer scenarios ###########################
+
     # Demand profile
     fileName = os.path.join(json_directory(), 'TimeSeries.json')
     Eprofiles = json.load(open(fileName))
-    EN.set_Demand(1, Eprofiles['Demand']['Values'][0])  # First scenario demand profile - Winter Weekday
+    EN.set_Demand(1, Eprofiles['Demand']['Values'][4])  # Third scenario demand profile - Summer Weekday
     if conf.NM.scenarios['NoDem'] == 2:
-        EN.set_Demand(2, Eprofiles['Demand']['Values'][1])  # Second scenario demand profile - Winter Weekend
+        EN.set_Demand(2, Eprofiles['Demand']['Values'][5])  # Fourth scenario demand profile - Summer Weekend
 
     # RES profile
     resInNode = _node()
-    for xr in range(conf.NM.RES['Number']):
-        resInNode.value = Eprofiles['PV']['Values'][xr]  # Winter profile for RES generator 1 & 2
+    for xr in range(EN.NM.RES['Number']):
+        resInNode.value = Eprofiles['PV']['Values'][xr+4]  # Summer profile for RES generator 1 & 2
         resInNode.index = xr + 1
         EN.set_RES(resInNode.index, resInNode.value)
+
+    # Hydro profile
+    hydroInNode = _node()
+    for xh in range(EN.NM.hydropower['Number']):
+        hydroInNode.value = 10000  # Summer rainy seasons MWh
+        hydroInNode.index = xh + 1
+        EN.set_Hydro(hydroInNode.index, hydroInNode.value)
 
     # Solve the model and generate results
     m = ConcreteModel()
@@ -330,11 +379,11 @@ def test_pyeneRES(conf):
     print('OF   : ', m.OF.expr())
 
 def hydro_example_tobeerased(conf):
-    """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
-        IN A FUTURE RELEASE"""
+    """ Execute pyene to run the example of baseload"""
+    # TODO THIS NEEDS TO BE ERASED IN A FUTURE RELEASE
     # Disable pyeneH
     conf.HM.settings['Flag'] = False
-
+    conf.NM.settings['NoGenerators'] = 13
     conf.NM.settings['Flag'] = True
     conf.NM.settings['Losses'] = False
     conf.NM.settings['Feasibility'] = True
