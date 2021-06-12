@@ -13,20 +13,39 @@ begin = time.time()
 
 # path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Pyene\\Inputs\\Pyene format proposal v1.xlsx'
 path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Case4m.xlsx'
+path = 'C:\\Users\\f09903jm\\OneDrive - The University of Manchester\\Pyene\\Inputs\\Pyene format proposal v3.xlsx'
 
 opt = pyeneClass()
 opt.initialise(path=path)
-opt.save_outputs(sim_no=0)
 end1 = time.time()
 
+subscripts = {
+    "pt" : [["week", "weekday"], "v_string"],
+    "hour" : [1.0, "double"]
+}
 
-opt.run()
-
+opt.run(subscripts=subscripts)
 end2 = time.time()
 
-print("TIEMPO 1 {}".format(begin-end1))
-print("TIEMPO 2 {}".format(end1-end2))
+opt.save_outputs(sim_no=0)
+end3 = time.time()
 
+subscripts = {
+    "pt" : [["week", "weekend"], "v_string"],
+    "hour" : [1.0, "double"]
+}
+
+opt.run(subscripts=subscripts)
+end4 = time.time()
+
+opt.save_outputs(sim_no=1)
+end5 = time.time()
+
+print("TIEMPO 1 {}".format(end1-begin))
+print("TIEMPO 2 {}".format(end2-end1))
+print("TIEMPO 3 {}".format(end3-end2))
+print("TIEMPO 4 {}".format(end4-end3))
+print("TIEMPO 5 {}".format(end5-end4))
 
 # IDs, names, min_bnd, max_bnd = opt.get_moea_variables()
 # print(IDs, names, min_bnd, max_bnd)

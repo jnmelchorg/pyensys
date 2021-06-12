@@ -617,11 +617,18 @@ class models():
         self.model.initialise()
         print("TIEMPO initialise {}".format(begin - time.time()))
     
-    def evaluate(self):
+    def evaluate(self, subscripts):
+        self.subscripts = subscripts
+        self.model.create_parameter()
+        for key, value in subscripts.items():
+            self.model.load_value(value[1], key.encode('utf-8'), value[0])
         self.model.evaluate()
 
     def get_outputs(self):
         return self.model.return_outputs()
+
+    def get_latest_subscripts(self):
+        return self.subscripts
     
     def update_parameter(self, information):
         self.model.create_parameter()

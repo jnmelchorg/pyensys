@@ -330,7 +330,7 @@ int models::create_problem_element(const std::string& name_var, const double max
     for (const std::pair<characteristic, bool>& charac : extra_characteristics)
         info.set_characteristic(charac.first, charac.second);
     info.set_value(0.0);
-    grafos.push_back_info(name_graph, node_graph, graph_component, info, type_info);
+    // grafos.push_back_info(name_graph, node_graph, graph_component, info, type_info);
     // data.push_back(info, type_info);
     // grafos.set(name_graph, node_graph, data, graph_component);
 
@@ -339,7 +339,10 @@ int models::create_problem_element(const std::string& name_var, const double max
     set.set_characteristic(characteristic("name", name_var, false), false);
     if (info.exist("pt")) set.set_characteristic(info.get_characteristic("pt"), true);
     if (info.exist("hour")) set.set_characteristic(info.get_characteristic("hour"), false);
-    if (info.exist("piece")) set.set_characteristic(info.get_characteristic("piece"), false);
+    if (info.exist("piece"))
+    {
+        set.set_characteristic(info.get_characteristic("piece"), false);
+    }
 
     grafos.insert2component(name_graph, node_graph, graph_component, type_info, set, info);
     return position;
@@ -669,80 +672,82 @@ std::pair<std::vector<std::pair<characteristic, bool> >, int> models::piecewise_
     return std::make_pair(p_cha, 0);
 }
 
-int models::declare_dc_opf_variables(const std::vector<value_T>& pt, const double hour)
+int models::declare_dc_opf_variables(const std::vector<information>& subscripts)
 {
-    std::vector<std::pair<characteristic, bool> > extra_characteristics;
-    if (pt.size() > 0)
+    int column;
+    for (int &node : grafos.get_positions("network", "bus"))
     {
-        characteristic extra;
-        extra.set_name("pt");
-        extra.insert(pt);
-        extra_characteristics.push_back(std::make_pair(extra, true));
-    }
-    if (hour != -1.0)  extra_characteristics.push_back(std::make_pair(characteristic("hour", hour, false), false));
-
-    for (int node = 0; node < grafos.number_nodes("network"); node++)
-    {
-        graph_data vertex = grafos.get("network", node, "vertex");
-        if (boost::get<std::string>(vertex.get_characteristic("type").get_value()) == "bus")
+        for(const information& subscript : subscripts)
         {
+            std::vector<std::pair<characteristic, bool> > extra_characteristics;
+            if (subscript.get_characteristic("pt").get_values().size() > 0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("pt"), true));
+            if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("hour"), false));
+            
             // Voltage angle
-            create_problem_element("voltage angle", COIN_DBL_MAX , -COIN_DBL_MAX, extra_characteristics, node, "network", "vertex", "variables", 0.0);
+            column = create_problem_element("voltage angle", COIN_DBL_MAX , -COIN_DBL_MAX, extra_characteristics, node, "network", "vertex", "variables", 0.0);
+            problem_matrix.add_active("column", column, subscript);
             // Load curtailment
-            create_problem_element("load curtailment", COIN_DBL_MAX , 0.0, extra_characteristics, node, "network", "vertex", "variables", PENALTY);
+            column = create_problem_element("load curtailment", COIN_DBL_MAX , 0.0, extra_characteristics, node, "network", "vertex", "variables", PENALTY);
+            problem_matrix.add_active("column", column, subscript);
             // Generation curtailment
-            create_problem_element("generation curtailment", COIN_DBL_MAX , 0.0, extra_characteristics, node, "network", "vertex", "variables", PENALTY);
+            column = create_problem_element("generation curtailment", COIN_DBL_MAX , 0.0, extra_characteristics, node, "network", "vertex", "variables", PENALTY);
+            problem_matrix.add_active("column", column, subscript);
         }
-        else if (boost::get<std::string>(vertex.get_characteristic("type").get_value()) == "generator")
+    }
+
+    for (int &node : grafos.get_positions("network", "generator"))
+    {
+        for(const information& subscript : subscripts)
         {
+            std::vector<std::pair<characteristic, bool> > extra_characteristics;
+            if (subscript.get_characteristic("pt").get_values().size() > 0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("pt"), true));
+            if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("hour"), false));
             bool status;
             std::pair<information, int> info;
             std::vector<characteristic> characteristics;
             for (std::pair<characteristic, bool>& cha : extra_characteristics)
                 characteristics.push_back(cha.first);
             // Extracting status of generator
-            info = get_information(vertex, "status", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "status", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "status", characteristics, "parameters", false);
+                info = get_information(graph_data(), "status", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             status = boost::get<bool>(info.first.get_value());
 
             double cost, min, max;
             // Extracting cost for variable generation
-            info = get_information(vertex, "vCPg", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "vCPg", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.first.get_characteristics().size() == 0 && info.second != 0)
             {
-                info = get_information(vertex, "vCPg", characteristics, "parameters", false);
+                info = get_information(graph_data(), "vCPg", characteristics, "parameters", false, node, "network", "vertex");
                 if (info.second != 0) return -6;
                 cost = boost::get<double>(info.first.get_value());
             }
             else if (info.first.get_characteristics().size() == 0 && info.second == 0) cost = 0.0;
             else if (info.first.get_characteristics().size() > 0) cost = boost::get<double>(info.first.get_value());
             // Extracting minimum generation capacity
-            info = get_information(vertex, "Pmin", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "Pmin", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "Pmin", characteristics, "parameters", false);
+                info = get_information(graph_data(), "Pmin", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             min = boost::get<double>(info.first.get_value());
             // Extracting maximum generation capacity
-            info = get_information(vertex, "Pmax", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "Pmax", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "Pmax", characteristics, "parameters", false);
+                info = get_information(graph_data(), "Pmax", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             max = boost::get<double>(info.first.get_value());
-
             // Active power generation
+            column = create_problem_element("active power generation", max, min, extra_characteristics, node, "network", "vertex", "variables", cost);
             if (status == true)
-                create_problem_element("active power generation", max, min, extra_characteristics, node, "network", "vertex", "variables", cost);
-            else
-                create_problem_element("active power generation", 0.0, 0.0, extra_characteristics, node, "network", "vertex", "variables", cost);
+                problem_matrix.add_active("column", column, subscript);
 
             // Extracting cost for variable generation
-            info = get_information(vertex, "cost function", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "cost function", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if ((info.first.get_characteristics().size() == 0 && info.second != 0) || info.first.get_characteristics().size() > 0)
             {
                 if (info.second != 0)
-                    info = get_information(vertex, "cost function", characteristics, "parameters", false);
+                    info = get_information(graph_data(), "cost function", characteristics, "parameters", false, node, "network", "vertex");
                 if (info.second != 0) return -6;
                 if (!info.first.exist("slopes"))
                 {
@@ -751,13 +756,13 @@ int models::declare_dc_opf_variables(const std::vector<value_T>& pt, const doubl
                     grafos.push_back_info("network", node, "vertex", info.first, "parameters", pw.first);
                 }
                 // Active power generation cost
+                column = create_problem_element("active power generation cost", COIN_DBL_MAX, 0.0, extra_characteristics, node, "network", "vertex", "variables", 1.0);
                 if (status == true)
-                    create_problem_element("active power generation cost", COIN_DBL_MAX, 0.0, extra_characteristics, node, "network", "vertex", "variables", 1.0);
-                else
-                    create_problem_element("active power generation cost", 0.0, 0.0, extra_characteristics, node, "network", "vertex", "variables", 1.0);
+                    problem_matrix.add_active("column", column, subscript);
             }
         }
     }
+
     return 0;
 }
 
@@ -837,76 +842,96 @@ int models::convert2per_unit()
     }
 }
 
-int models::declare_dc_opf_constraints(const std::vector<value_T>& pt, const double hour)
+int models::declare_dc_opf_constraints(const std::vector<information>& subscripts)
 {
-    std::vector<std::pair<characteristic, bool> > extra_characteristics;
-    if (pt.size() > 0)
+    int row;
+    for (int &node : grafos.get_positions("network", "bus"))
     {
-        characteristic extra;
-        extra.set_name("pt");
-        extra.insert(pt);
-        extra_characteristics.push_back(std::make_pair(extra, true));
-    }
-    if (hour != -1.0)  extra_characteristics.push_back(std::make_pair(characteristic("hour", hour, false), false));
-
-    std::pair<information, int> info;
-    std::vector<characteristic> characteristics;
-    for (std::pair<characteristic, bool>& cha : extra_characteristics)
-        characteristics.push_back(cha.first);
-
-    for (int node = 0; node < grafos.number_nodes("network"); node++)
-    {
-        graph_data vertex = grafos.get("network", node, "vertex");
-        if (boost::get<std::string>(vertex.get_characteristic("type").get_value()) == "bus")
+        for(const information& subscript : subscripts)
         {
+            std::vector<std::pair<characteristic, bool> > extra_characteristics;
+            if (subscript.get_characteristic("pt").get_values().size() > 0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("pt"), true));
+            if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("hour"), false));
+
+            std::pair<information, int> info;
+            std::vector<characteristic> characteristics;
+            for (std::pair<characteristic, bool>& cha : extra_characteristics)
+                characteristics.push_back(cha.first);
+            
             double min, max;
             // Extracting active power demand
-            info = get_information(vertex, "Pd", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "Pd", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "Pd", characteristics, "parameters", false);
+                info = get_information(graph_data(), "Pd", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             max = min = boost::get<double>(info.first.get_value());
-            int row = create_problem_element("active power balance", max, min, extra_characteristics, node, "network", "vertex", "constraints", 0.0);
-            problem_matrix.add_active("row", row);
+            row = create_problem_element("active power balance", max, min, extra_characteristics, node, "network", "vertex", "constraints", 0.0);
+            problem_matrix.add_active("row", row, subscript);
         }
-        else if (boost::get<std::string>(vertex.get_characteristic("type").get_value()) == "generator")
+    }
+    
+    for (int &node : grafos.get_positions("network", "generator"))
+    {
+        for(const information& subscript : subscripts)
         {
+            std::vector<std::pair<characteristic, bool> > extra_characteristics;
+            if (subscript.get_characteristic("pt").get_values().size() > 0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("pt"), true));
+            if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("hour"), false));
+
+            std::pair<information, int> info;
+            std::vector<characteristic> characteristics;
+            for (std::pair<characteristic, bool>& cha : extra_characteristics)
+                characteristics.push_back(cha.first);
+            
             // Extracting status of generator
-            info = get_information(vertex, "status", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "status", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "status", characteristics, "parameters", false);
+                info = get_information(graph_data(), "status", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             bool status = boost::get<bool>(info.first.get_value());
             // Extracting cost for variable generation
-            info = get_information(vertex, "cost function", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "cost function", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if ((info.first.get_characteristics().size() == 0 && info.second != 0) || info.first.get_characteristics().size() > 0)
             {
                 if (info.second != 0)
-                    info = get_information(vertex, "cost function", characteristics, "parameters", false);
+                    info = get_information(graph_data(), "cost function", characteristics, "parameters", false, node, "network", "vertex");
                 if (info.second != 0) return -6;
                 std::vector<value_T> intercepts = info.first.get_characteristic("y_intercepts").get_values();
                 for (int n_piece = 0; n_piece < boost::get<int>(info.first.get_characteristic("pieces").get_value()); n_piece++)
                 {
                     std::vector<std::pair<characteristic, bool> > e_characteristics = extra_characteristics;
                     e_characteristics.push_back(std::make_pair(characteristic("piece", n_piece, false), false));
-                    int row = create_problem_element("piecewise generation cost", -boost::get<double>(intercepts[n_piece]), -COIN_DBL_MAX, e_characteristics, node, "network", "vertex", "constraints", 0.0);
-                    if (status) problem_matrix.add_active("row", row);
+                    row = create_problem_element("piecewise generation cost", -boost::get<double>(intercepts[n_piece]), -COIN_DBL_MAX, e_characteristics, node, "network", "vertex", "constraints", 0.0);
+                    if (status) problem_matrix.add_active("row", row, subscript);
                 }
             }
         }
-        else if (boost::get<std::string>(vertex.get_characteristic("type").get_value()) == "branch")
+    }
+
+    for (int &node : grafos.get_positions("network", "branch"))
+    {
+        for(const information& subscript : subscripts)
         {
+            std::vector<std::pair<characteristic, bool> > extra_characteristics;
+            if (subscript.get_characteristic("pt").get_values().size() > 0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("pt"), true));
+            if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) extra_characteristics.push_back(std::make_pair(subscript.get_characteristic("hour"), false));
+
+            std::pair<information, int> info;
+            std::vector<characteristic> characteristics;
+            for (std::pair<characteristic, bool>& cha : extra_characteristics)
+                characteristics.push_back(cha.first);
+
             double min, max, max_flow, reactance;
             // Extracting max power flow
-            info = get_information(vertex, "maxPflow", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "maxPflow", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "maxPflow", characteristics, "parameters", false);
+                info = get_information(graph_data(), "maxPflow", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             max_flow = boost::get<double>(info.first.get_value());
             // Extracting reactance
-            info = get_information(vertex, "reactance", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "reactance", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "reactance", characteristics, "parameters", false);
+                info = get_information(graph_data(), "reactance", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             reactance = boost::get<double>(info.first.get_value());
             if (max_flow == 0.0)
@@ -921,12 +946,12 @@ int models::declare_dc_opf_constraints(const std::vector<value_T>& pt, const dou
             }
             int row = create_problem_element("angular difference", max, min, extra_characteristics, node, "network", "vertex", "constraints", 0.0);
             // Extracting status of branches
-            info = get_information(vertex, "status", std::vector<characteristic>(), "parameters", true);
+            info = get_information(graph_data(), "status", std::vector<characteristic>(), "parameters", true, node, "network", "vertex");
             if (info.second != 0)
-                info = get_information(vertex, "status", characteristics, "parameters", false);
+                info = get_information(graph_data(), "status", characteristics, "parameters", false, node, "network", "vertex");
             if (info.second != 0) return -6;
             bool status = boost::get<bool>(info.first.get_value());
-            if (status) problem_matrix.add_active("row", row);
+            if (status) problem_matrix.add_active("row", row, subscript);
         }
     }
 }
@@ -1048,7 +1073,6 @@ std::pair< int, std::vector<information> >  models::create_dc_opf_matrix(const s
     // Declaring information to be stored
     std::vector<information> coefficient_matrix_info;
     coefficient_matrix_info.push_back(information()); // Store matrix coefficients
-    int memory2reserve = int((problem_matrix.size("variables") * problem_matrix.size("constraints"))/10.0);
     characteristic rows;
     rows.set_name("rows");
     characteristic columns;
@@ -1065,6 +1089,7 @@ std::pair< int, std::vector<information> >  models::create_dc_opf_matrix(const s
         number_nodes++;
         numbers.push_back(boost::get<int>(vertex.get_characteristic("number").get_value()));
     }
+
     // auto end = std::chrono::steady_clock::now();
     // std::cout << "Elapsed time in milliseconds: "
     //     << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
@@ -1083,7 +1108,6 @@ std::pair< int, std::vector<information> >  models::create_dc_opf_matrix(const s
             return std::make_pair(-9, std::vector<information>());
         }
         int bus_number = it - numbers.begin();
-
         GraphType grafo = grafos.get_grafo("network");
         for (boost::tie(in, in_end)=boost::in_edges(node, grafo); in != in_end; ++in)
         {
@@ -1093,6 +1117,7 @@ std::pair< int, std::vector<information> >  models::create_dc_opf_matrix(const s
                 if (subscript.get_characteristic("pt").get_values().size() > 0) characteristics.push_back(subscript.get_characteristic("pt"));
                 if (boost::get<double>(subscript.get_characteristic("hour").get_value()) != -1.0) characteristics.push_back(subscript.get_characteristic("hour"));
                 // extracting constraint position in matrix
+                
                 row = get_position_matrix_dc_opf("active power balance", vertex, characteristics, "constraints");
                 if (row == -1) return std::make_pair(-9, std::vector<information>());
                 if (boost::get<std::string>(source.get_characteristic("type").get_value()) == "generator")
@@ -1514,42 +1539,6 @@ int models::create_dc_opf_model()
         }
     }
 
-    // Declaring variables OPF
-    for(const std::vector<value_T>& period : periods)
-    {
-        for(const double& hour : hours)
-        {
-            int code = declare_dc_opf_variables(period, hour);
-            if (code != 0) return code;
-        }
-    }
-
-    // Declaring constraints OPF
-    for(const std::vector<value_T>& period : periods)
-    {
-        for(const double& hour : hours)
-        {
-            int code = declare_dc_opf_constraints(period, hour);
-            if (code != 0) return code;
-        }
-    }
-
-    // auto start = std::chrono::steady_clock::now();
-    // Creating matrix of coefficients
-    std::vector<std::future< std::pair< int, std::vector<information> > > > tasks;
-
-    std::vector< std::vector<information> > matrix_coefficient_info;
-    // for(std::vector<value_T>& period : periods)
-    //     for(double hour : hours)
-    //         tasks.push_back(std::async(std::launch::async, &models::create_dc_opf_matrix, this, std::ref(period), hour));
-
-    // for(auto& task : tasks)
-    // {
-    //     int code = task.get().first;
-    //     std::cout << code << std::endl;
-    //     if (code != 0) return code;
-    //     matrix_coefficient_info.push_back(task.get().second);
-    // }
     std::vector<information> subscripts;
     for(std::vector<value_T>& period : periods)
     {
@@ -1568,6 +1557,34 @@ int models::create_dc_opf_model()
             subscripts.push_back(info);
         }
     }
+
+    
+    // Declaring variables OPF
+    int code = declare_dc_opf_variables(subscripts);
+    if (code != 0) return code;
+    
+    // Declaring constraints OPF
+    code = declare_dc_opf_constraints(subscripts);
+    if (code != 0) return code;
+
+
+    // auto start = std::chrono::steady_clock::now();
+    // Creating matrix of coefficients
+    std::vector<std::future< std::pair< int, std::vector<information> > > > tasks;
+
+    std::vector< std::vector<information> > matrix_coefficient_info;
+    // for(std::vector<value_T>& period : periods)
+    //     for(double hour : hours)
+    //         tasks.push_back(std::async(std::launch::async, &models::create_dc_opf_matrix, this, std::ref(period), hour));
+
+    // for(auto& task : tasks)
+    // {
+    //     int code = task.get().first;
+    //     std::cout << code << std::endl;
+    //     if (code != 0) return code;
+    //     matrix_coefficient_info.push_back(task.get().second);
+    // }
+    
     std::pair<int, std::vector<information>> task = create_dc_opf_matrix(subscripts);
     if (task.first != 0) return task.first;
     
@@ -2058,18 +2075,14 @@ void models::initialise()
     if (DC_OPF.get_characteristics().size() > 0 && boost::get<bool>(DC_OPF.get_value()) && BT.get_characteristics().size() > 0 && boost::get<bool>(BT.get_value()) && create_dc_opf_tree_links() != 0)
         return;
     
-    for (int iColumn = 0; iColumn < problem_matrix.size("variables"); iColumn++)
-        problem_matrix.add_active("column", iColumn);
+    number_times_optimisation = 0;
+
     solver.load_model(problem_matrix);
-    
-    solver.solve("initial solve");
-    store_solution();
-    
+        
     std::vector<information> MOEA = data_parameters.get_multi_parameter_type(std::vector<characteristic>({characteristic("name", std::string("MOEA"), false)}), "model", true);
     if (MOEA.size() > 1 || MOEA.size() == 0) return;
     if (boost::get<bool>(MOEA[0].get_value()) && create_moea_problem() != 0)
-        return;
-    
+        return;    
 }
 
 void models::store_solution()
@@ -2096,22 +2109,82 @@ void models::store_solution()
         grafos.set("tree", edge, edge_data, "edge");
     }
     // network
-    for (int node = 0; node < grafos.number_nodes("network"); node++)
+    information load_cur;
+    information gen_cur;
+    information angle;
+
+    angle.set_characteristic(characteristic("name", std::string("voltage angle"), false), false);
+    load_cur.set_characteristic(characteristic("name", std::string("generation curtailment"), false), false);
+    gen_cur.set_characteristic(characteristic("name", std::string("load curtailment"), false), false);
+
+    for (auto& cha : last_subscript.get_characteristics())
     {
-        graph_data vertex = grafos.get("network", node, "vertex");
-        for (information& info: vertex.get_all_info("variables"))
+        angle.set_characteristic(cha, false);
+        load_cur.set_characteristic(cha, false);
+        gen_cur.set_characteristic(cha, false);
+    }
+
+    for (auto &node : grafos.get_positions("network", "bus"))
+    {
+        information info = grafos.find_component_information("network", node, "vertex", "variables", angle);
+        double value = sol[boost::get<int>(info.get_characteristic("position matrix").get_value())];
+        grafos.update_information_value("network", node, "vertex", "variables", angle, value);
+
+        info = grafos.find_component_information("network", node, "vertex", "variables", load_cur);
+        value = sol[boost::get<int>(info.get_characteristic("position matrix").get_value())];
+        grafos.update_information_value("network", node, "vertex", "variables", load_cur, value);
+
+        info = grafos.find_component_information("network", node, "vertex", "variables", gen_cur);
+        value = sol[boost::get<int>(info.get_characteristic("position matrix").get_value())];
+        grafos.update_information_value("network", node, "vertex", "variables", gen_cur, value);
+    }
+
+    information active_power_generation;
+    information active_power_generation_cost;
+
+    active_power_generation.set_characteristic(characteristic("name", std::string("active power generation"), false), false);
+    active_power_generation_cost.set_characteristic(characteristic("name", std::string("active power generation cost"), false), false);
+
+    for (auto& cha : last_subscript.get_characteristics())
+    {
+        active_power_generation.set_characteristic(cha, false);
+        active_power_generation_cost.set_characteristic(cha, false);
+    }
+    
+    for (auto &node : grafos.get_positions("network", "generator"))
+    {
+        information info = grafos.find_component_information("network", node, "vertex", "variables", active_power_generation);
+        double value = sol[boost::get<int>(info.get_characteristic("position matrix").get_value())];
+        grafos.update_information_value("network", node, "vertex", "variables", active_power_generation, value);
+
+        info = grafos.find_component_information("network", node, "vertex", "variables", active_power_generation_cost);
+        if (info.get_characteristics().size() > 0)
         {
-            info.set_value(sol[boost::get<int>(info.get_characteristic("position matrix").get_value())]);
-            vertex.update_value(info, "variables");
+            value = sol[boost::get<int>(info.get_characteristic("position matrix").get_value())];
+            grafos.update_information_value("network", node, "vertex", "variables", active_power_generation_cost, value);
         }
-        grafos.set("network", node, vertex, "vertex");
     }
 }
 
 void models::evaluate()
 {
-    solver.solve("dual");
+    if (candidate.get_characteristics().size() == 0)
+    {
+        characteristic cha;
+        cha.set_name("pt");
+        cha.insert(std::vector<value_T>());
+        candidate.set_characteristic(cha, true);
+        cha.clear_values();
+        cha.set_name("hour");
+        cha.set_value(-1.0);
+        candidate.set_characteristic(cha, false);
+        candidate.set_value(true);
+    }
+    last_subscript = candidate;
+    if (number_times_optimisation == 0) solver.solve("initial solve", candidate);
+    else solver.solve("dual", candidate);
     store_solution();
+    number_times_optimisation++;
 }
 
 void models::accumulate_unique_characteristics_outputs(std::vector<information>& information_required, const information& output, const std::string& name)
@@ -2154,34 +2227,38 @@ void models::accumulate_unique_characteristics_outputs(std::vector<information>&
     }
 }
 
-void models::return_outputs(std::vector<double>& values, std::vector<int>& starts, std::vector< std::vector< std::vector< std::string> > >& characteristics)
+void models::return_outputs(std::vector<double> &values, std::vector<int> &starts, std::vector<std::vector<std::vector<std::string>>> &characteristics)
 {
     std::vector<double> values_return;
     std::vector<int> starts_return;
-    std::vector< std::vector< std::vector< std::string> > > characteristics_return;
-    for (information& output : data_parameters.get_all_parameters_type("outputs"))
+    std::vector<std::vector<std::vector<std::string>>> characteristics_return;
+    for (information output : data_parameters.get_all_parameters_type("outputs"))
     {
+        if (boost::get<double>(last_subscript.get_characteristic("hour").get_value()) != -1.0)
+            for (auto &cha : last_subscript.get_characteristics())
+                output.set_characteristic(cha, false);
+        
         information DC_OPF = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("DC OPF"), false), characteristic("engine", std::string("pyene"), false)}), "model");
         if (boost::get<std::string>(output.get_characteristic("problem").get_values()[0]) == "DC OPF" && DC_OPF.get_characteristics().size() > 0 && boost::get<bool>(DC_OPF.get_value()))
         {
             std::vector<information> information_required;
-            std::vector< std::vector<value_T> > periods;
+            std::vector<std::vector<value_T>> periods;
             bool is_final_position_tree;
-            information info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("BT"), false), characteristic("engine", std::string("pyene"), false)}),"model");
+            information info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("BT"), false), characteristic("engine", std::string("pyene"), false)}), "model");
             if (info.get_characteristics().size() > 0 && boost::get<bool>(info.get_value()))
             {
                 is_final_position_tree = false;
                 for (size_t node = 0; node < grafos.number_nodes("network"); node++)
                 {
                     std::vector<information> m_info = grafos.get("network", node, "vertex").get_all_info("parameters");
-                    for(const information& info : m_info)
+                    for (const information &info : m_info)
                     {
-                        for (const characteristic& cha: info.get_characteristics())
+                        for (const characteristic &cha : info.get_characteristics())
                         {
                             if (cha.get_name() == "pt")
                             {
                                 bool exist = false;
-                                for (const std::vector<value_T>& rd : periods)
+                                for (const std::vector<value_T> &rd : periods)
                                 {
                                     if (rd == cha.get_values())
                                     {
@@ -2189,16 +2266,18 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                                         break;
                                     }
                                 }
-                                if (!exist) periods.push_back(cha.get_values());
+                                if (!exist)
+                                    periods.push_back(cha.get_values());
                                 break;
-                            } 
+                            }
                         }
                     }
-                    if (periods.size() > 0) break;
+                    if (periods.size() > 0)
+                        break;
                 }
-                for (std::vector<value_T>&period : periods)
+                for (std::vector<value_T> &period : periods)
                 {
-                    if(period == output.get_characteristic("pt").get_values())
+                    if (period == output.get_characteristic("pt").get_values())
                     {
                         characteristic cha;
                         cha.set_name("pt");
@@ -2211,60 +2290,78 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                     }
                 }
             }
-            else is_final_position_tree = true;
-
-            info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("multiperiod"), false)}),"model");
+            else
+                is_final_position_tree = true;
+            info = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("multiperiod"), false)}), "model");
             if (info.get_characteristics().size() > 0 && boost::get<bool>(info.get_value()))
+            {
+                characteristic cha;
+                cha.set_name("hour");
+                cha.set_value(output.get_characteristic("hour").get_value());
+                information info;
+                info.set_characteristic(cha, false);
+                information_required.push_back(info);
                 accumulate_unique_characteristics_outputs(information_required, output, "hour");
-
+            }
             accumulate_unique_characteristics_outputs(information_required, output, "ID");
             accumulate_unique_characteristics_outputs(information_required, output, "type");
             accumulate_unique_characteristics_outputs(information_required, output, "group");
             accumulate_unique_characteristics_outputs(information_required, output, "zone");
-            for (information& info_req : information_required)
+            for (information &info_req : information_required)
                 info_req.set_characteristic(characteristic("name", output.get_characteristic("name").get_values()[0], false), false);
-
             std::vector<information> raw_info;
-            for (const information& info_req : information_required)
-            {    
+            for (const information &info_req : information_required)
+            {
                 for (int node = 0; node < grafos.number_nodes("network"); node++)
                 {
-                    graph_data vertex = grafos.get("network", node, "vertex");
-                    if (vertex.get_characteristic("type").get_value() == info_req.get_characteristic("type").get_value())
+                    if (grafos.get("network", node, "vertex").get_characteristic("type").get_value() == info_req.get_characteristic("type").get_value())
                     {
-                        std::vector<information> info = vertex.get_multi_info(info_req.get_characteristics(), boost::get<std::string>(output.get_characteristic("type information").get_values()[0]), false);
-                        raw_info.insert(raw_info.end(), info.begin(), info.end());
+                        if (boost::get<std::string>(output.get_characteristic("type information").get_values()[0]) == "parameters")
+                        {
+                            std::vector<information> info = grafos.get("network", node, "vertex").get_multi_info(info_req.get_characteristics(), boost::get<std::string>(output.get_characteristic("type information").get_values()[0]), false);
+                            raw_info.insert(raw_info.end(), info.begin(), info.end());
+                        }
+                        else
+                        {
+                            information set;
+                            set.set_characteristic(info_req.get_characteristic("name"), false);
+                            for (auto &cha : last_subscript.get_characteristics())
+                                set.set_characteristic(cha, false);
+                            information info = grafos.find_component_information("network", node, "vertex", "variables", set);
+                            raw_info.push_back(info);
+                        }
                     }
                 }
             }
-            for (information& info: raw_info)
+            for (information &info : raw_info)
             {
                 info.erase_characteristic("position matrix");
                 info.erase_characteristic("cost");
                 info.erase_characteristic("min");
                 info.erase_characteristic("max");
             }
-
             std::vector<information> refined_info;
             if (output.exist("type") && output.exist("subtype"))
             {
-                for (const value_T& val : output.get_characteristic("subtype").get_values())
+                for (const value_T &val : output.get_characteristic("subtype").get_values())
                 {
-                    for (const information& r_info: raw_info)
+                    for (const information &r_info : raw_info)
                     {
                         std::vector<value_T> subtypes = r_info.get_characteristic("subtype").get_values();
                         std::vector<value_T>::iterator subtype_it = std::find(subtypes.begin(), subtypes.end(), val);
                         if (subtype_it != subtypes.end())
                         {
                             bool equal;
-                            if(refined_info.size() > 0) equal = true;
-                            else equal = false;
-                            for (const information& ref_info: refined_info)
+                            if (refined_info.size() > 0)
+                                equal = true;
+                            else
+                                equal = false;
+                            for (const information &ref_info : refined_info)
                             {
-                                for (characteristic& cha : r_info.get_characteristics())
+                                for (characteristic &cha : r_info.get_characteristics())
                                 {
                                     bool found_equal = false;
-                                    for (characteristic& param_cha : ref_info.get_characteristics())
+                                    for (characteristic &param_cha : ref_info.get_characteristics())
                                     {
                                         if (cha.get_name() == param_cha.get_name() && cha.get_value() == param_cha.get_value() && cha.get_values() == param_cha.get_values())
                                         {
@@ -2272,28 +2369,29 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                                             break;
                                         }
                                     }
-                                    if(!found_equal)
+                                    if (!found_equal)
                                     {
                                         equal = false;
                                         break;
                                     }
                                 }
                             }
-                            if (!equal) refined_info.push_back(r_info);
+                            if (!equal)
+                                refined_info.push_back(r_info);
                         }
                     }
                 }
             }
-            else refined_info = raw_info;
-            
+            else
+                refined_info = raw_info;
             if (!is_final_position_tree)
             {
                 raw_info = refined_info;
-                std::vector< std::vector<value_T> > related_periods;
-                for (std::vector<value_T>& period: periods)
+                std::vector<std::vector<value_T>> related_periods;
+                for (std::vector<value_T> &period : periods)
                 {
                     bool is_related = true;
-                    for(value_T& val: output.get_characteristic("pt").get_values())
+                    for (value_T &val : output.get_characteristic("pt").get_values())
                     {
                         if (std::find(period.begin(), period.end(), val) == period.end())
                         {
@@ -2301,9 +2399,9 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                             break;
                         }
                     }
-                    if (is_related) related_periods.push_back(period);
+                    if (is_related)
+                        related_periods.push_back(period);
                 }
-
                 // Searching for initial node
                 std::vector<information> storage;
                 information info_search;
@@ -2318,10 +2416,9 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                 info_search.set_characteristic(characteristic("name characteristic", std::string("weight"), false), false);
                 info_search.set_characteristic(characteristic("type element", std::string("parameters"), false), false);
                 int code = recursive_balance_tree_search(info_search, storage);
-
                 characteristic initial_vertex;
                 int v_number = -1;
-                for (information& sto : storage)
+                for (information &sto : storage)
                 {
                     if (sto.get_characteristic("name_node").get_value() == output.get_characteristic("pt").get_values().back())
                     {
@@ -2329,10 +2426,9 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                         break;
                     }
                 }
-                
                 // Searching for final nodes in tree and calculating accumulated weight
                 std::vector<double> accumulated_weight_periods;
-                for (const std::vector<value_T>& r_per : related_periods)
+                for (const std::vector<value_T> &r_per : related_periods)
                 {
                     info_search.update_characteristic(characteristic("vertex number", v_number, false));
                     info_search.update_characteristic(c_pos);
@@ -2342,27 +2438,26 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                     info_search.update_characteristic(f_pos);
                     int code = recursive_balance_tree_search(info_search, storage);
                     double accumulated_weight = 1.0;
-                    for (information& st: storage)
+                    for (information &st : storage)
                         accumulated_weight *= boost::get<double>(st.get_value());
                     accumulated_weight_periods.push_back(accumulated_weight);
                 }
-
                 // Getting IDs
                 std::vector<value_T> IDs;
-                for (const information& info : raw_info)
+                for (const information &info : raw_info)
                 {
                     if (IDs.size() > 0 && std::find(IDs.begin(), IDs.end(), info.get_characteristic("ID").get_value()) == IDs.end())
-                        IDs.push_back( info.get_characteristic("ID").get_value() );
-                    else if (IDs.size() == 0) IDs.push_back( info.get_characteristic("ID").get_value() );
+                        IDs.push_back(info.get_characteristic("ID").get_value());
+                    else if (IDs.size() == 0)
+                        IDs.push_back(info.get_characteristic("ID").get_value());
                 }
-
                 refined_info.clear();
                 int counter = 0;
-                for (const std::vector<value_T>& r_per : related_periods)
+                for (const std::vector<value_T> &r_per : related_periods)
                 {
                     if (refined_info.size() == 0)
-                    {    
-                        for (const information& info : raw_info)
+                    {
+                        for (const information &info : raw_info)
                         {
                             if (info.get_characteristic("pt").get_values() == r_per)
                             {
@@ -2375,17 +2470,17 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                     }
                     else
                     {
-                        for (const information& info : raw_info)
+                        for (const information &info : raw_info)
                         {
                             if (info.get_characteristic("pt").get_values() == r_per)
                             {
-                                for (information& ref_info : refined_info)
+                                for (information &ref_info : refined_info)
                                 {
                                     bool equal = true;
-                                    for (characteristic& cha : info.get_characteristics())
+                                    for (characteristic &cha : info.get_characteristics())
                                     {
                                         bool different = false;
-                                        for (characteristic& param_cha : ref_info.get_characteristics())
+                                        for (characteristic &param_cha : ref_info.get_characteristics())
                                         {
                                             if (cha.get_name() != "pt" && cha.get_name() == param_cha.get_name() && (cha.get_value() != param_cha.get_value() || cha.get_values() != param_cha.get_values()))
                                             {
@@ -2393,7 +2488,7 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                                                 break;
                                             }
                                         }
-                                        if(different)
+                                        if (different)
                                         {
                                             equal = false;
                                             break;
@@ -2414,9 +2509,9 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
             if (boost::get<std::string>(output.get_characteristic("function").get_values()[0]) == "none")
             {
                 int counter = 0;
-                for (information& info: refined_info)
+                for (information &info : refined_info)
                 {
-                    std::vector< std::vector<std::string> > storage_cha;
+                    std::vector<std::vector<std::string>> storage_cha;
                     values_return.push_back(boost::get<double>(info.get_value()));
                     starts_return.push_back(counter);
                     if (output.get_characteristic("problem").get_values().size() > 0)
@@ -2424,18 +2519,18 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                         std::vector<std::string> aux_cha;
                         aux_cha.push_back("problem");
                         aux_cha.push_back("string");
-                        for (value_T& val : output.get_characteristic("problem").get_values())
+                        for (value_T &val : output.get_characteristic("problem").get_values())
                             aux_cha.push_back(boost::get<std::string>(val));
                         storage_cha.push_back(aux_cha);
                     }
-                    for (const characteristic& cha : info.get_characteristics())
+                    for (const characteristic &cha : info.get_characteristics())
                     {
                         if (cha.get_values().size() > 0)
                         {
                             std::vector<std::string> aux_cha;
                             aux_cha.push_back(cha.get_name());
                             aux_cha.push_back("string");
-                            for (value_T& val : cha.get_values())
+                            for (value_T &val : cha.get_values())
                                 aux_cha.push_back(boost::get<std::string>(val));
                             storage_cha.push_back(aux_cha);
                         }
@@ -2452,8 +2547,10 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                             else if (bool *val = boost::get<bool>(&cha.get_value()))
                             {
                                 aux_cha.push_back("bool");
-                                if (*val) aux_cha.push_back("True");
-                                else aux_cha.push_back("False");
+                                if (*val)
+                                    aux_cha.push_back("True");
+                                else
+                                    aux_cha.push_back("False");
                             }
                             else if (int *val = boost::get<int>(&cha.get_value()))
                             {
@@ -2475,29 +2572,27 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
             else if (boost::get<std::string>(output.get_characteristic("function").get_values()[0]) == "sum")
             {
                 double total = 0;
-                for (information& info: refined_info)
+                for (information &info : refined_info)
                     total += boost::get<double>(info.get_value());
                 values_return.push_back(total);
                 starts_return.push_back(0);
-                std::vector< std::vector<std::string> > storage_cha;
-                for (const characteristic& cha : output.get_characteristics())
+                std::vector<std::vector<std::string>> storage_cha;
+                for (const characteristic &cha : output.get_characteristics())
                 {
                     if (cha.get_name() != "data device" && cha.get_name() != "type information" && cha.get_name() != "function")
                     {
                         std::vector<std::string> aux_cha;
                         aux_cha.push_back(cha.get_name());
                         aux_cha.push_back("string");
-                        for (value_T& val : cha.get_values())
+                        for (value_T &val : cha.get_values())
                             aux_cha.push_back(boost::get<std::string>(val));
                         storage_cha.push_back(aux_cha);
                     }
                 }
                 characteristics_return.push_back(storage_cha);
             }
-        
         }
-    
-        information BT = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("BT"), false), characteristic("engine", std::string("pyene"), false)}),"model");
+        information BT = data_parameters.get_parameter_type(std::vector<characteristic>({characteristic("name", std::string("BT"), false), characteristic("engine", std::string("pyene"), false)}), "model");
         if (boost::get<std::string>(output.get_characteristic("problem").get_values()[0]) == "BT" && BT.get_characteristics().size() > 0 && boost::get<bool>(BT.get_value()))
         {
             // Searching for initial node
@@ -2514,13 +2609,11 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
             info_search.set_characteristic(characteristic("name characteristic", output.get_characteristic("name").get_values()[0], false), false);
             info_search.set_characteristic(characteristic("type element", output.get_characteristic("type information").get_values()[0], false), false);
             int code = recursive_balance_tree_search(info_search, storage);
-
             std::vector<information> refined_info;
-            for (information& sto : storage)
+            for (information &sto : storage)
                 if (sto.get_characteristic("name_node").get_value() == output.get_characteristic("pt").get_values().back())
                     refined_info.push_back(sto);
-
-            for (information& info: refined_info)
+            for (information &info : refined_info)
             {
                 info.erase_characteristic("position matrix");
                 info.erase_characteristic("cost");
@@ -2528,13 +2621,12 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                 info.erase_characteristic("max");
                 info.erase_characteristic("vertex number");
             }
-
             if (boost::get<std::string>(output.get_characteristic("function").get_values()[0]) == "none")
             {
                 int counter = 0;
-                for (information& info: refined_info)
+                for (information &info : refined_info)
                 {
-                    std::vector< std::vector<std::string> > storage_cha;
+                    std::vector<std::vector<std::string>> storage_cha;
                     values_return.push_back(boost::get<double>(info.get_value()));
                     starts_return.push_back(counter);
                     if (output.get_characteristic("problem").get_values().size() > 0)
@@ -2542,18 +2634,18 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                         std::vector<std::string> aux_cha;
                         aux_cha.push_back("problem");
                         aux_cha.push_back("string");
-                        for (value_T& val : output.get_characteristic("problem").get_values())
+                        for (value_T &val : output.get_characteristic("problem").get_values())
                             aux_cha.push_back(boost::get<std::string>(val));
                         storage_cha.push_back(aux_cha);
                     }
-                    for (const characteristic& cha : info.get_characteristics())
+                    for (const characteristic &cha : info.get_characteristics())
                     {
                         if (cha.get_values().size() > 0)
                         {
                             std::vector<std::string> aux_cha;
                             aux_cha.push_back(cha.get_name());
                             aux_cha.push_back("string");
-                            for (value_T& val : cha.get_values())
+                            for (value_T &val : cha.get_values())
                                 aux_cha.push_back(boost::get<std::string>(val));
                             storage_cha.push_back(aux_cha);
                         }
@@ -2570,8 +2662,10 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
                             else if (bool *val = boost::get<bool>(&cha.get_value()))
                             {
                                 aux_cha.push_back("bool");
-                                if (*val) aux_cha.push_back("True");
-                                else aux_cha.push_back("False");
+                                if (*val)
+                                    aux_cha.push_back("True");
+                                else
+                                    aux_cha.push_back("False");
                             }
                             else if (int *val = boost::get<int>(&cha.get_value()))
                             {
@@ -2593,30 +2687,27 @@ void models::return_outputs(std::vector<double>& values, std::vector<int>& start
             else if (boost::get<std::string>(output.get_characteristic("function").get_values()[0]) == "sum")
             {
                 double total = 0;
-                for (information& info: refined_info)
+                for (information &info : refined_info)
                     total += boost::get<double>(info.get_value());
                 values_return.push_back(total);
                 starts_return.push_back(0);
-                std::vector< std::vector<std::string> > storage_cha;
-                for (const characteristic& cha : output.get_characteristics())
+                std::vector<std::vector<std::string>> storage_cha;
+                for (const characteristic &cha : output.get_characteristics())
                 {
                     if (cha.get_name() != "data device" && cha.get_name() != "type information" && cha.get_name() != "function")
                     {
                         std::vector<std::string> aux_cha;
                         aux_cha.push_back(cha.get_name());
                         aux_cha.push_back("string");
-                        for (value_T& val : cha.get_values())
+                        for (value_T &val : cha.get_values())
                             aux_cha.push_back(boost::get<std::string>(val));
                         storage_cha.push_back(aux_cha);
                     }
                 }
                 characteristics_return.push_back(storage_cha);
             }
-
         }
-        
     }
-
     values = values_return;
     starts = starts_return;
     characteristics = characteristics_return;
