@@ -82,6 +82,7 @@ def test_pyeneN(config):
     (NM, NModel, results) = EN.NSim(config)
     print('\n\nOF: ', NModel.OF.expr())
     NM.print(NModel)
+    
 
 
 # Interaction node

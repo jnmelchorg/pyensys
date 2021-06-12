@@ -8,17 +8,23 @@ external tools, such as pypsa and pypower
 @author: Dr Eduardo Alejandro Martínez Ceseña
 https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 """
+from re import sub
 import numpy as np
 import logging
 import math
 import os
 import json
+from numpy.core.arrayprint import format_float_positional
+from openpyxl import load_workbook
+from typing import Any
+from dataclasses import dataclass
+from .pyene_Models import tree_parameters, network_parameter, model_options_parameter
+
 try:
     import pypsa
 except ImportError:
     print('pypsa has not been installed - functionalities unavailable')
 
-from pyene.engines.pyeneD import ElectricityNetwork, Generators
 from .pyene_Parameters import ElectricityNetwork as ENet
 
 
@@ -885,3 +891,625 @@ class pyene2any:
         f.write("];\n\n")
 
         f.close()
+
+@dataclass
+class tree_parameters_read:
+    name                :   str     = None      # Name parameter
+    level               :   int     = None      # Level in the tree
+    pos                 :   int     = None      # Position in level
+    value               :   Any   = None      # Value of parameter
+
+@dataclass
+class profile_parameter:
+    name                :   str     = None      # Name of the parameter
+    position_tree       :   dict    = None      # Position in the energy tree - representative days
+                                                # in case of parameters changing in time
+    hour                :   int     = None      # Hour of the parameter in case of parameters 
+                                                # changing in time
+    ID                  :   str     = None      # ID of element
+    type                :   str     = None      # Type of element, e.g. bus, branch                                                # related
+    subtype             :   str     = None
+    value               :   Any     = None      # Value of specific parameter
+
+class excel2pyene:
+    ''' This class reads excel files and store the data in an object '''
+    
+    # Predefined characteristics (names, parameters) that are used in the energy engine
+    problems_names_nodes = {
+        "substation expansion planning" : "SEP",
+        "sep" : "SEP"
+    }
+    problems_names_branches = {
+        "transmission expansion planning" : "TEP",
+        "tep" : "TEP"
+    }
+    problems_names_generators = {
+        "unit commitment" : "UC",
+        "uc" : "UC",
+        "generation expansion planning" : "GEP",
+        "gep" : "GEP"
+    }
+    problems_names_system = {
+        "dc economic dispatch" : "DC ED",
+        "economic dispatch" : "DC ED",
+        "dc ed" : "DC ED",
+        "dc optimal power flow" : "DC OPF",
+        "optimal power flow" : "DC OPF",
+        "dc opf" : "DC OPF",
+        "ac power flow" : "AC PF",
+        "power flow" : "AC PF",
+        "ac pf" : "AC PF",
+        "network reduction" : "NetR",
+        "netr" : "NetR",
+        "balance tree" : "BT",
+        "bt" : "BT"
+    }
+    accepted_engines = {
+        "pyene" : "pyene",
+        "fdif"  : "fdif"
+    }
+    parameters_names_nodes = {
+        "id" : "ID",
+        "number" : "number",
+        "name" : "name",
+        "type node power flow" : "typePF",
+        "typepf" : "typePF",
+        "active power demand" : "Pd",
+        "pd" : "Pd",
+        "reactive power demand" : "Qd",
+        "qd" : "Qd",
+        "shunt conductance" : "Gs",
+        "gs" : "Gs",
+        "shunt susceptance" : "Bs",
+        "bs" : "Bs",
+        "basev" : "baseV",
+        "predefined voltage magnitude" : "Vmpr",
+        "vmpr" : "Vmpr",
+        "predefined voltage angle" : "Vapr",
+        "vapr" : "Vapr",
+        "max voltage magnitude" : "Vmax",
+        "vmax": "Vmax",
+        "min voltage magnitude" : "Vmin",
+        "vmin": "Vmin",
+        "zone" : "zone",
+        "group" : "group",
+        "subtype" : "subtype"
+    }
+    parameters_names_branches = {
+        "id" : "ID",
+        "from" : "frm",
+        "to" : "to",
+        "subtype" : "subtype",
+        "length" : "length",
+        "unit of measurement length" : "UoMLen",
+        "uomlen" : "UoMLen",
+        "resistance" : "resistance",
+        "r" : "resistance",
+        "reactance" : "reactance",
+        "x" : "reactance",
+        "line charging susceptance" : "LCsusceptance",
+        "shunt susceptance" : "LCsusceptance",
+        "b" : "LCsusceptance",
+        "max active power flow" : "maxPflow",
+        "max pflow" : "maxPflow",
+        "status" : "status",
+        "cost new branch" : "CTEP",
+        "tep variable" : "vTEP",
+        "group" : "group"
+    }
+    accepted_types_branches = {
+        "ac transmission line" : "TL",
+        "transmission line" : "TL",
+        "tl" : "TL",
+        "ac interconnector" : "inter",
+        "interconnector" : "inter",
+        "inter" : "inter",
+        "transformer" : "trafo",
+        "trafo" : "trafo",
+        "user" : "user"
+    }
+    parameters_names_generators = {
+        "id" : "ID",
+        "number" : "number",
+        "group" : "group",
+        "subtype" : "subtype",
+        "active power max limit" : "Pmax",
+        "pmax" : "Pmax",
+        "active power min limit" : "Pmin",
+        "pmin" : "Pmin",
+        "fixed active power" : "Pfix",
+        "pfix" : "Pfix",
+        "status" : "status",
+        "reactive power max limit" : "Qmax",
+        "qmax" : "Qmax",
+        "reactive power min limit" : "Qmin",
+        "qmin" : "Qmin",
+        "fixed reactive power" : "Qfix",
+        "qfix" : "Qfix",
+        "unit commitment" : "UC",
+        "uc" : "UC",
+        "cost unit commitment" : "cUC",
+        "cuc" : "cUC",
+        "cost new generator" : "cGEP",
+        "cgep" : "cGEP",
+        "gep variable" : "vGEP",
+        "vgep" : "vGEP",
+        "fixed operation cost" : "fCPg",
+        "fcpg" : "fCPg",
+        "variable operation cost" : "vCPg",
+        "vcpg" : "vCPg",
+        "emissions" : "emissions"
+    }
+    accepted_types_generators = {
+        "thermal" : "thermal",
+        "hydro" : "hydro",
+        "wind" : "wind",
+        "solar" : "solar",
+        "user" : "user",
+        "diesel" : "diesel"
+    }
+    accepted_characteristics = {
+        "lossess"           : "loss",
+        "solver"            : "solver",
+        "base power"        : "Sbase"
+    }
+    accepted_solvers = {
+        "glpk"      :   "GLPK",
+        "clp"       :   "CLP",
+        "clp-i"     :   "CLP-I",
+        "clp-ir"    :   "CLP-IR"
+    }
+    parameters_profile = {
+        "type" : "type",
+        "subtype": "subtype",
+        "position tree": "pt",
+        "pt": "pt",
+        "name": "name",
+        "id": "ID" 
+    }
+
+    def _read_bool_excel(self, parameters_list=[], position=-1, sheet=None, name_compare=""):
+        ''' This function reads boolean information on a worksheet
+
+            Parameters
+            ----------
+            Mandatory: \\
+            parameters_list : List of parameters in the excel sheet \\
+            position : Row in the excel sheet where the boolean elements are \\
+            sheet : excel sheet to be read \\
+            name_compare : name of the column to be read
+        '''
+        elements=[]
+        for num, name in enumerate(parameters_list):
+            counter = position
+            value = sheet.cell(row=counter, column=num+1).value
+            while name == name_compare and value:
+                new_val = False
+                if type(value) == str and value.lower() == "=false" :
+                    new_val = False
+                elif type(value) == str and value.lower() == "false":
+                    new_val = False
+                elif type(value) == int and value == 0:
+                    new_val = False
+                elif type(value) == str and value.lower() == "=true":
+                    new_val = True
+                elif type(value) == str and value.lower() == "true":
+                    new_val = True
+                elif type(value) == int and value == 1:
+                    new_val = True
+                elif type(value) == bool:
+                    new_val = value
+                elements.append(new_val)
+                counter = counter + 1
+                value = sheet.cell(row=counter, column=num+1).value
+            if elements:
+                return elements
+        if not elements:
+            raise ValueError('Problem retrieving the boolean information')
+
+    def _read_elements_excel(self, parameters_list=[], position=-1, sheet=None, name_compare="", references=[]):
+        ''' This function reads information (columns) from an excel sheet
+
+            Parameters
+            ----------
+            Mandatory: \\
+            parameters_list : List of parameters in the excel sheet \\
+            position : Row in the excel sheet where the boolean elements are \\
+            sheet : excel sheet to be read \\
+            name_compare : name of the column to be read\\
+            references : List of of valid inputs to compare with the values in the excel sheet 
+        '''
+        elements = []
+        invalid = []
+        for num, name in enumerate(parameters_list):
+            counter = position
+            value = sheet.cell(row=counter, column=num+1).value
+            while value is not None and name == name_compare:
+                if references and references.get(value.lower().replace(u'\xa0',' '), None) is None:
+                    invalid.append(value)
+                    elements.append(None)
+                elif references and references.get(value.lower().replace(u'\xa0',' '), None) is not None:
+                    elements.append(references.get(value.lower().replace(u'\xa0',' '), None))
+                elif not references:
+                    elements.append(value)
+                counter = counter + 1
+                value = sheet.cell(row=counter, column=num+1).value
+            if invalid:
+                # Printing invalid options
+                for k in invalid:
+                    print('{} is not a valid option'.format(k))
+            if elements:
+                return elements
+
+    def _revise_model_problem_exist(self, model=None, problem=None, active=None, engine=None):
+        ''' This function determines if the problem already exist and update the value in case a new value (active) is given
+
+            Parameters
+            ----------
+            Mandatory: \\
+            model : python object containing the mathematical model and all parameters\\
+            problem : name of problem. e.g. TEP, GEP\\
+            active : Boolean flag indicating if the problem is active\\
+            engine : Indicates if the problem is solved in the integrated framework or in pyene 
+        '''
+        exist = False
+        for element in model.model_options:
+            if element.name == problem:
+                print("problem {} already exist in model options with value {} and engine {}. The value will be change to {} for engine {}". format(problem, element.value, element.engine, active, engine))
+                element.value = active
+                element.engine = engine
+                exist = True
+                break
+        return exist
+    
+    def _revise_model_characteristic_exist(self, model=None, characteristic=None, option=None):
+        ''' This function determines if the characteristic already exist and update the value in case a new value (option) is given
+
+            Parameters
+            ----------
+            Mandatory: \\
+            model : Python object containing the mathematical model and all parameters\\
+            characteristic : Name of characteristic. e.g. losses, solver\\
+            option : option to be given to the chatacteristic
+        '''
+        exist = False
+        for element in model.model_options:
+            if element.name == characteristic:
+                print("characteristic {} already exist in model options with value {}. The value will be change to {}". format(characteristic, element.value, option))
+                element.value = option
+                exist = True
+                break
+        return exist
+    
+    def _read_model_options(self, model=None, sheet=None):
+        ''' This function reads the options used in both the integrated framework and pyene for energy optimisation
+
+            Parameters
+            ----------
+            Mandatory:
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read
+        '''
+        ### Extracting the options from the excel file ###
+
+        parameters_list = []
+        counter = 1
+        value = sheet.cell(row=2, column=counter).value
+        if isinstance(value, str):
+            value = value.replace(u'\xa0',' ')
+        while value is not None:
+            parameters_list.append(value.lower())
+            counter = counter + 1
+            value = sheet.cell(row=2, column=counter).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+        
+        names = self.problems_names_system.copy()
+        names.update(self.problems_names_nodes)
+        names.update(self.problems_names_branches)
+        names.update(self.problems_names_generators)
+
+        active = self._read_bool_excel(parameters_list, 3, sheet, "active")
+        problem = self._read_elements_excel(parameters_list, 3, sheet, "problem", names)
+        engine = self._read_elements_excel(parameters_list, 3, sheet, "engine", self.accepted_engines)
+        characteristics = self._read_elements_excel(parameters_list, 3, sheet, "characteristics", self.accepted_characteristics)
+        options = self._read_elements_excel(parameters_list, 3, sheet, "options")
+        files = self._read_elements_excel(parameters_list, 3, sheet, "paths")
+        if files is not None:
+            self.files2open.append(files)
+
+        if len(problem) == len(active) and len(problem) == len(engine):
+            for pro, act, eng in zip(problem, active, engine):
+                if not self._revise_model_problem_exist(model, pro, act, eng):
+                    model.model_options.append(model_options_parameter(name=pro, value=act, engine=eng))
+        else:
+            raise ValueError('indicated elements with different sizes.\nproblems = {}\nactive = {}\nengine = {}'.format(len(problem), len(active), len(engine)))
+        
+        if len(characteristics) == len(options):
+            for cha, opt in zip(characteristics, options):
+                if cha == "solver" and self.accepted_solvers.get(opt, False) and not self._revise_model_characteristic_exist(model, cha, self.accepted_solvers.get(opt, False)):
+                    model.model_options.append(model_options_parameter(name=cha, value=self.accepted_solvers.get(opt, False)))
+                elif cha == "solver" and self.accepted_solvers.get(opt, False) and not self._revise_model_characteristic_exist(model, cha, "CLP"):
+                    model.model_options.append(model_options_parameter(name=cha, value="CLP"))
+        else:
+            raise ValueError('indicated elements with different sizes.\ncharacteristics = {}\noptions = {}'.format(len(characteristics), len(options)))
+
+    def _extract_parameters_names(self, parameters_names, sheet):
+        ''' This function extracts the information of the titles of the parameters for the nodes
+
+            Parameters
+            ----------
+            Mandatory:
+            sheet:  openpyxl object containing the excel sheet
+            parameters_names : List of accepted names depending on the type of element
+        '''
+
+        # Extracting the titles of the node information
+        parameters_list = []
+        unvalid_parameters = []
+        counter = 1
+        col_id = None
+        value = sheet.cell(row=2, column=counter).value
+        if isinstance(value, str):
+            value = value.replace(u'\xa0',' ')
+        while value is not None:
+            if value.lower() == "id":
+                col_id = counter
+            parameters_list.append(parameters_names.get(value.lower()))
+            if parameters_names.get(value.lower()) is None:
+                unvalid_parameters.append(value)
+            counter = counter + 1
+            value = sheet.cell(row=2, column=counter).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+
+        # Printing the parameters that were indicated in the excel file and that
+        # do not belong to the list of accepted parameters
+        for k in unvalid_parameters:
+            print('{} is not included in the list of parameters that the software can solve'.format(k))
+        
+        if col_id is None:
+            raise ValueError('No column with ID has been identified check that all your worksheets for generators, buses and branches have an ID')
+
+        return parameters_list, col_id
+
+    def _revise_parameters(self, list2check=None, ID=None, name=None, value=None):
+        ''' This function check if a parameter exists and update the value. An exception is made with the parameter subtype to create as many subtypes as the user wants
+
+            Parameters
+            ----------
+            Mandatory:\\
+            list2check : list containing the parameters to be analysed
+            ID : ID of element to be search in the list of parameters
+            name : Name of the parameter
+            value : Value of the parameter
+        '''
+        if name == "subtype":
+            return False
+        
+        for element in list2check:
+            if element.ID == ID and element.name == name:
+                print("WARNING! parameter with name {}, type {} and ID {} already exist with value {}. The value is being updated to {}. It is very likely that the same parameter is being loaded from two or more files".format(name, element.type, ID, element.value, value))
+                element.value = value
+                return True
+        return False
+
+    def _read_info_network(self, model=None, sheet=None, parameters_names=None, typ=None):
+        ''' This function reads the information of buses generators and branches used in the integrated framework for energy optimisation
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read\\
+            parameters_names : parameters names that are accepted for each type of element\\
+            typ : type of element to be stored. bus, branch or generator
+        '''
+
+        ### Extracting the options from the excel file ###
+        parameters_list, col_id = self._extract_parameters_names(\
+            parameters_names, sheet)
+        # Extracting the ID of all elements
+        counter = 3
+        value_id = sheet.cell(row=counter, column=col_id).value
+        while value_id:
+            for col, name in enumerate(parameters_list):
+                value = sheet.cell(row=counter, column=col + 1).value
+                if col + 1 != col_id and not self._revise_parameters(model.network_parameters, value_id, name, value) and name is not None:
+                    model.network_parameters.append(network_parameter(ID=value_id, type=typ, name=name, value=value))
+            counter = counter + 1
+            value_id = sheet.cell(row=counter, column=col_id).value
+
+    def _revise_tree_info(self, name=None, pos=None, value=None, level=None):
+        ''' This function check if a parameter exists and update the value.
+
+            Parameters
+            ----------
+            Mandatory:\\
+            pos: Position in the level\\
+            name : Name of the parameter\\
+            value : Value of the parameter\\
+            level: level in the balance tree
+        '''
+        for parameter in self.tree_info:
+            if parameter.name == name and parameter.level == level and parameter.pos == pos:
+                print("WARNING! Parameter {} in level {} and with position {} in that level has a value of {} and the value will be changed to {}".format(name, level, pos, parameter.value, value))
+                parameter.value = value
+                return False
+        return True
+
+    def _read_tree_parameter(self, sheet=None, rows=None, name=None):
+        ''' This function reads a specific parameter used in the balance tree model
+
+            Parameters
+            ----------
+            Mandatory:
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read\\
+            name: Name of the parameter to be read
+        '''
+        value = 1
+        rows = rows + 1
+        columns = 1
+        value = sheet.cell(row=rows, column=1).value
+        pos = 1
+        while value is not None:
+            while value is not None:
+                level = value
+                columns = columns + 1
+                value = sheet.cell(row=rows, column=columns).value
+                if value is not None and isinstance(value, str) and self._revise_tree_info(name, pos, value.lower(), level):
+                    self.tree_info.append(tree_parameters_read(name=name, level=level, pos=pos, value=value.lower()))
+                    pos = pos + 1
+                elif value is not None and not isinstance(value, str) and self._revise_tree_info(name, pos, value, level):
+                    self.tree_info.append(tree_parameters_read(name=name, level=level, pos=pos, value=value))
+                    pos = pos + 1
+            rows = rows + 1
+            columns = 1
+            value = sheet.cell(row=rows, column=1).value
+            pos = 1
+        return rows
+
+    def _read_info_tree(self, sheet=None):
+        ''' This function reads all parameters used in the balance tree model
+
+            Parameters
+            ----------
+            Mandatory:
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read
+        '''
+        rows = 2
+        tries = 0
+        while tries < 20:
+            value = sheet.cell(row=rows, column=1).value
+            if isinstance(value, str) and value.lower() == "names":
+                rows = self._read_tree_parameter(sheet, rows, "name")
+                tries = 0
+            elif isinstance(value, str) and value.lower() == "inputs":
+                rows = self._read_tree_parameter(sheet, rows, "input")
+                tries = 0
+            elif isinstance(value, str) and value.lower() == "outputs":
+                rows = self._read_tree_parameter(sheet, rows, "output")
+                tries = 0
+            elif isinstance(value, str) and value.lower() == "weights":
+                rows = self._read_tree_parameter(sheet, rows, "weight")
+                tries = 0
+            else:
+                rows = rows + 1
+                tries = tries + 1                
+
+    def _read_profile(self, sheet=None):
+        
+        rows = 2
+        tries = 0
+
+        typ=None
+        subtype=None
+        position_tree={}
+        name=None
+        ID=None
+
+        valid_types = ["bus", "branch", "generators"]
+        parameter_elements = self.parameters_names_nodes.copy()
+        parameter_elements.update(self.parameters_names_branches)
+        parameter_elements.update(self.parameters_names_generators)
+
+        while tries < 20:
+            value = sheet.cell(row=rows, column=1).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+            if isinstance(value, str) and self.parameters_profile.get(value.lower()) == "type":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if isinstance(value, str) and value.lower() in valid_types:
+                    typ = value.lower()
+                else:
+                    print("WARNING! Type {} does not exist in the list of valid types".format(value))
+            elif typ=="branch" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if isinstance(value, str) and self.accepted_types_branches.get(value.lower(), None) is not None:
+                    subtype = value.lower()
+                else:
+                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for branches".format(value))
+            elif typ=="generator" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if isinstance(value, str) and self.accepted_types_generators.get(value.lower(), None) is not None:
+                    subtype = value.lower()
+                else:
+                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for generators".format(value))
+            elif typ=="bus" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype" and sheet.cell(row=rows, column=2).value is not None:
+                rows = rows + 1
+                print("WARNING! buses does not have any subtype")
+            elif isinstance(value, str) and self.parameters_profile.get(value.lower()) == "pt":
+                pos = 1
+                cols = 2
+                value = sheet.cell(row=rows, column=cols).value
+                while value is not None:
+                    position_tree[str(pos)] = value.lower()
+                    pos = pos + 1
+                    cols = cols + 1
+                    value = sheet.cell(row=rows, column=cols).value
+            elif isinstance(value, str) and self.parameters_profile.get(value.lower()) == "name":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if isinstance(value, str) and parameter_elements.get(value.lower()) is not None:
+                    name = parameter_elements.get(value.lower())
+                else:
+                    print("WARNING! name {} is not a valid name".format(value))
+            elif (isinstance(value, str) and value.lower() == "dataset") and (isinstance(sheet.cell(row=rows, column=2).value, str) and sheet.cell(row=rows, column=2).value.lower() == "hour") and (isinstance(sheet.cell(row=rows+1, column=1).value, str) and sheet.cell(row=rows+1, column=1).value.lower() == "id"):
+                hour_row = rows + 1
+                rows = rows + 2
+                cols = 1
+                value = sheet.cell(row=rows, column=cols).value
+                tries = 0
+                while value is not None and name is not None:
+                    ID=value
+                    cols = cols + 1
+                    time = 0
+                    value = sheet.cell(row=rows, column=cols).value
+                    while value is not None:
+                        self.profiles_info.append(profile_parameter(name=name, position_tree=position_tree, hour= sheet.cell(row=hour_row, column=cols).value if sheet.cell(row=hour_row, column=cols).value is not None else time, ID=ID, type=typ, subtype=subtype, value=value))
+                        cols = cols + 1
+                        time = time + 1
+                        value = sheet.cell(row=rows, column=cols).value
+                    rows = rows + 1
+                    cols = 1
+                    value = sheet.cell(row=rows, column=cols).value
+            else:
+                rows = rows + 1
+                tries = tries + 1
+
+    def read_excel(self, energy_file=None, model=None, **kwargs):
+        """Load variables, parameters and options to solve the specified energy 
+        optimisation problems with the multi-objective optimisation algorithm
+
+        Parameters
+        ----------
+        Mandatory:\\
+        energy_file : Path to file containing options for energy optimisation
+
+        """
+        self.tree_info = []
+        self.profiles_info = []
+        self.files2open = [energy_file]
+        while self.files2open:
+            workbook = load_workbook(filename=self.files2open.pop())
+            for ws in workbook.worksheets:
+                if ws.cell(row=1, column=1).value == "model":
+                    self._read_model_options(model, ws)
+                elif ws.cell(row=1, column=1).value == "bus":
+                    self._read_info_network(model, ws, self.parameters_names_nodes, "bus")
+                elif ws.cell(row=1, column=1).value == "branch":
+                    self._read_info_network(model, ws, self.parameters_names_branches, "branch")
+                elif ws.cell(row=1, column=1).value == "generator":
+                    self._read_info_network(model, ws, self.parameters_names_generators, "generator")
+                elif ws.cell(row=1, column=1).value == "tree":
+                    self._read_info_tree(ws)
+                elif ws.cell(row=1, column=1).value == "profile":
+                    self._read_profile(ws)
+                else:
+                    print("WARNING! option {} not identified".format(ws.cell(row=1, column=1).value))
+    

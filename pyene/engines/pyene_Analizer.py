@@ -218,15 +218,10 @@ class PowerSystemReduction(ElectricityNetwork):
     on the requirements of the user
     
     The options considered are:
-    
-    1. Simplify generators connected to the same node to an equivalent 
-        generator - Not implemented
-    2. Simplify loads connected to the same node to an equivalent load - 
-        Not implemented
-    3. Simplify power system network until a desired voltage level - network 
+
+    1. Simplify power system network until a desired voltage level - network 
         characteristics of the reduced network are omitted
-    4. Simplify power system network until a desired voltage level - network 
-        characteristics of the reduced network are omitted - Not implemented'''
+    '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         __data2 = {
@@ -234,7 +229,28 @@ class PowerSystemReduction(ElectricityNetwork):
             'Supernodeinitial' : None,      # Initial node for supernodes
             'Supernodelineinitial' : None,  # Initial artificial line for 
                                             # supernodes
-            'SupernodesNetworkInfo': []     # Network info of supernodes
+            'SupernodesNetworkInfo': [],     # Network info of supernodes
+            'Interconnection_branches': [], # Original branches that connects to supernodes
+                # This is containts a tuple with the following order:
+                # Position 0: Position in original list of branches
+                # Position 1: From bus original
+                # Position 2: To bus original
+                # Position 3: Position in new list of branches
+                # Position 4: From bus new
+                # Position 5: To bus new
+            'Preserved_branches': [], # Preserved branches in the system with original numeration
+                # This is containts a tuple with the following order:
+                # Position 0: Position in original list of branches
+                # Position 1: From bus original
+                # Position 2: To bus original
+                # Position 3: Position in new list of branches
+                # Position 4: From bus new
+                # Position 5: To bus new
+            'Removed_branches': [], # Original branches that connects to supernodes
+                # This is containts a tuple with the following order:
+                # Position 0: Position in original list of branches
+                # Position 1: From bus original
+                # Position 2: To bus original
         }
         self._data.update(__data2)
         del __data2
@@ -441,6 +457,24 @@ class PowerSystemReduction(ElectricityNetwork):
                             new_nodes=copy_nodes, \
                             pos_supernode=x)
         
+        aux_num_lines = len(copy_lines)
+        for line in self._data['Interconnection_branches']:
+            line[3] = aux_num_lines
+            aux_num_lines += 1
+        
+        aux_num_lines = 0
+        for line in copy_lines:
+            self._data['Preserved_branches'].append([\
+                line.get_element(name='position'), \
+                line.get_element(name='bus_number')[0], \
+                line.get_element(name='bus_number')[1],
+                aux_num_lines, \
+                line.get_element(name='bus_number')[0], \
+                line.get_element(name='bus_number')[1]])
+            aux_num_lines += 1
+        
+        self._data['Preserved_branches'].extend(self._data['Interconnection_branches'])
+
         copy_nodes.extend(new_nodes)
         copy_lines.extend(new_lines)
         self.set_objects(name='bus', list_obj=copy_nodes)
@@ -508,6 +542,18 @@ class PowerSystemReduction(ElectricityNetwork):
             new_lines[counter].set_element(name='status', \
                 val=1)
             number_lines.append(number_line)
+            self._data['Interconnection_branches'].append([\
+                supernodes[pos_supernode]\
+                ['artificial_lines_info'][xcounter].get_element(\
+                name='position'), \
+                supernodes[pos_supernode]\
+                ['artificial_lines_info'][xcounter].get_element(\
+                name='bus_number')[0], supernodes[pos_supernode]\
+                ['artificial_lines_info'][xcounter].get_element(\
+                name='bus_number')[1], -1,
+                self._data['SupernodesNetworkInfo'][pos_supernode]\
+                ['coupling_buses'][xcounter].get_element(name='number'), \
+                number_node])
             xcounter += 1
             counter += 1
             number_line += 1
@@ -670,6 +716,17 @@ class PowerSystemReduction(ElectricityNetwork):
             elementstoerase = []
             for xsuper in supernodes:
                 elementstoerase.extend(xsuper[xseries])
+            for ete in elementstoerase:
+                bus_num = self.get_object_elements(\
+                    name_object=xseries, \
+                    name_element='bus_number', \
+                    pos_object=ete)
+                self._data['Removed_branches'].append(\
+                    [bus_num[0], bus_num[1]])
+        for xseries in self.get_series_elements_names():
+            elementstoerase = []
+            for xsuper in supernodes:
+                elementstoerase.extend(xsuper[xseries])
                 for xserieselements in xsuper[xseries]:
                     auxlossfix = self.get_object_elements(\
                         name_object=xseries, \
@@ -754,6 +811,10 @@ class PowerSystemReduction(ElectricityNetwork):
         
         return flags, supernode, flag_supernode
     
+    def get_removed_lines(self):
+        ''' This definition returns the list of lines that were removed from the system '''
+        return self._data['Removed_branches']
+
 class TemporalTree():
     
     G = nx.DiGraph()

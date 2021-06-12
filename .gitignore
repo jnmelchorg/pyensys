@@ -73,3 +73,28 @@ pyene/engines/_glpk.cpython-37m-x86_64-linux-gnu.so
 tests/json/example.json
 tests/json/Myanmar_reduced.json
 tests/json/Kenya.m
+tests/json/DRC_reduced.json
+tests/json/DRC_reduced.m
+tests/json/DRC.json
+tests/json/DRC.m
+tests/json/Uganda.m
+pyene/engines/cpp_energy_wrapper.cpython-37m-x86_64-linux-gnu.so
+pyene/engines/cpp_energy_wrapper.html
+pyene/engines/cpp_energy_wrapper.cpp
+pyene/engines/energy_models.so
+pyene/engines/setup.py
+pyene/engines/cpp_energy_wrapper.egg-info/dependency_links.txt
+pyene/engines/cpp_energy_wrapper.egg-info/PKG-INFO
+pyene/engines/cpp_energy_wrapper.egg-info/SOURCES.txt
+pyene/engines/cpp_energy_wrapper.egg-info/top_level.txt
+tests/json/EAPP_Reduced.json
+pyene/engines/cython/cpp_energy_wrapper.cpython-37m-x86_64-linux-gnu.so
+pyene/engines/cython/_glpk.cpython-37m-x86_64-linux-gnu.so
+tests/json/EAPP.json
+tests/json/EAPP.m
+pyene/json/Ghana_energy-onlyExisting.json
+.coverage
+pyene/json/UKElectricityProfiles week.json
+tests/json/UKElectricityProfiles week.json
+pyene/engines/cython/cpp_energy_wrapper.cp37-win_amd64.pyd
+pyene/engines/debugger.py
