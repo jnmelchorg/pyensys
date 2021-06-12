@@ -56,7 +56,7 @@ class Energymodel():
         """ This class method solve the optimisation problem """
         # TODO to be expanded with a general optimisation problem       
         # Creation of model instance
-        self.solver = GLPKSolver(message_level='off')       
+        self.solver = GLPKSolver(message_level='off')
         # Definition of minimisation problem
         self.solver.set_dir('max')
         # Definition of the mathematical formulation
@@ -283,7 +283,7 @@ class Energymodel():
 
     def Aggregation(self):
         """ This class method writes the aggregation constraints in glpk
-        
+
         First, it is reserved space in memory to store the aggregation constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
@@ -343,7 +343,7 @@ class Energymodel():
     # variables and constraints
     def AggregationStochastic(self):
         """ This class method writes the aggregation constraints for stochastic scenarios in glpk
-        
+
         First, it is reserved space in memory to store the aggregation constraints.
         Second, the coefficients of the constraints are introduced
         in the matrix of coefficients (matrix A).
@@ -400,7 +400,7 @@ class Energymodel():
                             (self.TreeNodes)) + self.LLNodesUnc[nodes, 1] + aux1 + 1
                 self.ne += 1
 
-                    
+
 
         # Defining the limits for the aggregation constraints
         for vectors in range(self.NumberTrees):
@@ -414,7 +414,7 @@ class Energymodel():
     def Objective_functionEM(self):
         """ This class method defines the cost coefficients for the
          objective function in glpk
-         
+
         A dummy objective function is created for the problem """
 
         self.solver.set_obj_coef(str(self.Partialstorage[0][0]), 1, 2)
