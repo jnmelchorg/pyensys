@@ -20,7 +20,6 @@
 using namespace std;
 using namespace arma;
 
-
 // Data structures - power system information
 struct bus
 {

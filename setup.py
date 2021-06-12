@@ -7,8 +7,8 @@ from setuptools.command.build_ext import build_ext as _build_ext
 
 def setup_package():
     compiler_directives = {
-        "language_level": 3,
-        "embedsignature": True,
+        "language_level": "3str",
+        "embedsignature": True
     }
 
     annotate = False
@@ -74,7 +74,7 @@ def setup_package():
         if platform.system() == "Windows":
             ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
             include_dirs=[os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\armadillo-10.1.2\include',
-                      os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\boost_1_74_0',
+                      os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\boost_1_75_0',
                       os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\include",
                       os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\CoinUtils\include",
                       os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\BuildTools\headers"],
@@ -82,7 +82,8 @@ def setup_package():
             library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\lib",  os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\\armadillo-10.1.2\lib_win64"],
             define_macros= [('ARMA_DONT_USE_WRAPPER', None),
                             ('ARMA_USE_LAPACK', None),
-                            ('ARMA_USE_BLAS', None)]))
+                            ('ARMA_USE_BLAS', None)]
+                            ))
         elif platform.system() == "Linux":
             ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
             include_dirs=["pyene/engines/external files/boost_1_74_0",

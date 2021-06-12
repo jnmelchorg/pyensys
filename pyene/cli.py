@@ -188,6 +188,45 @@ def network_simulation_pyeneEN(conf, **kwargs):
 
     test_pyene(conf)
 
+@cli.command('run-example-hydro')
+@click.option('--tree', default='TreeMonth01_01RD.json',
+              help='Time resolution tree file')
+@click.option('--network', default='case14_con.json',
+              help='Network model file')
+@click.option('--Pump', default=0, help='Number of pumps')
+@click.option('--res', default=0, help='Number of RES generators')
+@click.option('--sec', default=[], type=list,
+              help='Include N-1 security constraints')
+@click.option('--loss', default=True, type=bool,
+              help='Estimate losses')
+@click.option('--feas', default=True, type=bool,
+              help='Consider feasibility constraints')
+@click.option('--time', default=24, help='Number of time steps')
+@click.option('--Linearloss', default=0, type=float,
+              help='Fraction assigned to losses')
+@click.option('--baseline', default=0, type=float,
+              help='Fraction assigned to baseline of hydro electrical generators')
+@pass_conf
+def network_simulation_pyeneEN(conf, **kwargs):
+    """Prepare energy balance and network simulation """
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    hydro_example_tobeerased(conf)
+
+@cli.command('run-ac')
+@click.option('--tree', default='ResolutionTreeMonth01.json',
+              help='Time resolution tree file')
+@click.option('--network', default='case14_con.json',
+              help='Network model file')
+@click.option('--time', default=24, help='Number of time steps')
+@pass_conf
+def network_simulation_pypsa(conf, **kwargs):
+    ''' AC power flow '''
+    conf = _update_config_pyeneE(conf, kwargs)
+    conf = _update_config_pyeneN(conf, kwargs)
+
+    test_pyeneAC(conf)
 
 @cli.command('run-res')
 @click.option('--tree', default='ResolutionTreeMonth01.json',
@@ -260,3 +299,13 @@ def network_simulation_pyenetst(**kwargs):
     ''' Hidden development functionality '''
     mthd = kwargs.pop('test')
     test_pyenetest(mthd)
+
+@cli.command('run')
+@click.argument('file_path', type=click.Path(exists=True))
+def network_simulation_pyenetst(**kwargs):
+    ''' Hidden development functionality '''
+    opt = pyeneClass()
+    opt.initialise(path=kwargs.pop('file_path'))
+    opt.run()
+    opt.save_outputs(sim_no=0)
+

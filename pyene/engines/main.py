@@ -12,13 +12,14 @@ https://www.researchgate.net/profile/Eduardo_Alejandro_Martinez_Cesena
 # convert in or long into float before performing divissions
 from __future__ import division
 from pyomo.core import ConcreteModel, Constraint, Objective, Suffix, Var, \
-                       NonNegativeReals, minimize
+NonNegativeReals, minimize
 from pyomo.opt import SolverFactory
 import numpy as np
 from pyene.engines.pyeneN import ENetworkClass as dn  # Network cengine
 from pyene.engines.pyeneE import EnergyClass as de  # Energy engine
 from pyene.engines.pyeneH import HydrologyClass as hn  # Hydrology engine
-from pyene.engines.pyeneR import RESprofiles as rn  # RES engine
+from pyene.engines.pyeneR import RESprofiles as rn  # RES engine#
+from pyene.engines.pyeneO import pyeneSave
 from pyene.engines.pyene_Models import EnergyandNetwork, Networkmodel
 import json
 import os
@@ -866,15 +867,25 @@ class pyeneClass():
                     if xn2 != 0:
                         self.p['LLHPumpOut'][xn2-1][:] = [1, x]
         else:
-            filename, file_extension = os.path.splitext(path)
+            _, file_extension = os.path.splitext(path)
             
             from .pyene_Models import models
-            mod = models()
-
+            self.mod_cython_cpp = models()
+            # import time
+            # begin = time.time()
             if file_extension == ".xlsx":
                 from .pyeneI import excel2pyene as e2p
                 read = e2p()
-                read.read_excel(energy_file=path, model = mod)
+                read.read_excel(energy_file=path, model=self.mod_cython_cpp)
+            # print("TIEMPO EXCEL {}".format(begin - time.time()))
+            self.mod_cython_cpp.initialise()
+            outpput_file_name = "outputs"
+            for options in self.mod_cython_cpp.model_options:
+                if options.name == "output file name":
+                    outpput_file_name = options.value
+
+            self.save_solution = pyeneSave()
+            self.save_solution.initialise(model=self.mod_cython_cpp, dir=os.path.dirname(path), name_file=outpput_file_name)
 
     def NSim(self, conf):
         ''' Network only optimisation '''
@@ -1036,13 +1047,32 @@ class pyeneClass():
             (m, results) = self.Run_Mod(m)
 
             return m
-        else:
+        elif solver == "CLP":
             from pyene.engines.pyene_Models import EnergyandNetwork
 
             ENMod = EnergyandNetwork(self.EN.EM, self.EN.NM, self.EN)
             ENMod.optimisationENM()
 
             return ENMod
+        else:
+            from .pyene_Models import models
+            if isinstance(self.mod_cython_cpp, models):
+                self.mod_cython_cpp.evaluate()
+    
+    def save_outputs(self, sim_no=None):
+        self.save_solution.save_results(model=self.mod_cython_cpp, sim_no=sim_no)
+    
+    def update_parameter(self, information):
+        return self.mod_cython_cpp.update_parameter(information=information)
+    
+    def get_moea_variables(self):
+        return self.mod_cython_cpp.get_moea_variables()
+    
+    def get_moea_objectives(self):
+        return self.mod_cython_cpp.get_moea_objectives()
+    
+    def close_output_files(self):
+        self.save_solution.close_output_files()
 
     def Run_Mod(self, m):
         ''' Run pyomo model '''

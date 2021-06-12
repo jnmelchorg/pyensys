@@ -14,11 +14,11 @@ import logging
 import math
 import os
 import json
-from numpy.core.arrayprint import format_float_positional
+import copy
 from openpyxl import load_workbook
 from typing import Any
 from dataclasses import dataclass
-from .pyene_Models import tree_parameters, network_parameter, model_options_parameter
+from .pyene_Models import network_parameter, model_options_parameter, parameters, tree_parameters, characteristic, information
 
 try:
     import pypsa
@@ -908,12 +908,183 @@ class profile_parameter:
                                                 # changing in time
     ID                  :   str     = None      # ID of element
     type                :   str     = None      # Type of element, e.g. bus, branch                                                # related
-    subtype             :   str     = None
+    subtype             :   str     = None      # subtype of element. e.g. conventional, transmission line
+    group               :   Any     = None
+    zone                :   Any     = None
     value               :   Any     = None      # Value of specific parameter
 
 class excel2pyene:
     ''' This class reads excel files and store the data in an object '''
     
+    integer_characteristics_nodes = [
+        "number",
+        "typePF"
+    ]
+
+    double_characteristics_nodes =[    
+    ]
+
+    string_characteristics_nodes =[
+        "ID",
+        "name_bus",
+        "zone",
+        "group",
+        "subtype"
+    ]
+
+    bool_characteristics_nodes = []
+
+    integer_parameters_nodes =[
+    ]
+
+    double_parameters_nodes =[
+        "Pd",
+        "Qd",
+        "Gs",
+        "Bs",
+        "baseV",
+        "Vmpr",
+        "Vapr",
+        "Vmax",
+        "Vmin"
+    ]
+
+    string_parameters_nodes =[
+    ]
+
+    bool_parameters_nodes =[]
+
+    #      NAMES ELEMENTS BRANCHES
+
+    integer_characteristics_branches =[
+        "from",
+        "to"
+    ]
+
+    double_characteristics_branches =[
+    ]
+
+    string_characteristics_branches =[
+        "ID",
+        "subtype",
+        "group"
+    ]
+
+    bool_characteristics_branches =[
+    ]
+
+    integer_parameters_branches =[
+    ]
+
+    double_parameters_branches =[
+        "resistance",
+        "reactance",
+        "LCsusceptance",
+        "maxPflow",
+        "CTEP",
+        "Vmpr",
+        "Vapr",
+        "Vmax",
+        "Vmin"
+    ]
+
+    string_parameters_branches =[
+    ]
+
+    bool_parameters_branches =[
+        "status",
+        "vTEP"
+    ]
+
+    #      NAMES ELEMENTS GENERATORS
+
+    integer_characteristics_generators =[
+        "number"
+    ]
+
+    double_characteristics_generators =[
+    ]
+
+    string_characteristics_generators =[
+        "ID",
+        "subtype",
+        "group"
+    ]
+
+    bool_characteristics_generators =[
+    ]
+
+    integer_parameters_generators =[
+    ]
+
+    double_parameters_generators =[
+        "Pmax",
+        "Pmin",
+        "Pfix",
+        "Qmax",
+        "Qmin",
+        "Qfix",
+        "cUC",
+        "cGEP",
+        "fCPg",
+        "vCPg",
+        "emissions",
+        "startup",
+        "shutdown",
+        "cost function"
+    ]
+
+    string_parameters_generators =[
+    ]
+
+    bool_parameters_generators =[
+        "status",
+        "vUC",
+        "vGEP"
+    ]
+
+    integer_characteristics = copy.copy(integer_characteristics_nodes)
+    integer_characteristics.extend(integer_characteristics_branches)
+    integer_characteristics.extend(integer_characteristics_generators)
+    integer_characteristics = list(dict.fromkeys(integer_characteristics))
+
+    double_characteristics = copy.copy(double_characteristics_nodes)
+    double_characteristics.extend(double_characteristics_branches)
+    double_characteristics.extend(double_characteristics_generators)
+    double_characteristics = list(dict.fromkeys(double_characteristics))
+
+    string_characteristics = copy.copy(string_characteristics_nodes)
+    string_characteristics.extend(string_characteristics_branches)
+    string_characteristics.extend(string_characteristics_generators)
+    string_characteristics = list(dict.fromkeys(string_characteristics))
+
+    bool_characteristics = copy.copy(bool_characteristics_nodes)
+    bool_characteristics.extend(bool_characteristics_branches)
+    bool_characteristics.extend(bool_characteristics_generators)
+    bool_characteristics = list(dict.fromkeys(bool_characteristics))
+
+    all_characteristics = copy.copy(integer_characteristics)
+    all_characteristics.extend(double_characteristics)
+    all_characteristics.extend(string_characteristics)
+    all_characteristics.extend(bool_characteristics)
+    all_characteristics = list(dict.fromkeys(all_characteristics))
+
+    integer_parameters = copy.copy(integer_parameters_nodes)
+    integer_parameters.extend(integer_parameters_branches)
+    integer_parameters.extend(integer_parameters_generators)
+
+    double_parameters = copy.copy(double_parameters_nodes)
+    double_parameters.extend(double_parameters_branches)
+    double_parameters.extend(double_parameters_generators)
+
+    string_parameters = copy.copy(string_parameters_nodes)
+    string_parameters.extend(string_parameters_branches)
+    string_parameters.extend(string_parameters_generators)
+
+    bool_parameters = copy.copy(bool_parameters_nodes)
+    bool_parameters.extend(bool_parameters_branches)
+    bool_parameters.extend(bool_parameters_generators)
+
     # Predefined characteristics (names, parameters) that are used in the energy engine
     problems_names_nodes = {
         "substation expansion planning" : "SEP",
@@ -948,12 +1119,14 @@ class excel2pyene:
         "pyene" : "pyene",
         "fdif"  : "fdif"
     }
-    parameters_names_nodes = {
-        "id" : "ID",
+    
+    # Parameters nodes
+    parameters_nodes_integer = {
         "number" : "number",
-        "name" : "name",
         "type node power flow" : "typePF",
         "typepf" : "typePF",
+    }
+    parameters_nodes_double = {
         "active power demand" : "Pd",
         "pd" : "Pd",
         "reactive power demand" : "Qd",
@@ -970,19 +1143,43 @@ class excel2pyene:
         "max voltage magnitude" : "Vmax",
         "vmax": "Vmax",
         "min voltage magnitude" : "Vmin",
-        "vmin": "Vmin",
+        "vmin": "Vmin"
+    }
+    parameters_nodes_string = {
+        "id" : "ID",
+        "name" : "name_bus",
         "zone" : "zone",
-        "group" : "group",
+        "group" : "group"
+    }
+    parameters_nodes_bool = { }
+    parameters_nodes = {}
+    parameters_nodes.update(parameters_nodes_integer)
+    parameters_nodes.update(parameters_nodes_double)
+    parameters_nodes.update(parameters_nodes_string)
+    parameters_nodes.update(parameters_nodes_bool)
+
+    parameters_nodes_list_integer_type = {}
+    parameters_nodes_list_double_type = {}
+    parameters_nodes_list_string_type = {
         "subtype" : "subtype"
     }
-    parameters_names_branches = {
-        "id" : "ID",
-        "from" : "frm",
+    parameters_nodes_list_bool_type = {}
+    parameters_nodes_list_type = {}
+    parameters_nodes_list_type.update(parameters_nodes_list_integer_type)
+    parameters_nodes_list_type.update(parameters_nodes_list_double_type)
+    parameters_nodes_list_type.update(parameters_nodes_list_string_type)
+    parameters_nodes_list_type.update(parameters_nodes_list_bool_type)
+
+    parameters_names_nodes = parameters_nodes.copy()
+    parameters_names_nodes.update(parameters_nodes_list_type)
+
+    # Parameters branches
+    parameters_branches_integer = {
+        "from" : "from",
         "to" : "to",
-        "subtype" : "subtype",
+    }
+    parameters_branches_double = {
         "length" : "length",
-        "unit of measurement length" : "UoMLen",
-        "uomlen" : "UoMLen",
         "resistance" : "resistance",
         "r" : "resistance",
         "reactance" : "reactance",
@@ -992,11 +1189,36 @@ class excel2pyene:
         "b" : "LCsusceptance",
         "max active power flow" : "maxPflow",
         "max pflow" : "maxPflow",
-        "status" : "status",
         "cost new branch" : "CTEP",
-        "tep variable" : "vTEP",
+    }
+    parameters_branches_string = {
+        "id" : "ID",
         "group" : "group"
     }
+    parameters_branches_bool = {
+        "status" : "status",
+        "tep variable" : "vTEP"
+    }
+    parameters_branches={}
+    parameters_branches.update(parameters_branches_integer)
+    parameters_branches.update(parameters_branches_double)
+    parameters_branches.update(parameters_branches_string)
+    parameters_branches.update(parameters_branches_bool)
+
+    parameters_branches_list_integer_type = {}
+    parameters_branches_list_double_type = {}
+    parameters_branches_list_bool_type = {}
+    parameters_branches_list_string_type = {
+        "subtype" : "subtype"
+    }
+    parameters_branches_list_type = {}
+    parameters_branches_list_type.update(parameters_branches_list_integer_type)
+    parameters_branches_list_type.update(parameters_branches_list_double_type)
+    parameters_branches_list_type.update(parameters_branches_list_bool_type)
+    parameters_branches_list_type.update(parameters_branches_list_string_type)
+
+    parameters_names_branches = parameters_branches.copy()
+    parameters_names_branches.update(parameters_branches_list_type)
     accepted_types_branches = {
         "ac transmission line" : "TL",
         "transmission line" : "TL",
@@ -1008,38 +1230,71 @@ class excel2pyene:
         "trafo" : "trafo",
         "user" : "user"
     }
-    parameters_names_generators = {
-        "id" : "ID",
+
+    # Parameters generators
+    parameters_generators_integer = {
         "number" : "number",
-        "group" : "group",
-        "subtype" : "subtype",
+        "pieces" : "pieces",
+        "model"  : "model"
+    }
+    parameters_generators_double = {
         "active power max limit" : "Pmax",
         "pmax" : "Pmax",
         "active power min limit" : "Pmin",
         "pmin" : "Pmin",
         "fixed active power" : "Pfix",
         "pfix" : "Pfix",
-        "status" : "status",
         "reactive power max limit" : "Qmax",
         "qmax" : "Qmax",
         "reactive power min limit" : "Qmin",
         "qmin" : "Qmin",
         "fixed reactive power" : "Qfix",
         "qfix" : "Qfix",
-        "unit commitment" : "UC",
-        "uc" : "UC",
         "cost unit commitment" : "cUC",
         "cuc" : "cUC",
         "cost new generator" : "cGEP",
         "cgep" : "cGEP",
-        "gep variable" : "vGEP",
-        "vgep" : "vGEP",
         "fixed operation cost" : "fCPg",
         "fcpg" : "fCPg",
         "variable operation cost" : "vCPg",
         "vcpg" : "vCPg",
-        "emissions" : "emissions"
+        "emissions" : "emissions",
+        "startup" : "startup",
+        "shutdown" : "shutdown"
     }
+    parameters_generators_string = {
+        "id" : "ID",
+        "group" : "group"
+    }
+    parameters_generators_bool = {
+        "status" : "status",
+        "unit commitment" : "vUC",
+        "uc" : "vUC",
+        "gep variable" : "vGEP",
+        "vgep" : "vGEP"
+    }
+    parameters_generators = {}
+    parameters_generators.update(parameters_generators_integer)
+    parameters_generators.update(parameters_generators_double)
+    parameters_generators.update(parameters_generators_string)
+    parameters_generators.update(parameters_generators_bool)
+
+    parameters_generators_list_integer_type = {}
+    parameters_generators_list_double_type = {
+        "cost function" : "cost function"
+    }
+    parameters_generators_list_string_type = {
+        "subtype" : "subtype"
+    }
+    parameters_generators_list_bool_type = {}
+    parameters_generators_list_type = {}
+    parameters_generators_list_type.update(parameters_generators_list_integer_type)
+    parameters_generators_list_type.update(parameters_generators_list_double_type)
+    parameters_generators_list_type.update(parameters_generators_list_string_type)
+    parameters_generators_list_type.update(parameters_generators_list_bool_type)
+
+    parameters_names_generators = parameters_generators.copy()
+    parameters_names_generators.update(parameters_generators_list_type)
     accepted_types_generators = {
         "thermal" : "thermal",
         "hydro" : "hydro",
@@ -1048,10 +1303,16 @@ class excel2pyene:
         "user" : "user",
         "diesel" : "diesel"
     }
+
+    # Parameters system
     accepted_characteristics = {
-        "lossess"           : "loss",
-        "solver"            : "solver",
-        "base power"        : "Sbase"
+        "lossess"                   : "loss",
+        "solver"                    : "solver",
+        "base power"                : "Sbase",
+        "multiperiod"               : "multiperiod",
+        "output file name"          : "output file name",
+        "moea"                      : "MOEA",
+        "representative periods"    : "representative periods"
     }
     accepted_solvers = {
         "glpk"      :   "GLPK",
@@ -1059,14 +1320,150 @@ class excel2pyene:
         "clp-i"     :   "CLP-I",
         "clp-ir"    :   "CLP-IR"
     }
-    parameters_profile = {
+
+    # Profiles parameters
+    unique_string_parameters_profile = {
         "type" : "type",
+        "name": "name",
+        "id": "ID",
+        "group" : "group",
+        "zone" : "zone" 
+    }
+    list_string_parameters_profile = {
         "subtype": "subtype",
         "position tree": "pt",
-        "pt": "pt",
-        "name": "name",
-        "id": "ID" 
+        "representative day": "pt",
+        "pt": "pt"
     }
+    parameters_profile = {}
+    parameters_profile.update(unique_string_parameters_profile)
+    parameters_profile.update(list_string_parameters_profile)
+    
+    # Parameters connections
+    unique_string_parameters_connections = {
+        "type" : "type",
+        "id": "ID",
+        "group" : "group",
+        "zone" : "zone"
+    }
+    list_string_parameters_connections = {
+        "problems" : "problems",
+        "variables" : "variables",
+        "subtype": "subtype",
+        "position tree": "pt",
+        "representative day": "pt",
+        "pt": "pt"
+    }
+
+    # Parameters outputs
+    unique_integer_parameters_outputs = {
+        "hour" : "hour"
+    }
+
+    unique_string_parameters_outputs = {
+        "type" : "type",
+        "id": "ID",
+        "group" : "group",
+        "zone" : "zone",
+        "name" : "name",
+        "problem" : "problem",
+        "reference" : "reference",
+        "data device" : "data device",
+        "type information" : "type information",
+        "function" : "function",
+    }
+    list_string_parameters_outputs = {
+        "position tree": "pt",
+        "representative day": "pt",
+        "pt": "pt",
+        "subtype": "subtype",
+    }
+
+    # Concatenate parameters types
+    parameters_integer = {}
+    parameters_integer.update(parameters_nodes_integer)
+    parameters_integer.update(parameters_branches_integer)
+    parameters_integer.update(parameters_generators_integer)
+    parameters_integer.update(unique_integer_parameters_outputs)
+
+    parameters_double = {}
+    parameters_double.update(parameters_nodes_double)
+    parameters_double.update(parameters_branches_double)
+    parameters_double.update(parameters_generators_double)
+
+    parameters_string = {}
+    parameters_string.update(parameters_nodes_string)
+    parameters_string.update(parameters_branches_string)
+    parameters_string.update(parameters_generators_string)
+    parameters_string.update(problems_names_nodes)
+    parameters_string.update(problems_names_branches)
+    parameters_string.update(problems_names_generators)
+    parameters_string.update(problems_names_system)
+    parameters_string.update(unique_string_parameters_profile)
+    parameters_string.update(unique_string_parameters_connections)
+    parameters_string.update(unique_string_parameters_outputs)
+
+    parameters_bool = {}
+    parameters_bool.update(parameters_nodes_bool)
+    parameters_bool.update(parameters_branches_bool)
+    parameters_bool.update(parameters_generators_bool)
+
+    parameters_list_integer = {}
+    parameters_list_integer.update(parameters_nodes_list_integer_type)
+    parameters_list_integer.update(parameters_generators_list_integer_type)
+    parameters_list_integer.update(parameters_branches_list_integer_type)
+
+    parameters_list_double = {}
+    parameters_list_double.update(parameters_nodes_list_double_type)
+    parameters_list_double.update(parameters_generators_list_double_type)
+    parameters_list_double.update(parameters_branches_list_double_type)
+    
+    parameters_list_string = {}
+    parameters_list_string.update(parameters_nodes_list_string_type)
+    parameters_list_string.update(parameters_generators_list_string_type)
+    parameters_list_string.update(parameters_branches_list_string_type)
+    parameters_list_string.update(list_string_parameters_profile)
+    parameters_list_string.update(list_string_parameters_connections)
+    parameters_list_string.update(list_string_parameters_outputs)
+
+    parameters_list_bool = {}
+    parameters_list_bool.update(parameters_nodes_list_bool_type)
+    parameters_list_bool.update(parameters_generators_list_bool_type)
+    parameters_list_bool.update(parameters_branches_list_bool_type)
+
+    all_unique_parameters = {}
+    all_unique_parameters.update(parameters_integer)
+    all_unique_parameters.update(parameters_double)
+    all_unique_parameters.update(parameters_string)
+    all_unique_parameters.update(parameters_bool)
+
+    all_list_parameters = {}
+    all_list_parameters.update(parameters_list_integer)
+    all_list_parameters.update(parameters_list_double)
+    all_list_parameters.update(parameters_list_string)
+    all_list_parameters.update(parameters_list_bool)
+
+    all_parameters = {}
+    all_parameters.update(all_unique_parameters)
+    all_parameters.update(all_list_parameters)
+
+    # Variables names for power system problems
+    variables_balance_tree = [
+        "input",
+        "output",
+        "flow",
+        "surplus",
+        "deficit"
+    ]
+    variables_OPF = [
+        "active power generation",
+        "active power generation cost",
+        "active power flow",
+        "voltage angle",
+        "generation curtailment",
+        "load curtailment"
+    ]
+
 
     def _read_bool_excel(self, parameters_list=[], position=-1, sheet=None, name_compare=""):
         ''' This function reads boolean information on a worksheet
@@ -1083,7 +1480,7 @@ class excel2pyene:
         for num, name in enumerate(parameters_list):
             counter = position
             value = sheet.cell(row=counter, column=num+1).value
-            while name == name_compare and value:
+            while name == name_compare and value is not None:
                 new_val = False
                 if type(value) == str and value.lower() == "=false" :
                     new_val = False
@@ -1227,10 +1624,8 @@ class excel2pyene:
         
         if len(characteristics) == len(options):
             for cha, opt in zip(characteristics, options):
-                if cha == "solver" and self.accepted_solvers.get(opt, False) and not self._revise_model_characteristic_exist(model, cha, self.accepted_solvers.get(opt, False)):
-                    model.model_options.append(model_options_parameter(name=cha, value=self.accepted_solvers.get(opt, False)))
-                elif cha == "solver" and self.accepted_solvers.get(opt, False) and not self._revise_model_characteristic_exist(model, cha, "CLP"):
-                    model.model_options.append(model_options_parameter(name=cha, value="CLP"))
+                if not self._revise_model_characteristic_exist(model, cha, opt):
+                    model.model_options.append(model_options_parameter(name=cha, value=opt))
         else:
             raise ValueError('indicated elements with different sizes.\ncharacteristics = {}\noptions = {}'.format(len(characteristics), len(options)))
 
@@ -1312,13 +1707,49 @@ class excel2pyene:
         # Extracting the ID of all elements
         counter = 3
         value_id = sheet.cell(row=counter, column=col_id).value
+        all_elements = []
+        model.data.data[typ] = []
         while value_id:
+            element_all_info = []
+            characteristics = information()
+            characteristics.characteristics.append(characteristic(name="ID", value=value_id, data_type="string"))
+            characteristics.characteristics.append(characteristic(name="type", value=typ, data_type="string"))
             for col, name in enumerate(parameters_list):
                 value = sheet.cell(row=counter, column=col + 1).value
-                if col + 1 != col_id and not self._revise_parameters(model.network_parameters, value_id, name, value) and name is not None:
-                    model.network_parameters.append(network_parameter(ID=value_id, type=typ, name=name, value=value))
+                # if col + 1 != col_id and not self._revise_parameters(model.network_parameters, value_id, name, value) and name is not None:
+                if col + 1 != col_id and name is not None and value is not None:
+                    if name in self.integer_characteristics:
+                        characteristics.characteristics.append(characteristic(name=name, value=value, data_type="integer"))
+                    elif name in self.double_characteristics:
+                        characteristics.characteristics.append(characteristic(name=name, value=value, data_type="double"))
+                    elif name in self.bool_characteristics:
+                        characteristics.characteristics.append(characteristic(name=name, value=value, data_type="bool"))
+                    elif name in self.string_characteristics:
+                        if name != "subtype":
+                            characteristics.characteristics.append(characteristic(name=name, value=str(value), data_type="string"))
+                        elif name == "subtype" and characteristics.exist("subtype"):
+                            new_value = characteristics.get_characteristic("subtype")
+                            new_value.append(str(value))
+                        elif name == "subtype" and not characteristics.exist("subtype"):
+                            characteristics.characteristics.append(characteristic(name=name, value=[str(value)], data_type="v_string"))
+                    elif name in self.integer_parameters:
+                        element_all_info.append(information(data_type="integer", value=value, characteristics=[characteristic(name="name", value=name, data_type="string")]))
+                    elif name in self.double_parameters:
+                        element_all_info.append(information(data_type="double", value=value, characteristics=[characteristic(name="name", value=name, data_type="string")]))
+                    elif name in self.bool_parameters:
+                        element_all_info.append(information(data_type="bool", value=value, characteristics=[characteristic(name="name", value=name, data_type="string")]))
+                    elif name in self.string_parameters:
+                        element_all_info.append(information(data_type="string", value=str(value), characteristics=[characteristic(name="name", value=name, data_type="string")]))
+                        
+                    #model.network_parameters.append(network_parameter(ID=value_id, type=typ, name=name, value=value))
+            for element in element_all_info:
+                element.characteristics.extend(characteristics.characteristics)
+            
+            all_elements.extend(element_all_info)
+            
             counter = counter + 1
             value_id = sheet.cell(row=counter, column=col_id).value
+        model.data.data[typ] = np.array(all_elements)
 
     def _revise_tree_info(self, name=None, pos=None, value=None, level=None):
         ''' This function check if a parameter exists and update the value.
@@ -1354,8 +1785,8 @@ class excel2pyene:
         value = sheet.cell(row=rows, column=1).value
         pos = 1
         while value is not None:
+            level = value
             while value is not None:
-                level = value
                 columns = columns + 1
                 value = sheet.cell(row=rows, column=columns).value
                 if value is not None and isinstance(value, str) and self._revise_tree_info(name, pos, value.lower(), level):
@@ -1375,7 +1806,7 @@ class excel2pyene:
 
             Parameters
             ----------
-            Mandatory:
+            Mandatory:\\
             model : python object containing the mathematical model and all parameters\\
             sheet : excel sheet to be read
         '''
@@ -1400,7 +1831,13 @@ class excel2pyene:
                 tries = tries + 1                
 
     def _read_profile(self, sheet=None):
-        
+        ''' This function reads the information of different profiles for different parameters
+
+            Parameters
+            ----------
+            Mandatory:\\
+            sheet : excel sheet to be read
+        '''
         rows = 2
         tries = 0
 
@@ -1409,8 +1846,10 @@ class excel2pyene:
         position_tree={}
         name=None
         ID=None
+        group=None
+        zone=None
 
-        valid_types = ["bus", "branch", "generators"]
+        valid_types = ["bus", "branch", "generator"]
         parameter_elements = self.parameters_names_nodes.copy()
         parameter_elements.update(self.parameters_names_branches)
         parameter_elements.update(self.parameters_names_generators)
@@ -1429,17 +1868,19 @@ class excel2pyene:
             elif typ=="branch" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
                 value = sheet.cell(row=rows, column=2).value
                 rows = rows + 1
-                if isinstance(value, str) and self.accepted_types_branches.get(value.lower(), None) is not None:
-                    subtype = value.lower()
-                else:
-                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for branches".format(value))
+                subtype = value.lower()
+                # if isinstance(value, str) and self.accepted_types_branches.get(value.lower(), None) is not None:
+                #     subtype = value.lower()
+                # else:
+                #     print("WARNING! Subtype {} does not exist in the list of valid subtypes for branches".format(value))
             elif typ=="generator" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype":
                 value = sheet.cell(row=rows, column=2).value
                 rows = rows + 1
-                if isinstance(value, str) and self.accepted_types_generators.get(value.lower(), None) is not None:
-                    subtype = value.lower()
-                else:
-                    print("WARNING! Subtype {} does not exist in the list of valid subtypes for generators".format(value))
+                subtype = value.lower()
+                # if isinstance(value, str) and self.accepted_types_generators.get(value.lower(), None) is not None:
+                #     subtype = value.lower()
+                # else:
+                #     print("WARNING! Subtype {} does not exist in the list of valid subtypes for generators".format(value))
             elif typ=="bus" and isinstance(value, str) and self.parameters_profile.get(value.lower()) == "subtype" and sheet.cell(row=rows, column=2).value is not None:
                 rows = rows + 1
                 print("WARNING! buses does not have any subtype")
@@ -1452,6 +1893,7 @@ class excel2pyene:
                     pos = pos + 1
                     cols = cols + 1
                     value = sheet.cell(row=rows, column=cols).value
+                rows = rows + 1
             elif isinstance(value, str) and self.parameters_profile.get(value.lower()) == "name":
                 value = sheet.cell(row=rows, column=2).value
                 rows = rows + 1
@@ -1459,6 +1901,16 @@ class excel2pyene:
                     name = parameter_elements.get(value.lower())
                 else:
                     print("WARNING! name {} is not a valid name".format(value))
+            elif isinstance(value, str) and self.parameters_profile.get(value.lower()) == "group":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if value is not None:
+                    group = value
+            elif isinstance(value, str) and self.parameters_profile.get(value.lower()) == "zone":
+                value = sheet.cell(row=rows, column=2).value
+                rows = rows + 1
+                if value is not None:
+                    zone = value
             elif (isinstance(value, str) and value.lower() == "dataset") and (isinstance(sheet.cell(row=rows, column=2).value, str) and sheet.cell(row=rows, column=2).value.lower() == "hour") and (isinstance(sheet.cell(row=rows+1, column=1).value, str) and sheet.cell(row=rows+1, column=1).value.lower() == "id"):
                 hour_row = rows + 1
                 rows = rows + 2
@@ -1471,16 +1923,520 @@ class excel2pyene:
                     time = 0
                     value = sheet.cell(row=rows, column=cols).value
                     while value is not None:
-                        self.profiles_info.append(profile_parameter(name=name, position_tree=position_tree, hour= sheet.cell(row=hour_row, column=cols).value if sheet.cell(row=hour_row, column=cols).value is not None else time, ID=ID, type=typ, subtype=subtype, value=value))
+                        self.profiles_info.append(profile_parameter(name=name, position_tree=position_tree, hour= sheet.cell(row=hour_row, column=cols).value if sheet.cell(row=hour_row, column=cols).value is not None else time, ID=ID, type=typ, subtype=subtype, value=value, group=group, zone=zone))
                         cols = cols + 1
                         time = time + 1
                         value = sheet.cell(row=rows, column=cols).value
                     rows = rows + 1
                     cols = 1
                     value = sheet.cell(row=rows, column=cols).value
+                typ=None
+                subtype=None
+                position_tree={}
+                name=None
+                ID=None
+                group=None
+                zone=None
             else:
                 rows = rows + 1
                 tries = tries + 1
+
+    def _read_energy_connections(self, model=None, sheet=None):
+        ''' This function reads the information of connections between variables for the models in pyene
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read
+        '''
+
+        names_list = copy.copy(self.variables_balance_tree)
+        names_list.extend(self.variables_OPF)
+
+        tries = 0
+        rows = 2
+        while tries < 20:
+            info = information()
+            value = sheet.cell(row=rows, column=1).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+            if isinstance(value, str) and value == "begin":
+                tries = 0
+                while value != "end":
+                    rows += 1
+                    value = sheet.cell(row=rows, column=1).value
+                    if isinstance(value, str):
+                        value = value.replace(u'\xa0',' ')
+                    if isinstance(value, str) and (self.all_parameters.get(value.lower()) is not None or value.lower() in names_list):
+                        original_name = value
+                        if self.all_parameters.get(value.lower()) is not None:
+                            name = self.all_parameters.get(value.lower())
+                        if value.lower() in names_list:
+                            name = value.lower()
+                        col = 1
+                        if self.all_list_parameters.get(value.lower()) is not None:
+                            val = []
+                            while value is not None:
+                                col += 1
+                                value = sheet.cell(row=rows, column=col).value
+                                if isinstance(value, str):
+                                    value = value.replace(u'\xa0',' ')
+                                    if self.all_parameters.get(value.lower()) is not None:
+                                        value = self.all_parameters.get(value.lower())
+                                    if value.lower() in names_list:
+                                        value = value.lower()
+                                if value is not None:
+                                    val.append(value)
+                        elif self.all_unique_parameters.get(value.lower()) is not None:
+                            value = sheet.cell(row=rows, column=2).value
+                            if isinstance(value, str):
+                                value = value.replace(u'\xa0',' ')
+                                if self.all_parameters.get(value.lower()) is not None:
+                                    value = self.all_parameters.get(value.lower())
+                                elif value.lower() in names_list:
+                                    value = value.lower()
+                                elif value.lower() == "all":
+                                    value = value.lower()
+                            val = value
+                        if not val:
+                            val = None
+                        data_type = self._check_data_type(original_name)
+                        if data_type is not None and val is not None:
+                            info.characteristics.append(characteristic(name=name, value=val, data_type=data_type))
+                if info.characteristics:
+                    info.characteristics.append(characteristic(name="name", value="connection", data_type="string"))
+                    info.value = True
+                    info.data_type = "bool"
+                    self.data.connections.append(info)
+            else:
+                rows = rows + 1
+                tries = tries + 1
+        
+        for connection in self.data.connections:
+            if connection.get_characteristic("ID") == "all" and connection.exist("type"):
+                list_IDs = []
+                for param in model.data.data[connection.get_characteristic("type")]:
+                    if param.get_characteristic("ID") not in list_IDs and ( (connection.exist("subtype") and param.exist("subtype") and all(item in param.get_characteristic("subtype") for item in connection.get_characteristic("subtype")) ) or (connection.exist("group") and param.exist("group") and param.get_characteristic("group") == connection.get_characteristic("group")) or (connection.exist("zone") and param.exist("zone") and param.get_characteristic("zone") == connection.get_characteristic("zone")) or (not connection.exist("subtype") and not connection.exist("group") and not connection.exist("zone"))):
+                        list_IDs.append(param.get_characteristic("ID"))                            
+
+                for id in list_IDs:
+                    new_connection = copy.deepcopy(connection)
+                    new_connection.update_characteristic("ID", id)
+                    model.data.connections.append(new_connection)
+
+    def _read_functions(self, sheet=None):
+        ''' This function reads the information of mathematical functions (polynomial or piecewise) for parameters.
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read
+        '''
+        tries = 0
+        rows = 2
+        while tries < 20:
+            info = information()
+            value = sheet.cell(row=rows, column=1).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+            if isinstance(value, str) and value == "begin":
+                tries = 0
+                param_names = []
+                param_origin_names = []
+                initial = True
+                while value != "end":
+                    rows += 1
+                    col = 0
+                    while value is not None and initial:
+                        col += 1
+                        value = sheet.cell(row=rows, column=col).value
+                        if isinstance(value, str):
+                            value = value.replace(u'\xa0',' ')
+                            if self.all_parameters.get(value.lower()) is not None:
+                                original_name = value
+                                value = self.all_parameters.get(value.lower())
+                        if value is not None:
+                            param_origin_names.append(original_name)
+                            param_names.append(value)
+                    if len(param_names) == 0:
+                        print ("WARNING! Provided parameter or characteristic name *{}* in excel sheet in column 1 and row {} is not a valid name".format(value, rows))
+                        return
+                    elif len(param_names) == 1:
+                        initial = False
+                        value = sheet.cell(row=rows, column=1).value
+                        if value == "end":
+                            break
+                        if isinstance(value, str):
+                            value = value.replace(u'\xa0',' ')
+                        if self.all_unique_parameters.get(value.lower()) is not None:
+                            na = self.all_parameters.get(value.lower())
+                            value = sheet.cell(row=rows, column=2).value
+                            data_type = self._check_data_type(value.lower())
+                            info.characteristics.append(characteristic(name=na, value=value, data_type=data_type))
+                        elif self.all_list_parameters.get(value.lower()) is not None:
+                            na = self.all_parameters.get(value.lower())
+                            col = 1
+                            values = []
+                            while value is not None:
+                                col += 1
+                                value = sheet.cell(row=rows, column=col).value
+                                if isinstance(value, str):
+                                    value = value.replace(u'\xa0',' ')
+                                    if self.all_parameters.get(value.lower()) is not None:
+                                        value = self.all_parameters.get(value.lower())
+                                if value is not None:
+                                    values.append(value)
+                            info.characteristics.append(characteristic(name="name", value=na, data_type="string"))
+                            info.characteristics.append(characteristic(name="coefficients", value=value[nu:], data_type=data_type))
+                            info.value = True
+                            info.data_type = "bool"
+                    else:
+                        col = 0
+                        values = []
+                        if initial:
+                            rows += 1
+                            initial = False
+                        value = sheet.cell(row=rows, column=1).value
+                        if value == "end":
+                            break
+                        while value is not None:
+                            col += 1
+                            value = sheet.cell(row=rows, column=col).value
+                            if isinstance(value, str):
+                                value = value.replace(u'\xa0',' ')
+                                if self.all_parameters.get(value.lower()) is not None:
+                                    value = self.all_parameters.get(value.lower())
+                            if value is not None:
+                                values.append(value)
+                        for nu, (o_na, na) in enumerate(zip(param_origin_names, param_names)):
+                            data_type = self._check_data_type(o_na)
+                            if self.all_unique_parameters.get(o_na.lower()) is not None:
+                                info.characteristics.append(characteristic(name=na, value=values[nu], data_type=data_type))
+                            elif self.all_list_parameters.get(o_na.lower()) is not None:
+                                info.characteristics.append(characteristic(name="name", value=na, data_type="string"))
+                                info.characteristics.append(characteristic(name="coefficients", value=values[nu:], data_type=data_type))
+                                info.value = True
+                                info.data_type = "bool"
+                                if (nu+1 != len(param_names)):
+                                    print("WARNING! Inconsisten data for function *{}*. The name and list of coefficient should be after pieces".format(o_na))
+                                    return
+                                self.data.functions.append(info)
+                                info = information()
+                if len(param_names) == 1:
+                    self.data.functions.append(info)
+            else:
+                rows = rows + 1
+                tries = tries + 1
+
+    def _read_output_requirements(self, model=None, sheet=None):
+        ''' This function reads the information of outputs for pyene results
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            sheet : excel sheet to be read
+        '''
+        names_list = copy.copy(self.variables_balance_tree)
+        names_list.extend(self.variables_OPF)
+
+        tries = 0
+        rows = 2
+        while tries < 20:
+            info = information()
+            value = sheet.cell(row=rows, column=1).value
+            if isinstance(value, str):
+                value = value.replace(u'\xa0',' ')
+            if isinstance(value, str) and value == "begin":
+                tries = 0
+                while value != "end":
+                    rows += 1
+                    value = sheet.cell(row=rows, column=1).value
+                    if isinstance(value, str):
+                        value = value.replace(u'\xa0',' ')
+                    if isinstance(value, str) and (self.all_parameters.get(value.lower()) is not None or value.lower() in names_list):
+                        original_name = value
+                        if self.all_parameters.get(value.lower()) is not None:
+                            name = self.all_parameters.get(value.lower())
+                        if value.lower() in names_list:
+                            name = value.lower()
+                        col = 1
+                        val = []
+                        while value is not None:
+                            col += 1
+                            value = sheet.cell(row=rows, column=col).value
+                            if isinstance(value, str):
+                                value = value.replace(u'\xa0',' ')
+                                if self.all_parameters.get(value.lower()) is not None:
+                                    value = self.all_parameters.get(value.lower())
+                                elif value is not None:
+                                    value = value.lower()
+                            if value is not None:
+                                val.append(value)
+                        if not val:
+                            val = None
+                        if val and len(val) == 1 and (val[0] == "all" or val[0] in names_list):
+                            data_type = "v_string"
+                        elif val:
+                            data_type = self._check_data_type(original_name)
+                            if (data_type[0:2] != "v_"):
+                                data_type = "v_" + data_type
+                        else:
+                            data_type = None
+                        if data_type is not None and val is not None:
+                            info.characteristics.append(characteristic(name=name, value=val, data_type=data_type))
+                if info.characteristics:
+                    info.value = True
+                    info.data_type = "bool"
+                    self.data.outputs.append(info)
+            else:
+                rows = rows + 1
+                tries = tries + 1
+        model.data.outputs = self.data.outputs
+
+    def _check_data_type(self, name=None):
+        ''' This function the type of data that is related to the name
+
+            Parameters
+            ----------
+            Mandatory:\\
+            name : name of parameter
+            
+            Return
+            ----------
+            This functions returns the type of data related to the name.\\
+            return data_type (str)
+        '''
+        if self.parameters_integer.get(name.lower()) is not None:
+            return "integer"
+        elif self.parameters_double.get(name.lower()) is not None:
+            return "double"
+        elif self.parameters_string.get(name.lower()) is not None:
+            return "string"
+        elif self.parameters_bool.get(name.lower()) is not None:
+            return "bool"
+        elif self.parameters_list_integer.get(name.lower()) is not None:
+            return "v_integer"
+        elif self.parameters_list_double.get(name.lower()) is not None:
+            return "v_double"
+        elif self.parameters_list_string.get(name.lower()) is not None:
+            return "v_string"
+        elif self.parameters_list_bool.get(name.lower()) is not None:
+            return "v_bool"
+        else:
+            return None
+                    
+    def _remove_uncorrelated(self, parameters, name_comp, value_comp, list_pos):
+        list_remove = []
+        for num, pos in enumerate(list_pos):
+            if (name_comp == "subtype" and parameters[pos].exist("subtype") and value_comp not in parameters[pos].get_characteristic("subtype")) or (name_comp != "subtype" and parameters[pos].exist(name_comp) and value_comp not in parameters[pos].get_characteristic(name_comp)) or (name_comp == "subtype" and parameters[pos].exist("subtype") and value_comp in parameters[pos].get_characteristic("subtype") and (parameters[pos].exist("pt") or parameters[pos].exist("hour"))) or (name_comp != "subtype" and parameters[pos].exist(name_comp) and value_comp in parameters[pos].get_characteristic(name_comp) and (parameters[pos].exist("pt") or parameters[pos].exist("hour"))):
+                list_remove.append(num)
+        list_pos = [ele for num,ele in enumerate(list_pos) if num not in list_remove]
+        return list_pos
+
+    def _extract_parameters_correlation(self, network_info=None, profile=None, delete_only=False):
+        ''' This function extract all parameters in the list of network parameters in model that have the same identification characteristics that the profile
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            profile : profile object used for comparison of information
+        '''
+        if profile.ID == "all":
+            list_pos = []
+            # getting parameters indexes to be correlated
+            for num, parameter in enumerate(network_info.data[profile.type]):
+                if parameter.get_characteristic("name") == profile.name:
+                    list_pos.append(num)
+            # Removing the IDs with different subtype that the specified subtype
+            if profile.subtype is not None:
+                list_pos = self._remove_uncorrelated(network_info.data[profile.type], "subtype", profile.subtype, list_pos)
+            if profile.group is not None:
+                list_pos = self._remove_uncorrelated(network_info.data[profile.type], "group", profile.group, list_pos)
+            if profile.zone is not None:
+                list_pos = self._remove_uncorrelated(network_info.data[profile.type], "zone", profile.zone, list_pos)
+            # extracting parameters
+            if not delete_only:
+                params = []
+                for pos in list_pos:
+                    params.append(network_info.data[profile.type][pos])
+                return np.array(params)
+            else:
+                list_pos = [pos for pos in list_pos if not network_info.data[profile.type][pos].exist("pt") and not network_info.data[profile.type][pos].exist("hour")]
+                params = np.array([ele for num,ele in enumerate(network_info.data[profile.type]) if num not in list_pos])
+                network_info.data[profile.type] = params
+                return network_info
+        else:
+            if not delete_only:
+                for num, parameter in enumerate(network_info.data[profile.type]):
+                    if parameter.get_characteristic("ID") == profile.ID and parameter.get_characteristic("name") == profile.name:
+                        return num
+            else:
+                num_erase = -1
+                for num, parameter in enumerate(network_info.data[profile.type]):
+                    if parameter.get_characteristic("ID") == profile.ID and parameter.get_characteristic("name") == profile.name:
+                        num_erase = num
+                        break
+                if num_erase == -1:
+                    raise ValueError("value not found")
+                network_info.data[profile.type] = np.delete(network_info.data[profile.type], num_erase)
+                return network_info
+
+    def _extract_profiles_correlation(self, prof_compare=None):
+        ''' This function extract all profiles that have the same identification characteristics that prof_compare
+
+            Parameters
+            ----------
+            Mandatory:\\
+            prof_compare : profile object used for comparison of information
+        '''    
+        list_pos = []
+        profs = []
+        for num, profile in enumerate(self.profiles_info):
+            if prof_compare.type == profile.type and prof_compare.subtype == profile.subtype and prof_compare.name == profile.name and prof_compare.ID == profile.ID:
+                list_pos.append(num)
+        for pos in list_pos:
+            profs.append(self.profiles_info[pos])
+        self.profiles_info = [ele for num,ele in enumerate(self.profiles_info) if num not in list_pos]
+        return profs
+
+    def _check_profile_existance(self, model=None, profile=None):
+        ''' This checks if the profiles were already created and the function erase them
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters\\
+            profile : profile object used for comparison of information
+        '''
+        exist = False
+        list_remove = []
+        for pos, parameter in enumerate(model.data.data[profile.type]):
+            if parameter.get_characteristic("name") == profile.name and ((parameter.exist("pt") and parameter.get_characteristic("pt") == profile.position_tree and parameter.exist("hour") and parameter.get_characteristic("hour") == profile.hour) or (not parameter.exist("pt") and parameter.exist("hour") and parameter.get_characteristic("hour") == profile.hour)):
+                exist = True
+                list_remove.append(pos)
+                if profile.subtype is None:
+                    print("WARNING! parameter {} has been already set with the representative day {} and hour {}.".format(parameter.name, parameter.position_tree, parameter.hour))
+
+        if profile.subtype is not None:
+            exist = False
+            new_list_remove = []
+            for remove in list_remove:
+                ID = model.data.data[profile.type][remove].get_characteristic("ID")
+                if profile.subtype in model.data.data[profile.type][remove].get_characteristic("subtype"):
+                    exist = True
+                    new_list_remove.append(pos)
+                    print("WARNING! parameter {} has been already set with the representative day {} and hour {}.".format(model.data.data[profile.type][remove].get_characteristic("name"), model.data.data[profile.type][remove].get_characteristic("pt"), model.data.data[profile.type][remove].get_characteristic("hour")))
+            list_remove = new_list_remove
+        if exist:
+            print("The values will be updated with the most up-to-date information. Check your profile inputs to avoid duplications or errors.")
+        # Removing parameters from model
+        model.data.data[profile.type] = np.array([ele for num,ele in enumerate(model.data.data[profile.type]) if num not in list_remove])
+
+        return exist, model
+    
+    def _correlate_information(self, model=None, network_info=None):
+        ''' This function correlates the all profiles and the respective parameters
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters
+        '''
+        # Correlate profiles with parameters
+        correlate_profiles = False
+        for opt in model.model_options:
+            if opt.name == "representative periods" and opt.value:
+                correlate_profiles = True
+        counter_prof = 0
+        while self.profiles_info and correlate_profiles:
+            params = self._extract_parameters_correlation(network_info, self.profiles_info[counter_prof])
+            exist, model = self._check_profile_existance(model, self.profiles_info[counter_prof])
+            if not exist:
+                model.data = self._extract_parameters_correlation(model.data, self.profiles_info[counter_prof], True)
+            profs = self._extract_profiles_correlation(self.profiles_info[counter_prof])
+            if isinstance(params, np.ndarray):
+                new_list = []
+                for param in params:
+                    for prof in profs:
+                        new_info = information()
+                        new_info.characteristics = copy.copy(param.characteristics)
+                        tree = []
+                        for _, value in prof.position_tree.items():
+                            tree.append(value)
+                        new_info.characteristics.append(characteristic(name="pt", value=tree, data_type="v_string"))
+                        new_info.characteristics.append(characteristic(name="hour", value=prof.hour, data_type="double"))
+                        new_info.data_type = param.data_type
+                        new_info.value = param.value * prof.value
+                        new_list.append(new_info)
+                model.data.data[profs[0].type] = np.append(model.data.data[profs[0].type], new_list)
+            else:
+                new_list = []
+                for prof in profs:
+                    new_info = information()
+                    new_info.characteristics = copy.copy(network_info.data[prof.type][params].characteristics)
+                    tree = []
+                    for _, value in prof.position_tree.items():
+                        tree.append(value)
+                    new_info.characteristics.append(characteristic(name="pt", value=tree,data_type="v_string"))
+                    new_info.characteristics.append(characteristic(name="hour", value=prof.hour,data_type="double"))
+                    new_info.data_type = network_info.data[prof.type][params].data_type
+                    new_info.value = network_info.data[prof.type][params].value * prof.value
+                    new_list.append(new_info)
+                model.data.data[profs[0].type] = np.append(model.data.data[profs[0].type], new_list)
+
+        # Correlate characteristics with functions information
+        for info in self.data.functions:
+            for _, parameters in model.data.data.items():
+                found = False
+                for parameter in parameters:
+                    if parameter.get_characteristic("ID") == info.get_characteristic("ID"):
+                        chars = [cha for cha in parameter.characteristics if cha.name != "ID" and cha.name != "name"]
+                        info.characteristics.extend(chars)
+                        found = True
+                        break
+                if found:
+                    break
+        model.data.functions = self.data.functions
+
+        #     for parameter in model.network_parameters:
+        #         if parameter.ID == info.get_characteristic("ID"):
+        #             info.characteristics.append(characteristic(name="type", value=parameter.type, data_type="string"))
+        #             subtype = []
+        #             for par in model.network_parameters:
+        #                 if par.name == "subtype" and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+        #                     subtype.append(par.value)
+        #                 elif par.name != "subtype" and par.name in set(self.parameters_integer.values()) and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+        #                     info.characteristics.append(characteristic(name=par.name, value=par.value, data_type="integer"))
+        #                 elif par.name != "subtype" and par.name in set(self.parameters_string.values()) and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+        #                     info.characteristics.append(characteristic(name=par.name, value=str(par.value), data_type="string"))
+        #             if subtype:
+        #                 info.characteristics.append(characteristic(name="subtype", value=subtype, data_type="v_string"))
+        #             break
+        # model.data.functions = self.data.functions
+
+    def _load_balance_tree(self, model=None):
+        ''' This function load the information of the balance tree in the model
+
+            Parameters
+            ----------
+            Mandatory:\\
+            model : python object containing the mathematical model and all parameters
+        '''
+        names = [param for param in self.tree_info if param.name == "name"]
+        self.tree_info = [param for param in self.tree_info if param.name != "name"]
+        for info in self.tree_info:
+            name_pos = ""
+            for name in names:
+                if name.level == info.level and name.pos == info.pos:
+                    name_pos = name.value
+                    break
+            model.tree_parameters.append(tree_parameters(name=info.name, level=info.level, name_node=name_pos, value=info.value))
+        self.tree_info = []
+
 
     def read_excel(self, energy_file=None, model=None, **kwargs):
         """Load variables, parameters and options to solve the specified energy 
@@ -1494,22 +2450,34 @@ class excel2pyene:
         """
         self.tree_info = []
         self.profiles_info = []
+        self.data = parameters()
         self.files2open = [energy_file]
         while self.files2open:
             workbook = load_workbook(filename=self.files2open.pop())
             for ws in workbook.worksheets:
-                if ws.cell(row=1, column=1).value == "model":
+                value = ws.cell(row=1, column=1).value.replace(u'\xa0',' ')
+                if value == "model":
                     self._read_model_options(model, ws)
-                elif ws.cell(row=1, column=1).value == "bus":
+                elif value == "bus":
                     self._read_info_network(model, ws, self.parameters_names_nodes, "bus")
-                elif ws.cell(row=1, column=1).value == "branch":
+                elif value == "branch":
                     self._read_info_network(model, ws, self.parameters_names_branches, "branch")
-                elif ws.cell(row=1, column=1).value == "generator":
+                elif value == "generator":
                     self._read_info_network(model, ws, self.parameters_names_generators, "generator")
-                elif ws.cell(row=1, column=1).value == "tree":
+                elif value == "tree":
                     self._read_info_tree(ws)
-                elif ws.cell(row=1, column=1).value == "profile":
+                elif value == "profile":
                     self._read_profile(ws)
+                elif value == "connections energy":
+                    self._read_energy_connections(model, ws)
+                elif value == "functions":
+                    self._read_functions(ws)
+                elif value == "outputs":
+                    self._read_output_requirements(model, ws)
                 else:
-                    print("WARNING! option {} not identified".format(ws.cell(row=1, column=1).value))
-    
+                    print("WARNING! option {} not identified".format(value))
+        
+        self._load_balance_tree(model)
+
+        network_info = copy.deepcopy(model.data)
+        self._correlate_information(model, network_info)

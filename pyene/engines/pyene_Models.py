@@ -10,24 +10,58 @@ the transmission system (Optimal Power Flow)
 @author: Dr Jose Nicolas Melchor Gutierrez
 """
 
-from collections import namedtuple
-from networkx.algorithms.centrality.betweenness import _accumulate_endpoints
-from pyomo.core.expr.numvalue import value
-from tables import node, parameters
+import copy
 from pyene.engines.cython._glpk import GLPKSolver
 import numpy as np
 import sys
 import importlib
+import collections
 import networkx as nx
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 try:
     cpp_energy_wrapper = importlib.import_module(\
         '.engines.cython.cpp_energy_wrapper', package="pyene")
-    models_cpp = cpp_energy_wrapper.models_cpp_clp
+    models_cpp = cpp_energy_wrapper.models_cpp
 except ImportError as err:
     print('Error:', err)
+
+@dataclass
+class characteristic:
+    name                :   str     = ""        # Name characteristic
+    value               :   Any     = None      # Value characteristic
+    data_type           :   str     = ""        # Type of data
+
+@dataclass
+class information:
+    characteristics     :   list    = field(default_factory=list)        # list of characteristics that describe the information
+    value               :   Any     = None      # Value of parameter
+    data_type           :   str     = ""        # Type of data
+    def get_characteristic(self, name=None):
+        for cha in self.characteristics:
+            if cha.name == name:
+                return cha.value
+        print("characteristic with name *{}* does not exist".format(name))
+        return "N/A"
+    def exist(self, name=None):
+        for cha in self.characteristics:
+            if cha.name == name:
+                return True
+        return False
+    def update_characteristic(self, name=None, value=None):
+        for cha in self.characteristics:
+            if cha.name == name:
+                cha.value = value
+                return
+        print("characteristic with name *{}* does not exist".format(name))
+
+@dataclass
+class parameters:
+    connections         :   list    = field(default_factory=list)       # list of data with connections
+    functions           :   list    = field(default_factory=list)       # list of data with functions
+    outputs             :   list    = field(default_factory=list)       # list of data with output options
+    data                :   dict    = field(default_factory=dict)       # dictionary with information
 
 @dataclass
 class model_options_parameter:
@@ -44,6 +78,7 @@ class tree_parameters:
     name_node           :   str     = None      # Name of level, e.g. summer, weekday
     value               :   float   = None      # Value of parameter
 
+@dataclass
 class tree_variables:
     name                :   str     = None      # Name parameter
     level               :   int     = None      # Level in the tree
@@ -60,11 +95,550 @@ class nodes_info_tree:
     parameters          :   list    = None      # Parameters associated to the node in the graph
     variables           :   list    = None      # Variables associated to the node in the graph
 
+@dataclass
+class network_variable:
+    name                :   str     = None      # Name of the variable
+    position_tree       :   dict    = None      # Position in the energy tree - representative days
+    hour                :   int     = None      # Hour of the solution in case of multiple hours
+    ID                  :   str     = None      # ID of element
+    type                :   str     = None      # Type of element, e.g. bus, branch
+    value               :   float   = None      # Value of the solution for this specific variable
+    max                 :   float   = None      # Upper limit of the variable
+    min                 :   float   = None      # Lower limit of the variable
+
+@dataclass
+class network_parameter:
+    name                :   str     = None      # Name of the parameter
+    position_tree       :   dict    = None      # Position in the energy tree - representative days
+                                                # in case of parameters changing in time
+    hour                :   int     = None      # Hour of the parameter in case of parameters 
+                                                # changing in time
+    ID                  :   str     = None      # ID of element
+    type                :   str     = None      # Type of element, e.g. bus, branch                                                # related
+    value               :   Any     = None      # Value of specific parameter
+
+@dataclass
+class nodes_info_network:
+    type                :   str     = None      # Type of element, e.g. bus, branch, generator
+    ID                  :   str     = None      # ID of element
+    node                :   int     = None      # Number of node in graph
+    parameters          :   list    = None      # Parameters associated to the node in the graph
+    variables           :   list    = None      # Variables associated to the node in the graph
+
+#      NAMES ELEMENTS NODES
+
+#TODO: Define characteristics and parameters properly across all files
+
+integer_characteristics_nodes = [
+    "number",
+    "typePF"
+]
+
+double_characteristics_nodes =[    
+]
+
+string_characteristics_nodes =[
+    "ID",
+    "name_bus",
+    "zone",
+    "group",
+    "subtype"
+]
+
+bool_characteristics_nodes = []
+
+integer_parameters_nodes =[
+]
+
+double_parameters_nodes =[
+    "Pd",
+    "Qd",
+    "Gs",
+    "Bs",
+    "baseV",
+    "Vmpr",
+    "Vapr",
+    "Vmax",
+    "Vmin"
+]
+
+string_parameters_nodes =[
+]
+
+bool_parameters_nodes =[]
+
+#      NAMES ELEMENTS BRANCHES
+
+integer_characteristics_branches =[
+    "from",
+    "to"
+]
+
+double_characteristics_branches =[
+]
+
+string_characteristics_branches =[
+    "ID",
+    "subtype",
+    "group"
+]
+
+bool_characteristics_branches =[
+]
+
+integer_parameters_branches =[
+]
+
+double_parameters_branches =[
+    "resistance",
+    "reactance",
+    "LCsusceptance",
+    "maxPflow",
+    "CTEP",
+    "Vmpr",
+    "Vapr",
+    "Vmax",
+    "Vmin"
+]
+
+string_parameters_branches =[
+]
+
+bool_parameters_branches =[
+    "status",
+    "vTEP"
+]
+
+#      NAMES ELEMENTS GENERATORS
+
+integer_characteristics_generators =[
+    "number"
+]
+
+double_characteristics_generators =[
+]
+
+string_characteristics_generators =[
+    "ID",
+    "subtype",
+    "group"
+]
+
+bool_characteristics_generators =[
+]
+
+integer_parameters_generators =[
+]
+
+double_parameters_generators =[
+    "Pmax",
+    "Pmin",
+    "Pfix",
+    "Qmax",
+    "Qmin",
+    "Qfix",
+    "cUC",
+    "cGEP",
+    "fCPg",
+    "vCPg",
+    "emissions",
+    "startup",
+    "shutdown",
+    "cost function"
+]
+
+string_parameters_generators =[
+]
+
+bool_parameters_generators =[
+    "status",
+    "vUC",
+    "vGEP"
+]
+
+integer_characteristics = copy.copy(integer_characteristics_nodes)
+integer_characteristics.extend(integer_characteristics_branches)
+integer_characteristics.extend(integer_characteristics_generators)
+integer_characteristics = list(dict.fromkeys(integer_characteristics))
+
+double_characteristics = copy.copy(double_characteristics_nodes)
+double_characteristics.extend(double_characteristics_branches)
+double_characteristics.extend(double_characteristics_generators)
+double_characteristics = list(dict.fromkeys(double_characteristics))
+
+string_characteristics = copy.copy(string_characteristics_nodes)
+string_characteristics.extend(string_characteristics_branches)
+string_characteristics.extend(string_characteristics_generators)
+string_characteristics = list(dict.fromkeys(string_characteristics))
+
+bool_characteristics = copy.copy(bool_characteristics_nodes)
+bool_characteristics.extend(bool_characteristics_branches)
+bool_characteristics.extend(bool_characteristics_generators)
+bool_characteristics = list(dict.fromkeys(bool_characteristics))
+
+all_characteristics = copy.copy(integer_characteristics)
+all_characteristics.extend(double_characteristics)
+all_characteristics.extend(string_characteristics)
+all_characteristics.extend(bool_characteristics)
+all_characteristics = list(dict.fromkeys(all_characteristics))
+
+integer_parameters = copy.copy(integer_parameters_nodes)
+integer_parameters.extend(integer_parameters_branches)
+integer_parameters.extend(integer_parameters_generators)
+
+double_parameters = copy.copy(double_parameters_nodes)
+double_parameters.extend(double_parameters_branches)
+double_parameters.extend(double_parameters_generators)
+
+string_parameters = copy.copy(string_parameters_nodes)
+string_parameters.extend(string_parameters_branches)
+string_parameters.extend(string_parameters_generators)
+
+bool_parameters = copy.copy(bool_parameters_nodes)
+bool_parameters.extend(bool_parameters_branches)
+bool_parameters.extend(bool_parameters_generators)
+
+# MODEL INFORMATION
+
+problems_names_nodes = [
+    "SEP"
+]
+
+problems_names_branches = [
+    "TEP"
+]
+
+problems_names_generators = [
+    "UC",
+    "GEP"
+]
+
+problems_names_system = [
+    "DC ED",
+    "DC OPF",
+    "AC PF",
+    "NetR",
+    "BT"
+]
+
+bool_model_characteristics = [
+    "loss",
+    "multiperiod",
+    "MOEA",
+    "representative periods"
+]
+
+double_model_characteristics = [
+    "Sbase"
+]
+
+string_model_characteristics = [
+    "solver",
+    "engine",
+    "output file name"
+]
+
+bool_model_parameters = copy.copy(problems_names_system)
+bool_model_parameters.extend(problems_names_nodes)
+bool_model_parameters.extend(problems_names_branches)
+bool_model_parameters.extend(problems_names_generators)
+bool_model_parameters.extend(bool_model_characteristics)
+
+double_model_parameters = copy.copy(double_model_characteristics)
+
+string_model_parameters = copy.copy(string_model_characteristics)
+
 class models():
     def __init__(self):
+        self.data = parameters()
         self.model_options = []
         self.tree_parameters = []
         self.network_parameters = []
+    
+    # def _create_nodes_graph_tree(self):
+
+    #     # Getting levels of symetric tree
+    #     levels = []
+    #     for parameter in self.tree_parameters:
+    #         if parameter.level not in levels:
+    #             levels.append(parameter.level)
+    #     levels.sort()
+
+    #     # Getting elements per level
+    #     elements_levels = []
+    #     for level in levels:
+    #         elements_level = []
+    #         for parameter in self.tree_parameters:
+    #             if parameter.level == level and parameter.name_node not in elements_level:
+    #                 elements_level.append(parameter.name_node)
+    #         elements_levels.append(elements_level)
+
+    #     # Creating nodes
+    #     nodes_graph = []
+    #     counter = 0
+    #     nodes_levels = 1
+    #     # Creating list of nodes
+    #     for level, names in zip(levels, elements_levels):
+    #         # Creating nodes
+    #         for _ in range(nodes_levels):
+    #             for name in names:
+    #                 node = nodes_info_tree(level=level, name_node=name, node=counter, parameters=[], variables=[])
+    #                 counter = counter + 1
+    #                 nodes_graph.append(node)
+    #         nodes_levels = nodes_levels * len(names)
+
+    #     # Adding parameters to nodes
+
+    #     for parameter in self.tree_parameters:
+    #         for node_g in nodes_graph:
+    #             if parameter.level == node_g.level and node_g.name_node == parameter.name_node:
+    #                 node_g.parameters.append(parameter)
+    #                 break
+        
+    #     # Adding nodes to graph
+    #     for node_g in nodes_graph:
+    #         self.tree.add_node(node_g.node, obj=node_g)
+        
+    #     return levels, elements_levels
+
+    # def _create_edges_graph_tree(self, levels, elements_levels):
+    #     # Creating branches of graph
+    #     branches_graph = []
+    #     connected_nodes = [False for _ in self.tree]
+    #     for aux in range(len(levels) - 1):
+    #         for elements_pre in elements_levels[aux]:
+    #             for elements_pos in elements_levels[aux + 1]:
+    #                 origin = None
+    #                 destiny = None
+    #                 for pos, node_g in enumerate(self.tree.nodes(data=True)):
+    #                     if node_g[1]['obj'].level == levels[aux] and node_g[1]['obj'].name_node == elements_pre:
+    #                         connected_nodes[pos] = True
+    #                         origin = node_g[1]['obj'].node
+    #                     elif node_g[1]['obj'].level == levels[aux + 1] and node_g[1]['obj'].name_node == elements_pos and not connected_nodes[pos]:
+    #                         connected_nodes[pos] = True
+    #                         destiny = node_g[1]['obj'].node
+    #                     if origin is not None and destiny is not None:
+    #                         branches_graph.append([origin, destiny])
+    #                         break
+
+    #     for branches in  branches_graph:
+    #         self.tree.add_edge(branches[0], branches[1])
+
+    # def _create_graph_tree(self):
+    #     self.tree = nx.MultiDiGraph()
+    #     levels, elements_levels = self._create_nodes_graph_tree()
+    #     self._create_edges_graph_tree(levels, elements_levels)
+
+    # def _create_nodes_graph_network(self):
+    #     nodes_graph = []
+    #     exist = False
+    #     counter = 0
+    #     # Creating list of nodes  and adding parameters
+    #     for parameter in self.network_parameters:
+    #         if nodes_graph:
+    #             for node_g in nodes_graph:
+    #                 if node_g.ID == parameter.ID:
+    #                     exist = True
+    #                     node_g.parameters.append(parameter)
+    #                     break
+    #         if not exist:
+    #             node = nodes_info_network(type=parameter.type, ID=parameter.ID, node=counter, parameters=[parameter], variables=[])
+    #             counter += 1
+    #             nodes_graph.append(node)
+    #         exist = False
+        
+    #     # Adding nodes to graph
+    #     for node_g in nodes_graph:
+    #         self.network.add_node(node_g.node, obj=node_g)
+
+    # def _create_edges_graph_network(self):
+    #     # Creating branches of graph
+    #     branches_graph = []
+    #     for node_g in self.network.nodes(data=True):
+    #         if node_g[1]['obj'].type == "generator":
+    #             for gen in node_g[1]['obj'].parameters:
+    #                 if gen.name == "number":
+    #                     bus_gen = gen.value
+    #                     break
+    #             for aux in self.network.nodes(data=True):
+    #                 if aux[1]['obj'].type == "bus":
+    #                     for node in aux[1]['obj'].parameters:
+    #                         if node.name == "number":
+    #                             bus = node.value
+    #                             break
+    #                     if bus_gen == bus:
+    #                         branches_graph.append([aux[1]['obj'].node, node_g[1]['obj'].node])
+    #                         break
+    #         elif node_g[1]['obj'].type == "branch":
+    #             flag = [False, False]
+    #             for branch in node_g[1]['obj'].parameters:
+    #                 if branch.name == "from":
+    #                     frm = branch.value
+    #                     flag[0] = True
+    #                 elif branch.name == "to":
+    #                     to = branch.value
+    #                     flag[1] = True
+    #                 if flag[0] and flag[1]:
+    #                     break
+    #             flag = [False, False]
+    #             for aux in self.network.nodes(data=True):
+    #                 if aux[1]['obj'].type == "bus":
+    #                     for node in aux[1]['obj'].parameters:
+    #                         if node.name == "number":
+    #                             bus = node.value
+    #                             break
+    #                     if bus == frm:                       
+    #                         branches_graph.append([aux[1]['obj'].node, node_g[1]['obj'].node])
+    #                         flag[0] = True
+    #                     elif bus == to:
+    #                         branches_graph.append([aux[1]['obj'].node, node_g[1]['obj'].node])
+    #                         flag[1] = True
+    #                 if flag[0] and flag[1]:
+    #                     break
+    #     for branches in  branches_graph:
+    #         self.network.add_edge(branches[0], branches[1])
+
+    # def _create_graph_network(self):
+    #     self.network = nx.MultiGraph()
+    #     self._create_nodes_graph_network()
+    #     self._create_edges_graph_network()
+
+    def _load_network_information_cpp(self):
+        for parameter in self.network_parameters:
+            if parameter.name not in all_characteristics and parameter.value is not None:
+                self.model.create_parameter()
+                self.model.load_value("string", b"ID", parameter.ID)
+                self.model.load_value("string", b"type", parameter.type)
+                self.model.load_value("string", b"name", parameter.name)
+                if parameter.position_tree is not None:
+                    parameter.position_tree = collections.OrderedDict(sorted(parameter. position_tree.items()))
+                    tree = []
+                    for val in parameter.position_tree.values():
+                        tree.append(val)
+                    self.model.load_value("v_string", b"pt", tree)
+                subtype = []
+                for par in self.network_parameters:
+                    if par.name == "subtype" and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+                        subtype.append(par.value)
+                    elif par.name != "subtype" and par.name in integer_characteristics and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+                        self.model.load_value("integer", par.name.encode('utf-8'), par.value)
+                    elif par.name != "subtype" and par.name in double_characteristics and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+                        self.model.load_value("double", par.name.encode('utf-8'), par.value)
+                    elif par.name != "subtype" and par.name in string_characteristics and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+                        self.model.load_value("string", par.name.encode('utf-8'), str(par.value))
+                    elif par.name != "subtype" and par.name in bool_characteristics and parameter.ID == par.ID and parameter.type == par.type and par.value is not None:
+                        self.model.load_value("bool", par.name.encode('utf-8'), par.value)
+                if subtype:
+                    self.model.load_value("v_string", b"subtype", subtype)
+                if parameter.hour is not None:
+                    self.model.load_value("double", b"hour", parameter.hour)
+                if parameter.name in integer_parameters:
+                    self.model.load_value("integer", b"value", parameter.value)
+                elif parameter.name in double_parameters:
+                    self.model.load_value("double", b"value", parameter.value)
+                elif parameter.name in string_parameters:
+                    self.model.load_value("string", b"value", str(parameter.value))
+                elif parameter.name in bool_parameters:
+                    self.model.load_value("bool", b"value", parameter.value)
+                else:
+                    print("parameter {} not identified with any type of data".format(parameter.name))
+                self.model.set_parameter(b"network")            
+
+    def _load_tree_information_cpp(self):
+        for parameter in self.tree_parameters:
+            self.model.create_parameter()
+            self.model.load_value("string", b"name", parameter.name)
+            self.model.load_value("string", b"name_node", parameter.name_node)
+            self.model.load_value("integer", b"level", parameter.level)
+            self.model.load_value("double", b"value", parameter.value)
+            self.model.set_parameter(b"tree")
+    
+    def _load_model_information_cpp(self):
+        for parameter in self.model_options:
+            self.model.create_parameter()
+            self.model.load_value("string", b"name", parameter.name)
+            if parameter.engine is not None:
+                self.model.load_value("string", b"engine", parameter.engine)
+            if parameter.name in double_model_parameters:
+                self.model.load_value("double", b"value", parameter.value)
+            elif parameter.name in string_model_parameters:
+                self.model.load_value("string", b"value", str(parameter.value))
+            elif parameter.name in bool_model_parameters:
+                self.model.load_value("bool", b"value", parameter.value)
+            else:
+                print("parameter {} not identified with any type of data".format(parameter.name))
+            self.model.set_parameter(b"model")
+    
+    def _load2cpp(self, name=None):
+        if name == "connections":
+            elements = self.data.connections
+        elif name == "functions":
+            elements = self.data.functions
+            name = "network"
+        elif name == "outputs":
+            elements = self.data.outputs
+        else:
+            elements = self.data.data.get(name, None)
+            if (name == "bus" or name == "generator" or name == "branch") : name = "network"
+        counter = 0
+        for element in elements:
+            self.model.create_parameter()
+            for cha in element.characteristics:
+                self.model.load_value(cha.data_type, cha.name.encode('utf-8'), cha.value)
+            self.model.load_value(element.data_type, b"value", element.value)
+            self.model.set_parameter(name.encode('utf-8'))
+            counter = counter + 1
+
+    def _load_information_cpp(self):
+        # self._load_network_information_cpp()
+        self._load_tree_information_cpp()
+        self._load_model_information_cpp()
+        self._load2cpp("connections")
+        self._load2cpp("functions")
+        self._load2cpp("outputs")
+        import cProfile, pstats, io
+        pr = cProfile.Profile()
+        pr.enable()
+        self._load2cpp("bus")
+        self._load2cpp("generator")
+        self._load2cpp("branch")
+        pr.disable()
+        pr.dump_stats('profile_dump')
+
+    def initialise(self):
+        # self._create_graph_tree()
+        # self._create_graph_network()
+        self.model = models_cpp()
+        import time
+        begin = time.time()
+        self._load_information_cpp()
+        print("TIEMPO LOAD INFO {}".format(begin - time.time()))
+        begin = time.time()
+        self.model.initialise()
+        print("TIEMPO initialise {}".format(begin - time.time()))
+    
+    def evaluate(self):
+        self.model.evaluate()
+
+    def get_outputs(self):
+        return self.model.return_outputs()
+    
+    def update_parameter(self, information):
+        self.model.create_parameter()
+        for key, val in information.items():
+            self.model.load_value(val[0], key.encode('utf-8'), val[1])
+        return self.model.update_parameter()
+    
+    def get_moea_variables(self):
+        ids, names, min_bnd, max_bnd = self.model.get_MOEA_variables()
+        ids_decoded = [ID.decode('utf-8') for ID in ids]
+        names_decoded = [name.decode('utf-8') for name in names]
+        return ids_decoded, names_decoded, min_bnd, max_bnd
+    
+    def get_moea_objectives(self):
+        names = self.model.get_moea_objectives()
+        names_decoded = [name.decode('utf-8') for name in names]
+        return names_decoded
 
 class Energymodel():
     """ This class builds and solve the energy model using the gplk wrapper.
@@ -771,39 +1345,6 @@ class Energymodel():
                     self.solver.get_row_dual(str(\
                     self.treebalance[i][0]), j - 1)
         return EnergybalanceDualSolution
-
-@dataclass
-class network_variable:
-    name                :   str     = None      # Name of the variable
-    position_tree       :   dict    = None      # Position in the energy tree - representative days
-    hour                :   int     = None      # Hour of the solution in case of multiple hours
-    ID                  :   str     = None      # ID of element
-    type                :   str     = None      # Type of element, e.g. bus, branch
-    value               :   float   = None      # Value of the solution for this specific variable
-    max                 :   float   = None      # Upper limit of the variable
-    min                 :   float   = None      # Lower limit of the variable
-
-@dataclass
-class network_parameter:
-    name                :   str     = None      # Name of the parameter
-    position_tree       :   dict    = None      # Position in the energy tree - representative days
-                                                # in case of parameters changing in time
-    hour                :   int     = None      # Hour of the parameter in case of parameters 
-                                                # changing in time
-    ID                  :   str     = None      # ID of element
-    type                :   str     = None      # Type of element, e.g. bus, branch                                                # related
-    value               :   Any     = None      # Value of specific parameter
-
-@dataclass
-class nodes_info_network:
-    type                :   str     = None      # Type of element, e.g. bus, branch, generator
-    subtype             :   str     = None      # Sub type of element, e.g. thermal, hydro
-    ID                  :   str     = None      # ID of element
-    node                :   int     = None      # Number of node in graph
-    parameters          :   list    = None      # Parameters associated to the node in the graph
-    variables           :   list    = None      # Variables associated to the node in the graph
-    bus                 :   int     = None      # Number of the bus related to the graph's node
-    ends                :   list    = None      # list of ends for branches in format [from, to]
 
 class Networkmodel():
     """ This class builds and solve the network model(NM).

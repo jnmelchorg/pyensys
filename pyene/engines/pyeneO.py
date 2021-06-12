@@ -12,6 +12,7 @@ from tables import Int16Col, Float32Col, StringCol, IsDescription, open_file
 import os
 from pyomo.core import ConcreteModel
 from .pyene_Models import EnergyandNetwork, Networkmodel
+from openpyxl import Workbook
 
 class pyeneOConfig:
     ''' Default settings used for this class '''
@@ -37,6 +38,230 @@ class pyeneOConfig:
         self.time['All'] = 0
         self.time['glpk'] = 0
         self.time['step'] = None
+
+
+class pyeneSave():
+
+    def initialise(self, model=None, dir=None, name_file=None):
+        self.save_h5 = False
+        self.save_excel = False
+        for out in model.data.outputs:
+            if out.exist("data device") and out.get_characteristic("data device") == ["h5"] and not self.save_h5:
+                self.save_h5 = True
+                self.fileh5 = pyeneHDF5Settings()
+                self.fileh5.initialise(dir, name_file)
+            elif out.exist("data device") and out.get_characteristic("data device") == ["excel"] and not self.save_excel:
+                self.save_excel = True
+                self.fileexcel = pyene2excel()
+                self.fileexcel.initialise(dir, name_file)
+                
+    def save_results(self, model=None, sim_no=None):
+        if self.save_h5:
+            self.fileh5.save_results(model, sim_no)
+        if self.save_excel:
+            self.fileexcel.save_results(model, sim_no)
+    
+    def close_output_files(self):
+        self.fileh5.terminate(new_implementation=True)
+
+class pyene2excel():
+
+    def initialise(self, dir=None, name_file=None):
+        self.file2save_address = os.path.join(dir, name_file)
+    
+    def save_results(self, model=None, sim_no=None):
+        from .pyene_Models import models
+        if isinstance(model, models):
+            values, starts, characteristics = model.get_outputs()
+        new_file2save = self.file2save_address + 'Simulation_{:05d}.xlsx'.format(sim_no)
+        
+        wb = Workbook()
+        wb.remove_sheet(wb.get_sheet_by_name("Sheet"))
+
+        # Extracting name to create subgroups
+        information_name = []
+        information_problem = []
+        information_position_tree = []
+        for out in model.data.outputs:
+            if out.exist("data device") and out.get_characteristic("data device") == ["excel"]:
+                information_name.append(out.get_characteristic("name")[0])
+                information_problem.append(out.get_characteristic("problem")[0])
+                if out.exist("pt"):
+                    information_position_tree.append(out.get_characteristic("pt"))
+                else:
+                    information_position_tree.append(None)
+
+        used_values = [False for _ in range(len(values))]
+        for i_n, i_p, i_pt in zip(information_name, information_problem, information_position_tree):
+            if (i_p == "DC OPF"):
+                table_columns = {}
+                aux = 1
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour":
+                                table_columns[cha[0].decode('utf-8')] = aux
+                                aux = aux + 1
+                        break
+                # Adding IDs
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "ID" and cha[2].decode('utf-8') not in table_columns:
+                                table_columns[cha[2].decode('utf-8')] = aux
+                                aux = aux + 1
+                                break
+                
+                if (i_pt is not None):
+                    word = "_" + i_pt[0]
+                    for c in i_pt[1:]:
+                        word = word + "." + c
+                else:
+                    word = ""
+                
+                ws = wb.create_sheet()
+                ws.cell(row=1, column=1, value=i_n)
+                for key, val in table_columns.items():
+                    ws.cell(row=2, column=val, value=key)
+
+                aux = 3
+                is_end = False
+                while not is_end:
+                    is_end = True
+                    if (False not in used_values): break
+                    reference = {}
+                    for num, (val, u_val, cha_group) in enumerate(zip(values, used_values, characteristics)):
+                        is_group = True
+                        if not u_val:
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') != i_n):
+                                    is_group = False
+                                if (cha[0].decode('utf-8') == "pt"):
+                                    if (len(cha[2:]) != len(i_pt)): is_group = False
+                                    else:
+                                        for num1, c in enumerate(cha[2:]):
+                                            if (c.decode('utf-8') != i_pt[num1]):
+                                                is_group = False
+                                                break
+                        if is_group and not u_val and not reference:
+                            is_end = False
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) == 3:
+                                    reference[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                    ws.cell(row=aux, column=table_columns[cha[0].decode('utf-8')], value=cha[2].decode('utf-8'))
+                                elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    reference[cha[0].decode('utf-8')] = word
+                                    ws.cell(row=aux, column=table_columns[cha[0].decode('utf-8')], value=word)
+                                elif cha[0].decode('utf-8') == "ID":
+                                    ws.cell(row=aux, column=table_columns[cha[2].decode('utf-8')], value=val)
+                                    used_values[num] = True
+                        elif is_group and not u_val and reference:
+                            compare_cha = {}
+                            ID = ""
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) == 3:
+                                    compare_cha[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    compare_cha[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "ID":
+                                    ID = cha[2].decode('utf-8')
+                            if compare_cha == reference:
+                                is_end = False
+                                ws.cell(row=aux, column=table_columns[ID], value=val)
+                                used_values[num] = True
+                    aux = aux + 1
+            if (i_p == "BT"):
+                table_columns = {}
+                aux = 1
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference":
+                                table_columns[cha[0].decode('utf-8')] = aux
+                                aux = aux + 1
+                # Adding references
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "reference" and cha[2].decode('utf-8') not in table_columns:
+                                table_columns[cha[2].decode('utf-8')] = aux
+                                aux = aux + 1
+                                break
+                
+                ws = wb.create_sheet(i_n)
+                ws.cell(row=1, column=1, value=i_n)
+                for key, val in table_columns:
+                    ws.cell(row=1, column=val, value=key)
+                
+                aux = 2
+                is_end = False
+                while not is_end:
+                    is_end = True
+                    reference = {}
+                    if (False not in used_values): break
+                    for num, (val, u_val, cha_group) in enumerate(zip(values, used_values, characteristics)):
+                        is_group = False
+                        if not u_val:
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                                    is_group = True
+                        if is_group and not u_val and not reference:
+                            is_end = False
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) == 3:
+                                    reference[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                    ws.cell(row=aux, column=table_columns[cha[0].decode('utf-8')], value=cha[2].decode('utf-8'))
+                                elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    reference[cha[0].decode('utf-8')] = word
+                                    ws.cell(row=aux, column=table_columns[cha[0].decode('utf-8')], value=word)
+                                elif cha[0].decode('utf-8') == "reference":
+                                    ws.cell(row=aux, column=table_columns[cha[2].decode('utf-8')], value=val)
+                                    used_values[num] = True
+                        elif is_group and not u_val and reference:
+                            compare_cha = {}
+                            ID = ""
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) == 3:
+                                    compare_cha[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    compare_cha[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "reference":
+                                    ID = cha[2].decode('utf-8')
+                            if compare_cha == reference:
+                                is_end = False
+                                ws.cell(row=aux, column=table_columns[ID], value=val)
+                                used_values[num] = True
+                    aux = aux + 1
+
+        wb.save(new_file2save)
 
 
 class pyeneHDF5Settings():
@@ -107,6 +332,195 @@ class pyeneHDF5Settings():
         curtailment = Float32Col(dflt=1, pos=7)  # sCurtailment
         spill = Float32Col(dflt=1, pos=8)  # spilling
     
+    def initialise(self, dir=None, name_file=None):
+        self.fileh = open_file(os.path.join(dir, name_file+".h5"), mode='w')
+    
+    def save_results(self, model=None, sim_no=None):
+        from .pyene_Models import models
+        if isinstance(model, models):
+            values, starts, characteristics = model.get_outputs()
+        HDF5group = \
+            self.fileh.create_group(self.fileh.root, 'Simulation_{:05d}'.format(sim_no))
+        
+        # Extracting name to create subgroups
+        information_name = []
+        information_problem = []
+        information_position_tree = []
+        for out in model.data.outputs:
+            if out.exist("data device") and out.get_characteristic("data device") == ["h5"]:
+                information_name.append(out.get_characteristic("name")[0])
+                information_problem.append(out.get_characteristic("problem")[0])
+                if out.exist("pt"):
+                    information_position_tree.append(out.get_characteristic("pt"))
+                else:
+                    information_position_tree.append(None)
+
+        used_values = [False for _ in range(len(values))]
+        for i_n, i_p, i_pt in zip(information_name, information_problem, information_position_tree):
+            if (i_p == "DC OPF"):
+                table_columns = {}
+                aux = 0
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour":
+                                table_columns[cha[0].decode('utf-8')] = StringCol(itemsize=64, dflt='', pos=aux)
+                                aux = aux + 1
+                        break
+                # Adding IDs
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "ID" and cha[2].decode('utf-8') not in table_columns:
+                                table_columns[cha[2].decode('utf-8')] = Float32Col(dflt=0, pos=aux)
+                                aux = aux + 1
+                                break
+                if (i_pt is not None):
+                    word = "_" + i_pt[0]
+                    for c in i_pt[1:]:
+                        word = word + "|" + c
+                else:
+                    word = ""
+                HDF5table = \
+                self.fileh.create_table(HDF5group, "{}{}".format(i_n, word), table_columns)
+                HDF5row = HDF5table.row
+
+                is_end = False
+                while not is_end:
+                    is_end = True
+                    reference = {}
+                    for num, (val, u_val, cha_group) in enumerate(zip(values, used_values, characteristics)):
+                        is_group = True
+                        if not u_val:
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') != i_n):
+                                    is_group = False
+                                if (cha[0].decode('utf-8') == "pt"):
+                                    if (len(cha[2:]) != len(i_pt)): is_group = False
+                                    else:
+                                        for num1, c in enumerate(cha[2:]):
+                                            if (c.decode('utf-8') != i_pt[num1]):
+                                                is_group = False
+                                                break
+                        if is_group and not u_val and not reference:
+                            is_end = False
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) == 3:
+                                    reference[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                    HDF5row[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    reference[cha[0].decode('utf-8')] = word
+                                    HDF5row[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "ID":
+                                    HDF5row[cha[2].decode('utf-8')] = val
+                                    used_values[num] = True
+                        elif is_group and not u_val and reference:
+                            compare_cha = {}
+                            ID = ""
+                            for cha in cha_group:
+                                if (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) == 3:
+                                    compare_cha[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    compare_cha[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "ID":
+                                    ID = cha[2].decode('utf-8')
+                            if compare_cha == reference:
+                                is_end = False
+                                HDF5row[ID] = val
+                                used_values[num] = True
+                    if not is_end:
+                        HDF5row.append()
+                HDF5table.flush()
+            if (i_p == "BT"):
+                table_columns = {}
+                aux = 0
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference":
+                                table_columns[cha[0].decode('utf-8')] = StringCol(itemsize=64, dflt='', pos=aux)
+                                aux = aux + 1
+                # Adding references
+                for cha_group in characteristics:
+                    is_group = False
+                    for cha in cha_group:
+                        if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                            is_group = True
+                    if is_group:
+                        for cha in cha_group:
+                            if cha[0].decode('utf-8') == "reference" and cha[2].decode('utf-8') not in table_columns:
+                                table_columns[cha[2].decode('utf-8')] = Float32Col(dflt=0, pos=aux)
+                                aux = aux + 1
+                                break
+                
+                HDF5table = \
+                self.fileh.create_table(HDF5group, "{}".format(i_n), table_columns)
+                HDF5row = HDF5table.row
+
+                is_end = False
+                while not is_end:
+                    is_end = True
+                    reference = {}
+                    if (False not in used_values): break
+                    for num, (val, u_val, cha_group) in enumerate(zip(values, used_values, characteristics)):
+                        is_group = False
+                        if not u_val:
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') == "name" and cha[2].decode('utf-8') == i_n:
+                                    is_group = True
+                        if is_group and not u_val and not reference:
+                            is_end = False
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) == 3:
+                                    reference[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                    HDF5row[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    reference[cha[0].decode('utf-8')] = word
+                                    HDF5row[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "reference":
+                                    HDF5row[cha[2].decode('utf-8')] = val
+                                    used_values[num] = True
+                        elif is_group and not u_val and reference:
+                            compare_cha = {}
+                            ID = ""
+                            for cha in cha_group:
+                                if cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) == 3:
+                                    compare_cha[cha[0].decode('utf-8')] = cha[2].decode('utf-8')
+                                elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
+                                    word = cha[2].decode('utf-8')
+                                    for c in cha[3:]:
+                                        word = word + "|" + c.decode('utf-8')
+                                    compare_cha[cha[0].decode('utf-8')] = word
+                                elif cha[0].decode('utf-8') == "reference":
+                                    ID = cha[2].decode('utf-8')
+                            if compare_cha == reference:
+                                is_end = False
+                                HDF5row[ID] = val
+                                used_values[num] = True
+                    if not is_end:
+                        HDF5row.append()
+                HDF5table.flush()
 
     def Accumulate(self, EN, m):
         ''' Accumulate results '''
@@ -755,12 +1169,15 @@ class pyeneHDF5Settings():
         #     self.filedetailedinfo.create_array(HDF5group, "Active_Power_Flow", \
         #         ActivePowerFlow)
 
-    def terminate(self):
+    def terminate(self, new_implementation=False):
 
-        if self.settings['Directory1'] is None:
-            return
-        self.fileh.close()
-        self.filedetailedinfo.close()
+        if not new_implementation:
+            if self.settings['Directory1'] is None:
+                return
+            self.fileh.close()
+            self.filedetailedinfo.close()
+        else:
+            self.fileh.close()
 
 class PrintinScreen():
     '''This class contains all definitions that allows printing on the screen any 

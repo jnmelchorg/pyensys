@@ -6,14 +6,10 @@ engine.
 # TODO complete this description once the cases are written.
 
 """
-from .engines.pyene import pyeneClass, pyeneConfig
-from .fixtures import json_directory
-from .engines.pyene import pyeneClass as pe
+from .engines.main import pyeneClass, pyeneConfig
 from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 from .engines.pyeneO import PrintinScreen as PSc
-import os
-import json
 
 
 def get_pyene(conf=None):
@@ -385,6 +381,13 @@ def hydro_example_tobeerased(conf):
     # Disable pyeneH
     conf.HM.settings['Flag'] = False
     conf.NM.settings['NoGenerators'] = 13
+
+def hydro_example_tobeerased(conf):
+    """ Execute pyene to run the example of baseload - THIS NEEDS TO BE ERASED \
+        IN A FUTURE RELEASE"""
+    # Disable pyeneH
+    conf.HM.settings['Flag'] = False
+
     conf.NM.settings['Flag'] = True
     conf.NM.settings['Losses'] = False
     conf.NM.settings['Feasibility'] = True
