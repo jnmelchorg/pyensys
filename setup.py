@@ -32,23 +32,23 @@ def setup_package():
             super().finalize_options()
 
     metadata = dict(
-        name="pyene",
+        name="pyensys",
         version='0.1',
-        description='Python Energy and Networks Engine - pyene.',
+        description='Python Energy and Networks Engine - pyensys.',
         url='git@gitlab.hydra.org.uk:futuredams/test-case/DAMSEnergy.git',
         author='Dr. Eduardo Alejandro Martínez Ceseña, \
             Dr. Jose Nicolas Melchor Gutierrez',
         author_email='Eduardo.MartinezCesena@manchester.ac.uk, \
             jose.melchorgutierrez@manchester.ac.uk',
         packages=find_packages(),
-        package_data={'pyene': ['json/*.json']},
+        package_data={'pyensys': ['json/*.json']},
         install_requires=['click', 'pandas', 'pyomo', 'pypsa'],
         extras_require={"test": ["pytest"]},
         cmdclass={"build_ext": new_build_ext},
         # use_scm_version=True,
         entry_points='''
         [console_scripts]
-        pyene=pyene.cli:cli
+        pyensys=pyensys.cli:cli
         ''',
     )
     
@@ -65,31 +65,31 @@ def setup_package():
     metadata["ext_modules"] = ext_modules = []
 
     if config["glpk"]:
-        ext_modules.append(Extension("pyene.engines.cython._glpk", ["pyene/engines/_glpk.pyx"],
+        ext_modules.append(Extension("pyensys.engines.cython._glpk", ["pyensys/engines/_glpk.pyx"],
         include_dirs=[findglpkheaderpath()],
         library_dirs=[findglpklibrarypath()], 
         libraries=["glpk"],))
 
     if config["clp"]:
         if platform.system() == "Windows":
-            ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
-            include_dirs=[os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\armadillo-10.1.2\include',
-                      os.path.dirname(os.path.abspath(__file__))+'\pyene\engines\external files\\boost_1_75_0',
-                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\CoinUtils\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\BuildTools\headers"],
+            ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
+            include_dirs=[os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external files\\armadillo-10.1.2\include',
+                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external files\\boost_1_75_0',
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\Clp\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\CoinUtils\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\BuildTools\headers"],
             libraries=['libClp', 'libCoinUtils', 'libopenblas'],
-            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\Clp\lib",  os.path.dirname(os.path.abspath(__file__))+"\pyene\engines\external files\\armadillo-10.1.2\lib_win64"],
+            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\Clp\lib",  os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\\armadillo-10.1.2\lib_win64"],
             define_macros= [('ARMA_DONT_USE_WRAPPER', None),
                             ('ARMA_USE_LAPACK', None),
                             ('ARMA_USE_BLAS', None)]
                             ))
         elif platform.system() == "Linux":
-            ext_modules.append(Extension("pyene.engines.cython.cpp_energy_wrapper", ["pyene/engines/cpp_energy_wrapper.pyx"],
-            include_dirs=["pyene/engines/external files/boost_1_74_0",
-                      "pyene/engines/external files/Clp/include",
-                      "pyene/engines/external files/CoinUtils/include",
-                      "pyene/engines/external files/BuildTools/headers"],
+            ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
+            include_dirs=["pyensys/engines/external files/boost_1_74_0",
+                      "pyensys/engines/external files/Clp/include",
+                      "pyensys/engines/external files/CoinUtils/include",
+                      "pyensys/engines/external files/BuildTools/headers"],
             libraries=['Clp', 'armadillo'],
             ))
     setup(**metadata)
