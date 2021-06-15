@@ -163,3 +163,6 @@ pyensys/engines/cpp_energy_wrapper.cpp
 #Ignore output files
 tests/excel/*.h5
 tests/excel/outputs*.xlsx
+
+# Ignore file for debugging
+pyensys/engines/debugger.py
