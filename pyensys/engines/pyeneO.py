@@ -396,7 +396,7 @@ class pyeneHDF5Settings():
                 if (i_pt is not None):
                     word = "_" + i_pt[0]
                     for c in i_pt[1:]:
-                        word = word + "|" + c
+                        word = word + "_" + c
                 else:
                     word = ""
                 HDF5table = \
@@ -429,7 +429,7 @@ class pyeneHDF5Settings():
                                 elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
                                     word = cha[2].decode('utf-8')
                                     for c in cha[3:]:
-                                        word = word + "|" + c.decode('utf-8')
+                                        word = word + "_" + c.decode('utf-8')
                                     reference[cha[0].decode('utf-8')] = word
                                     HDF5row[cha[0].decode('utf-8')] = word
                                 elif cha[0].decode('utf-8') == "ID":
@@ -444,7 +444,7 @@ class pyeneHDF5Settings():
                                 elif (cha[0].decode('utf-8') == "pt" or cha[0].decode('utf-8') == "hour") and len(cha) > 3:
                                     word = cha[2].decode('utf-8')
                                     for c in cha[3:]:
-                                        word = word + "|" + c.decode('utf-8')
+                                        word = word + "_" + c.decode('utf-8')
                                     compare_cha[cha[0].decode('utf-8')] = word
                                 elif cha[0].decode('utf-8') == "ID":
                                     ID = cha[2].decode('utf-8')
@@ -505,7 +505,7 @@ class pyeneHDF5Settings():
                                 elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
                                     word = cha[2].decode('utf-8')
                                     for c in cha[3:]:
-                                        word = word + "|" + c.decode('utf-8')
+                                        word = word + "_" + c.decode('utf-8')
                                     reference[cha[0].decode('utf-8')] = word
                                     HDF5row[cha[0].decode('utf-8')] = word
                                 elif cha[0].decode('utf-8') == "reference":
@@ -520,7 +520,7 @@ class pyeneHDF5Settings():
                                 elif cha[0].decode('utf-8') != "name" and cha[0].decode('utf-8') != "reference" and len(cha) > 3:
                                     word = cha[2].decode('utf-8')
                                     for c in cha[3:]:
-                                        word = word + "|" + c.decode('utf-8')
+                                        word = word + "_" + c.decode('utf-8')
                                     compare_cha[cha[0].decode('utf-8')] = word
                                 elif cha[0].decode('utf-8') == "reference":
                                     ID = cha[2].decode('utf-8')
