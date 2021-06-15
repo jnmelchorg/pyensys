@@ -596,26 +596,21 @@ class models():
         self._load2cpp("connections")
         self._load2cpp("functions")
         self._load2cpp("outputs")
-        import cProfile, pstats, io
-        pr = cProfile.Profile()
-        pr.enable()
+        # import cProfile, pstats, io
+        # pr = cProfile.Profile()
+        # pr.enable()
         self._load2cpp("bus")
         self._load2cpp("generator")
         self._load2cpp("branch")
-        pr.disable()
-        pr.dump_stats('profile_dump')
+        # pr.disable()
+        # pr.dump_stats('profile_dump')
 
     def initialise(self):
         # self._create_graph_tree()
         # self._create_graph_network()
         self.model = models_cpp()
-        import time
-        begin = time.time()
         self._load_information_cpp()
-        print("TIEMPO LOAD INFO {}".format(begin - time.time()))
-        begin = time.time()
         self.model.initialise()
-        print("TIEMPO initialise {}".format(begin - time.time()))
     
     def evaluate(self, subscripts):
         self.subscripts = subscripts
