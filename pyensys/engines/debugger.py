@@ -23,6 +23,7 @@ begin = time.time()
 
 path = 'C:\\Users\\f09903jm\\git projects\\pyensys\\tests\\excel\\case4.xlsx'
 
+
 opt = pyeneClass()
 opt.initialise(path=path)
 end1 = time.time()
