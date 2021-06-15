@@ -282,6 +282,9 @@ class pyeneClass():
 
         return value
 
+    def close_output_files(self):
+        self.save_solution.close_output_files()
+
     def ESim(self, conf):
         ''' Energy only optimisation '''
         # Get energy object
@@ -871,13 +874,10 @@ class pyeneClass():
             
             from .pyene_Models import models
             self.mod_cython_cpp = models()
-            # import time
-            # begin = time.time()
             if file_extension == ".xlsx":
                 from .pyeneI import excel2pyene as e2p
                 read = e2p()
                 read.read_excel(energy_file=path, model=self.mod_cython_cpp)
-            # print("TIEMPO EXCEL {}".format(begin - time.time()))
             self.mod_cython_cpp.initialise()
             outpput_file_name = "outputs"
             for options in self.mod_cython_cpp.model_options:
