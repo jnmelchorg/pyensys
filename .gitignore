@@ -155,3 +155,11 @@ Thumbs.db
 .vscode/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+
+# Cythonized files to ignore
+pyensys/engines/_glpk.c
+pyensys/engines/cpp_energy_wrapper.cpp
+
+#Ignore output files
+tests/excel/*.h5
+tests/excel/outputs*.xlsx
