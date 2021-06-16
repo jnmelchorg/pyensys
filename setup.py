@@ -34,8 +34,7 @@ def setup_package():
     metadata = dict(
         name="pyensys",
         version='0.1',
-        description='Python Energy and Networks Engine - pyensys.',
-        url='git@gitlab.hydra.org.uk:futuredams/test-case/DAMSEnergy.git',
+        description='python energy systems simulator - pyensys.',
         author='Dr. Eduardo Alejandro Martínez Ceseña, \
             Dr. Jose Nicolas Melchor Gutierrez',
         author_email='Eduardo.MartinezCesena@manchester.ac.uk, \
@@ -50,6 +49,13 @@ def setup_package():
         [console_scripts]
         pyensys=pyensys.cli:cli
         ''',
+        classifiers=[
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.8",
+            "Programming Language :: C++",
+            "License :: OSI Approved :: Eclipse Public License 2.0 (EPL-2.0)",
+            "Operating System :: Microsoft :: Windows :: Windows 10"
+        ],
     )
     
     config = parse_optional_arguments()
