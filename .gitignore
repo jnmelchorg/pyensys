@@ -166,3 +166,6 @@ tests/excel/outputs*.xlsx
 
 # Ignore file for debugging
 pyensys/engines/debugger.py
+
+# Ignore third party files
+pyensys/engines/external_files/*
