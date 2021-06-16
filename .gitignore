@@ -169,3 +169,6 @@ pyensys/engines/debugger.py
 
 # Ignore third party files
 pyensys/engines/external_files/*
+
+# Ignore blas library
+pyensys/engines/cython/libopenblas.dll
