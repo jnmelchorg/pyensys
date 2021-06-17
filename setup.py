@@ -82,9 +82,7 @@ def setup_package():
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
             include_dirs=[
                       os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external_files\\boost_1_75_0',
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\CoinUtils\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\BuildTools\headers"],
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp",],
             libraries=['libClp', 'libCoinUtils'],
             library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp\lib"],
                             ))
