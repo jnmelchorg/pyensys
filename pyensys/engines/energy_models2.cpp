@@ -2519,30 +2519,21 @@ void models::return_outputs(std::vector<double> &values, std::vector<int> &start
                         {
                             std::vector<std::string> aux_cha;
                             aux_cha.push_back(cha.get_name());
-                            if (std::string *val = boost::get<std::string>(&cha.get_value()))
+                            std::string type_var = boost::apply_visitor(get_type_visitor(), cha.get_value());
+                            aux_cha.push_back(type_var);
+                            if (type_var == "bool")
                             {
-                                aux_cha.push_back("string");
-                                std::string v = boost::get<std::string>(cha.get_value());
-                                aux_cha.push_back(v);
-                            }
-                            else if (bool *val = boost::get<bool>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("bool");
-                                if (*val)
+                                if (boost::get<bool>(cha.get_value()))
                                     aux_cha.push_back("True");
                                 else
                                     aux_cha.push_back("False");
                             }
-                            else if (int *val = boost::get<int>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("integer");
-                                aux_cha.push_back(std::to_string(*val));
-                            }
-                            else if (double *val = boost::get<double>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("double");
-                                aux_cha.push_back(std::to_string(*val));
-                            }
+                            else if (type_var == "integer")
+                                aux_cha.push_back(std::to_string(boost::get<int>(cha.get_value())));
+                            else if (type_var == "double")
+                                aux_cha.push_back(std::to_string(boost::get<double>(cha.get_value())));
+                            else if (type_var == "string")
+                                aux_cha.push_back(boost::get<std::string>(cha.get_value()));
                             storage_cha.push_back(aux_cha);
                         }
                     }
@@ -2634,30 +2625,21 @@ void models::return_outputs(std::vector<double> &values, std::vector<int> &start
                         {
                             std::vector<std::string> aux_cha;
                             aux_cha.push_back(cha.get_name());
-                            if (std::string *val = boost::get<std::string>(&cha.get_value()))
+                            std::string type_var = boost::apply_visitor(get_type_visitor(), cha.get_value());
+                            aux_cha.push_back(type_var);
+                            if (type_var == "bool")
                             {
-                                aux_cha.push_back("string");
-                                std::string v = boost::get<std::string>(cha.get_value());
-                                aux_cha.push_back(v);
-                            }
-                            else if (bool *val = boost::get<bool>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("bool");
-                                if (*val)
+                                if (boost::get<bool>(cha.get_value()))
                                     aux_cha.push_back("True");
                                 else
                                     aux_cha.push_back("False");
                             }
-                            else if (int *val = boost::get<int>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("integer");
-                                aux_cha.push_back(std::to_string(*val));
-                            }
-                            else if (double *val = boost::get<double>(&cha.get_value()))
-                            {
-                                aux_cha.push_back("double");
-                                aux_cha.push_back(std::to_string(*val));
-                            }
+                            else if (type_var == "integer")
+                                aux_cha.push_back(std::to_string(boost::get<int>(cha.get_value())));
+                            else if (type_var == "double")
+                                aux_cha.push_back(std::to_string(boost::get<double>(cha.get_value())));
+                            else if (type_var == "string")
+                                aux_cha.push_back(boost::get<std::string>(cha.get_value()));
                             storage_cha.push_back(aux_cha);
                         }
                     }

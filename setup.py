@@ -33,7 +33,7 @@ def setup_package():
 
     metadata = dict(
         name="pyensys",
-        version='0.1',
+        version='0.0.1',
         url='https://github.com/jnmelchorg/pyensys',
         description='python energy systems simulator - pyensys.',
         author='Dr. Eduardo Alejandro Martínez Ceseña, \
@@ -80,16 +80,13 @@ def setup_package():
     if config["clp"]:
         if platform.system() == "Windows":
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
-            include_dirs=[os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external files\\armadillo-10.1.2\include',
-                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external files\\boost_1_75_0',
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\Clp\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\CoinUtils\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\BuildTools\headers"],
-            libraries=['libClp', 'libCoinUtils', 'libopenblas'],
-            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\Clp\lib",  os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external files\\armadillo-10.1.2\lib_win64"],
-            define_macros= [('ARMA_DONT_USE_WRAPPER', None),
-                            ('ARMA_USE_LAPACK', None),
-                            ('ARMA_USE_BLAS', None)]
+            include_dirs=[
+                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external_files\\boost_1_75_0',
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\CoinUtils\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\BuildTools\headers"],
+            libraries=['libClp', 'libCoinUtils'],
+            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp\lib"],
                             ))
         elif platform.system() == "Linux":
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
