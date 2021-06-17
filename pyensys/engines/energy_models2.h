@@ -23,6 +23,15 @@
 
 typedef boost::variant<bool, int, double, std::string> value_T;
 
+class get_type_visitor : public boost::static_visitor<std::string>
+{
+    public:
+        std::string operator()(bool) const {return "bool";}
+        std::string operator()(int) const {return "integer";}
+        std::string operator()(double) const {return "double";}
+        std::string operator()(std::string const&) const {return "string";}
+};
+
 class characteristic
 {
     public:
