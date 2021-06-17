@@ -73,8 +73,8 @@ def setup_package():
 
     if config["glpk"]:
         ext_modules.append(Extension("pyensys.engines.cython._glpk", ["pyensys/engines/_glpk.pyx"],
-        include_dirs=[findglpkheaderpath()],
-        library_dirs=[findglpklibrarypath()], 
+        include_dirs=[findglpkheaderpath()] if findglpkheaderpath() is not None else [],
+        library_dirs=[findglpklibrarypath()] if findglpklibrarypath() is not None else [],
         libraries=["glpk"],))
 
     if config["clp"]:
@@ -93,11 +93,7 @@ def setup_package():
                             ))
         elif platform.system() == "Linux":
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
-            include_dirs=["pyensys/engines/external files/boost_1_74_0",
-                      "pyensys/engines/external files/Clp/include",
-                      "pyensys/engines/external files/CoinUtils/include",
-                      "pyensys/engines/external files/BuildTools/headers"],
-            libraries=['Clp', 'armadillo'],
+            libraries=['Clp'],
             ))
     setup(**metadata)
 
@@ -158,6 +154,7 @@ def findglpkheaderpath():
     if glpkpath is None:
         print('Path for GLPK header has not been found in the predefined \
             directories')
+        return
     
     return glpkpath
 
@@ -188,6 +185,7 @@ def findglpklibrarypath():
     if glpkpath is None:
         print('Path for GLPK library has not been found in the predefined \
             directories')
+        return
     
     return glpkpath
 
