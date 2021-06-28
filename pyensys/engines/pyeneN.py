@@ -1105,7 +1105,7 @@ class ENetworkClass:
         NoOGen = len(GenNCost)
 
         # Defining device classes
-        from pyene.engines.pyeneD import ElectricityNetwork, Generators
+        from pyensys.engines.pyeneD import ElectricityNetwork, Generators
 
         # Define network model
         # The definition and configuration methods are separated so, in

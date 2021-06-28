@@ -43,7 +43,7 @@ class PrintClass:
             print('Model not recognised')
 
         # Initialize network variables
-        from .pyene import pyeneClass
+        from .main import pyeneClass
         from .pyeneN import ENetworkClass
         if isinstance(EN, pyeneClass):
             OFaux = EN._Calculate_OFaux()

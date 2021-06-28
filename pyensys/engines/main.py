@@ -929,7 +929,7 @@ class pyeneClass():
     def Print_ENSim(self, m):
         ''' Print results '''
         
-        from pyene.engines.pyeneP import PrintClass
+        from pyensys.engines.pyeneP import PrintClass
         prnt = PrintClass(m, self)
         
         self.EM.print(m)
