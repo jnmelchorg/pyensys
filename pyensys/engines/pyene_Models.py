@@ -11,7 +11,6 @@ the transmission system (Optimal Power Flow)
 """
 
 import copy
-from pyensys.engines.cython._glpk import GLPKSolver
 import numpy as np
 import sys
 import importlib
@@ -24,6 +23,13 @@ try:
     cpp_energy_wrapper = importlib.import_module(\
         '.engines.cython.cpp_energy_wrapper', package="pyensys")
     models_cpp = cpp_energy_wrapper.models_cpp
+except ImportError as err:
+    print('Error:', err)
+
+try:
+    GLPKSolver_wrapper = importlib.import_module(\
+        '.engines.cython._glpk', package="pyensys")
+    GLPKSolver = GLPKSolver_wrapper.GLPKSolver
 except ImportError as err:
     print('Error:', err)
 
