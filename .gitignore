@@ -172,3 +172,4 @@ pyensys/engines/external_files/*
 
 # Ignore blas library
 pyensys/engines/cython/libopenblas.dll
+docs test/4bus.png
