@@ -68,3 +68,5 @@ pyene run-en
 
 The simulations will run the tests defined in `DAMSEnergy\pyene\json`. Additional
 tests can be found in `DAMSEnergy\tests`.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jnmelchorg/pyensys/blob/master/PowerTech_Tutorial_PyEnSyS_Part1.ipynb)
