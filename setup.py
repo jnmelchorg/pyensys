@@ -33,7 +33,7 @@ def setup_package():
 
     metadata = dict(
         name="pyensys",
-        version='0.0.1',
+        version='0.0.3',
         url='https://github.com/jnmelchorg/pyensys',
         description='python energy systems simulator - pyensys.',
         author='Dr. Eduardo Alejandro Martínez Ceseña, \
