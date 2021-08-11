@@ -173,3 +173,5 @@ pyensys/engines/external_files/*
 # Ignore blas library
 pyensys/engines/cython/libopenblas.dll
 docs test/4bus.png
+pyensys/engines/pyeneT.py
+tests/json/Myanmar_103.json
