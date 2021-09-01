@@ -1,3 +1,5 @@
+![CI](https://github.com/jnmelchorg/pyensys/blob/master/.github/workflows/python-publish.yml/badge.svg)
+
 # Python Energy Systems Simulator (PyEnSyS) for FutureDAMS
 
 This repository contains the `PyEnSyS` model for testing energy systems within
