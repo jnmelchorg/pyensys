@@ -13,7 +13,7 @@ import math
 import random
 import time
 import numpy as np
-from pyene.engines.pyene import pyeneClass as pe
+from pyensys.engines.main import pyeneClass as pe
 from .pyene_Models import Networkmodel as NMod # Energy model in glpk
 
 # TODO: inherit pyene parameters

@@ -58,9 +58,10 @@ class PowerSystemIslandsIsolations(ElectricityNetwork):
         # Edges for transmission lines
         for xseries in self.get_series_elements_names():
             aux = self.get_objects(name=xseries)
-            for edges in aux:
-                aux1 = edges.get_element(name='bus_position')
-                graph.add_edge(aux1[0], aux1[1])
+            if not (len(aux) == 1 and aux[0]._data['reactance'] == None):
+                for edges in aux:
+                    aux1 = edges.get_element(name='bus_position')
+                    graph.add_edge(aux1[0], aux1[1])
         return graph
     
     def nodes_graph(self, graph=None):

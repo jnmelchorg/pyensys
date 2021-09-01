@@ -1,5 +1,5 @@
 import os
-from pyene.engines.pyene import pyeneConfig
+from pyensys.engines.main import pyeneConfig
 
 
 def json_directory():

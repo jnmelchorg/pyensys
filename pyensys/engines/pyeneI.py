@@ -735,7 +735,7 @@ class any2json:
                                     for x1 in aux1[cnt + x]:
                                         if x1 != ";":
                                             aux2 = aux2 + x1
-                                    auxlist.append(int(aux2))
+                                    auxlist.append(aux2)
                             jsonformat['gencost']['COST'].append(auxlist)
                         elif pos != 'MODEL' and pos != 'NCOST':
                             jsonformat['gencost'][pos].append(float(aux1[cnt]))
