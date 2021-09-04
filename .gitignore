@@ -172,8 +172,18 @@ pyensys/engines/external_files/*
 
 # Ignore blas library
 pyensys/engines/cython/libopenblas.dll
-docs test/4bus.png
+
+#Ignore figures in test
+docs test/*.png
+
+# Ignore internal test file
 pyensys/engines/pyeneT.py
+
+# Ignore internal tests
 tests/json/Myanmar_103.json
 tests/json/Myanmar_103_reduced.json
 tests/json/Myanmar_103_reduced.m
+
+# Ignore output subfolders
+tests/outputs/*
+!/tests/outputs/__init__.py
