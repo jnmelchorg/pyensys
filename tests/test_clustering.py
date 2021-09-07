@@ -3,7 +3,7 @@ from os.path import dirname, abspath, join
 from sklearn.cluster import Birch
 from numpy import ndarray,array_equal
 
-from pyensys.data_processing.path_aggregation import Birch_Settings, Clustering
+from pyensys.data_processing.clustering import Birch_Settings, Clustering
 
 def get_test_file_path() -> str:
     current_directory_path=dirname(abspath(__file__))
