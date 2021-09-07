@@ -1,6 +1,6 @@
 from sklearn.cluster import Birch
 from dataclasses import dataclass
-from pandas import DataFrame
+from numpy import ndarray
 
 
 @dataclass
@@ -22,10 +22,10 @@ class Clustering:
         self.algorithm = Birch(threshold = settings.threshold, 
             branching_factor= settings.branching_factor,
             n_clusters=number_clusters)
-    
-    def train_birch_algorithm(self, data: DataFrame):
+
+    def train_birch_algorithm(self, data: ndarray):
         self.algorithm.fit(data)
 
-    def perform_clustering(self, data: DataFrame):
+    def perform_clustering(self, data: ndarray):
         return self.algorithm.fit_predict(data)
 
