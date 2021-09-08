@@ -1,6 +1,6 @@
 from sklearn.cluster import Birch
 from dataclasses import dataclass
-from numpy import ndarray
+from numpy import ndarray, array
 from pandas import DataFrame
 from statistics import mean
 
@@ -76,8 +76,8 @@ class TimeSeriesClustering:
             properties = PropertiesofScenarioElement(cluster_number=element[0], \
                 scenario_number=element[1], value=0.0)
             properties.value = numpy_time_step_data[properties.scenario_number][0]
-            values_by_cluster, current_cluster = self._add_scenario_to_clusters_list(properties, \
-            current_cluster, values_by_cluster)
+            values_by_cluster, current_cluster = self._add_scenario_to_clusters_list(\
+                properties, current_cluster, values_by_cluster)
         return values_by_cluster
     
     def _calculate_average_per_cluster(self, values_by_cluster: List[float]) -> List[float]:
@@ -93,7 +93,7 @@ class TimeSeriesClustering:
             centroids[element[1]] = average_value_per_cluster[element[0]]
         return centroids
 
-    def _calculate_single_time_step_centroids(self, clusters_id_list: List[int], \
+    def _calculate_single_time_step_centroids(self, clusters_id_list: ndarray, \
         time_step_data: DataFrame) -> List[float]:
         enumerated_clusters = self._enumerate_array(clusters_id_list)
         sorted_clusters = self._sort_array_by_specific_column(enumerated_clusters, column=0)
@@ -118,7 +118,8 @@ class TimeSeriesClustering:
         self.clusters_centroids = []
         for clusters_id_list, (_, time_step_data) in zip(self.time_series_clusters, \
             self.time_series.iterrows()):
-            self.clusters_centroids.append(self._calculate_single_time_step_centroids(clusters_id_list, \
+            self.clusters_centroids.append(\
+                self._calculate_single_time_step_centroids(array(clusters_id_list), \
                 time_step_data))
             
 
