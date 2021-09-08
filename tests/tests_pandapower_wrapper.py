@@ -1,5 +1,4 @@
 from pandapower.timeseries.data_sources.frame_data import DFData
-from pandapower.toolbox import set_element_status
 from pyensys.wrappers.pandapower import pandapower_wrapper, profile, \
     time_series_output_file, output_variable_set, simulation_settings
 
