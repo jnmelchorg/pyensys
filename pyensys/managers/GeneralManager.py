@@ -1,9 +1,8 @@
-from pyensys.readers.JSONReader import ReadJSON
+from os import read
+from pyensys.readers.ReaderManager import read_parameters
 class pyensys:
 
-    def main_access_function(self, file_path: str, extension: str):
-        if extension == ".json":
-            data_json = ReadJSON()
-            data_json.read_parameters_power_system_optimisation(file_path)
-
+    def main_access_function(self, file_path: str):
+        parameters = read_parameters(file_path)      
+        
         
