@@ -112,8 +112,6 @@ def test_create_controller():
     assert len(data.index) == 24
     assert profile_name == ['load1_p']
 
-test_create_controller()
-
 def test_create_controllers():
     wrapper = load_test_network()
     profiles = create_dummy_profiles()
