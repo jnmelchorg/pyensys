@@ -1,4 +1,3 @@
-from datetime import time
 from numpy.core.records import array
 from pandas import read_excel, DataFrame
 from os.path import dirname, abspath, join
@@ -9,13 +8,10 @@ from typing import List
 from pyensys.data_processing.clustering import Birch_Settings, Clustering, \
     TimeSeriesClustering, PropertiesofScenarioElement
 
-def get_test_file_path() -> str:
-    current_directory_path=dirname(abspath(__file__))
-    excel_file_path = 'excel\\normalized_demand_profiles.xlsx'
-    return join(current_directory_path, excel_file_path)
+from pyensys.tests.tests_data_paths import get_clustering_test_data
 
 def read_normalized_demand_profiles() -> dict:
-    path = get_test_file_path()
+    path = get_clustering_test_data()
     return read_excel(io=path, sheet_name=['Sheet1'])
 
 def get_row(data: DataFrame, row: int) -> DataFrame:
