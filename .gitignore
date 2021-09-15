@@ -185,5 +185,5 @@ tests/json/Myanmar_103_reduced.json
 tests/json/Myanmar_103_reduced.m
 
 # Ignore output subfolders
-tests/outputs/*
-!/tests/outputs/__init__.py
+pyensys/tests/outputs/*
+!pyensys/tests/outputs/__init__.py
