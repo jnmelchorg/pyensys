@@ -7,6 +7,10 @@ from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
 from .engines.main import pyeneConfig
 from .engines.main import pyeneClass
 
+from pyensys.managers.GeneralManager import pyensys
+from os.path import splitext
+from typing import Tuple
+
 
 pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
 
@@ -301,7 +305,7 @@ def network_simulation_pyenetst(**kwargs):
     mthd = kwargs.pop('test')
     test_pyenetest(mthd)
 
-@cli.command('run')
+@cli.command('run_pyene')
 @click.argument('file_path', type=click.Path(exists=True))
 def network_simulation_pyenetst(**kwargs):
     ''' run simulation specified in excel file '''
@@ -310,3 +314,11 @@ def network_simulation_pyenetst(**kwargs):
     opt.run()
     opt.save_outputs(sim_no=0)
 
+
+@cli.command('run')
+@click.argument('file_path', type=click.Path(exists=True))
+def pyensys_entry_point(**kwargs):
+    file_path: str = kwargs.pop('file_path')
+    _, file_extension = splitext(file_path)
+    manager = pyensys()
+    manager.main_access_function(file_path, file_extension)
