@@ -1,92 +1,24 @@
-from dataclasses import dataclass, field
-from typing import List, Any
+from typing import List
 from pandas import date_range, DataFrame
-from pandas.core.indexes.datetimes import DatetimeIndex
 from json import load
-
-FREQUENCY_NAME_TO_PANDAS_ALIASES: dict = \
-    {"hourly": "H"}
-
-@dataclass
-class ProblemSettings:
-    system: str = ''
-    problem: str = ''
-    multi_objective: bool = False
-    stochastic: bool = False
-    intertemporal: bool = False
-    initialised: bool = False
-
-@dataclass
-class DateTimeOptimisationSettings:
-    date_time_settings: DatetimeIndex = \
-        field(default_factory=lambda: date_range(start="2021-1-1", periods=1))
-    initialised: bool = False
-
-@dataclass
-class PandaPowerMPCSettings:
-    mat_file_path: str = ''
-    system_frequency: float = 0.0
-    initialised: bool = False
-
-@dataclass
-class ProfileData:
-    element_type: str = ''
-    variable_name: str = ''
-    indexes: List[str] = field(default_factory=list)
-    data: DataFrame = field(default_factory=DataFrame)
-
-@dataclass
-class ProfilesData:
-    data: List[ProfileData] = field(default_factory=list)
-    initialised: bool = False
-
-@dataclass
-class DataframeData:
-    data: List[List[Any]] = field(default_factory=list)
-    column_names: List[Any] = field(default_factory=list)
-    row_names: List[Any] = field(default_factory=list)
-
-@dataclass
-class OutputVariable:
-    name_dataset: str = ''
-    name_variable: str = ''
-    variable_indexes: List[int] = field(default_factory=list)
-
-@dataclass
-class OutputSettings:
-    directory: str = ''
-    format: str = ''
-    output_variables: List[OutputVariable] = field(default_factory=list)
-    initialised: bool = False
-
-@dataclass
-class PandaPowerOptimisationSettings:
-    display_progress_bar: bool = False
-    continue_on_divergence: bool = False
-    optimisation_software: str = ''
-    initialised: bool = False
+from pyensys.readers.ReaderDataClasses import *
     
 class ReadJSON:
     def __init__(self):
-        self.problem_settings: ProblemSettings = ProblemSettings()
-        self.date_time_optimisation_settings: DateTimeOptimisationSettings = \
-            DateTimeOptimisationSettings()
-        self.pandapower_mpc_settings: PandaPowerMPCSettings = PandaPowerMPCSettings()
-        self.profiles_data: ProfilesData = ProfilesData()
-        self.output_settings: OutputSettings = OutputSettings()
-        self.pandapower_optimisation_settings: PandaPowerOptimisationSettings = \
-            PandaPowerOptimisationSettings()
+        self.parameters = Parameters()
 
-    def read_parameters_power_system_optimisation(self, json_path: str):
+    def read_json_data(self, json_path: str):
         file = open(json_path)
         self.settings: dict = load(file)
-        self.problem_settings = self._load_problem_settings()
-        self.date_time_optimisation_settings = self._load_time_series_settings()
-        self.pandapower_mpc_settings = self._load_pandapower_mpc_settings()
-        self.profiles_data = self._load_profiles_data()
-        self.output_settings = self._load_output_settings()
-        self.pandapower_optimisation_settings = \
+        p = self.parameters
+        p.problem_settings = self._load_problem_settings()
+        p.date_time_optimisation_settings = self._load_time_series_settings()
+        p.pandapower_mpc_settings = self._load_pandapower_mpc_settings()
+        p.profiles_data = self._load_profiles_data()
+        p.output_settings = self._load_output_settings()
+        p.pandapower_optimisation_settings = \
             self._load_pandapower_optimisation_settings()
+        p.initialised = True
     
     def _load_problem_settings(self) -> ProblemSettings:
         problem_settings = ProblemSettings()
@@ -100,6 +32,8 @@ class ReadJSON:
                 problem_settings_dict.pop("stochastic")
             problem_settings.intertemporal = \
                 problem_settings_dict.pop("intertemporal")
+            problem_settings.opf_optimizer = \
+                problem_settings_dict.pop("opf_optimizer")
             problem_settings.initialised = True
         return problem_settings
     
