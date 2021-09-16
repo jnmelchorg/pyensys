@@ -24,16 +24,18 @@ class ReadJSON:
         problem_settings = ProblemSettings()
         problem_settings_dict: dict = self.settings.pop("problem", None)
         if problem_settings_dict is not None:
-            problem_settings.system = problem_settings_dict.pop("system")
-            problem_settings.problem = problem_settings_dict.pop("name")
+            problem_settings.system = problem_settings_dict.pop("system", '')
+            problem_settings.problem = problem_settings_dict.pop("name", '')
             problem_settings.multi_objective = \
-                problem_settings_dict.pop("multi_objective")
+                problem_settings_dict.pop("multi_objective", False)
             problem_settings.stochastic = \
-                problem_settings_dict.pop("stochastic")
+                problem_settings_dict.pop("stochastic", False)
             problem_settings.intertemporal = \
-                problem_settings_dict.pop("intertemporal")
+                problem_settings_dict.pop("intertemporal", False)
             problem_settings.opf_optimizer = \
-                problem_settings_dict.pop("opf_optimizer")
+                problem_settings_dict.pop("opf_optimizer", '')
+            problem_settings.problem_optimizer = \
+                problem_settings_dict.pop("problem_optimizer", '')
             problem_settings.initialised = True
         return problem_settings
     
