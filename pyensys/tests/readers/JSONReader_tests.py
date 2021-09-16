@@ -14,7 +14,8 @@ def test_load_problem_settings_case1():
             "stochastic": True,
             "intertemporal": True,
             "opf_optimizer": "pandapower",
-            "problem_optimizer": "recursive_function"
+            "problem_optimizer": "recursive_function",
+            "opf_type": "ac"
         }
     }
     problem_settings = power_system._load_problem_settings()
@@ -25,6 +26,7 @@ def test_load_problem_settings_case1():
     assert problem_settings.initialised
     assert problem_settings.opf_optimizer == "pandapower"
     assert problem_settings.problem_optimizer == "recursive_function"
+    assert problem_settings.opf_type == "ac"
 
 def test_load_problem_settings_case2():
     power_system = ReadJSON()
