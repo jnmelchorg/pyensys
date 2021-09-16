@@ -36,6 +36,8 @@ class ReadJSON:
                 problem_settings_dict.pop("opf_optimizer", '')
             problem_settings.problem_optimizer = \
                 problem_settings_dict.pop("problem_optimizer", '')
+            problem_settings.opf_type = \
+                problem_settings_dict.pop("opf_type", '')
             problem_settings.initialised = True
         return problem_settings
     

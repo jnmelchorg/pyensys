@@ -16,6 +16,7 @@ class ProblemSettings:
     initialised: bool = False
     opf_optimizer: str = ''
     problem_optimizer: str = ''
+    opf_type: str = ''
 
 @dataclass
 class DateTimeOptimisationSettings:
