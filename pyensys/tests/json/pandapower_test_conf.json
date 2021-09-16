@@ -5,7 +5,8 @@
         "multi_objective": true,
         "stochastic": true,
         "intertemporal": true,
-        "opf_optimizer": "pandapower"
+        "opf_optimizer": "pandapower",
+        "problem_optimizer": "recursive_function"
     },
     "time_related_settings": {
         "begin": "2021-1-1 00:00:00",

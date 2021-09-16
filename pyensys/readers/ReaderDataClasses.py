@@ -15,6 +15,7 @@ class ProblemSettings:
     intertemporal: bool = False
     initialised: bool = False
     opf_optimizer: str = ''
+    problem_optimizer: str = ''
 
 @dataclass
 class DateTimeOptimisationSettings:
