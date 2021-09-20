@@ -7,7 +7,7 @@ from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
 from .engines.main import pyeneConfig
 from .engines.main import pyeneClass
 
-from pyensys.managers.GeneralManager import pyensys
+from pyensys.managers.GeneralManager import main_access_function
 
 
 pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
@@ -317,5 +317,4 @@ def network_simulation_pyenetst(**kwargs):
 @click.argument('file_path', type=click.Path(exists=True))
 def pyensys_entry_point(**kwargs):
     file_path: str = kwargs.pop('file_path')
-    manager = pyensys()
-    manager.main_access_function(file_path)
+    main_access_function(file_path)
