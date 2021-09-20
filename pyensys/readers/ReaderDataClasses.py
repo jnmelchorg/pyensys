@@ -31,22 +31,22 @@ class PandaPowerMPCSettings:
     initialised: bool = False
 
 @dataclass
-class ProfileData:
+class PandaPowerProfileData:
     element_type: str = ''
     variable_name: str = ''
-    indexes: List[str] = field(default_factory=list)
+    indexes: List[int] = field(default_factory=list)
     data: DataFrame = field(default_factory=DataFrame)
+    active_columns_names: List[str] = field(default_factory=list)
 
 @dataclass
-class ProfilesData:
-    data: List[ProfileData] = field(default_factory=list)
+class PandaPowerProfilesData:
+    data: List[PandaPowerProfileData] = field(default_factory=list)
     initialised: bool = False
 
 @dataclass
 class DataframeData:
     data: List[List[Any]] = field(default_factory=list)
     column_names: List[str] = field(default_factory=list)
-    row_names: List[str] = field(default_factory=list)
 
 @dataclass
 class OutputVariable:
@@ -72,11 +72,12 @@ class PandaPowerOptimisationSettings:
 class Parameters:
     problem_settings: ProblemSettings = \
         field(default_factory=lambda: ProblemSettings())
-    date_time_optimisation_settings: DateTimeOptimisationSettings = \
+    opf_time_settings: DateTimeOptimisationSettings = \
         field(default_factory=lambda: DateTimeOptimisationSettings())
     pandapower_mpc_settings: PandaPowerMPCSettings = \
         field(default_factory=lambda: PandaPowerMPCSettings())
-    profiles_data: ProfilesData = field(default_factory=lambda: ProfilesData())
+    pandapower_profiles_data: PandaPowerProfilesData = \
+        field(default_factory=lambda: PandaPowerProfilesData())
     output_settings: OutputSettings = field(default_factory=lambda: OutputSettings())
     pandapower_optimisation_settings: PandaPowerOptimisationSettings = \
         field(default_factory=lambda: PandaPowerOptimisationSettings())
