@@ -12,9 +12,9 @@ class ReadJSON:
         self.settings: dict = load(file)
         p = self.parameters
         p.problem_settings = self._load_problem_settings()
-        p.date_time_optimisation_settings = self._load_time_series_settings()
+        p.opf_time_settings = self._load_opf_time_settings()
         p.pandapower_mpc_settings = self._load_pandapower_mpc_settings()
-        p.profiles_data = self._load_profiles_data()
+        p.pandapower_profiles_data = self._load_pandapower_profiles_data()
         p.output_settings = self._load_output_settings()
         p.pandapower_optimisation_settings = \
             self._load_pandapower_optimisation_settings()
@@ -41,8 +41,8 @@ class ReadJSON:
             problem_settings.initialised = True
         return problem_settings
     
-    def _load_time_series_settings(self) -> DateTimeOptimisationSettings:
-        settings_dict: dict = self.settings.pop("time_related_settings", None)
+    def _load_opf_time_settings(self) -> DateTimeOptimisationSettings:
+        settings_dict: dict = self.settings.pop("opf_time_settings", None)
         date_time_settings = DateTimeOptimisationSettings()
         if settings_dict is not None:
             begin: str = settings_dict.pop("begin")
@@ -69,29 +69,28 @@ class ReadJSON:
         return pandapower_mpc_settings
 
 
-    def _load_profiles_data(self) -> ProfilesData:
-        profiles_data = ProfilesData()
-        profiles_data_dict = self.settings.pop("profiles_data", None)
+    def _load_pandapower_profiles_data(self) -> PandaPowerProfilesData:
+        profiles_data = PandaPowerProfilesData()
+        profiles_data_dict = self.settings.pop("pandapower_profiles_data", None)
         if profiles_data_dict is not None:
             for value in profiles_data_dict.values():
-                profiles_data.data.append(self._load_profile_data(value))
+                profiles_data.data.append(self._load_pandapower_profile_data(value))
             profiles_data.initialised = True
         return profiles_data
 
-    def _load_profile_data(self, profile_data_dict: dict) -> ProfileData:
-        profile_data = ProfileData()
+    def _load_pandapower_profile_data(self, profile_data_dict: dict) -> PandaPowerProfileData:
+        profile_data = PandaPowerProfileData()
         dataframe_data = DataframeData(data=profile_data_dict.pop("data"), \
-            column_names=profile_data_dict.pop("dataframe_columns_names"), \
-            row_names=profile_data_dict.pop("dataframe_rows_date_time"))
+            column_names=profile_data_dict.pop("dataframe_columns_names"))
         profile_data.data = self._create_dataframe(dataframe_data)
         profile_data.element_type = profile_data_dict.pop("element_type")
         profile_data.variable_name = profile_data_dict.pop("variable_name")
         profile_data.indexes = profile_data_dict.pop("indexes")
+        profile_data.active_columns_names = profile_data_dict.pop("active_columns_names")
         return profile_data
     
     def _create_dataframe(self, dataframe_data: DataframeData) -> DataFrame:
-        return DataFrame(data=dataframe_data.data, index=dataframe_data.row_names, \
-            columns=dataframe_data.column_names)
+        return DataFrame(data=dataframe_data.data, columns=dataframe_data.column_names)
 
 
     def _load_output_settings(self) -> OutputSettings:
