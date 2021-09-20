@@ -1,4 +1,3 @@
-from os import read
 from pyensys.readers.ReaderDataClasses import Parameters
 from pyensys.readers.ReaderManager import read_parameters
 from pyensys.managers.DistributionSystemManager import identify_and_solve
