@@ -34,27 +34,27 @@ def test_load_problem_settings_case2():
     problem_settings = power_system._load_problem_settings()
     assert not problem_settings.initialised
 
-def test_load_time_related_settings_case1():
+def test_load_opf_time_settings_case1():
     power_system = ReadJSON()
     power_system.settings = {
-        "time_related_settings": {
+        "opf_time_settings": {
             "begin": "2021-1-1 00:00:00",
             "end": "2021-1-1 02:00:00",
             "frequency": "hourly",
             "time_block": "1"
         }
     }
-    date_time_settings = power_system._load_time_series_settings()
+    date_time_settings = power_system._load_opf_time_settings()
     assert date_time_settings.date_time_settings.tolist() == \
         [Timestamp('2021-01-01 00:00:00', freq='H'), 
         Timestamp('2021-01-01 01:00:00', freq='H'), 
         Timestamp('2021-01-01 02:00:00', freq='H')]
     assert date_time_settings.initialised
 
-def test_load_time_related_settings_case2():
+def test_load_opf_time_settings_case2():
     power_system = ReadJSON()
     power_system.settings = {}
-    date_time_settings = power_system._load_time_series_settings()
+    date_time_settings = power_system._load_opf_time_settings()
     assert not date_time_settings.initialised
 
 def test_load_pandapower_mpc_setting_case1():
@@ -79,13 +79,11 @@ def test_load_pandapower_mpc_settings_case2():
 
 def test_create_dataframe():
     dataframe_data = DataframeData(data=[[67.28095505], [9.65466896], [11.70181664]], 
-        column_names=["load1_p"], row_names=["2021-01-01 00:00:00", "2021-01-01 01:00:00", 
-        "2021-01-01 02:00:00"])
+        column_names=["load1_p"])
     power_system = ReadJSON()
     RESULTS = power_system._create_dataframe(dataframe_data)
     assert  DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
-            index=["2021-01-01 00:00:00", "2021-01-01 01:00:00", 
-        "2021-01-01 02:00:00"], columns=["load1_p"]).equals(RESULTS)
+        columns=["load1_p"]).equals(RESULTS)
     
 def test_load_profile_data():
     power_system = ReadJSON()
@@ -93,50 +91,48 @@ def test_load_profile_data():
         "1": {
             "dataframe_columns_names": ["load1_p"],
             "data":[[67.28095505], [9.65466896], [11.70181664]],
-            "dataframe_rows_date_time": ["2021-01-01 00:00:00", "2021-01-01 01:00:00", 
-                "2021-01-01 02:00:00"],
             "element_type": "load",
             "indexes": [0],
-            "variable_name": "p_mw"
+            "variable_name": "p_mw",
+            "active_columns_names": ["load1_p"]
         }
     }
-    profile_data = power_system._load_profile_data(profile_data_dict["1"])
+    profile_data = power_system._load_pandapower_profile_data(profile_data_dict["1"])
     assert profile_data.indexes == [0]
     assert profile_data.variable_name == "p_mw"
     assert profile_data.element_type == "load"
+    assert profile_data.active_columns_names == ["load1_p"]
 
 def test_load_profiles_data_case1():
     power_system = ReadJSON()
     power_system.settings = {
-        "profiles_data": {
+        "pandapower_profiles_data": {
             "1": {
                 "dataframe_columns_names": ["load1_p"],
                 "data":[[67.28095505], [9.65466896], [11.70181664]],
-                "dataframe_rows_date_time": ["2021-01-01 00:00:00", "2021-01-01 01:00:00", 
-                "2021-01-01 02:00:00"],
                 "element_type": "load",
                 "indexes": [0],
-                "variable_name": "p_mw"
+                "variable_name": "p_mw",
+                "active_columns_names": ["load1_p"]
             },
             "2": {
                 "dataframe_columns_names": ["gen1_p"],
                 "data":[[67.28095505], [9.65466896], [11.70181664]],
-                "dataframe_rows_date_time": ["2021-01-01 00:00:00", "2021-01-01 01:00:00", 
-                "2021-01-01 02:00:00"],
                 "element_type": "gen",
                 "indexes": [0],
-                "variable_name": "p_mw"
+                "variable_name": "p_mw",
+                "active_columns_names": ["gen1_p"]
             }
         }
     }
-    data = power_system._load_profiles_data()
+    data = power_system._load_pandapower_profiles_data()
     assert len(data.data) == 2
     assert data.initialised
 
 def test_load_profiles_data_case2():
     power_system = ReadJSON()
     power_system.settings = {}
-    data = power_system._load_profiles_data()
+    data = power_system._load_pandapower_profiles_data()
     assert not data.initialised
 
 def test_load_output_variable():
@@ -226,10 +222,10 @@ def test_load_parameters_power_system_optimisation():
     read_json = ReadJSON()
     read_json.read_json_data(file_path)
     p = read_json.parameters
-    assert p.date_time_optimisation_settings.initialised
+    assert p.opf_time_settings.initialised
     assert p.output_settings.initialised
     assert p.pandapower_mpc_settings.initialised
     assert p.pandapower_optimisation_settings.initialised
     assert p.problem_settings.initialised
-    assert p.profiles_data.initialised
+    assert p.pandapower_profiles_data.initialised
     assert p.initialised
