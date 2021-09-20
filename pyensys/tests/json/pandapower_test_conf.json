@@ -50,7 +50,7 @@
         }
     },
     "output_settings": {
-        "directory": "C:\\Users\\f09903jm\\git projects\\pyensys\\tests\\outputs",
+        "directory": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\outputs",
         "format": ".xlsx",
         "output_variables": {
             "1": {
