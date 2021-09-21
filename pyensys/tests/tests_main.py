@@ -10,22 +10,36 @@ path = join(path, "excel_format_proposal.xlsx")
 
 opt = pyeneClass()
 opt.initialise(path=path)
-opt.save_outputs(sim_no=0)
+
 end1 = time.time()
 
-opt.run()
+subscripts = {}
+subscripts["pt"] = ["v_string", ["week", "weekday"]]
+subscripts["hour"] = ["double", 0.0]
+
+opt.run(subscripts=subscripts)
+opt.save_outputs(sim_no=0)
 
 end2 = time.time()
 
-print("TIEMPO 1 {}".format(begin-end1))
-print("TIEMPO 2 {}".format(end1-end2))
+parameter = {}
+parameter["name"] = ["string", "active power max limit"]
+parameter["pt"] = ["v_string", ["week", "weekday"]]
+parameter["hour"] = ["double", 0.0]
+parameter["value"] = ["double", 200.0]
+parameter["ID"] = ["string", "PV1"]
+parameter["problem"] = ["string", "DC OPF"]
 
 
-# IDs, names, min_bnd, max_bnd = opt.get_moea_variables()
-# print(IDs, names, min_bnd, max_bnd)
+opt.update_parameter(information=parameter)
+opt.run(subscripts=subscripts)
+opt.save_outputs(sim_no=1)
 
-# names = opt.get_moea_objectives()
-# print(names)
+end3 = time.time()
+
+print("TIEMPO 1 {}".format(-begin+end1))
+print("TIEMPO 2 {}".format(-end1+end2))
+print("TIEMPO 3 {}".format(-end2+end3))
 
 # information = {}
 # information["name"] = ["string", "input"]
