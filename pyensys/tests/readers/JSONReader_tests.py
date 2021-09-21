@@ -2,7 +2,8 @@ from os import read
 from pandas.core.frame import DataFrame
 from pyensys.readers.JSONReader import ReadJSON, DataframeData
 from pandas import Timestamp
-from pyensys.tests.tests_data_paths import get_path_pandapower_json_test_data
+from pyensys.tests.tests_data_paths import get_path_pandapower_json_test_data, \
+    get_path_pandapower_json_test_excel_profiles_data, get_excel_timeseries
 
 def test_load_problem_settings_case1():
     power_system = ReadJSON()
@@ -229,3 +230,64 @@ def test_load_parameters_power_system_optimisation():
     assert p.problem_settings.initialised
     assert p.pandapower_profiles_data.initialised
     assert p.initialised
+
+def test_read_file():
+    read_json = ReadJSON()
+    path = get_excel_timeseries()
+    profile_data_dict = {"excel_sheet_name": "LoadP"}
+    RESULT = read_json._read_file(path, profile_data_dict)
+    assert DataFrame(data=[[0.089588, 0.294746], [0.089359, 0.293991], [0.087981, 0.289459]], \
+        columns=["B1", "B2"]).equals(RESULT)
+
+def test_read_dataframe_data_case1():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "dataframe_columns_names": ["load1_p"],
+        "data":[[67.28095505], [9.65466896], [11.70181664]],
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
+        columns=["load1_p"]).equals(RESULT)
+
+def test_read_dataframe_data_case2():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data":[[67.28095505], [9.65466896], [11.70181664]],
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case3():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "dataframe_columns_names": ["load1_p"]
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case4():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data_path": get_excel_timeseries(),
+        "excel_sheet_name": "LoadP",
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert DataFrame(data=[[0.089588, 0.294746], [0.089359, 0.293991], [0.087981, 0.289459]], \
+        columns=["B1", "B2"]).equals(RESULT)
+
+def test_read_dataframe_data_case5():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data_path": get_excel_timeseries()
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case6():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "excel_sheet_name": "LoadP"
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
