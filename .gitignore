@@ -187,3 +187,7 @@ tests/json/Myanmar_103_reduced.m
 # Ignore output subfolders
 pyensys/tests/outputs/*
 !pyensys/tests/outputs/__init__.py
+
+# Ignore third party software
+pyensys/ThirdPartySoftware/*
+!pyensys/ThirdPartySoftware/__init__.py
