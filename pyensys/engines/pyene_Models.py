@@ -622,7 +622,7 @@ class models():
         self.subscripts = subscripts
         self.model.create_parameter()
         for key, value in subscripts.items():
-            self.model.load_value(value[1], key.encode('utf-8'), value[0])
+            self.model.load_value(value[0], key.encode('utf-8'), value[1])
         self.model.evaluate()
 
     def get_outputs(self):
