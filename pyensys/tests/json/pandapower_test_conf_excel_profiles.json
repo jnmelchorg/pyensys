@@ -1,0 +1,63 @@
+{
+    "problem": {
+        "system": "distribution",
+        "name": "planning",
+        "multi_objective": true,
+        "stochastic": true,
+        "intertemporal_opf": true,
+        "opf_optimizer": "pandapower",
+        "problem_optimizer": "recursive_function",
+        "opf_type": "ac"
+    },
+    "opf_time_settings": {
+        "begin": "00:00:00",
+        "end": "23:00:00",
+        "frequency": "hourly",
+        "time_block": "1"
+    },
+    "pandapower_mpc_settings": {
+        "mat_file_path" : "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\matpower\\case9.mat",
+        "frequency": 60.0
+    },
+    "pandapower_profiles_data": {
+        "1": {
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\time_series_pandapower.xlsx",
+            "excel_sheet_name": "LoadP",
+            "all_active_columns_names": true,
+            "element_type": "load",
+            "all_indexes": true,
+            "variable_name": "p_mw"
+        }
+    },
+    "output_settings": {
+        "directory": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\outputs",
+        "format": ".xlsx",
+        "output_variables": {
+            "1": {
+                "name_dataset": "res_load",
+                "name_variable": "p_mw",
+                "variable_indexes": []
+            },
+            "2": {
+                "name_dataset": "res_bus",
+                "name_variable": "vm_pu",
+                "variable_indexes": []
+            },
+            "3": {
+                "name_dataset": "res_line",
+                "name_variable": "loading_percent",
+                "variable_indexes": []
+            },
+            "4": {
+                "name_dataset": "res_line",
+                "name_variable": "i_ka",
+                "variable_indexes": []
+            }
+        }
+    },
+    "pandapower_optimisation_settings": {
+        "display_progress_bar": true,
+        "continue_on_divergence": false,
+        "optimisation_software": "pypower"
+    }
+}
