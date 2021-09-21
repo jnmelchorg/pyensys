@@ -1,6 +1,5 @@
 from numpy.core.records import array
 from pandas import read_excel, DataFrame
-from os.path import dirname, abspath, join
 from sklearn.cluster import Birch
 from numpy import ndarray,array_equal, allclose, array
 from typing import List
