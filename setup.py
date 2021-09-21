@@ -81,10 +81,11 @@ def setup_package():
         if platform.system() == "Windows":
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
             include_dirs=[
-                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\engines\external_files\\boost_1_75_0',
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp",],
+                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\ThirdPartySoftware\\boost_1_75_0',
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\Clp\include",
+                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\CoinUtils\include"],
             libraries=['libClp', 'libCoinUtils'],
-            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\engines\external_files\Clp\lib"],
+            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\Clp\lib"],
                             ))
         elif platform.system() == "Linux":
             ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
