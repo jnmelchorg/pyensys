@@ -35,6 +35,7 @@ class PandaPowerProfileData:
     element_type: str = ''
     variable_name: str = ''
     indexes: List[int] = field(default_factory=list)
+    all_indexes: bool = False
     data: DataFrame = field(default_factory=DataFrame)
     active_columns_names: List[str] = field(default_factory=list)
 
