@@ -1,6 +1,7 @@
 from typing import List
-from pandas import date_range, DataFrame
+from pandas import date_range, DataFrame, read_excel
 from json import load
+from os.path import splitext
 from pyensys.readers.ReaderDataClasses import *
     
 class ReadJSON:
@@ -80,17 +81,44 @@ class ReadJSON:
 
     def _load_pandapower_profile_data(self, profile_data_dict: dict) -> PandaPowerProfileData:
         profile_data = PandaPowerProfileData()
-        dataframe_data = DataframeData(data=profile_data_dict.pop("data"), \
-            column_names=profile_data_dict.pop("dataframe_columns_names"))
-        profile_data.data = self._create_dataframe(dataframe_data)
+        profile_data.data = self._read_dataframe_data(profile_data_dict)
         profile_data.element_type = profile_data_dict.pop("element_type")
         profile_data.variable_name = profile_data_dict.pop("variable_name")
-        profile_data.indexes = profile_data_dict.pop("indexes")
-        profile_data.active_columns_names = profile_data_dict.pop("active_columns_names")
+        profile_data.indexes = profile_data_dict.pop("indexes", [])
+        profile_data.all_indexes = profile_data_dict.pop("all_indexes", False)
+        profile_data.active_columns_names = self._read_active_colums_names(profile_data_dict, profile_data.data)
         return profile_data
+
+    def _read_active_colums_names(self, profile_data_dict: dict, data: DataFrame) -> List[str]:
+        if profile_data_dict.get("active_columns_names", None) is not None:
+            return profile_data_dict.pop("active_columns_names")
+        elif profile_data_dict.get("all_active_columns_names", False):
+            return data.columns.tolist()
+
+    def _read_dataframe_data(self, profile_data_dict: dict) -> DataFrame:
+        if profile_data_dict.get("data", None) is not None and \
+            profile_data_dict.get("dataframe_columns_names", None) is not None:
+            dataframe_data = DataframeData(data=profile_data_dict.pop("data"), \
+                column_names=profile_data_dict.pop("dataframe_columns_names"))
+            return self._create_dataframe(dataframe_data)
+        elif profile_data_dict.get("data_path", None) is not None and \
+            profile_data_dict.get("excel_sheet_name", None) is not None:
+            return self._read_file(profile_data_dict.pop("data_path"), profile_data_dict)
+        else:
+            return DataFrame()
     
     def _create_dataframe(self, dataframe_data: DataframeData) -> DataFrame:
         return DataFrame(data=dataframe_data.data, columns=dataframe_data.column_names)
+    
+    def _read_file(self, path: str, profile_data_dict: dict) -> DataFrame:
+        _, file_extension = splitext(path)
+        if file_extension == ".xlsx":
+            name = profile_data_dict.pop("excel_sheet_name")
+            data = read_excel(io=path, sheet_name=name)
+            if isinstance(data, dict):
+                return data.pop(name)
+            elif isinstance(data, DataFrame):
+                return data
 
 
     def _load_output_settings(self) -> OutputSettings:
