@@ -13,9 +13,9 @@
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/variant.hpp"
 #include "boost/functional/hash.hpp"
-#include "coin/ClpSimplex.hpp"
-#include "coin/CoinHelperFunctions.hpp"
-#include "coin/CoinTime.hpp"
+#include "ClpSimplex.hpp"
+#include "CoinHelperFunctions.hpp"
+#include "CoinTime.hpp"
 #include <chrono>
 #include <future>
 #include <list>
