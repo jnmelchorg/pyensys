@@ -93,3 +93,57 @@ def test_run_timestep_simulation():
     wrapper.run_timestep_simulation(settings)
     assert wrapper.network.OPF_converged == True
     assert isclose(3583.53647, wrapper.network.res_cost, abs_tol=1e-4)
+
+def test_get_row_to_update_case1():
+    wrapper = PandaPowerWrapper()
+    data1 = DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], columns=['load1_p'])
+    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
+        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
+    data2 = DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], columns=['gen1_p'])
+    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    profiles = [profile1, profile2]
+    wrapper.add_controllers_to_network(profiles=profiles)
+    assert wrapper.get_row_to_update(profile2) == 1
+
+def test_get_row_to_update_case2():
+    wrapper = PandaPowerWrapper()
+    data1 = DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], columns=['load1_p'])
+    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
+        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
+    data2 = DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], columns=['gen1_p'])
+    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    profiles = [profile1, profile2]
+    wrapper.add_controllers_to_network(profiles=profiles)
+    profile2.variable_name = "x"
+    assert wrapper.get_row_to_update(profile2) == -1
+
+def test_get_row_to_drop_case3():
+    wrapper = PandaPowerWrapper()
+    data1 = DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], columns=['load1_p'])
+    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
+        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
+    data2 = DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], columns=['gen1_p'])
+    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    profiles = [profile1, profile2]
+    wrapper.add_controllers_to_network(profiles=profiles)
+    profile2.components_type = "x"
+    assert wrapper.get_row_to_update(profile2) == -1
+
+def test_update_controller_data():
+    wrapper = PandaPowerWrapper()
+    data1 = DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], columns=['load1_p'])
+    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
+        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
+    data2 = DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], columns=['gen1_p'])
+    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    profiles = [profile1, profile2]
+    wrapper.add_controllers_to_network(profiles=profiles)
+    data3 = DataFrame(data=[[220], [190], [5]], columns=['gen1_p'])
+    profile3 = Profile(data=data3, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    wrapper.update_network_controller(profile3)
+    assert data3.equals(wrapper.network['controller'].iat[1, 0].data_source.df)

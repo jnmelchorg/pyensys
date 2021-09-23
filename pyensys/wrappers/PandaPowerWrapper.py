@@ -26,7 +26,7 @@ class PandaPowerWrapper:
         for profile in profiles:
             self.add_controller_to_network(profile)
 
-    def add_controller_to_network(self,profile: Profile):
+    def add_controller_to_network(self, profile: Profile):
         ConstControl(self.network, element=profile.components_type, 
             element_index=profile.components_indexes_in_power_system,
             variable=profile.variable_name,
@@ -60,3 +60,17 @@ class PandaPowerWrapper:
             continue_on_divergence=settings.continue_on_divergence,
             verbose=settings.display_progress_bar, 
             run=available_software_per_type[settings.optimisation_software])
+
+    def update_network_controller(self, new_profile: Profile):
+        row_to_update = self.get_row_to_update(new_profile)
+        self.network['controller'].iat[row_to_update, 0].data_source.df = new_profile.data
+
+    def get_row_to_update(self, new_profile: Profile) -> int:
+        row_counter = 0
+        for row in self.network['controller'].itertuples():
+            element = self.network['controller'].iat[row_counter, 0].element
+            variable = self.network['controller'].iat[row_counter, 0].variable
+            row_counter += 1
+            if element == new_profile.components_type and variable == new_profile.variable_name:
+                return row[0]
+        return -1

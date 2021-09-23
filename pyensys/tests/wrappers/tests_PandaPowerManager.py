@@ -1,5 +1,6 @@
 from pyensys.wrappers.PandaPowerManager import PandaPowerManager
-from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable
+from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
+    PandaPowerProfilesData
 from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
 from pandas import DataFrame, date_range
 from math import isclose
@@ -289,3 +290,44 @@ def test_run_timestep_opf_pandapower():
     manager.run_timestep_opf_pandapower()
     assert manager.wrapper.network.OPF_converged == True
     assert isclose(3583.53647, manager.wrapper.network.res_cost, abs_tol=1e-4)
+
+def test_update_network_controllers_case1():
+    manager = PandaPowerManager()
+    parameters = Parameters()
+    parameters.pandapower_profiles_data.initialised = True
+    parameters.pandapower_profiles_data.data = [\
+        PandaPowerProfileData(element_type="load", variable_name="p_mw", \
+            indexes=[0], data=DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
+            columns=['load1_p']), active_columns_names=['load1_p']),
+        PandaPowerProfileData(element_type="gen", variable_name="p_mw", \
+            indexes=[0], data=DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], \
+            columns=['gen1_p']), active_columns_names=['gen1_p'])]
+    manager.add_controllers_to_network(parameters)
+    pp_profiles = PandaPowerProfilesData()
+    pp_profiles.initialised = True
+    pp_profiles.data = [\
+        PandaPowerProfileData(element_type="gen", variable_name="p_mw", \
+            indexes=[0], data=DataFrame(data=[[220], [190], [5]], \
+            columns=['gen1_p']), active_columns_names=['gen1_p'])]
+    manager.update_network_controllers(pp_profiles)
+    RESULT = manager.wrapper.network['controller'].iat[1, 0].data_source.df
+    assert DataFrame(data=[[220], [190], [5]], columns=['gen1_p']).equals(RESULT)
+
+def test_update_network_controllers_case2():
+    manager = PandaPowerManager()
+    parameters = Parameters()
+    parameters.pandapower_profiles_data.initialised = True
+    parameters.pandapower_profiles_data.data = [\
+        PandaPowerProfileData(element_type="load", variable_name="p_mw", \
+            indexes=[0], data=DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
+            columns=['load1_p']), active_columns_names=['load1_p']),
+        PandaPowerProfileData(element_type="gen", variable_name="p_mw", \
+            indexes=[0], data=DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], \
+            columns=['gen1_p']), active_columns_names=['gen1_p'])]
+    manager.add_controllers_to_network(parameters)
+    pp_profiles = PandaPowerProfilesData()
+    pp_profiles.initialised = False
+    manager.update_network_controllers(pp_profiles)
+    RESULT = manager.wrapper.network['controller'].iat[1, 0].data_source.df
+    assert DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], \
+        columns=['gen1_p']).equals(RESULT)

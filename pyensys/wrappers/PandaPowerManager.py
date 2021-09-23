@@ -1,6 +1,6 @@
 from pyensys.wrappers.PandapowerDataClasses import *
 from pyensys.wrappers.PandaPowerWrapper import PandaPowerWrapper
-from pyensys.readers.ReaderDataClasses import Parameters
+from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
 from typing import List
 
 class PandaPowerManager():
@@ -68,3 +68,12 @@ class PandaPowerManager():
     
     def run_timestep_opf_pandapower(self):
         self.wrapper.run_timestep_simulation(self.simulation_settings)
+
+    def update_network_controllers(self, pp_profiles_data: PandaPowerProfilesData):
+        if pp_profiles_data.initialised:
+            for profile in pp_profiles_data.data:
+                pp_profile = Profile(\
+                    components_indexes_in_power_system=profile.indexes, \
+                    data=profile.data, column_names=profile.active_columns_names, \
+                    variable_name=profile.variable_name, components_type=profile.element_type)
+                self.wrapper.update_network_controller(pp_profile)
