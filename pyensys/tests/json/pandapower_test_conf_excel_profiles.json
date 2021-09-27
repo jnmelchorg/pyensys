@@ -29,6 +29,14 @@
             "variable_name": "p_mw"
         }
     },
+    "optimisation_profiles_data":{
+        "1": {
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\normalized_demand_profiles.xlsx",
+            "excel_sheet_name": "Sheet1",
+            "element_type": "load",
+            "variable_name": "p_mw"
+        }
+    },
     "output_settings": {
         "directory": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\outputs",
         "format": ".xlsx",
