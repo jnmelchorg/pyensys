@@ -70,6 +70,17 @@ class PandaPowerOptimisationSettings:
     initialised: bool = False
 
 @dataclass
+class OptimisationProfileData:
+    element_type: str = ''
+    variable_name: str = ''
+    data: DataFrame = field(default_factory=DataFrame)
+
+@dataclass
+class OptimisationProfilesData:
+    data: List[OptimisationProfileData] = field(default_factory=list)
+    initialised: bool =  False
+
+@dataclass
 class Parameters:
     problem_settings: ProblemSettings = \
         field(default_factory=lambda: ProblemSettings())
@@ -82,4 +93,6 @@ class Parameters:
     output_settings: OutputSettings = field(default_factory=lambda: OutputSettings())
     pandapower_optimisation_settings: PandaPowerOptimisationSettings = \
         field(default_factory=lambda: PandaPowerOptimisationSettings())
+    optimisation_profiles_data: OptimisationProfilesData = \
+        field(default_factory=lambda: OptimisationProfilesData())
     initialised: bool = False
