@@ -19,6 +19,8 @@ class ReadJSON:
         p.output_settings = self._load_output_settings()
         p.pandapower_optimisation_settings = \
             self._load_pandapower_optimisation_settings()
+        p.optimisation_profiles_data = \
+            self._load_optimisation_profiles_data()
         p.initialised = True
     
     def _load_problem_settings(self) -> ProblemSettings:
@@ -119,7 +121,22 @@ class ReadJSON:
                 return data.pop(name)
             elif isinstance(data, DataFrame):
                 return data
+    
+    def _load_optimisation_profiles_data(self) -> OptimisationProfilesData:
+        profiles_data = OptimisationProfilesData()
+        profiles_data_dict = self.settings.pop("optimisation_profiles_data", None)
+        if profiles_data_dict is not None:
+            for value in profiles_data_dict.values():
+                profiles_data.data.append(self._load_pandapower_profile_data(value))
+            profiles_data.initialised = True
+        return profiles_data
 
+    def _load_optimisation_profile_data(self, profile_data_dict: dict) -> OptimisationProfileData:
+        profile_data = OptimisationProfileData()
+        profile_data.data = self._read_dataframe_data(profile_data_dict)
+        profile_data.element_type = profile_data_dict.pop("element_type")
+        profile_data.variable_name = profile_data_dict.pop("variable_name")
+        return profile_data
 
     def _load_output_settings(self) -> OutputSettings:
         output_settings = OutputSettings()
