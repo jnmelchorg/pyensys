@@ -37,9 +37,7 @@ def set_time_series(clustering: TimeSeriesClustering) -> TimeSeriesClustering:
     return clustering
 
 
-
-
-def test_initialise_birch_clustering_algorithm():
+def test_set_up_birch_algorithm():
     clusters = Clustering()
     birch_algorithm_settings = Birch_Settings()
     clusters.set_up_birch_algorithm(birch_algorithm_settings)
@@ -178,7 +176,3 @@ def test_calculate_single_time_step_centroids():
         1.75237939, 1.272457576, 1.544900112, 1.272457576, 1.082996991]
     assert allclose(time_clustering._calculate_single_time_step_centroids(\
         TEST_CLUSTER_IDS, TEST_ROW_DATA), EXPECTED_RESULTS)
-    
-    
-    
-    
