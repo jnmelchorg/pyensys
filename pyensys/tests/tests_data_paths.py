@@ -30,6 +30,12 @@ def get_clustering_test_data() -> str:
     path = join(path, "normalized_demand_profiles.xlsx")
     return path
 
+def get_clustering_data_test() -> str:
+    path = dirname(__file__)
+    path = join(path, "excel")
+    path = join(path, "data_clusters_tests.xlsx")
+    return path
+
 def set_pandapower_test_output_directory() -> str:
     path = dirname(__file__)
     path = join(path, "outputs")
