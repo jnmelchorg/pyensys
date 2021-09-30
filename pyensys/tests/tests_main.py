@@ -15,20 +15,30 @@ end1 = time.time()
 
 subscripts = {}
 subscripts["pt"] = ["v_string", ["week", "weekday"]]
-subscripts["hour"] = ["double", 0.0]
+subscripts["hour"] = ["double", 17.0]
 
 opt.run(subscripts=subscripts)
 opt.save_outputs(sim_no=0)
 
 end2 = time.time()
 
+# parameter = {}
+# parameter["name"] = ["string", "active power max limit"]
+# parameter["pt"] = ["v_string", ["week", "weekday"]]
+# parameter["hour"] = ["double", 0.0]
+# parameter["value"] = ["double", 200.0]
+# parameter["ID"] = ["string", "PV1"]
+# parameter["problem"] = ["string", "DC OPF"]
+# parameter["type"] = ["string", "generator"]
+
 parameter = {}
-parameter["name"] = ["string", "active power max limit"]
+parameter["name"] = ["string", "status"]
 parameter["pt"] = ["v_string", ["week", "weekday"]]
 parameter["hour"] = ["double", 0.0]
-parameter["value"] = ["double", 200.0]
-parameter["ID"] = ["string", "PV1"]
+parameter["value"] = ["bool", True]
+parameter["ID"] = ["string", "L9"]
 parameter["problem"] = ["string", "DC OPF"]
+parameter["type"] = ["string", "branch"]
 
 
 opt.update_parameter(information=parameter)
