@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include <set>
+#include <boost/unordered_map.hpp>
 
 //      NAMES ELEMENTS NODES
 
@@ -281,3 +282,9 @@ void concatenate_names()
     all_parameters.insert(bool_model_characteristics.begin(), bool_model_characteristics.end());
     all_parameters.insert(string_model_characteristics.begin(), string_model_characteristics.end());
 }
+
+boost::unordered_map<std::string, std::string> NAMETOGRAPH (
+    {
+        {"DC OPF", "network"}
+    }
+);
