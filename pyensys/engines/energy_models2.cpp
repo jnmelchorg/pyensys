@@ -2755,40 +2755,86 @@ int models::update_parameter()
     }
     else if (boost::get<std::string>(candidate.get_characteristic("problem").get_value()) == "DC OPF")
     {
-        if (boost::get<std::string>(candidate.get_characteristic("name").get_value()) == "active power max limit")
+        if (boost::get<std::string>(candidate.get_characteristic("name").get_value()) == 
+            "active power max limit")
         {
             convert2pu(candidate);
-            int required_position = -1;
-            // Get pos corresponding to ID
-            for (const int& pos_gen : grafos.get_positions("network", "generator"))
-            {
-                if (grafos.get_characteristic_component("network", pos_gen, "vertex", "ID").get_value() == candidate.get_characteristic("ID").get_value())
-                {
-                    required_position = pos_gen;
-                    break;
-                }
-            }
+            int required_position = get_position_in_graph(NAMETOGRAPH.at("DC OPF"), 
+                boost::get<std::string>(candidate.get_characteristic("type").get_value()));
 
             // TODO: Replace value or smart checking - t.b.ask
             // Finding target variable
             information target_variable;
-            target_variable.set_characteristic(characteristic("name", std::string("active power generation"), false), false);
-            if (candidate.exist("pt")) target_variable.set_characteristic(candidate.get_characteristic("pt"), false);
-            if (candidate.exist("hour")) target_variable.set_characteristic(candidate.get_characteristic("hour"), false);
+            target_variable.set_characteristic(characteristic("name", 
+                std::string("active power generation"), false), false);
+            if (candidate.exist("pt")) target_variable.set_characteristic(
+                candidate.get_characteristic("pt"), false);
+            if (candidate.exist("hour")) target_variable.set_characteristic(
+                candidate.get_characteristic("hour"), false);
 
             characteristic new_max;
             new_max.set_name("max");
             new_max.set_value(candidate.get_value());
 
-            grafos.update_information_characteristic("network", required_position, "vertex", "variables", target_variable, new_max);
+            grafos.update_information_characteristic("network", required_position, 
+                "vertex", "variables", target_variable, new_max);
 
-            characteristic position_matrix = grafos.get_information_characteristic("network", required_position, "vertex", "variables", target_variable, "position matrix");
+            characteristic position_matrix = grafos.get_information_characteristic("network", 
+                required_position, "vertex", "variables", target_variable, "position matrix");
 
             solver.setColumnUpper(boost::get<int>(position_matrix.get_value()), boost::get<double>(new_max.get_value()));
+        }
+        else if (boost::get<std::string>(candidate.get_characteristic("name").get_value()) == 
+            "status")
+        {
+            if (boost::get<std::string>(candidate.get_characteristic("type").get_value()) == "branch")
+            {
+                int required_position = get_position_in_graph(NAMETOGRAPH.at("DC OPF"), 
+                boost::get<std::string>(candidate.get_characteristic("type").get_value()));
+
+                characteristic status;
+                status.set_name("status");
+                status.set_value(candidate.get_value());
+
+                // Finding target parameter
+                information target_parameter;
+                target_parameter.set_characteristic(characteristic("name", 
+                    std::string("status"), false), false);
+                if (candidate.exist("pt")) target_parameter.set_characteristic(
+                    candidate.get_characteristic("pt"), false);
+                if (candidate.exist("hour")) target_parameter.set_characteristic(
+                    candidate.get_characteristic("hour"), false);
+
+                grafos.update_information_characteristic("network", required_position, 
+                "vertex", "parameters", target_parameter, status);
+
+                problem_matrix.clear();
+                solver.clear();
+
+                if (create_dc_opf_model() != 0) return -1;
+
+                std::cout << "OK\n" << std::endl;
+            }
+
         }
     }
     return 0;
 
+}
+
+int models::get_position_in_graph(const std::string &graphname, const std::string &type)
+{
+    int required_position = -1;
+    for (const int& pos_graph : grafos.get_positions(graphname, type))
+    {
+        if (grafos.get_characteristic_component(graphname, pos_graph, "vertex", "ID").get_value() == 
+            candidate.get_characteristic("ID").get_value())
+        {
+            required_position = pos_graph;
+            break;
+        }
+    }
+    return required_position;
 }
 
 int models::declare_moea_variables()
