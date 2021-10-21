@@ -70,7 +70,7 @@ def test_operational_check():
     RF = RecursiveFunction()
     parameters = load_test_case()
     RF.initialise(parameters)
-    RF.operational_check()
+    RF._operational_check()
     assert RF.pp_opf.wrapper.network.OPF_converged == True
     assert isclose(3583.53647, RF.pp_opf.wrapper.network.res_cost, abs_tol=1e-4)
 
@@ -147,3 +147,13 @@ def test_initialise_case_unknown_opf():
     RF._initialise_pandapower.assert_not_called()
     RF._create_control_graph.assert_called()
 
+def test_number_calls_methods_in_solve():
+    RF = RecursiveFunction()
+    parameters=load_test_case()
+    parameters.optimisation_profiles_data.data.pop(-1)
+    RF.initialise(parameters=parameters)
+    RF._update_pandapower_controllers = MagicMock()
+    RF._operational_check = MagicMock()
+    RF.solve(0)
+    assert RF._update_pandapower_controllers.call_count == 16
+    assert RF._operational_check.call_count == 16
