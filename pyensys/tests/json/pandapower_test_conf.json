@@ -79,5 +79,10 @@
         "display_progress_bar": true,
         "continue_on_divergence": false,
         "optimisation_software": "pypower"
+    },
+    "optimisation_binary_variables": {
+        "element_type": "gen",
+        "variable_name": "installation",
+        "elements_ids": [0]
     }
 }
