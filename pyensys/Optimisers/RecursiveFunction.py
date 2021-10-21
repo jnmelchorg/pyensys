@@ -16,7 +16,7 @@ class RecursiveFunction:
         self._control_graph = ControlGraphData()
         self._node_under_analysis: int = -1
 
-    def operational_check(self):
+    def _operational_check(self):
         if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
             self._parameters.problem_settings.intertemporal:
             self.pp_opf.run_timestep_opf_pandapower()
@@ -38,7 +38,8 @@ class RecursiveFunction:
 
     def solve(self, node_under_analysis: int):
         self._node_under_analysis = node_under_analysis
-        self.operational_check()
+        self._update_pandapower_controllers()
+        self._operational_check()
         for neighbour in self._control_graph.graph.neighbors(node_under_analysis):
             self.solve(node_under_analysis=neighbour)
     
