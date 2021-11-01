@@ -326,3 +326,24 @@ def test_load_optimisation_profiles_data_case2():
     data = power_system._load_optimisation_profiles_data()
     assert not data.initialised
     
+def test_load_optimisation_binary_variables():
+    power_system = ReadJSON()
+    power_system.settings = {
+        "optimisation_binary_variables": [
+            {
+            "element_type": "gen",
+            "variable_name": "installation",
+            "elements_ids": [0]
+            },
+            {
+            "element_type": "AC line",
+            "variable_name": "installation",
+            "elements_ids": [0]
+            }
+        ]
+    }
+    power_system._load_optimisation_binary_variables()
+    assert len(power_system.parameters.optimisation_binary_variables) == 2
+    assert power_system.parameters.optimisation_binary_variables[0].element_type == "gen"
+    assert power_system.parameters.optimisation_binary_variables[1].element_type == "AC line"
+    assert power_system.parameters.optimisation_binary_variables[1].variable_name == "installation"

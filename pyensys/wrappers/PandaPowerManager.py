@@ -77,3 +77,6 @@ class PandaPowerManager():
                     data=profile.data, column_names=profile.active_columns_names, \
                     variable_name=profile.variable_name, components_type=profile.element_type)
                 self.wrapper.update_network_controller(pp_profile)
+
+    def is_feasible(self) -> bool:
+        return self.wrapper.is_feasible()

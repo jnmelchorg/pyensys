@@ -2,8 +2,10 @@ from pyensys.wrappers.PandaPowerManager import PandaPowerManager
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     PandaPowerProfilesData
 from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
+
 from pandas import DataFrame, date_range
 from math import isclose
+from unittest.mock import MagicMock
 
 
 def test_load_mat_file_to_pandapower_case1():
@@ -331,3 +333,9 @@ def test_update_network_controllers_case2():
     RESULT = manager.wrapper.network['controller'].iat[1, 0].data_source.df
     assert DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], \
         columns=['gen1_p']).equals(RESULT)
+
+def test_is_feasible():
+    manager = PandaPowerManager()
+    manager.wrapper.is_feasible = MagicMock()
+    manager.wrapper.is_feasible.return_value = True
+    assert manager.is_feasible() == True

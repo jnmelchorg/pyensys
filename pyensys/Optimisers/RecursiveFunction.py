@@ -4,10 +4,56 @@ from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
 from pyensys.Optimisers.ControlGraphsCreator import ControlGraphData, ClusterData, \
     RecursiveFunctionGraphCreator
 
-from typing import List
+from typing import List, Any
 from dataclasses import dataclass, field
 
 from copy import copy
+
+class AbstractDataContainer:
+    def __init__(self):
+        self._container = None
+        self._is_dictionary = False
+        self._is_list = False
+        self._container_iterator = None
+    
+    def __iter__(self):
+        self._container_iterator = iter(self._container)
+    
+    def create_dictionary(self):
+        self._container = {}
+        self._is_dictionary = True
+        
+    
+    def create_list(self):
+        self._container = []
+        self._is_list = False
+        self._container_iterator = iter(self._container)
+
+class AbstractDataContainerAppend(AbstractDataContainer):
+    def __init__(self):
+        super().__init__()
+        self._key_to_position = {}
+
+    def append(self, key: str,  value: Any):
+        if self._is_dictionary:
+            self._container[key] = value
+        elif self._is_list:
+            self._key_to_position[key] = len(self._container)
+            self._container.append(value)
+
+@dataclass
+class InterIterationInformation:
+    incumbent_interventions: AbstractDataContainerAppend = \
+        field(default_factory=lambda: AbstractDataContainerAppend())
+    incumbent_graph_paths: AbstractDataContainerAppend = \
+        field(default_factory=lambda: AbstractDataContainerAppend())
+    partial_solution_interventions: AbstractDataContainerAppend = \
+        field(default_factory=lambda: AbstractDataContainerAppend())
+    partial_solution_operation_cost: AbstractDataContainerAppend = \
+        field(default_factory=lambda: AbstractDataContainerAppend())
+    partial_solution_path: AbstractDataContainerAppend = \
+        field(default_factory=lambda: AbstractDataContainerAppend())
+    current_graph_node: int = 0
 
 class RecursiveFunction:
 
@@ -15,6 +61,7 @@ class RecursiveFunction:
         self._parameters = Parameters()
         self._control_graph = ControlGraphData()
         self._node_under_analysis: int = -1
+        self._inter_iteration_information = InterIterationInformation()
 
     def _operational_check(self):
         if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
@@ -36,12 +83,24 @@ class RecursiveFunction:
         control_graph = RecursiveFunctionGraphCreator()
         self._control_graph = control_graph.create_recursive_function_graph(self._parameters)
 
-    def solve(self, node_under_analysis: int):
-        self._node_under_analysis = node_under_analysis
+    def solve(self, inter_iteration_information: InterIterationInformation):
+        self._node_under_analysis = copy(inter_iteration_information.current_graph_node)
         self._update_pandapower_controllers()
         self._operational_check()
-        for neighbour in self._control_graph.graph.neighbors(node_under_analysis):
-            self.solve(node_under_analysis=neighbour)
+        if self.pp_opf.is_feasible():
+            is_end_node = True
+            for neighbour in self._control_graph.graph.neighbors(self._node_under_analysis):
+                is_end_node = False
+                inter_iteration_information.current_graph_node = neighbour
+                self.solve(inter_iteration_information=inter_iteration_information)
+            if is_end_node:
+                self._optimality_check()
+    
+    def _optimality_check(self):
+        pass
+
+    def calculate_interventions_cost(self):
+        for 
     
     def _update_pandapower_controllers(self):
         new_profiles = self._create_new_pandapower_profiles()
@@ -65,3 +124,5 @@ class RecursiveFunction:
                 modifier_info.variable_name == pp_profile.variable_name:
                 return position
         return -1
+
+

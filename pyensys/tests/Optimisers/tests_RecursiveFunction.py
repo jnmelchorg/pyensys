@@ -154,6 +154,7 @@ def test_number_calls_methods_in_solve():
     RF.initialise(parameters=parameters)
     RF._update_pandapower_controllers = MagicMock()
     RF._operational_check = MagicMock()
-    RF.solve(0)
+    RF.pp_opf.is_feasible = MagicMock()
+    RF.solve(InterIterationInformation())
     assert RF._update_pandapower_controllers.call_count == 16
     assert RF._operational_check.call_count == 16

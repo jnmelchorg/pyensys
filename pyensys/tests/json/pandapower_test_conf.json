@@ -80,9 +80,18 @@
         "continue_on_divergence": false,
         "optimisation_software": "pypower"
     },
-    "optimisation_binary_variables": {
+    "optimisation_binary_variables": [
+        {
         "element_type": "gen",
         "variable_name": "installation",
-        "elements_ids": [0]
-    }
+        "elements_ids": [0],
+        "costs": [1.0]
+        },
+        {
+        "element_type": "line",
+        "variable_name": "installation",
+        "elements_ids": [0],
+        "costs": [1.0]
+        }
+    ]
 }

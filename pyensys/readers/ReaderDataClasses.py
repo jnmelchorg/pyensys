@@ -81,6 +81,12 @@ class OptimisationProfilesData:
     initialised: bool =  False
 
 @dataclass
+class OptimisationBinaryVariables:
+    element_type: str = ""
+    variable_name: str = ""
+    elements_ids: List[str] = field(default_factory=list)
+
+@dataclass
 class Parameters:
     problem_settings: ProblemSettings = \
         field(default_factory=lambda: ProblemSettings())
@@ -95,4 +101,6 @@ class Parameters:
         field(default_factory=lambda: PandaPowerOptimisationSettings())
     optimisation_profiles_data: OptimisationProfilesData = \
         field(default_factory=lambda: OptimisationProfilesData())
+    optimisation_binary_variables: List[OptimisationBinaryVariables] =\
+        field(default_factory=list)
     initialised: bool = False

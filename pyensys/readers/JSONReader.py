@@ -176,3 +176,13 @@ class ReadJSON:
                 pandapower_optimisation_settings_dict.pop("optimisation_software")
             pandapower_settings.initialised = True
         return pandapower_settings
+
+    def _load_optimisation_binary_variables(self):
+        optimisation_binary_variables_list: List[dict] = \
+            self.settings.pop("optimisation_binary_variables", [])
+        for variable in optimisation_binary_variables_list:
+            self.parameters.optimisation_binary_variables.append(
+                OptimisationBinaryVariables(element_type=variable.get("element_type"),
+                variable_name=variable.get("variable_name"), elements_ids=variable.get("elements_ids"))
+            )
+            

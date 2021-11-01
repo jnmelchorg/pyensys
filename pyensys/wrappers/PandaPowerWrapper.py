@@ -74,3 +74,6 @@ class PandaPowerWrapper:
             if element == new_profile.components_type and variable == new_profile.variable_name:
                 return row[0]
         return -1
+    
+    def is_feasible(self) -> bool:
+        return self.network.OPF_converged
