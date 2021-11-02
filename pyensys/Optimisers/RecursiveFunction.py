@@ -14,26 +14,38 @@ class AbstractDataContainer:
         self._container = None
         self._is_dictionary = False
         self._is_list = False
-        self._container_iterator = None
+        self._key_to_position = None
+    
+    def __getitem__(self, key: str):
+        if self._is_dictionary:
+            return self._container[key]
+        elif self._is_list:
+            return self._container[self._key_to_position[key]]
     
     def __iter__(self):
-        self._container_iterator = iter(self._container)
+        if self._is_dictionary:
+            self._container_iterator = iter(self._container.items())
+        elif self._is_list:
+            self._key_to_position_iterator = iter(self._key_to_position.items())
+        return self
     
+    def __next__(self):
+        if self._is_dictionary:
+            return next(self._container_iterator)
+        elif self._is_list:
+            key, value = next(self._key_to_position_iterator)
+            return key, self._container[value]
+
     def create_dictionary(self):
         self._container = {}
         self._is_dictionary = True
         
-    
     def create_list(self):
         self._container = []
-        self._is_list = False
-        self._container_iterator = iter(self._container)
+        self._key_to_position = {}
+        self._is_list = True
 
 class AbstractDataContainerAppend(AbstractDataContainer):
-    def __init__(self):
-        super().__init__()
-        self._key_to_position = {}
-
     def append(self, key: str,  value: Any):
         if self._is_dictionary:
             self._container[key] = value
@@ -71,6 +83,7 @@ class RecursiveFunction:
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
         self._create_control_graph()
+        self._create_pool_interventions()
         if self._parameters.problem_settings.opf_optimizer == "pandapower":
             self._initialise_pandapower()
     
@@ -82,6 +95,9 @@ class RecursiveFunction:
     def _create_control_graph(self):
         control_graph = RecursiveFunctionGraphCreator()
         self._control_graph = control_graph.create_recursive_function_graph(self._parameters)
+    
+    def _create_pool_interventions(self):
+        pass
 
     def solve(self, inter_iteration_information: InterIterationInformation):
         self._node_under_analysis = copy(inter_iteration_information.current_graph_node)
@@ -95,12 +111,12 @@ class RecursiveFunction:
                 self.solve(inter_iteration_information=inter_iteration_information)
             if is_end_node:
                 self._optimality_check()
-    
+
     def _optimality_check(self):
         pass
 
-    def calculate_interventions_cost(self):
-        for 
+    def _calculate_interventions_cost(self):
+        pass
     
     def _update_pandapower_controllers(self):
         new_profiles = self._create_new_pandapower_profiles()
