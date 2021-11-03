@@ -162,32 +162,3 @@ def test_number_calls_methods_in_solve():
 def test_create_pool_interventions(self):
     pass
 
-
-def test_abstract_data_container_getitem_dict():
-    data = AbstractDataContainerAppend()
-    data.create_dictionary()
-    data.append("1", 1)
-    data.append("2", 2)
-    assert data["2"] == 2
-
-def test_abstract_data_container_iterator_dict():
-    data = AbstractDataContainerAppend()
-    data.create_dictionary()
-    data.append("1", 1)
-    data.append("2", 2)
-    result = []
-    EXPECTED_RESULT = [["1", 1] , ["2", 2]]
-    for key, value in data:
-        result.append([key, value])
-    assert result == EXPECTED_RESULT
-
-def test_abstract_data_container_iterator_list():
-    data = AbstractDataContainerAppend()
-    data.create_list()
-    data.append("1", 1)
-    data.append("2", 2)
-    result = []
-    EXPECTED_RESULT = [["1", 1] , ["2", 2]]
-    for key, value in data:
-        result.append([key, value])
-    assert result == EXPECTED_RESULT
