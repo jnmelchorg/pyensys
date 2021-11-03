@@ -26,6 +26,9 @@ class AbstractDataContainerBase:
         elif self._is_list:
             key, value = next(self._key_to_position_iterator)
             return key, self._container[value]
+    
+    def __len__(self):
+        return len(self._container)
 
     def create_dictionary(self):
         self._container = {}
