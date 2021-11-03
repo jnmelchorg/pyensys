@@ -1,7 +1,9 @@
 from os import path
+
+from numpy.testing._private.utils import assert_equal
 from pyensys.Optimisers.RecursiveFunction import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
-    OptimisationProfileData
+    OptimisationProfileData, OptimisationBinaryVariables
 from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
     get_clustering_data_test
 from pyensys.Optimisers.ControlGraphsCreator import ClusterData
@@ -159,6 +161,24 @@ def test_number_calls_methods_in_solve():
     assert RF._update_pandapower_controllers.call_count == 16
     assert RF._operational_check.call_count == 16
 
-def test_create_pool_interventions(self):
-    pass
+def test_create_pool_interventions():
+    RF = RecursiveFunction()
+    RF._parameters.initialised = True
+    RF._parameters.optimisation_binary_variables = [
+        OptimisationBinaryVariables(element_type="gen", variable_name="installation", 
+        elements_ids=["G0", "G1"], elements_positions=[0, 1], costs=[1.0, 2.0]),
+        OptimisationBinaryVariables(element_type="AC line", variable_name="installation", 
+        elements_ids=["L0", "L1"], elements_positions=[0, 1], costs=[5.0, 6.0])
+    ]
+    RF._create_pool_interventions()
+    assert_equal(len(RF._pool_interventions), 4)
+    assert isinstance(RF._pool_interventions["2"], BinaryVariable)
+    assert_equal(RF._pool_interventions["1"].element_type, "gen")
+    assert_equal(RF._pool_interventions["1"].variable_name, "installation")
+    assert_equal(RF._pool_interventions["1"].element_id, "G1")
+    assert_equal(RF._pool_interventions["1"].element_position, 1)
+    assert_equal(RF._pool_interventions["1"].cost, 2.0)
+    assert_equal(RF._pool_interventions["3"].cost, 6.0)
+
+test_create_pool_interventions()
 
