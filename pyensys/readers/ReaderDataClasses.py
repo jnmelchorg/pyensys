@@ -85,6 +85,8 @@ class OptimisationBinaryVariables:
     element_type: str = ""
     variable_name: str = ""
     elements_ids: List[str] = field(default_factory=list)
+    elements_positions: List[int] = field(default_factory=list)
+    costs: List[float] = field(default_factory=list)
 
 @dataclass
 class Parameters:
