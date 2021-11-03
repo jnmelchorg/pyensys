@@ -3,69 +3,34 @@ from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
     PandaPowerProfileData
 from pyensys.Optimisers.ControlGraphsCreator import ControlGraphData, ClusterData, \
     RecursiveFunctionGraphCreator
+from pyensys.AbstractDataContainer import AbstractDataContainer
 
 from typing import List, Any
 from dataclasses import dataclass, field
 
 from copy import copy
 
-class AbstractDataContainer:
-    def __init__(self):
-        self._container = None
-        self._is_dictionary = False
-        self._is_list = False
-        self._key_to_position = None
-    
-    def __getitem__(self, key: str):
-        if self._is_dictionary:
-            return self._container[key]
-        elif self._is_list:
-            return self._container[self._key_to_position[key]]
-    
-    def __iter__(self):
-        if self._is_dictionary:
-            self._container_iterator = iter(self._container.items())
-        elif self._is_list:
-            self._key_to_position_iterator = iter(self._key_to_position.items())
-        return self
-    
-    def __next__(self):
-        if self._is_dictionary:
-            return next(self._container_iterator)
-        elif self._is_list:
-            key, value = next(self._key_to_position_iterator)
-            return key, self._container[value]
-
-    def create_dictionary(self):
-        self._container = {}
-        self._is_dictionary = True
-        
-    def create_list(self):
-        self._container = []
-        self._key_to_position = {}
-        self._is_list = True
-
-class AbstractDataContainerAppend(AbstractDataContainer):
-    def append(self, key: str,  value: Any):
-        if self._is_dictionary:
-            self._container[key] = value
-        elif self._is_list:
-            self._key_to_position[key] = len(self._container)
-            self._container.append(value)
-
 @dataclass
 class InterIterationInformation:
-    incumbent_interventions: AbstractDataContainerAppend = \
-        field(default_factory=lambda: AbstractDataContainerAppend())
-    incumbent_graph_paths: AbstractDataContainerAppend = \
-        field(default_factory=lambda: AbstractDataContainerAppend())
-    partial_solution_interventions: AbstractDataContainerAppend = \
-        field(default_factory=lambda: AbstractDataContainerAppend())
-    partial_solution_operation_cost: AbstractDataContainerAppend = \
-        field(default_factory=lambda: AbstractDataContainerAppend())
-    partial_solution_path: AbstractDataContainerAppend = \
-        field(default_factory=lambda: AbstractDataContainerAppend())
+    incumbent_interventions: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    incumbent_graph_paths: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    partial_solution_interventions: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    partial_solution_operation_cost: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    partial_solution_path: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     current_graph_node: int = 0
+
+@dataclass
+class BinaryVariable:
+    element_id: str = ""
+    cost: float = 0.0
+    element_position: int = 0
+    element_type: str = ""
+    variable_name: str = ""
 
 class RecursiveFunction:
 
