@@ -39,6 +39,7 @@ class RecursiveFunction:
         self._control_graph = ControlGraphData()
         self._node_under_analysis: int = -1
         self._inter_iteration_information = InterIterationInformation()
+        self._pool_interventions = AbstractDataContainer()
 
     def _operational_check(self):
         if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
@@ -62,7 +63,15 @@ class RecursiveFunction:
         self._control_graph = control_graph.create_recursive_function_graph(self._parameters)
     
     def _create_pool_interventions(self):
-        pass
+        self._pool_interventions.create_list()
+        counter = 0
+        for variables in self._parameters.optimisation_binary_variables:
+            for cost, position, id in zip(variables.costs, variables.elements_positions, \
+                variables.elements_ids):
+                self._pool_interventions.append(str(counter), BinaryVariable(\
+                    element_type=variables.element_type, variable_name=variables.variable_name,\
+                    element_id=id, element_position=position, cost=cost))
+                counter += 1
 
     def solve(self, inter_iteration_information: InterIterationInformation):
         self._node_under_analysis = copy(inter_iteration_information.current_graph_node)
