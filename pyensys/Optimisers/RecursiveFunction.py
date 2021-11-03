@@ -40,11 +40,6 @@ class RecursiveFunction:
         self._node_under_analysis: int = -1
         self._inter_iteration_information = InterIterationInformation()
         self._pool_interventions = AbstractDataContainer()
-
-    def _operational_check(self):
-        if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
-            self._parameters.problem_settings.intertemporal:
-            self.pp_opf.run_timestep_opf_pandapower()
         
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
@@ -75,6 +70,7 @@ class RecursiveFunction:
 
     def solve(self, inter_iteration_information: InterIterationInformation):
         self._node_under_analysis = copy(inter_iteration_information.current_graph_node)
+        self._update_status_elements_opf()
         self._update_pandapower_controllers()
         self._operational_check()
         if self.pp_opf.is_feasible():
@@ -86,12 +82,9 @@ class RecursiveFunction:
             if is_end_node:
                 self._optimality_check()
 
-    def _optimality_check(self):
+    def _update_status_elements_opf():
         pass
 
-    def _calculate_interventions_cost(self):
-        pass
-    
     def _update_pandapower_controllers(self):
         new_profiles = self._create_new_pandapower_profiles()
         self.pp_opf.update_network_controllers(new_profiles)
@@ -115,4 +108,15 @@ class RecursiveFunction:
                 return position
         return -1
 
+    def _operational_check(self):
+        if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
+            self._parameters.problem_settings.intertemporal:
+            self.pp_opf.run_timestep_opf_pandapower()
+    
+    def _optimality_check(self):
+        pass
+
+    def _calculate_interventions_cost(self):
+        pass
+    
 
