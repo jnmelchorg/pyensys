@@ -183,6 +183,8 @@ class ReadJSON:
         for variable in optimisation_binary_variables_list:
             self.parameters.optimisation_binary_variables.append(
                 OptimisationBinaryVariables(element_type=variable.get("element_type"),
-                variable_name=variable.get("variable_name"), elements_ids=variable.get("elements_ids"))
+                variable_name=variable.get("variable_name"), elements_ids=variable.get("elements_ids"),
+                elements_positions=variable.get("elements_positions", []),
+                costs=variable.get("costs", []))
             )
             
