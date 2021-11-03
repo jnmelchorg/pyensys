@@ -1,10 +1,30 @@
 from pyensys.wrappers.PandaPowerWrapper import PandaPowerWrapper
 from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
+from pyensys.wrappers.PandapowerDataClasses import *
+
 from pandas import DataFrame
 from pandapower.timeseries.output_writer import OutputWriter
 from math import isclose
-from pyensys.wrappers.PandapowerDataClasses import *
 
+def _load_complete_test_case() -> PandaPowerWrapper:
+    wrapper = PandaPowerWrapper()
+    wrapper.load_mat_file_to_pandapower(filename_with_extension=get_path_case9_mat(), frequency_hz=60.0)
+    data1 = DataFrame()
+    data1['load1_p'] = [67.28095505, 9.65466896, 11.70181664]
+    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
+        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
+    data2 = DataFrame()
+    data2['gen1_p'] = [240.44092015, 205.50525905, 18.7321705]
+    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
+        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
+    profiles = [profile1, profile2]
+    wrapper.add_controllers_to_network(profiles=profiles)
+    variables = [OutputVariableSet('res_load', 'p_mw', []), OutputVariableSet('res_bus', 'vm_pu', []), \
+        OutputVariableSet('res_line', 'loading_percent', []), OutputVariableSet('res_line', 'i_ka', [])]
+    output_settings = TimeSeriesOutputFileSettings(directory=set_pandapower_test_output_directory(), \
+        number_time_steps=3, format='.xlsx')
+    wrapper.add_output_writer_to_network(output_settings, variables)
+    return wrapper
 
 def test_if_load_mat_file_to_pandapower_works():
     wrapper = PandaPowerWrapper()
@@ -149,24 +169,21 @@ def test_update_controller_data():
     assert data3.equals(wrapper.network['controller'].iat[1, 0].data_source.df)
 
 def test_is_feasible():
-    wrapper = PandaPowerWrapper()
-    wrapper.load_mat_file_to_pandapower(filename_with_extension=get_path_case9_mat(), frequency_hz=60.0)
-    data1 = DataFrame()
-    data1['load1_p'] = [67.28095505, 9.65466896, 11.70181664]
-    profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
-        column_names=['load1_p'], variable_name= "p_mw", components_type="load")
-    data2 = DataFrame()
-    data2['gen1_p'] = [240.44092015, 205.50525905, 18.7321705]
-    profile2 = Profile(data=data2, components_indexes_in_power_system=[0], \
-        column_names=["gen1_p"], variable_name= "p_mw", components_type="gen")
-    profiles = [profile1, profile2]
-    wrapper.add_controllers_to_network(profiles=profiles)
-    variables = [OutputVariableSet('res_load', 'p_mw', []), OutputVariableSet('res_bus', 'vm_pu', []), \
-        OutputVariableSet('res_line', 'loading_percent', []), OutputVariableSet('res_line', 'i_ka', [])]
-    output_settings = TimeSeriesOutputFileSettings(directory=set_pandapower_test_output_directory(), \
-        number_time_steps=3, format='.xlsx')
-    wrapper.add_output_writer_to_network(output_settings, variables)
+    wrapper = _load_complete_test_case()
     settings = SimulationSettings(time_steps=range(3), display_progress_bar = False, \
         continue_on_divergence = False, optimisation_software = 'pypower', opf_type = 'ac')
     wrapper.run_timestep_simulation(settings)
     assert wrapper.is_feasible() == True
+
+def test_update_parameter():
+    wrapper = _load_complete_test_case()
+    settings = SimulationSettings(time_steps=range(3), display_progress_bar = False, \
+        continue_on_divergence = False, optimisation_software = 'pypower', opf_type = 'ac')
+    wrapper.run_timestep_simulation(settings)
+    print(wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"])
+    wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"] = False
+    print(wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"])
+    wrapper.run_timestep_simulation(settings)
+    print()
+
+test_update_parameter()
