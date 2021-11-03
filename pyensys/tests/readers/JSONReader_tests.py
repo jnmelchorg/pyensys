@@ -333,12 +333,16 @@ def test_load_optimisation_binary_variables():
             {
             "element_type": "gen",
             "variable_name": "installation",
-            "elements_ids": [0]
+            "elements_ids": ["G0"],
+            "costs": [1.0],
+            "elements_positions": [3]
             },
             {
             "element_type": "AC line",
             "variable_name": "installation",
-            "elements_ids": [0]
+            "elements_ids": ["L1"],
+            "costs": [2.0],
+            "elements_positions": [1]
             }
         ]
     }
@@ -347,3 +351,6 @@ def test_load_optimisation_binary_variables():
     assert power_system.parameters.optimisation_binary_variables[0].element_type == "gen"
     assert power_system.parameters.optimisation_binary_variables[1].element_type == "AC line"
     assert power_system.parameters.optimisation_binary_variables[1].variable_name == "installation"
+    assert power_system.parameters.optimisation_binary_variables[0].elements_ids == ["G0"]
+    assert power_system.parameters.optimisation_binary_variables[0].elements_positions == [3]
+    assert power_system.parameters.optimisation_binary_variables[1].costs == [2.0]
