@@ -8,63 +8,65 @@ class PandaPowerManager():
     def __init__(self):
         self.wrapper = PandaPowerWrapper()
         self.simulation_settings = SimulationSettings()
+        self._parameters = Parameters()
 
-    def initialise_pandapower_network(self, problem_parameters: Parameters) -> PandaPowerWrapper:
-        self.load_mat_file_to_pandapower(problem_parameters)
-        self.add_controllers_to_network(problem_parameters)
-        self.add_output_writer_to_network(problem_parameters)
-        self.define_simulation_settings(problem_parameters)
+    def initialise_pandapower_network(self) -> PandaPowerWrapper:
+        self._parameters = self._parameters
+        self.load_mat_file_to_pandapower(self._parameters)
+        self.add_controllers_to_network(self._parameters)
+        self.add_output_writer_to_network(self._parameters)
+        self.define_simulation_settings(self._parameters)
 
-    def load_mat_file_to_pandapower(self, problem_parameters: Parameters):
-        if problem_parameters.pandapower_mpc_settings.initialised:
+    def load_mat_file_to_pandapower(self):
+        if self._parameters.pandapower_mpc_settings.initialised:
             self.wrapper.load_mat_file_to_pandapower(\
-                filename_with_extension=problem_parameters.pandapower_mpc_settings.mat_file_path, \
-                frequency_hz=problem_parameters.pandapower_mpc_settings.system_frequency)
+                filename_with_extension=self._parameters.pandapower_mpc_settings.mat_file_path, \
+                frequency_hz=self._parameters.pandapower_mpc_settings.system_frequency)
     
-    def add_controllers_to_network(self, problem_parameters: Parameters):
-        if problem_parameters.pandapower_profiles_data.initialised:
+    def add_controllers_to_network(self):
+        if self._parameters.pandapower_profiles_data.initialised:
             profiles_pandapower = []
-            for profile in problem_parameters.pandapower_profiles_data.data:
+            for profile in self._parameters.pandapower_profiles_data.data:
                 profiles_pandapower.append(Profile(\
                     components_indexes_in_power_system=profile.indexes, \
                     data=profile.data, column_names=profile.active_columns_names, \
                     variable_name=profile.variable_name, components_type=profile.element_type))
             self.wrapper.add_controllers_to_network(profiles=profiles_pandapower)
 
-    def add_output_writer_to_network(self, problem_parameters: Parameters):
-        if problem_parameters.output_settings.initialised and \
-            problem_parameters.opf_time_settings.initialised:
-            output_variables = self._define_output_variables(problem_parameters)
-            output_settings = self._define_output_settings(problem_parameters)
+    def add_output_writer_to_network(self):
+        if self._parameters.output_settings.initialised and \
+            self._parameters.opf_time_settings.initialised:
+            output_variables = self._define_output_variables(self._parameters)
+            output_settings = self._define_output_settings(self._parameters)
             self.wrapper.add_output_writer_to_network(output_settings, output_variables)
     
-    def _define_output_variables(self, problem_parameters: Parameters) -> List[OutputVariableSet]:
+    def _define_output_variables(self) -> List[OutputVariableSet]:
         output_variables = []
-        for variable in problem_parameters.output_settings.output_variables:
+        for variable in self._parameters.output_settings.output_variables:
             output_variables.append(OutputVariableSet(name_dataset=variable.name_dataset, \
                 name_variable=variable.name_variable, variable_indexes=variable.variable_indexes))
         return output_variables
     
-    def _define_output_settings(self, problem_parameters: Parameters) -> TimeSeriesOutputFileSettings:
+    def _define_output_settings(self) -> TimeSeriesOutputFileSettings:
         output_settings = TimeSeriesOutputFileSettings(\
-            directory=problem_parameters.output_settings.directory, \
-            number_time_steps=problem_parameters.opf_time_settings.date_time_settings.size, \
-            format=problem_parameters.output_settings.format)
+            directory=self._parameters.output_settings.directory, \
+            number_time_steps=self._parameters.opf_time_settings.date_time_settings.size, \
+            format=self._parameters.output_settings.format)
         return output_settings
     
-    def define_simulation_settings(self, problem_parameters: Parameters):
-        if problem_parameters.pandapower_optimisation_settings.initialised and \
-            problem_parameters.opf_time_settings.initialised and \
-            problem_parameters.problem_settings.initialised:
+    def define_simulation_settings(self):
+        if self._parameters.pandapower_optimisation_settings.initialised and \
+            self._parameters.opf_time_settings.initialised and \
+            self._parameters.problem_settings.initialised:
             self.simulation_settings = SimulationSettings(
-                time_steps=range(problem_parameters.opf_time_settings.date_time_settings.size), \
+                time_steps=range(self._parameters.opf_time_settings.date_time_settings.size), \
                 display_progress_bar = \
-                    problem_parameters.pandapower_optimisation_settings.display_progress_bar, \
+                    self._parameters.pandapower_optimisation_settings.display_progress_bar, \
                 continue_on_divergence = \
-                    problem_parameters.pandapower_optimisation_settings.continue_on_divergence, \
+                    self._parameters.pandapower_optimisation_settings.continue_on_divergence, \
                 optimisation_software = \
-                    problem_parameters.pandapower_optimisation_settings.optimisation_software, \
-                opf_type = problem_parameters.problem_settings.opf_type)
+                    self._parameters.pandapower_optimisation_settings.optimisation_software, \
+                opf_type = self._parameters.problem_settings.opf_type)
     
     def run_timestep_opf_pandapower(self):
         self.wrapper.run_timestep_simulation(self.simulation_settings)
@@ -82,4 +84,5 @@ class PandaPowerManager():
         return self.wrapper.is_feasible()
     
     def update_parameter(self):
+        
         pass
