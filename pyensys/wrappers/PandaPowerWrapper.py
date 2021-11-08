@@ -77,6 +77,3 @@ class PandaPowerWrapper:
     
     def is_feasible(self) -> bool:
         return self.network.OPF_converged
-    
-    def update_parameter(self):
-        pass
