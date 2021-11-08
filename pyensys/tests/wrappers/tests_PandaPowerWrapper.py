@@ -174,17 +174,3 @@ def test_is_feasible():
         continue_on_divergence = False, optimisation_software = 'pypower', opf_type = 'ac')
     wrapper.run_timestep_simulation(settings)
     assert wrapper.is_feasible() == True
-
-def test_update_parameter():
-    wrapper = _load_complete_test_case()
-    settings = SimulationSettings(time_steps=range(3), display_progress_bar = False, \
-        continue_on_divergence = False, optimisation_software = 'pypower', opf_type = 'ac')
-    wrapper.run_timestep_simulation(settings)
-    wrapper = _load_complete_test_case()
-    print(wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"])
-    wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"] = False
-    print(wrapper.network["line"].loc[wrapper.network["line"].index[0], "in_service"])
-    wrapper.run_timestep_simulation(settings)
-    print()
-
-test_update_parameter()
