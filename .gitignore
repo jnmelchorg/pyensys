@@ -191,3 +191,4 @@ pyensys/tests/outputs/*
 # Ignore third party software
 pyensys/ThirdPartySoftware/*
 !pyensys/ThirdPartySoftware/__init__.py
+/.vs
