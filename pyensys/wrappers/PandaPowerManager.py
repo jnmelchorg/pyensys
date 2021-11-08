@@ -80,3 +80,6 @@ class PandaPowerManager():
 
     def is_feasible(self) -> bool:
         return self.wrapper.is_feasible()
+    
+    def update_parameter(self):
+        pass
