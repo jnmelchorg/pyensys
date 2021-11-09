@@ -10,12 +10,15 @@ class PandaPowerManager():
         self.simulation_settings = SimulationSettings()
         self._parameters = Parameters()
 
-    def initialise_pandapower_network(self) -> PandaPowerWrapper:
-        self._parameters = self._parameters
-        self.load_mat_file_to_pandapower(self._parameters)
-        self.add_controllers_to_network(self._parameters)
-        self.add_output_writer_to_network(self._parameters)
-        self.define_simulation_settings(self._parameters)
+    def initialise_pandapower_network(self, opf_parameters: Parameters) -> PandaPowerWrapper:
+        self._parameters = opf_parameters
+        self._initialise()
+    
+    def _initialise(self):
+        self.load_mat_file_to_pandapower()
+        self.add_controllers_to_network()
+        self.add_output_writer_to_network()
+        self.define_simulation_settings()
 
     def load_mat_file_to_pandapower(self):
         if self._parameters.pandapower_mpc_settings.initialised:
@@ -36,8 +39,8 @@ class PandaPowerManager():
     def add_output_writer_to_network(self):
         if self._parameters.output_settings.initialised and \
             self._parameters.opf_time_settings.initialised:
-            output_variables = self._define_output_variables(self._parameters)
-            output_settings = self._define_output_settings(self._parameters)
+            output_variables = self._define_output_variables()
+            output_settings = self._define_output_settings()
             self.wrapper.add_output_writer_to_network(output_settings, output_variables)
     
     def _define_output_variables(self) -> List[OutputVariableSet]:
@@ -84,5 +87,6 @@ class PandaPowerManager():
         return self.wrapper.is_feasible()
     
     def update_parameter(self):
-        
+        self.wrapper = PandaPowerWrapper()
+        self._initialise()
         pass
