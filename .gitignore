@@ -193,3 +193,4 @@ pyensys/ThirdPartySoftware/*
 !pyensys/ThirdPartySoftware/__init__.py
 /.vs
 /TestResults/junitresults_28bb8b44-c859-4923-9543-cb599a02c0d8.xml
+/TestResults
