@@ -1,7 +1,7 @@
 from pyensys.Optimisers.ControlGraphsCreator import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData
-from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
     get_clustering_data_test
 
 from pandas import DataFrame, date_range, read_excel

@@ -4,7 +4,7 @@ from numpy.testing._private.utils import assert_equal
 from pyensys.Optimisers.RecursiveFunction import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData, OptimisationBinaryVariables
-from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
     get_clustering_data_test
 from pyensys.Optimisers.ControlGraphsCreator import ClusterData
 

@@ -2,7 +2,7 @@ from numpy.testing._private.utils import assert_equal
 from pyensys.wrappers.PandaPowerManager import PandaPowerManager
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     PandaPowerProfilesData
-from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
 
 from pandas import DataFrame, date_range
 from math import isclose

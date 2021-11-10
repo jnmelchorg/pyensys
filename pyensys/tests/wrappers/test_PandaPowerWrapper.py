@@ -1,5 +1,5 @@
 from pyensys.wrappers.PandaPowerWrapper import PandaPowerWrapper
-from pyensys.tests.tests_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
 from pyensys.wrappers.PandapowerDataClasses import *
 
 from pandas import DataFrame
