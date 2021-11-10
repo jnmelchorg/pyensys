@@ -7,7 +7,7 @@ from typing import List
 from pyensys.data_processing.clustering import Birch_Settings, Clustering, \
     TimeSeriesClustering, PropertiesofScenarioElement
 
-from pyensys.tests.tests_data_paths import get_clustering_test_data
+from pyensys import get_clustering_test_data
 
 def read_normalized_demand_profiles() -> dict:
     path = get_clustering_test_data()
