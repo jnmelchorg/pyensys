@@ -1,6 +1,6 @@
 from pandas import DataFrame
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Any
 
 @dataclass
 class Profile:
@@ -35,3 +35,5 @@ class SimulationSettings:
 class UpdateParameterData:
     components_type: str = ''
     parameter_name: str = ''
+    parameter_position: int = 0
+    new_value: Any = ''

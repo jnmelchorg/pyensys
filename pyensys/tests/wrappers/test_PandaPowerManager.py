@@ -352,6 +352,7 @@ def test_is_feasible():
 
 def test_update_parameter_line():
     manager = PandaPowerManager()
+    parameterdata = UpdateParameterData()
     parameters = _load_test_parameter_case_9()
     manager.initialise_pandapower_network(parameters)
     manager.update_parameter()
