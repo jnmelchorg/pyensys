@@ -342,10 +342,18 @@ def test_update_network_controllers_case2():
     manager.update_network_controllers(pp_profiles)
     RESULT = manager.wrapper.network['controller'].iat[1, 0].data_source.df
     assert DataFrame(data=[[240.44092015], [205.50525905], [18.7321705]], \
-        columns=['gen1_p']).equals(RESULT)
+        columns=['gen1_p']).equals(RESULT) 
 
 def test_is_feasible():
     manager = PandaPowerManager()
     manager.wrapper.is_feasible = MagicMock()
     manager.wrapper.is_feasible.return_value = True
     assert manager.is_feasible() == True
+
+def test_update_parameter_line():
+    manager = PandaPowerManager()
+    parameters = _load_test_parameter_case_9()
+    manager.initialise_pandapower_network(parameters)
+    manager.update_parameter()
+    assert manager.wrapper.network.line.iloc[1]["in_service"] == False
+    
