@@ -82,7 +82,7 @@ class RecursiveFunction:
             if is_end_node:
                 self._optimality_check()
 
-    def _update_status_elements_opf():
+    def _update_status_elements_opf(self):
         pass
 
     def _update_pandapower_controllers(self):
