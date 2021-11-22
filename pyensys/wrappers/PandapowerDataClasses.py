@@ -33,7 +33,7 @@ class SimulationSettings:
 
 @dataclass
 class UpdateParameterData:
-    components_type: str = ''
+    component_type: str = ''
     parameter_name: str = ''
     parameter_position: int = 0
     new_value: Any = ''
