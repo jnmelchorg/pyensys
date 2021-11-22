@@ -30,3 +30,8 @@ class SimulationSettings:
     opf_type: str = ''
     continue_on_divergence: bool = False
     time_steps: List[int] = field(default_factory=list)
+
+@dataclass
+class UpdateParameterData:
+    components_type: str = ''
+    parameter_name: str = ''
