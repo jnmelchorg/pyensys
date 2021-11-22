@@ -1,5 +1,6 @@
 from numpy.testing._private.utils import assert_equal
 from pyensys.wrappers.PandaPowerManager import PandaPowerManager
+from pyensys.wrappers.PandapowerDataClasses import UpdateParameterData
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     PandaPowerProfilesData
 from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
@@ -352,9 +353,12 @@ def test_is_feasible():
 
 def test_update_parameter_line():
     manager = PandaPowerManager()
-    parameterdata = UpdateParameterData()
+    parameter_data = UpdateParameterData()
+    parameter_data.component_type = "line"
+    parameter_data.parameter_name = "in_service"
+    parameter_data.parameter_position = 1
+    parameter_data.new_value = False
     parameters = _load_test_parameter_case_9()
     manager.initialise_pandapower_network(parameters)
-    manager.update_parameter()
+    manager.update_parameter(parameter_data)
     assert manager.wrapper.network.line.iloc[1]["in_service"] == False
-    
