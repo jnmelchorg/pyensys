@@ -3,20 +3,6 @@
 /* BEGIN: Cython Metadata
 {
     "distutils": {
-        "define_macros": [
-            [
-                "ARMA_DONT_USE_WRAPPER",
-                null
-            ],
-            [
-                "ARMA_USE_LAPACK",
-                null
-            ],
-            [
-                "ARMA_USE_BLAS",
-                null
-            ]
-        ],
         "depends": [
             "pyensys\\engines\\energy_models2.cpp",
             "pyensys\\engines\\energy_models2.h"
@@ -24,21 +10,17 @@
         "include_dirs": [
             "pyensys/engines",
             ".\\pyensys\\engines",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\armadillo-10.1.2\\include",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\boost_1_75_0",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\Clp\\include",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\CoinUtils\\include",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\BuildTools\\headers"
+            "C:\\Users\\f09903jm\\source\\repos\\jnmelchorg\\pyensys\\pyensys\\ThirdPartySoftware\\boost_1_75_0",
+            "C:\\Users\\f09903jm\\source\\repos\\jnmelchorg\\pyensys\\pyensys\\ThirdPartySoftware\\Clp\\include",
+            "C:\\Users\\f09903jm\\source\\repos\\jnmelchorg\\pyensys\\pyensys\\ThirdPartySoftware\\CoinUtils\\include"
         ],
         "language": "c++",
         "libraries": [
             "libClp",
-            "libCoinUtils",
-            "libopenblas"
+            "libCoinUtils"
         ],
         "library_dirs": [
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\Clp\\lib",
-            "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\engines\\external files\\armadillo-10.1.2\\lib_win64"
+            "C:\\Users\\f09903jm\\source\\repos\\jnmelchorg\\pyensys\\pyensys\\ThirdPartySoftware\\Clp\\lib"
         ],
         "name": "pyensys.engines.cython.cpp_energy_wrapper",
         "sources": [
