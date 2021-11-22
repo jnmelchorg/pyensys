@@ -86,7 +86,8 @@ class PandaPowerManager():
     def is_feasible(self) -> bool:
         return self.wrapper.is_feasible()
     
-    def update_parameter(self):
+    def update_parameter(self, parameter_data: UpdateParameterData):
         self.wrapper = PandaPowerWrapper()
         self._initialise()
-        pass
+        self.wrapper.network[parameter_data.component_type].at[\
+            parameter_data.parameter_position, parameter_data.parameter_name] = parameter_data.new_value
