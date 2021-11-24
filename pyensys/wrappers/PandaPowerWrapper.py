@@ -77,3 +77,6 @@ class PandaPowerWrapper:
     
     def is_feasible(self) -> bool:
         return self.network.OPF_converged
+
+    def get_total_cost(self) -> float:
+        return self.network.res_cost

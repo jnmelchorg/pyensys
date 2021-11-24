@@ -29,7 +29,7 @@ class AbstractDataContainerBase:
     
     def __len__(self):
         return len(self._container)
-
+    
     def create_dictionary(self):
         self._container = {}
         self._is_dictionary = True
@@ -47,6 +47,16 @@ class AbstractDataContainerAppend(AbstractDataContainerBase):
             self._key_to_position[key] = len(self._container)
             self._container.append(value)
 
-class AbstractDataContainer(AbstractDataContainerAppend):
+class AbstractDataContainerGet(AbstractDataContainerAppend):
+    def get(self, key: str):
+        if self._is_dictionary:
+            return self._container.get(key, None)
+        elif self._is_list:
+            if self._key_to_position.get(key, None) is not None:
+                return self._container[self._key_to_position[key]]
+            else:
+                return None
+
+class AbstractDataContainer(AbstractDataContainerGet):
     def __init__(self):
         super().__init__()

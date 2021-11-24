@@ -362,3 +362,8 @@ def test_update_parameter_line():
     manager.initialise_pandapower_network(parameters)
     manager.update_parameter(parameter_data)
     assert manager.wrapper.network.line.iloc[1]["in_service"] == False
+
+def test_get_total_cost():
+    manager = PandaPowerManager()
+    manager.wrapper.get_total_cost = MagicMock(return_value=3)
+    assert manager.get_total_cost() == 3

@@ -5,8 +5,9 @@ from pyensys.Optimisers.ControlGraphsCreator import ControlGraphData, ClusterDat
     RecursiveFunctionGraphCreator
 from pyensys.AbstractDataContainer import AbstractDataContainer
 
-from typing import List, Any
+from typing import List
 from dataclasses import dataclass, field
+from itertools import combinations
 
 from copy import copy
 
@@ -22,7 +23,12 @@ class InterIterationInformation:
         field(default_factory=lambda: AbstractDataContainer())
     partial_solution_path: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
+    available_interventions: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    new_interventions: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     current_graph_node: int = 0
+
 
 @dataclass
 class BinaryVariable:
@@ -32,6 +38,13 @@ class BinaryVariable:
     element_type: str = ""
     variable_name: str = ""
 
+@dataclass
+class InterventionsInformation:
+    interventions: AbstractDataContainer  = \
+        field(default_factory=lambda: AbstractDataContainer())
+    path: str = ''
+    year: int = 0
+
 class RecursiveFunction:
 
     def __init__(self):
@@ -40,6 +53,7 @@ class RecursiveFunction:
         self._node_under_analysis: int = -1
         self._inter_iteration_information = InterIterationInformation()
         self._pool_interventions = AbstractDataContainer()
+        self._old_path = 0
         
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
@@ -75,12 +89,16 @@ class RecursiveFunction:
         self._operational_check()
         if self.pp_opf.is_feasible():
             is_end_node = True
+            
             for neighbour in self._control_graph.graph.neighbors(self._node_under_analysis):
                 is_end_node = False
                 inter_iteration_information.current_graph_node = neighbour
                 self.solve(inter_iteration_information=inter_iteration_information)
             if is_end_node:
                 self._optimality_check()
+    
+    def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, length_set: int):
+        return combinations(available_interventions, length_set)
 
     def _update_status_elements_opf(self):
         pass
@@ -117,6 +135,16 @@ class RecursiveFunction:
         pass
 
     def _calculate_interventions_cost(self):
+        pass
+
+    def _save_partial_solution(self, interventions: InterventionsInformation):
+        if self._inter_iteration_information.incumbent_interventions.get(interventions.path) is not None:
+            self._inter_iteration_information.incumbent_interventions[interventions.path][\
+                str(interventions.year)] = interventions.interventions
+        else:
+            self._inter_iteration_information.incumbent_interventions.append(\
+                self._inter_iteration_information.previous_path, \
+                self._inter_iteration_information.incumbent_interventions[previous_path])
         pass
     
 

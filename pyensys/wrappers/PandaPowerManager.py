@@ -91,3 +91,6 @@ class PandaPowerManager():
         self._initialise()
         self.wrapper.network[parameter_data.component_type].at[\
             parameter_data.parameter_position, parameter_data.parameter_name] = parameter_data.new_value
+    
+    def get_total_cost(self) -> float:
+        return self.wrapper.get_total_cost()
