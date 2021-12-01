@@ -3,7 +3,7 @@ from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
     PandaPowerProfileData
 from pyensys.Optimisers.ControlGraphsCreator import ControlGraphData, ClusterData, \
     RecursiveFunctionGraphCreator
-from pyensys.AbstractDataContainer import AbstractDataContainer
+from pyensys.AbstractDataContainer import AbstractDataContainer, difference_abstract_data_containers
 
 from typing import List
 from dataclasses import dataclass, field
@@ -23,7 +23,7 @@ class InterIterationInformation:
         field(default_factory=lambda: AbstractDataContainer())
     partial_solution_path: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
-    available_interventions: AbstractDataContainer = \
+    previous_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
     new_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
@@ -38,6 +38,12 @@ class BinaryVariable:
     element_type: str = ""
     variable_name: str = ""
 
+    def __eq__(self, other):
+        if isinstance(other, BinaryVariable):
+            return (self.element_id == other.element_id) and (self.cost == other.cost) and \
+                (self.element_position == other.element_position) and \
+                (self.element_type == other.element_type) and (self.variable_name == other.variable_name)
+
 @dataclass
 class InterventionsInformation:
     interventions: AbstractDataContainer  = \
@@ -50,10 +56,7 @@ class RecursiveFunction:
     def __init__(self):
         self._parameters = Parameters()
         self._control_graph = ControlGraphData()
-        self._node_under_analysis: int = -1
-        self._inter_iteration_information = InterIterationInformation()
         self._pool_interventions = AbstractDataContainer()
-        self._old_path = 0
         
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
@@ -83,33 +86,46 @@ class RecursiveFunction:
                 counter += 1
 
     def solve(self, inter_iteration_information: InterIterationInformation):
-        self._node_under_analysis = copy(inter_iteration_information.current_graph_node)
-        self._update_status_elements_opf()
-        self._update_pandapower_controllers()
+        _available_interventions = copy(self._pool_interventions)
+        difference_abstract_data_containers(_available_interventions, \
+            inter_iteration_information.previous_interventions)
+        difference_abstract_data_containers(_available_interventions, \
+            inter_iteration_information.new_interventions)
+        self._update_status_elements_opf(inter_iteration_information)
+        self._update_pandapower_controllers(inter_iteration_information)
         self._operational_check()
-        if self.pp_opf.is_feasible():
-            is_end_node = True
-            
-            for neighbour in self._control_graph.graph.neighbors(self._node_under_analysis):
-                is_end_node = False
-                inter_iteration_information.current_graph_node = neighbour
-                self.solve(inter_iteration_information=inter_iteration_information)
-            if is_end_node:
-                self._optimality_check()
+        if self._is_opf_feasible():
+            for number_combinations in range(len(_available_interventions) + 1):
+                for combinations in self._calculate_all_combinations(\
+                    _available_interventions, number_combinations):
+                    new_elements = AbstractDataContainer()
+                    new_elements.create_list()
+                    for element in combinations:
+                        new_elements.append(element[0][0], element[0][1])
+                    is_end_node = True
+                    current_node = copy(inter_iteration_information.current_graph_node)
+                    for neighbour in self._control_graph.graph.neighbors(current_node):
+                        is_end_node = False
+                        inter_iteration_information.current_graph_node = neighbour
+                        self.solve(inter_iteration_information=inter_iteration_information)
+                    if is_end_node:
+                        self._optimality_check()
     
     def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, length_set: int):
         return combinations(available_interventions, length_set)
 
-    def _update_status_elements_opf(self):
-        pass
+    def _update_status_elements_opf(self, inter_iteration_information: InterIterationInformation):
+        if len(inter_iteration_information.new_interventions) == 0:
+            return
 
-    def _update_pandapower_controllers(self):
-        new_profiles = self._create_new_pandapower_profiles()
+    def _update_pandapower_controllers(self, inter_iteration_information: InterIterationInformation):
+        new_profiles = self._create_new_pandapower_profiles(inter_iteration_information)
         self.pp_opf.update_network_controllers(new_profiles)
     
-    def _create_new_pandapower_profiles(self) -> PandaPowerProfilesData:
+    def _create_new_pandapower_profiles(self, inter_iteration_information: InterIterationInformation)\
+         -> PandaPowerProfilesData:
         new_profiles = PandaPowerProfilesData(initialised=True)
-        for modifier in self._control_graph.nodes_data[self._node_under_analysis]:
+        for modifier in self._control_graph.nodes_data[inter_iteration_information.current_graph_node]:
             new_profiles.data.append(self._create_new_pandapower_profile(modifier))
         return new_profiles
     
@@ -131,6 +147,9 @@ class RecursiveFunction:
             self._parameters.problem_settings.intertemporal:
             self.pp_opf.run_timestep_opf_pandapower()
     
+    def _is_opf_feasible(self):
+        return self.pp_opf.is_feasible()
+
     def _optimality_check(self):
         pass
 
@@ -138,13 +157,6 @@ class RecursiveFunction:
         pass
 
     def _save_partial_solution(self, interventions: InterventionsInformation):
-        if self._inter_iteration_information.incumbent_interventions.get(interventions.path) is not None:
-            self._inter_iteration_information.incumbent_interventions[interventions.path][\
-                str(interventions.year)] = interventions.interventions
-        else:
-            self._inter_iteration_information.incumbent_interventions.append(\
-                self._inter_iteration_information.previous_path, \
-                self._inter_iteration_information.incumbent_interventions[previous_path])
         pass
     
 
