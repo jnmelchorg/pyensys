@@ -180,5 +180,10 @@ def test_create_pool_interventions():
     assert_equal(RF._pool_interventions["1"].cost, 2.0)
     assert_equal(RF._pool_interventions["3"].cost, 6.0)
 
-test_create_pool_interventions()
-
+def test_calculate_all_combinations():
+    AO = AbstractDataContainer()
+    AO.create_list()
+    for x in range(0,3):
+        AO.append(str(x), x)
+    RF = RecursiveFunction()
+    assert list(RF._calculate_all_combinations(AO, 1)) == [(("0", 0),), (("1", 1),), (("2", 2),)]
