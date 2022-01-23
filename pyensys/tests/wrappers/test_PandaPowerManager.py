@@ -8,6 +8,7 @@ from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_tes
 from pandas import DataFrame, date_range
 from math import isclose
 from unittest.mock import MagicMock
+from typing import List
 
 def test_load_mat_file_to_pandapower_case1():
     manager = PandaPowerManager()
@@ -351,17 +352,38 @@ def test_is_feasible():
     manager.wrapper.is_feasible.return_value = True
     assert manager.is_feasible() == True
 
+def _load_parameters_to_update() -> List[UpdateParameterData]:
+    parameters = []
+    parameter = UpdateParameterData()
+    parameter.component_type = "line"
+    parameter.parameter_name = "in_service"
+    parameter.parameter_position = 1
+    parameter.new_value = False
+    parameters.append(parameter)
+    parameter = UpdateParameterData()
+    parameter.component_type = "gen"
+    parameter.parameter_name = "in_service"
+    parameter.parameter_position = 2
+    parameter.new_value = False
+    parameters.append(parameter)
+    return parameters
+
 def test_update_parameter_line():
     manager = PandaPowerManager()
-    parameter_data = UpdateParameterData()
-    parameter_data.component_type = "line"
-    parameter_data.parameter_name = "in_service"
-    parameter_data.parameter_position = 1
-    parameter_data.new_value = False
+    investmens = _load_parameters_to_update()
     parameters = _load_test_parameter_case_9()
     manager.initialise_pandapower_network(parameters)
-    manager.update_parameter(parameter_data)
+    manager.update_parameter(investmens[0])
     assert manager.wrapper.network.line.iloc[1]["in_service"] == False
+
+def test_update_multiple_parameters():
+    manager = PandaPowerManager()
+    investmens = _load_parameters_to_update()
+    parameters = _load_test_parameter_case_9()
+    manager.initialise_pandapower_network(parameters)
+    manager.update_multiple_parameters(investmens)
+    assert manager.wrapper.network.line.iloc[1]["in_service"] == False
+    assert manager.wrapper.network.gen.iloc[2]["in_service"] == False
 
 def test_get_total_cost():
     manager = PandaPowerManager()

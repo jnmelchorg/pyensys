@@ -354,3 +354,13 @@ def test_load_optimisation_binary_variables():
     assert power_system.parameters.optimisation_binary_variables[0].elements_ids == ["G0"]
     assert power_system.parameters.optimisation_binary_variables[0].elements_positions == [3]
     assert power_system.parameters.optimisation_binary_variables[1].costs == [2.0]
+
+def test_load_problem_settings_case1():
+    power_system = ReadJSON()
+    power_system.settings = {
+        "problem": {
+            "return_rate_in_percentage": 3.0
+        }
+    }
+    problem_settings = power_system._load_problem_settings()
+    assert problem_settings.return_rate_in_percentage == 3.0

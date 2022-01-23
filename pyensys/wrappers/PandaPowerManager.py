@@ -92,5 +92,12 @@ class PandaPowerManager():
         self.wrapper.network[parameter_data.component_type].at[\
             parameter_data.parameter_position, parameter_data.parameter_name] = parameter_data.new_value
     
+    def update_multiple_parameters(self, list_parameter_data: List[UpdateParameterData]):
+        self.wrapper = PandaPowerWrapper()
+        self._initialise()
+        for parameter in list_parameter_data:
+            self.wrapper.network[parameter.component_type].at[\
+                parameter.parameter_position, parameter.parameter_name] = parameter.new_value
+    
     def get_total_cost(self) -> float:
         return self.wrapper.get_total_cost()

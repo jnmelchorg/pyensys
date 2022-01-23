@@ -41,6 +41,8 @@ class ReadJSON:
                 problem_settings_dict.pop("problem_optimizer", '')
             problem_settings.opf_type = \
                 problem_settings_dict.pop("opf_type", '')
+            problem_settings.return_rate_in_percentage = \
+                problem_settings_dict.pop("return_rate_in_percentage", 0.0)
             problem_settings.initialised = True
         return problem_settings
     

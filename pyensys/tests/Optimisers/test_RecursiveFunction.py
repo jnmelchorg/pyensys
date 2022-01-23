@@ -1,4 +1,6 @@
 from os import path
+from networkx.algorithms import operators
+from networkx.generators.line import inverse_line_graph
 
 from numpy.testing._private.utils import assert_equal
 from pyensys.Optimisers.RecursiveFunction import *
@@ -68,14 +70,6 @@ def load_data_multipliers() -> Dict[int, List[ClusterData]]:
         element_type="gen", variable_name="p_mw"))
     return profile_modifiers
 
-def test_operational_check():
-    RF = RecursiveFunction()
-    parameters = load_test_case()
-    RF.initialise(parameters)
-    RF._operational_check()
-    assert RF.pp_opf.wrapper.network.OPF_converged == True
-    assert isclose(3583.53647, RF.pp_opf.wrapper.network.res_cost, abs_tol=1e-4)
-
 def test_get_profile_position_to_update_case1():
     RF = RecursiveFunction()
     parameters = load_test_case()
@@ -106,8 +100,7 @@ def test_create_new_pandapower_profiles():
     parameters = load_test_case()
     RF.initialise(parameters)
     RF._control_graph.nodes_data = load_data_multipliers()
-    RF._node_under_analysis = 1
-    RESULT = RF._create_new_pandapower_profiles()
+    RESULT = RF._create_new_pandapower_profiles(1)
     assert DataFrame(data=[[96], [80], [7.2]], columns=['gen1_p']).equals(RESULT.data[1].data)
 
 def test_update_pandapower_controllers():
@@ -115,21 +108,20 @@ def test_update_pandapower_controllers():
     parameters = load_test_case()
     RF.initialise(parameters)
     RF._control_graph.nodes_data = load_data_multipliers()
-    RF._node_under_analysis = 1
-    RF._update_pandapower_controllers()
-    RESULT = RF.pp_opf.wrapper.network['controller'].iat[1, 0].data_source.df
+    RF._update_pandapower_controllers(1)
+    RESULT = RF._opf.wrapper.network['controller'].iat[1, 0].data_source.df
     assert DataFrame(data=[[96], [80], [7.2]], columns=['gen1_p']).equals(RESULT)
 
 def test_initialise_pandapower():
     RF = RecursiveFunction()
     RF._parameters = load_test_case()
     RF._initialise_pandapower()
-    assert len(RF.pp_opf.wrapper.network['bus'].index) == 9
-    assert len(RF.pp_opf.wrapper.network['controller'].iat[0, 0].data_source.df.index) == 3
-    assert len(RF.pp_opf.wrapper.network['output_writer'].iat[0, 0].log_variables) == 2
-    assert len(RF.pp_opf.simulation_settings.time_steps) == 3
-    assert RF.pp_opf.simulation_settings.opf_type == "ac"
-    assert RF.pp_opf.simulation_settings.optimisation_software == "pypower"
+    assert len(RF._opf.wrapper.network['bus'].index) == 9
+    assert len(RF._opf.wrapper.network['controller'].iat[0, 0].data_source.df.index) == 3
+    assert len(RF._opf.wrapper.network['output_writer'].iat[0, 0].log_variables) == 2
+    assert len(RF._opf.simulation_settings.time_steps) == 3
+    assert RF._opf.simulation_settings.opf_type == "ac"
+    assert RF._opf.simulation_settings.optimisation_software == "pypower"
 
 def test_initialise_case_pandapower():
     RF = RecursiveFunction()
@@ -149,19 +141,7 @@ def test_initialise_case_unknown_opf():
     RF._initialise_pandapower.assert_not_called()
     RF._create_control_graph.assert_called()
 
-def test_number_calls_methods_in_solve():
-    RF = RecursiveFunction()
-    parameters=load_test_case()
-    parameters.optimisation_profiles_data.data.pop(-1)
-    RF.initialise(parameters=parameters)
-    RF._update_pandapower_controllers = MagicMock()
-    RF._operational_check = MagicMock()
-    RF.pp_opf.is_feasible = MagicMock()
-    RF.solve(InterIterationInformation())
-    assert RF._update_pandapower_controllers.call_count == 16
-    assert RF._operational_check.call_count == 16
-
-def test_create_pool_interventions():
+def _create_dummy_optimisation_binary_variables() -> RecursiveFunction:
     RF = RecursiveFunction()
     RF._parameters.initialised = True
     RF._parameters.optimisation_binary_variables = [
@@ -170,6 +150,10 @@ def test_create_pool_interventions():
         OptimisationBinaryVariables(element_type="AC line", variable_name="installation", 
         elements_ids=["L0", "L1"], elements_positions=[0, 1], costs=[5.0, 6.0])
     ]
+    return RF
+
+def test_create_pool_interventions():
+    RF = _create_dummy_optimisation_binary_variables()
     RF._create_pool_interventions()
     assert_equal(len(RF._pool_interventions), 4)
     assert isinstance(RF._pool_interventions["2"], BinaryVariable)
@@ -187,3 +171,198 @@ def test_calculate_all_combinations():
         AO.append(str(x), x)
     RF = RecursiveFunction()
     assert list(RF._calculate_all_combinations(AO, 1)) == [(("0", 0),), (("1", 1),), (("2", 2),)]
+
+def test_get_total_operation_cost():
+    RF = RecursiveFunction()
+    RF._opf = PandaPowerManager()
+    RF._opf.get_total_cost = MagicMock(return_value=2.5)
+    assert RF._get_total_operation_cost() == 2.5
+
+def _create_dummy_pool_of_interventions() -> RecursiveFunction:
+    RF = _create_dummy_optimisation_binary_variables()
+    RF._create_pool_interventions()
+    return RF
+
+def test_calculate_investment_cost():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    investments = AbstractDataContainer()
+    investments.create_list()
+    investments.append("0", RF._pool_interventions["0"])
+    investments.append("1", RF._pool_interventions["2"])
+    interventions = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0", investments)
+    investments = AbstractDataContainer()
+    investments.create_list()
+    investments.append("0", RF._pool_interventions["1"])
+    investments.append("1", RF._pool_interventions["3"])
+    interventions.append("1", investments)
+    assert isclose(RF._calculate_investment_cost(interventions), 14.247, rel_tol=1e-3)
+
+def test_calculate_opteration_cost():
+    RF = RecursiveFunction()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    operation = AbstractDataContainer()
+    operation.create_list()
+    operation.append("0", 200.0)
+    operation.append("1", 300.0)
+    assert isclose(RF._calculate_opteration_cost(operation), 509.278, rel_tol=1e-3)
+
+def _create_dummy_candidate_solution(RF: RecursiveFunction) -> InterIterationInformation:
+    inter_information = InterIterationInformation()
+    inter_information.candidate_interventions.create_list()
+    investments = AbstractDataContainer()
+    investments.create_list()
+    investments.append("0", RF._pool_interventions["0"])
+    investments.append("1", RF._pool_interventions["2"])
+    inter_information.candidate_interventions.append("0", investments)
+    investments = AbstractDataContainer()
+    investments.create_list()
+    investments.append("0", RF._pool_interventions["1"])
+    investments.append("1", RF._pool_interventions["3"])
+    inter_information.candidate_interventions.append("1", investments)
+    inter_information.candidate_operation_cost.create_list()
+    inter_information.candidate_operation_cost.append("0", 200)
+    inter_information.candidate_operation_cost.append("1", 300)
+    inter_information.candidate_solution_path.create_list()
+    inter_information.candidate_solution_path.append("0", 0)
+    inter_information.candidate_solution_path.append("1", 1)
+    return inter_information
+
+def _create_empty_incumbent_list(inter_information: InterIterationInformation) -> \
+    InterIterationInformation:
+    inter_information.incumbent_interventions.create_list()
+    inter_information.incumbent_graph_paths.create_list()
+    inter_information.incumbent_investment_costs.create_list()
+    inter_information.incumbent_operation_costs.create_list()
+    return inter_information
+
+def test_optimality_check_case_empty_incumbent():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_empty_incumbent_list(inter_information)    
+    RF._optimality_check(inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 509.278, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 14.247, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.incumbent_interventions["0"]) == 2
+    assert len(inter_information.candidate_interventions) == 1
+    assert len(inter_information.candidate_solution_path) == 1
+    assert len(inter_information.candidate_operation_cost) == 1
+
+def _create_incumbent_list_with_one_better_solution(inter_information: InterIterationInformation) -> \
+    InterIterationInformation:
+    inter_information.incumbent_interventions.create_list()
+    inter_information.incumbent_interventions = deepcopy(inter_information.candidate_interventions)
+    inter_information.incumbent_graph_paths.create_list()
+    inter_information.incumbent_graph_paths.append("0", AbstractDataContainer())
+    inter_information.incumbent_graph_paths["0"].create_list()
+    inter_information.incumbent_graph_paths["0"].append("0", 0)
+    inter_information.incumbent_graph_paths["0"].append("1", 1)
+    inter_information.incumbent_investment_costs.create_list()
+    inter_information.incumbent_investment_costs.append("0", 10)
+    inter_information.incumbent_operation_costs.create_list()
+    inter_information.incumbent_operation_costs.append("0", 500)
+    return inter_information
+
+def test_optimality_check_case_existing_solution_in_incumbent_candidate_is_worse():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_incumbent_list_with_one_better_solution(inter_information)    
+    RF._optimality_check(inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 500, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 10, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.candidate_interventions) == 1
+    assert len(inter_information.candidate_solution_path) == 1
+    assert len(inter_information.candidate_operation_cost) == 1
+
+def _create_incumbent_list_with_one_worse_solution(inter_information: InterIterationInformation) -> \
+    InterIterationInformation:
+    inter_information = _create_incumbent_list_with_one_better_solution(inter_information)
+    inter_information.incumbent_investment_costs["0"] = 20
+    inter_information.incumbent_operation_costs["0"] = 520
+    return inter_information
+
+def test_optimality_check_case_existing_solution_in_incumbent_candidate_is_better():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_incumbent_list_with_one_worse_solution(inter_information)
+    RF._optimality_check(inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 509.278, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 14.247, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.incumbent_interventions["0"]) == 2
+    assert len(inter_information.candidate_interventions) == 1
+    assert len(inter_information.candidate_solution_path) == 1
+    assert len(inter_information.candidate_operation_cost) == 1
+
+def test_append_candidate_in_incumbent_list():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_empty_incumbent_list(inter_information) 
+    RF._append_candidate_in_incumbent_list("0", inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 509.278, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 14.247, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.incumbent_interventions["0"]) == 2
+
+def test_check_if_candidate_path_has_been_stored_in_incumbent():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_incumbent_list_with_one_worse_solution(inter_information)
+    key = RF._check_if_candidate_path_has_been_stored_in_incumbent(inter_information)
+    assert key == "0"
+
+def test_replace_incumbent_if_candidate_is_better():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_incumbent_list_with_one_worse_solution(inter_information)
+    RF._replace_incumbent_if_candidate_is_better("0", inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 509.278, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 14.247, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.incumbent_interventions["0"]) == 2
+
+def test_replace_solution_in_incumbent_list():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information = _create_incumbent_list_with_one_worse_solution(inter_information)
+    RF._replace_solution_in_incumbent_list("0", inter_information)
+    assert isclose(inter_information.incumbent_operation_costs["0"], 509.278, rel_tol=1e-3)
+    assert isclose(inter_information.incumbent_investment_costs["0"], 14.247, rel_tol=1e-3)
+    assert inter_information.incumbent_graph_paths["0"]["0"] == 0
+    assert inter_information.incumbent_graph_paths["0"]["1"] == 1
+    assert len(inter_information.incumbent_interventions["0"]) == 2
+
+def test_return_to_previous_state():
+    RF = _create_dummy_pool_of_interventions()
+    RF._parameters.problem_settings.return_rate_in_percentage = 3.0
+    inter_information = _create_dummy_candidate_solution(RF)
+    inter_information.level_in_graph = 1
+    RF._return_to_previous_state(inter_information)
+    assert len(inter_information.candidate_interventions) == 1
+    assert len(inter_information.candidate_solution_path) == 1
+    assert len(inter_information.candidate_operation_cost) == 1
+
+def test_run_opf():
+    RF = RecursiveFunction()
+    parameters = load_test_case()
+    RF.initialise(parameters)
+    RF._run_opf()
+    assert RF._opf.wrapper.network.OPF_converged == True
+    assert isclose(3583.53647, RF._opf.wrapper.network.res_cost, abs_tol=1e-4)
+
