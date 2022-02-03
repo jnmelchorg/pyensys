@@ -176,7 +176,7 @@ def test_get_total_operation_cost():
     RF = RecursiveFunction()
     RF._opf = PandaPowerManager()
     RF._opf.get_total_cost = MagicMock(return_value=2.5)
-    assert RF._get_total_operation_cost() == 2.5
+    assert RF._get_total_operation_cost() == 912.5
 
 def _create_dummy_pool_of_interventions() -> RecursiveFunction:
     RF = _create_dummy_optimisation_binary_variables()
