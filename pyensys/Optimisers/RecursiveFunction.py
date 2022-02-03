@@ -61,6 +61,7 @@ class RecursiveFunction:
         self._control_graph = ControlGraphData()
         self._pool_interventions = AbstractDataContainer()
         self._opf = None
+        self.__DAYS_PER_YEAR = 365
         
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
@@ -198,7 +199,7 @@ class RecursiveFunction:
         return new_profiles
     
     def _create_new_pandapower_profile(self, modifier_info: ClusterData) -> PandaPowerProfileData:
-        profile = copy(self.original_pp_profiles_data.data[\
+        profile = deepcopy(self.original_pp_profiles_data.data[\
             self._get_profile_position_to_update(modifier_info)])
         profile.data = profile.data * modifier_info.centroid
         return profile
@@ -214,7 +215,7 @@ class RecursiveFunction:
         return self._opf.is_feasible()
     
     def _get_total_operation_cost(self):
-        return self._opf.get_total_cost()
+        return self._opf.get_total_cost() * self.__DAYS_PER_YEAR
 
     def _optimality_check(self, inter_iteration_information: InterIterationInformation):
         if len(inter_iteration_information.incumbent_graph_paths) == 0:
