@@ -1,4 +1,4 @@
-from typing import DefaultDict, List, Dict
+from typing import List, Dict
 from dataclasses import dataclass, field
 from networkx import DiGraph
 from pandas import DataFrame
