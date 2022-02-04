@@ -18,6 +18,7 @@ class ProblemSettings:
     problem_optimizer: str = ''
     opf_type: str = ''
     return_rate_in_percentage: float = 0.0
+    non_anticipativity: bool = False
 
 @dataclass
 class DateTimeOptimisationSettings:
