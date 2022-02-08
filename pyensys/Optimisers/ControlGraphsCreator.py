@@ -1,11 +1,12 @@
-from typing import List, Dict
+from typing import List, Dict, Set
 from dataclasses import dataclass, field
-from networkx import DiGraph
+
 from pandas import DataFrame
 
 from pyensys.readers.ReaderDataClasses import OptimisationProfileData, OptimisationProfilesData, \
     Parameters
 from pyensys.data_processing.clustering import TimeSeriesClustering, Birch_Settings
+from pyensys.Interfaces.networkx_interface import DirectedGraph
 
 @dataclass
 class ClusterData:
@@ -81,9 +82,80 @@ class GraphEdgesCreator:
         return self._nodes_all_levels
 
 @dataclass
-class ProfileGraphData:
+class GraphandClusterData:
     nodes_data: Dict[int, ClusterData] = field(default_factory=dict)
-    graph: DiGraph = field(default_factory=DiGraph)
+    graph: DirectedGraph = field(default_factory=lambda:DirectedGraph())
+
+class GraphtoTreeConverter:
+    def __init__(self, graph_and_data:GraphandClusterData):
+        self._nodes_data = graph_and_data.nodes_data
+        self._graph = graph_and_data.graph
+        self._tree = DirectedGraph()
+    
+    @dataclass
+    class CommonNodeData:
+        predecessors:Set[int] = field(default_factory=set())
+        node_under_analysis:int = -1
+    
+    def convert(self) -> GraphandClusterData:
+        if not self._graph.is_tree():
+            greatest_node = self._graph.find_node_with_greatest_numbering()
+            current_layer = self._find_last_nodes_in_graph()
+            all_layers_analysed = False
+            while not all_layers_analysed:
+                next_layer = set()
+                for node in current_layer:
+                    predecessors = set(self._graph_predecessors_list(node))
+                    next_layer.update(predecessors)
+                    if len(next_layer) == 0: break
+                    greatest_node = self._create_duplicates_from_common_node(\
+                        self.CommonNodeData(predecessors, node), greatest_node)
+                if len(next_layer) == 0:
+                    all_layers_analysed = True
+                else:
+                    current_layer = next_layer
+            return GraphandClusterData(self._nodes_data, self._tree)
+        else:
+            return GraphandClusterData(self._nodes_data, self._graph)
+    
+    def _create_duplicates_from_common_node(self, common_node:CommonNodeData, greatest_node_number:int) -> int:
+        self._tree.add_edge(common_node.predecessors.pop(), common_node.node_under_analysis)
+        for node in common_node.predecessors:
+            greatest_node_number += 1
+            self._tree.add_edge(node, greatest_node_number)
+            self._nodes_data[greatest_node_number] = self._nodes_data[common_node.node_under_analysis]
+            greatest_node_number = self._recursive_duplicates_for_sucessors_of_common_node(\
+                common_node.node_under_analysis, greatest_node_number)
+        return greatest_node_number
+            
+    def _recursive_duplicates_for_sucessors_of_common_node(self, node_under_analysis:int, greatest_node_number:int) -> int:
+        current_node = greatest_node_number
+        for successor in self._tree.neighbours(node_under_analysis):
+            greatest_node_number += 1
+            self._tree.add_edge(current_node, greatest_node_number)
+            self._nodes_data[greatest_node_number] = self._nodes_data[successor]
+            greatest_node_number = self._recursive_duplicates_for_sucessors_of_common_node(successor, greatest_node_number)
+        return greatest_node_number
+
+    def _graph_predecessors_list(self, node_to_be_explored:int) -> List[int]:
+        return [x for x in self._graph.predecessors(node_to_be_explored)]
+    
+    def _find_last_nodes_in_graph(self) -> Set[int]:
+        first_node = self._graph.get_first_node()
+        return self._recursive_search_of_last_nodes_in_graph(first_node, set())
+    
+    def _recursive_search_of_last_nodes_in_graph(self, node_to_be_explored:int, last_nodes:Set[int]) -> Set[int]:
+        is_last_node = True
+        for node in self._graph.neighbours(node_to_be_explored):
+            is_last_node = False
+            last_nodes = self._recursive_search_of_last_nodes_in_graph(node, last_nodes)
+        if is_last_node:
+            last_nodes.add(node_to_be_explored)
+        return last_nodes
+
+@dataclass
+class ProfileGraphData(GraphandClusterData):
+    pass
 
 class ProfileGraphCreator:
     def __init__(self):
@@ -133,9 +205,8 @@ def create_profiles_clusters(parameters: Parameters) -> OptimisationProfilesData
     return series_to_clusters
 
 @dataclass
-class ControlGraphData:
-    nodes_data: Dict[int, List[ClusterData]] = field(default_factory=dict)
-    graph: DiGraph = field(default_factory=DiGraph)
+class ControlGraphData(GraphandClusterData):
+    pass
 
 class RecursiveFunctionGraphCreator:
     def __init__(self):
@@ -147,6 +218,8 @@ class RecursiveFunctionGraphCreator:
         self._profiles = create_profiles_clusters(parameters)
         self._create_all_profiles_graphs()
         self._create_control_graph()
+        if parameters.problem_settings.non_anticipativity:
+            self._create_control_tree_graph()
         return self._control_graph
         
     def _create_all_profiles_graphs(self):
@@ -160,3 +233,6 @@ class RecursiveFunctionGraphCreator:
                 self._control_graph.nodes_data[key] = [value]
         else:
             print("THIS OPTION NEEDS TO BE DEVELOPED FOR MORE THAN ONE GRAPH")
+
+    def _create_control_tree_graph(self):
+        pass
