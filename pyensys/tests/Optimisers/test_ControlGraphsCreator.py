@@ -1,3 +1,4 @@
+from sklearn import neighbors
 from pyensys.Optimisers.ControlGraphsCreator import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData
@@ -192,3 +193,136 @@ def test_create_recursive_function_graph():
     assert recursive_function_graph.nodes_data[3][0].scenarios == [0] and \
         recursive_function_graph.nodes_data[4][0].scenarios == [1, 2]
     assert control_graph._control_graph.nodes_data[8][0].centroid == 0.98
+
+def test_graph_to_tree_converter_with_input_tree():
+    G = GraphandClusterData()
+    G.graph.add_edge(19, 100)
+    G.graph.add_edge(19, 30)
+    T = GraphtoTreeConverter(G)
+    assert G == T.convert()
+
+def test_find_last_nodes_in_graph():
+    G = GraphandClusterData()
+    G.graph.add_edge(19, 100)
+    G.graph.add_edge(19, 30)
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    T = GraphtoTreeConverter(G)
+    assert T._find_last_nodes_in_graph() == {4}
+
+def test_recursive_search_of_last_nodes_in_graph():
+    G = GraphandClusterData()
+    G.graph.add_edge(19, 100)
+    G.graph.add_edge(19, 30)
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    T = GraphtoTreeConverter(G)
+    assert T._recursive_search_of_last_nodes_in_graph(19, set()) == {4}
+
+def test_get_predecessors_list():
+    G = GraphandClusterData()
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    T = GraphtoTreeConverter(G)
+    assert T._graph_predecessors_list(4) == [30, 100]
+
+def test_create_duplicates_from_common_node_with_no_successors():
+    G = GraphandClusterData()
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    G.nodes_data[30] = ClusterData(level=0)
+    G.nodes_data[100] = ClusterData(level=0)
+    G.nodes_data[4] = ClusterData(level=1, centroid=0.5)
+    T = GraphtoTreeConverter(G)
+    T._create_duplicates_from_common_node(T.CommonNodeData([30,100],4), 100)
+    assert T._tree.has_edge(100, 101)
+    assert not T._tree.has_edge(100, 4)
+    assert T._nodes_data[101].level == 1 and T._nodes_data[101].centroid == 0.5
+
+def test_create_duplicates_from_common_node_with_successors():
+    G = GraphandClusterData()
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    G.graph.add_edge(4, 12)
+    G.graph.add_edge(4, 215)
+    G.nodes_data[30] = ClusterData(level=0)
+    G.nodes_data[100] = ClusterData(level=0)
+    G.nodes_data[4] = ClusterData(level=1)
+    G.nodes_data[12] = ClusterData(level=2)
+    G.nodes_data[215] = ClusterData(level=2, centroid=0.8)
+    T = GraphtoTreeConverter(G)
+    T._create_duplicates_from_common_node(T.CommonNodeData([30,100],4), 215)
+    assert T._tree.has_edge(216, 217)
+    assert T._tree.has_edge(216, 218)
+    assert T._nodes_data[217].level == 2
+    assert T._nodes_data[218].level == 2 and T._nodes_data[218].centroid == 0.8
+
+def test_recursive_duplicates_for_sucessors_of_common_node():
+    G = GraphandClusterData()
+    G.graph.add_edge(4, 12)
+    G.graph.add_edge(4, 215)
+    G.nodes_data[4] = ClusterData(level=1)
+    G.nodes_data[12] = ClusterData(level=2)
+    G.nodes_data[215] = ClusterData(level=2, centroid=0.8)
+    T = GraphtoTreeConverter(G)
+    T._tree.add_edge(4, 12)
+    T._tree.add_edge(4, 215)
+    T._recursive_duplicates_for_sucessors_of_common_node(4, 216)
+    assert T._tree.has_edge(216, 217)
+    assert T._tree.has_edge(216, 218)
+    assert T._nodes_data[217].level == 2
+    assert T._nodes_data[218].level == 2 and T._nodes_data[218].centroid == 0.8
+
+def _create_test_graph() -> GraphandClusterData:
+    G = GraphandClusterData()
+    G.graph.add_edge(20, 30)
+    G.graph.add_edge(20, 100)
+    G.graph.add_edge(30, 4)
+    G.graph.add_edge(100, 4)
+    G.graph.add_edge(4, 12)
+    G.graph.add_edge(4, 215)
+    G.graph.add_edge(12, 128)
+    G.graph.add_edge(215, 128)
+    G.nodes_data[20] = ClusterData(level=0)
+    G.nodes_data[30] = ClusterData(level=1)
+    G.nodes_data[100] = ClusterData(level=1)
+    G.nodes_data[4] = ClusterData(level=2)
+    G.nodes_data[12] = ClusterData(level=3)
+    G.nodes_data[215] = ClusterData(level=3)
+    G.nodes_data[128] = ClusterData(level=4)
+    return G
+
+def _assert_if_tree_has_expected_branches(tree:GraphandClusterData):
+    assert tree.graph.has_edge(215, 216)
+    assert tree.graph.has_edge(30, 217)
+    assert tree.graph.has_edge(217, 218)
+    assert tree.graph.has_edge(218, 219)
+    assert tree.graph.has_edge(217, 220)
+    assert tree.graph.has_edge(220, 221)
+
+def _assert_if_tree_has_original_nodes(tree:GraphandClusterData):
+    assert tree.graph.has_node(20)
+    assert tree.graph.has_node(30)
+    assert tree.graph.has_node(100)
+    assert tree.graph.has_node(4)
+    assert tree.graph.has_node(12)
+    assert tree.graph.has_node(215)
+    assert tree.graph.has_node(128)
+
+def _assert_if_tree_has_new_and_old_nodes_data(tree:GraphandClusterData):
+    assert 216 in tree.nodes_data
+    assert 217 in tree.nodes_data
+    assert 218 in tree.nodes_data
+    assert 219 in tree.nodes_data
+    assert 220 in tree.nodes_data
+    assert 221 in tree.nodes_data
+    assert 20 in tree.nodes_data
+
+def test_graph_to_tree_converter_with_input_graph():
+    G = _create_test_graph()
+    T = GraphtoTreeConverter(G)
+    tree = T.convert()
+    assert tree.graph.is_tree()
+    _assert_if_tree_has_expected_branches(tree)
+    _assert_if_tree_has_original_nodes(tree)
+    _assert_if_tree_has_new_and_old_nodes_data(tree)
