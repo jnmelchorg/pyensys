@@ -226,5 +226,9 @@ class RecursiveFunctionGraphCreator:
         else:
             print("THIS OPTION NEEDS TO BE DEVELOPED FOR MORE THAN ONE GRAPH")
 
+    def _initialise_class_graphtreeconverter(self) -> GraphtoTreeConverter:
+        return GraphtoTreeConverter(self._control_graph)
+
     def _create_control_tree_graph(self):
-        pass
+        converter = self._initialise_class_graphtreeconverter()
+        self._control_graph = converter.convert()
