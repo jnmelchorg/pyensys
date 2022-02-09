@@ -1,7 +1,7 @@
 from pyensys.wrappers.PandaPowerManager import PandaPowerManager, UpdateParameterData
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData, \
     PandaPowerProfileData
-from pyensys.Optimisers.ControlGraphsCreator import ControlGraphData, ClusterData, \
+from pyensys.Optimisers.ControlGraphsCreator import GraphandClusterData, ClusterData, \
     RecursiveFunctionGraphCreator
 from pyensys.AbstractDataContainer import AbstractDataContainer, difference_abstract_data_containers
 
@@ -58,7 +58,7 @@ class RecursiveFunction:
 
     def __init__(self):
         self._parameters = Parameters()
-        self._control_graph = ControlGraphData()
+        self._control_graph = GraphandClusterData()
         self._pool_interventions = AbstractDataContainer()
         self._opf = None
         self.__DAYS_PER_YEAR = 365
