@@ -1,4 +1,3 @@
-from sklearn import neighbors
 from pyensys.Optimisers.ControlGraphsCreator import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData
@@ -7,6 +6,7 @@ from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_tes
 
 from pandas import DataFrame, date_range, read_excel
 from numpy import allclose
+from unittest.mock import MagicMock, patch
 
 def load_test_case() -> Parameters:
     parameters = Parameters()
@@ -328,3 +328,19 @@ def test_graph_to_tree_converter_with_input_graph():
     _assert_if_tree_has_expected_branches(tree)
     _assert_if_tree_has_original_nodes(tree)
     _assert_if_tree_has_new_and_old_nodes_data(tree)
+
+def test_initialise_class_graphtreeconverter():
+    control_graph = RecursiveFunctionGraphCreator()
+    control_graph._initialise_class_graphtreeconverter()
+    assert isinstance(\
+        control_graph._initialise_class_graphtreeconverter(), \
+        GraphtoTreeConverter)
+
+def test_create_control_tree_graph():
+    control_graph = RecursiveFunctionGraphCreator()
+    mock_converter = MagicMock()
+    mock_converter.convert.return_value = "test"
+    control_graph._initialise_class_graphtreeconverter = MagicMock()
+    control_graph._initialise_class_graphtreeconverter.return_value = mock_converter
+    control_graph._create_control_tree_graph()
+    assert control_graph._control_graph == "test"
