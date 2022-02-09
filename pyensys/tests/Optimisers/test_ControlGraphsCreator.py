@@ -235,8 +235,8 @@ def test_create_duplicates_from_common_node_with_no_successors():
     G.nodes_data[4] = ClusterData(level=1, centroid=0.5)
     T = GraphtoTreeConverter(G)
     T._create_duplicates_from_common_node(T.CommonNodeData([30,100],4), 100)
-    assert T._tree.has_edge(100, 101)
-    assert not T._tree.has_edge(100, 4)
+    assert T._tree.has_edge(100, 101) or T._tree.has_edge(30, 101)
+    assert not T._tree.has_edge(100, 4) or not T._tree.has_edge(30, 4)
     assert T._nodes_data[101].level == 1 and T._nodes_data[101].centroid == 0.5
 
 def test_create_duplicates_from_common_node_with_successors():
@@ -251,6 +251,8 @@ def test_create_duplicates_from_common_node_with_successors():
     G.nodes_data[12] = ClusterData(level=2)
     G.nodes_data[215] = ClusterData(level=2, centroid=0.8)
     T = GraphtoTreeConverter(G)
+    T._tree.add_edge(4, 12)
+    T._tree.add_edge(4, 215)
     T._create_duplicates_from_common_node(T.CommonNodeData([30,100],4), 215)
     assert T._tree.has_edge(216, 217)
     assert T._tree.has_edge(216, 218)
