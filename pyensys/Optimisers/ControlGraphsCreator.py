@@ -153,17 +153,13 @@ class GraphtoTreeConverter:
             last_nodes.add(node_to_be_explored)
         return last_nodes
 
-@dataclass
-class ProfileGraphData(GraphandClusterData):
-    pass
-
 class ProfileGraphCreator:
     def __init__(self):
         self._edges: List[EdgeData] = []
-        self._profile_graph = ProfileGraphData()
+        self._profile_graph = GraphandClusterData()
         self._profile = OptimisationProfileData()
 
-    def create_graph(self, profile: OptimisationProfileData) -> ProfileGraphData:
+    def create_graph(self, profile: OptimisationProfileData) -> GraphandClusterData:
         self._profile = profile
         self._create_nodes_and_edges()
         for edge in self._edges:
@@ -178,10 +174,10 @@ class ProfileGraphCreator:
 
 class AllProfilesGraphsCreator:
     def __init__(self):
-        self._graphs: List[ProfileGraphData] = []
+        self._graphs: List[GraphandClusterData] = []
     
     def create_all_profile_graphs(self, profiles: OptimisationProfilesData) -> \
-        List[ProfileGraphData]:
+        List[GraphandClusterData]:
         for profile in profiles.data:
             graph_creator = ProfileGraphCreator()
             self._graphs.append(graph_creator.create_graph(profile))
@@ -204,17 +200,13 @@ def create_profiles_clusters(parameters: Parameters) -> OptimisationProfilesData
                 variable_name=profile.variable_name, data=data))
     return series_to_clusters
 
-@dataclass
-class ControlGraphData(GraphandClusterData):
-    pass
-
 class RecursiveFunctionGraphCreator:
     def __init__(self):
-        self._control_graph = ControlGraphData()
-        self._profiles_graphs: List[ProfileGraphData] = []
+        self._control_graph = GraphandClusterData()
+        self._profiles_graphs: List[GraphandClusterData] = []
         self._profiles = Parameters()
     
-    def create_recursive_function_graph(self, parameters: Parameters) -> ControlGraphData:
+    def create_recursive_function_graph(self, parameters: Parameters) -> GraphandClusterData:
         self._profiles = create_profiles_clusters(parameters)
         self._create_all_profiles_graphs()
         self._create_control_graph()
