@@ -187,6 +187,6 @@ class ReadJSON:
                 OptimisationBinaryVariables(element_type=variable.get("element_type"),
                 variable_name=variable.get("variable_name"), elements_ids=variable.get("elements_ids"),
                 elements_positions=variable.get("elements_positions", []),
-                costs=variable.get("costs", []))
+                costs=variable.get("costs", []), installation_time=variable.get("installation_time", []))
             )
             
