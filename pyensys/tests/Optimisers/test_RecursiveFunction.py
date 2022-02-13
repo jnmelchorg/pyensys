@@ -146,9 +146,11 @@ def _create_dummy_optimisation_binary_variables() -> RecursiveFunction:
     RF._parameters.initialised = True
     RF._parameters.optimisation_binary_variables = [
         OptimisationBinaryVariables(element_type="gen", variable_name="installation", 
-        elements_ids=["G0", "G1"], elements_positions=[0, 1], costs=[1.0, 2.0]),
+        elements_ids=["G0", "G1"], elements_positions=[0, 1], costs=[1.0, 2.0], installation_time=\
+        [0,0]),
         OptimisationBinaryVariables(element_type="AC line", variable_name="installation", 
-        elements_ids=["L0", "L1"], elements_positions=[0, 1], costs=[5.0, 6.0])
+        elements_ids=["L0", "L1"], elements_positions=[0, 1], costs=[5.0, 6.0], installation_time=\
+        [0,0])
     ]
     return RF
 
@@ -170,7 +172,7 @@ def test_calculate_all_combinations():
     for x in range(0,3):
         AO.append(str(x), x)
     RF = RecursiveFunction()
-    assert list(RF._calculate_all_combinations(AO, 1)) == [(("0", 0),), (("1", 1),), (("2", 2),)]
+    assert list(RF._calculate_all_combinations(AO, 2)) == [(("0", 0),("1", 1),), (("0", 0),("2", 2),), (("1", 1),("2", 2),)]
 
 def test_get_total_operation_cost():
     RF = RecursiveFunction()
@@ -366,3 +368,57 @@ def test_run_opf():
     assert RF._opf.wrapper.network.OPF_converged == True
     assert isclose(3583.53647, RF._opf.wrapper.network.res_cost, abs_tol=1e-4)
 
+def test_add_new_interventions_from_combinations():
+    combination:List[AbstractDataContainer] = []
+    combination.append(AbstractDataContainer())
+    combination[0].create_list()
+    combination[0].append("0", 0)
+    info = InterIterationInformation()
+    RF = RecursiveFunction()
+    RF._add_new_interventions_from_combinations(info, combination)
+    assert_equal(len(info.new_interventions), 1)
+    assert_equal(info.new_interventions.get("0"), 0)
+
+def test_graph_exploration():
+    RF = RecursiveFunction()
+    RF._control_graph.graph.add_edge(100,5)
+    RF._control_graph.graph.add_edge(100,20)
+    info = InterIterationInformation()
+    info.current_graph_node = 100
+    info.level_in_graph = 2
+    RF.solve = MagicMock()
+    RF._graph_exploration(info)
+    assert_equal(info.level_in_graph, 4)
+    assert_equal(RF.solve.call_count, 2)
+    assert_equal(info.current_graph_node, 100)
+
+def test_calculate_available_interventions():
+    info = _create_dummy_inter_iteration_information_for_test_calculate_available_interventions()
+    recursive_f = RecursiveFunction()
+    recursive_f._pool_interventions = _create_dummy_pool_of_interventions_for_test_calculate_available_interventions()
+    expected = AbstractDataContainer()
+    expected.create_list()
+    expected.append("1", 1)
+    assert_equal(recursive_f._calculate_available_interventions(info), expected)
+
+def _create_dummy_inter_iteration_information_for_test_calculate_available_interventions() -> InterIterationInformation:
+    info = InterIterationInformation()
+    info.candidate_interventions.create_list()
+    info.candidate_interventions.append("0", AbstractDataContainer())
+    info.candidate_interventions["0"].create_list()
+    info.candidate_interventions["0"].append("2", 2)
+    empty = AbstractDataContainer()
+    empty.create_list()
+    info.candidate_interventions.append("1", empty)
+    info.new_interventions.create_list()
+    info.new_interventions.append("0", 0)
+    return info
+
+def _create_dummy_pool_of_interventions_for_test_calculate_available_interventions() -> \
+    AbstractDataContainer:
+    interventions = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0",0)
+    interventions.append("1",1)
+    interventions.append("2",2)
+    return interventions
