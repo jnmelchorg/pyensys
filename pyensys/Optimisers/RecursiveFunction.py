@@ -3,9 +3,9 @@ from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
     PandaPowerProfileData
 from pyensys.Optimisers.ControlGraphsCreator import GraphandClusterData, ClusterData, \
     RecursiveFunctionGraphCreator
-from pyensys.AbstractDataContainer import AbstractDataContainer, difference_abstract_data_containers
+from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
+from pyensys.DataContainersInterface.OperationsAbstractDataContainer import difference_abstract_data_containers
 
-from typing import List
 from dataclasses import dataclass, field
 from itertools import combinations
 
@@ -27,11 +27,13 @@ class InterIterationInformation:
         field(default_factory=lambda: AbstractDataContainer())
     candidate_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
+    candidate_interventions_remaining_construction_time: \
+        AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     new_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
     current_graph_node: int = 0
     level_in_graph: int = 0
-
 
 @dataclass
 class BinaryVariable:
@@ -40,6 +42,7 @@ class BinaryVariable:
     element_position: int = 0
     element_type: str = ""
     variable_name: str = ""
+    installation_time: int = -1
 
     def __eq__(self, other):
         if isinstance(other, BinaryVariable):
@@ -83,11 +86,11 @@ class RecursiveFunction:
         self._pool_interventions.create_list()
         counter = 0
         for variables in self._parameters.optimisation_binary_variables:
-            for cost, position, id in zip(variables.costs, variables.elements_positions, \
-                variables.elements_ids):
+            for cost, position, id, time in zip(variables.costs, variables.elements_positions, \
+                variables.elements_ids, variables.installation_time):
                 self._pool_interventions.append(str(counter), BinaryVariable(\
                     element_type=variables.element_type, variable_name=variables.variable_name,\
-                    element_id=id, element_position=position, cost=cost))
+                    element_id=id, element_position=position, cost=cost, installation_time=time))
                 counter += 1
 
     def solve(self, inter_iteration_information: InterIterationInformation):
@@ -96,7 +99,7 @@ class RecursiveFunction:
             inter_iteration_information = self._construction_of_solution(\
                 inter_iteration_information)
             # Optimality Check
-            if not any(True for _ in self._control_graph.graph.neighbors(\
+            if not any(True for _ in self._control_graph.graph.neighbours(\
                 inter_iteration_information.current_graph_node)):
                 self._optimality_check(inter_iteration_information)
                 return
@@ -106,28 +109,31 @@ class RecursiveFunction:
     def _interventions_handler(self, inter_iteration_information: InterIterationInformation):
         _available_interventions = self._calculate_available_interventions(\
             inter_iteration_information)
-        for number_combinations in range(len(_available_interventions) + 1):
+        self._graph_exploration(inter_iteration_information)
+        for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(\
                 _available_interventions, number_combinations):
-                self._add_new_interventions_from_combinations(inter_iteration_information, \
-                    combinations)
-                # Graph exploration
-                self._graph_exploration(inter_iteration_information)
+                for combination in combinations:
+                    self._add_new_interventions_from_combinations(inter_iteration_information, \
+                        combination)
+                    # Graph exploration
+                    self._graph_exploration(inter_iteration_information)
     
     def _add_new_interventions_from_combinations(self, \
-        inter_iteration_information: InterIterationInformation, combinations):
-        new_elements = AbstractDataContainer()
-        new_elements.create_list()
-        for element in combinations:
-            new_elements.append(element[0][0], element[0][1])
-        inter_iteration_information.new_interventions = new_elements
+        inter_iteration_information: InterIterationInformation, combination):
+        inter_iteration_information.new_interventions = AbstractDataContainer()
+        inter_iteration_information.new_interventions.create_list()
+        for element in combination:
+            inter_iteration_information.new_interventions.extend(element)
     
     def _graph_exploration(self, inter_iteration_information: InterIterationInformation):
-        for neighbour in self._control_graph.graph.neighbors(\
+        parent_node = inter_iteration_information.current_graph_node
+        for neighbour in self._control_graph.graph.neighbours(\
             inter_iteration_information.current_graph_node):
             inter_iteration_information.level_in_graph += 1
             inter_iteration_information.current_graph_node = neighbour
             self.solve(inter_iteration_information=inter_iteration_information)
+        inter_iteration_information.current_graph_node = parent_node
 
     def _operational_check(self, inter_iteration_information: InterIterationInformation):
         self._update_status_elements_opf(inter_iteration_information)
@@ -183,8 +189,10 @@ class RecursiveFunction:
         InterIterationInformation) -> AbstractDataContainer:
         _available_interventions = deepcopy(self._pool_interventions)
         for _, previous in inter_iteration_information.candidate_interventions:
-            difference_abstract_data_containers(_available_interventions, previous)
-        difference_abstract_data_containers(_available_interventions, \
+            _available_interventions = difference_abstract_data_containers(\
+                _available_interventions, previous)
+        _available_interventions = difference_abstract_data_containers(\
+            _available_interventions, \
             inter_iteration_information.new_interventions)
         return _available_interventions
 
@@ -301,4 +309,3 @@ class RecursiveFunction:
                 (1-(self._parameters.problem_settings.return_rate_in_percentage/100))**year)) * \
                 operation_cost
         return total_cost
-
