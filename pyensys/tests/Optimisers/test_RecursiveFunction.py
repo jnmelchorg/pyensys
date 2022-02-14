@@ -1,8 +1,3 @@
-from os import path
-from reprlib import recursive_repr
-from networkx.algorithms import operators
-from networkx.generators.line import inverse_line_graph
-
 from numpy.testing._private.utils import assert_equal
 from pyensys.Optimisers.RecursiveFunction import *
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
@@ -15,6 +10,7 @@ from pandas import DataFrame, date_range, read_excel
 from math import isclose
 from typing import List, Dict
 from unittest.mock import MagicMock
+from pytest import raises
 
 
 def load_test_case() -> Parameters:
@@ -103,15 +99,6 @@ def test_create_new_pandapower_profiles():
     RF._control_graph.nodes_data = load_data_multipliers()
     RESULT = RF._create_new_pandapower_profiles(1)
     assert DataFrame(data=[[96], [80], [7.2]], columns=['gen1_p']).equals(RESULT.data[1].data)
-
-def test_update_pandapower_controllers():
-    RF = RecursiveFunction()
-    parameters = load_test_case()
-    RF.initialise(parameters)
-    RF._control_graph.nodes_data = load_data_multipliers()
-    RF._update_pandapower_controllers(1)
-    RESULT = RF._opf.wrapper.network['controller'].iat[1, 0].data_source.df
-    assert DataFrame(data=[[96], [80], [7.2]], columns=['gen1_p']).equals(RESULT)
 
 def test_initialise_pandapower():
     RF = RecursiveFunction()
@@ -361,14 +348,6 @@ def test_return_to_previous_state():
     assert len(inter_information.candidate_solution_path) == 1
     assert len(inter_information.candidate_operation_cost) == 1
 
-def test_run_opf():
-    RF = RecursiveFunction()
-    parameters = load_test_case()
-    RF.initialise(parameters)
-    RF._run_opf()
-    assert RF._opf.wrapper.network.OPF_converged == True
-    assert isclose(3583.53647, RF._opf.wrapper.network.res_cost, abs_tol=1e-4)
-
 def test_add_new_interventions_from_combinations():
     combination:List[AbstractDataContainer] = []
     combination.append(AbstractDataContainer())
@@ -462,3 +441,103 @@ def test_is_opf_feasible():
     recursive_f._opf.is_feasible = MagicMock(return_value=True)
     assert recursive_f._is_opf_feasible()
 
+def test_operational_check():
+    recursive = RecursiveFunction()
+    info = InterIterationInformation()
+    recursive._update_status_elements_opf = MagicMock()
+    recursive._update_pandapower_controllers = MagicMock()
+    recursive._run_opf = MagicMock()
+    recursive._operational_check(info)
+    recursive._update_status_elements_opf.assert_called_once()
+    recursive._update_pandapower_controllers.assert_called_once()
+    recursive._run_opf.assert_called_once()
+
+def test_update_status_elements_opf_with_new_interventions():
+    recursive = RecursiveFunction()
+    info = InterIterationInformation()
+    info.new_interventions.create_list()
+    info.new_interventions.append("0", 0)
+    recursive._update_status_elements_opf_per_intervention_group = MagicMock()
+    recursive._update_status_elements_opf(info)
+    assert_equal(recursive._update_status_elements_opf_per_intervention_group.call_count, 2)
+
+def test_update_status_elements_opf_without_new_interventions():
+    recursive = RecursiveFunction()
+    info = InterIterationInformation()
+    info.new_interventions.create_list()
+    recursive._update_status_elements_opf_per_intervention_group = MagicMock()
+    recursive._update_status_elements_opf(info)
+    recursive._update_status_elements_opf_per_intervention_group.assert_not_called()
+
+def test_update_status_elements_opf_per_intervention_group_with_binary_variablest():
+    recursive = RecursiveFunction()
+    interventions = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0", BinaryVariable())
+    interventions.append("1", BinaryVariable())
+    recursive._opf.update_multiple_parameters = MagicMock()
+    recursive._create_data_to_update_parameter = MagicMock(return_value=0)
+    recursive._update_status_elements_opf_per_intervention_group(interventions)
+    assert_equal(recursive._create_data_to_update_parameter.call_count, 2)
+    recursive._opf.update_multiple_parameters.assert_called_once()
+
+def test_update_status_elements_opf_per_intervention_group_with_abstract_data_object_of_binary_variables():
+    recursive = RecursiveFunction()
+    interventions = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0", BinaryVariable())
+    interventions.append("1", BinaryVariable())
+    path_investments = AbstractDataContainer()
+    path_investments.create_list()
+    path_investments.append("0", interventions)
+    path_investments.append("1", interventions)
+    recursive._opf.update_multiple_parameters = MagicMock()
+    recursive._create_data_to_update_parameter = MagicMock(return_value=0)
+    recursive._update_status_elements_opf_per_intervention_group(path_investments)
+    assert_equal(recursive._create_data_to_update_parameter.call_count, 4)
+    recursive._opf.update_multiple_parameters.assert_called_once()
+
+def test_type_error_update_status_elements_opf_per_intervention_group():
+    recursive = RecursiveFunction()
+    interventions = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0", [])
+    recursive._opf.update_multiple_parameters = MagicMock()
+    with raises(TypeError):
+        recursive._update_status_elements_opf_per_intervention_group(interventions)
+    recursive._opf.update_multiple_parameters.assert_not_called()
+
+def test_create_data_to_update_parameter():
+    recursive = RecursiveFunction()
+    var = _create_dummy_binary_variable_to_test_create_data_to_update_parameter()
+    param = recursive._create_data_to_update_parameter(var)
+    assert_equal(param.component_type, "dem")
+    assert_equal(param.parameter_position, 2)
+
+def _create_dummy_binary_variable_to_test_create_data_to_update_parameter() -> BinaryVariable:
+    var = BinaryVariable()
+    var.element_type = "dem"
+    var.element_position = 2
+    return var
+
+def test_type_error_in_create_data_to_update_parameter_with_wrong_input():
+    recursive = RecursiveFunction()
+    with raises(TypeError):
+        recursive._create_data_to_update_parameter(list())
+
+def test_update_pandapower_controllers():
+    RF = RecursiveFunction()
+    parameters = load_test_case()
+    RF.initialise(parameters)
+    RF._control_graph.nodes_data = load_data_multipliers()
+    RF._update_pandapower_controllers(1)
+    RESULT = RF._opf.wrapper.network['controller'].iat[1, 0].data_source.df
+    assert DataFrame(data=[[96], [80], [7.2]], columns=['gen1_p']).equals(RESULT)
+
+def test_run_opf():
+    RF = RecursiveFunction()
+    parameters = load_test_case()
+    RF.initialise(parameters)
+    RF._run_opf()
+    assert RF._opf.wrapper.network.OPF_converged == True
+    assert isclose(3583.53647, RF._opf.wrapper.network.res_cost, abs_tol=1e-4)
