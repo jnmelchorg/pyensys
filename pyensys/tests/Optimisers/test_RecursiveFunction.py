@@ -1,4 +1,5 @@
 from os import path
+from reprlib import recursive_repr
 from networkx.algorithms import operators
 from networkx.generators.line import inverse_line_graph
 
@@ -422,3 +423,36 @@ def _create_dummy_pool_of_interventions_for_test_calculate_available_interventio
     interventions.append("1",1)
     interventions.append("2",2)
     return interventions
+
+def test_interventions_handler():
+    recursive_f = RecursiveFunction()
+    recursive_f._calculate_available_interventions = MagicMock(return_value=[0, 1])
+    recursive_f._graph_exploration = MagicMock()
+    recursive_f._add_new_interventions_from_combinations = MagicMock()
+    recursive_f._interventions_handler(InterIterationInformation())
+    recursive_f._calculate_available_interventions.assert_called_once()
+    assert_equal(recursive_f._graph_exploration.call_count, 4)
+    assert_equal(recursive_f._add_new_interventions_from_combinations.call_count, 3)
+
+def test_construction_of_solution():
+    recursive_f = RecursiveFunction()
+    recursive_f._get_total_operation_cost = MagicMock(return_value=10)
+    info = _dummy_inter_iteration_information_for_test_construction_of_solution()
+    info = recursive_f._construction_of_solution(info)
+    assert_equal(len(info.candidate_solution_path), 3)
+    assert_equal(info.candidate_solution_path.get("2"), 4)
+    assert_equal(info.candidate_interventions["2"]["3"], 3)
+    assert_equal(info.candidate_operation_cost["2"], 10)
+
+def _dummy_inter_iteration_information_for_test_construction_of_solution() -> InterIterationInformation:
+    info = InterIterationInformation()
+    info.level_in_graph = 2
+    info.current_graph_node = 4
+    info.candidate_solution_path.create_list()
+    info.candidate_solution_path.append("0", 0)
+    info.candidate_solution_path.append("1", 1)
+    info.new_interventions.create_list()
+    info.new_interventions.append("3", 3)
+    info.candidate_interventions.create_list()
+    info.candidate_operation_cost.create_list()
+    return info
