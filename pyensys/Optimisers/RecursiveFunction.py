@@ -149,17 +149,26 @@ class RecursiveFunction:
     
     def _update_status_elements_opf_per_intervention_group(self, interventions: AbstractDataContainer):
         parameters_to_update = []
-        for _, value in interventions:
-            if isinstance(value, BinaryVariable):
-                parameter_to_update = UpdateParameterData()
-                parameter_to_update.component_type = value.element_type
-                parameter_to_update.parameter_name = "in_service"
-                parameter_to_update.parameter_position = value.element_position
-                parameter_to_update.new_value = True
-                parameters_to_update.append(parameter_to_update)
+        for _, intervention in interventions:
+            if isinstance(intervention, BinaryVariable):
+                parameters_to_update.append(self._create_data_to_update_parameter(intervention))
+            elif isinstance(intervention, AbstractDataContainer):
+                for _, value in intervention:
+                    parameters_to_update.append(self._create_data_to_update_parameter(value))
             else:
                 raise TypeError
         self._opf.update_multiple_parameters(parameters_to_update)
+
+    def _create_data_to_update_parameter(self, intervention: BinaryVariable) -> UpdateParameterData:
+        if isinstance(intervention, BinaryVariable):
+            parameter_to_update = UpdateParameterData()
+            parameter_to_update.component_type = intervention.element_type
+            parameter_to_update.parameter_name = "in_service"
+            parameter_to_update.parameter_position = intervention.element_position
+            parameter_to_update.new_value = True
+            return parameter_to_update
+        else:
+            raise TypeError
 
     def _update_pandapower_controllers(self, current_graph_node: int):
         new_profiles = self._create_new_pandapower_profiles(current_graph_node)
