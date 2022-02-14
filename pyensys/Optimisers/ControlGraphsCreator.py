@@ -6,7 +6,7 @@ from pandas import DataFrame
 from pyensys.readers.ReaderDataClasses import OptimisationProfileData, OptimisationProfilesData, \
     Parameters
 from pyensys.data_processing.clustering import TimeSeriesClustering, Birch_Settings
-from pyensys.Interfaces.networkx_interface import DirectedGraph
+from pyensys.wrappers.networkx_wrapper import DirectedGraph
 
 @dataclass
 class ClusterData:
