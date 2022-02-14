@@ -1,4 +1,4 @@
-from pyensys.Interfaces.networkx_interface import DirectedGraph
+from pyensys.wrappers.networkx_wrapper import DirectedGraph
 
 
 def test_add_edge_to_directed_graph():
