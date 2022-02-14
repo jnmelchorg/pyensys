@@ -63,7 +63,7 @@ class RecursiveFunction:
         self._parameters = Parameters()
         self._control_graph = GraphandClusterData()
         self._pool_interventions = AbstractDataContainer()
-        self._opf = None
+        self._opf = PandaPowerManager()
         self.__DAYS_PER_YEAR = 365
         
     def initialise(self, parameters: Parameters):
@@ -74,7 +74,6 @@ class RecursiveFunction:
             self._initialise_pandapower()
     
     def _initialise_pandapower(self):
-        self._opf = PandaPowerManager()
         self._opf.initialise_pandapower_network(self._parameters)
         self.original_pp_profiles_data = self._parameters.pandapower_profiles_data
 
