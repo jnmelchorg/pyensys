@@ -456,3 +456,9 @@ def _dummy_inter_iteration_information_for_test_construction_of_solution() -> In
     info.candidate_interventions.create_list()
     info.candidate_operation_cost.create_list()
     return info
+
+def test_is_opf_feasible():
+    recursive_f = RecursiveFunction()
+    recursive_f._opf.is_feasible = MagicMock(return_value=True)
+    assert recursive_f._is_opf_feasible()
+
