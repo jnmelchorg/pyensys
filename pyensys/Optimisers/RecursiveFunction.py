@@ -8,8 +8,8 @@ from pyensys.DataContainersInterface.OperationsAbstractDataContainer import diff
 
 from dataclasses import dataclass, field
 from itertools import combinations
-
 from copy import deepcopy
+from typing import Iterator, Tuple
 
 @dataclass
 class InterIterationInformation:
@@ -113,11 +113,10 @@ class RecursiveFunction:
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(\
                 _available_interventions, number_combinations):
-                for combination in combinations:
-                    self._add_new_interventions_from_combinations(inter_iteration_information, \
-                        combination)
-                    # Graph exploration
-                    self._graph_exploration(inter_iteration_information)
+                self._add_new_interventions_from_combinations(inter_iteration_information, \
+                    combinations)
+                # Graph exploration
+                self._graph_exploration(inter_iteration_information)
     
     def _add_new_interventions_from_combinations(self, \
         inter_iteration_information: InterIterationInformation, combination):
@@ -196,7 +195,8 @@ class RecursiveFunction:
             inter_iteration_information.new_interventions)
         return _available_interventions
 
-    def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, length_set: int):
+    def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, \
+        length_set: int) -> Iterator[Tuple[int]]:
         return combinations(available_interventions, length_set)
    
     def _create_new_pandapower_profiles(self, current_graph_node: int)\
