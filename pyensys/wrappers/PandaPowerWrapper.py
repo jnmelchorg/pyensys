@@ -5,6 +5,8 @@ from pandapower.timeseries.output_writer import OutputWriter
 from pandapower import runopp, runpm_ac_opf, create_empty_network
 from pandapower.timeseries.run_time_series import run_timeseries
 from typing import List
+from ntpath import basename, splitext
+
 from pyensys.wrappers.PandapowerDataClasses import *
 
 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS = {
@@ -18,9 +20,10 @@ class PandaPowerWrapper:
     def __init__(self):
         self.network = create_empty_network()
 
-    def load_mat_file_to_pandapower(self, filename_with_extension: str,
+    def load_mat_file_to_pandapower(self, file_path_with_extension: str,
         frequency_hz: float):
-        self.network = from_mpc(filename_with_extension, f_hz=frequency_hz)
+        case_name = basename(splitext(file_path_with_extension)[0])
+        self.network = from_mpc(file_path_with_extension, f_hz=frequency_hz, casename_mpc_file=case_name)
 
     def add_controllers_to_network(self, profiles: List[Profile]):
         for profile in profiles:
