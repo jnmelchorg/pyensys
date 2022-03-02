@@ -5,13 +5,6 @@ from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataCo
 
 from unittest.mock import MagicMock
 
-def test_verify_feasibility_of_sucessor_with_no_new_interventions():
-    RF = NonAnticipativeRecursiveFunction()
-    RF._operational_check = MagicMock()
-    RF._is_opf_feasible = MagicMock(return_value=True)
-    assert RF._verify_feasibility_of_sucessor_with_no_new_interventions(InterIterationInformation())
-    RF._operational_check.assert_called_once()
-
 def test_get_available_interventions_for_current_year():
     info = _create_dummy_information_to_test_get_available_interventions_for_current_year()
     non_anticipative = NonAnticipativeRecursiveFunction()
@@ -63,26 +56,57 @@ def test_verify_feasibility_of_sucessor_with_all_available_interventions_for_cur
     assert info.new_interventions == expected
     non_anticipative._operational_check.assert_called_once()
 
-def test_verify_feasible_solution_in_successor_nodes_without_new_interventions():
-    non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions = MagicMock(return_value=True)
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year = MagicMock()
-    assert non_anticipative._verify_feasibility_of_solution_in_successor_nodes(InterIterationInformation())
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions.assert_called_once()
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year.assert_not_called()
-
 def test_verify_feasible_solution_in_successor_nodes_with_new_interventions():
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions = MagicMock(return_value=False)
+    non_anticipative._control_graph.graph.add_edge(100, 2)
+    non_anticipative._control_graph.graph.add_edge(100, 15)
+    non_anticipative._control_graph.graph.add_edge(100, 200)
+    info = InterIterationInformation()
+    info.level_in_graph = 0
+    info.current_graph_node = 100
     non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year = MagicMock(return_value=True)
-    assert non_anticipative._verify_feasibility_of_solution_in_successor_nodes(InterIterationInformation())
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions.assert_called_once()
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year.assert_called_once()
+    assert non_anticipative._verify_feasibility_of_solution_in_successor_nodes(info)
+    assert non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year.call_count == 3
+    assert info.level_in_graph == 0
+    assert info.current_graph_node == 100
 
 def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions = MagicMock(return_value=False)
+    non_anticipative._control_graph.graph.add_edge(100, 2)
+    non_anticipative._control_graph.graph.add_edge(100, 15)
+    non_anticipative._control_graph.graph.add_edge(100, 200)
+    info = InterIterationInformation()
+    info.level_in_graph = 0
+    info.current_graph_node = 100
     non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year = MagicMock(return_value=False)
-    assert not non_anticipative._verify_feasibility_of_solution_in_successor_nodes(InterIterationInformation())
-    non_anticipative._verify_feasibility_of_sucessor_with_no_new_interventions.assert_called_once()
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year.assert_called_once()
+    assert not non_anticipative._verify_feasibility_of_solution_in_successor_nodes(info)
+    assert info.level_in_graph == 0
+    assert info.current_graph_node == 100
+    
+def test_feasible_solution_in_check_optimality_and_feasibility_of_current_solution():
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._operational_check = MagicMock()
+    non_anticipative._is_opf_feasible = MagicMock(return_value=True)
+    non_anticipative._optimality_check = MagicMock()
+    non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
+    non_anticipative._optimality_check.assert_called_once()
+    non_anticipative._operational_check.assert_called_once()
+
+def test_unfeasible_solution_in_check_optimality_and_feasibility_of_current_solution():
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._operational_check = MagicMock()
+    non_anticipative._is_opf_feasible = MagicMock(return_value=False)
+    non_anticipative._optimality_check = MagicMock()
+    non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
+    non_anticipative._optimality_check.assert_not_called()
+    non_anticipative._operational_check.assert_called_once()
+
+def test_optimise_interventions_in_last_node():
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._get_available_interventions_for_current_year = MagicMock(return_value=[1, 2])
+    non_anticipative._add_new_interventions_from_combinations = MagicMock()
+    non_anticipative._check_optimality_and_feasibility_of_current_solution = MagicMock()
+    non_anticipative._optimise_interventions_in_last_node(InterIterationInformation())
+    non_anticipative._get_available_interventions_for_current_year.assert_called_once()
+    assert non_anticipative._add_new_interventions_from_combinations.call_count == 3
+    assert non_anticipative._check_optimality_and_feasibility_of_current_solution.call_count == 3
