@@ -21,9 +21,8 @@ class PandaPowerWrapper:
         self.network = create_empty_network()
 
     def load_mat_file_to_pandapower(self, file_path_with_extension: str,
-        frequency_hz: float):
-        case_name = basename(splitext(file_path_with_extension)[0])
-        self.network = from_mpc(file_path_with_extension, f_hz=frequency_hz, casename_mpc_file=case_name)
+        frequency_hz: float, casename_in_mpc_file:str = "mpc"):
+        self.network = from_mpc(file_path_with_extension, f_hz=frequency_hz, casename_mpc_file=casename_in_mpc_file)
 
     def add_controllers_to_network(self, profiles: List[Profile]):
         for profile in profiles:
