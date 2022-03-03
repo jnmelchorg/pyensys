@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 def _load_complete_test_case() -> PandaPowerWrapper:
     wrapper = PandaPowerWrapper()
-    wrapper.load_mat_file_to_pandapower(filename_with_extension=get_path_case9_mat(), frequency_hz=60.0)
+    wrapper.load_mat_file_to_pandapower(file_path_with_extension=get_path_case9_mat(), frequency_hz=60.0)
     data1 = DataFrame()
     data1['load1_p'] = [67.28095505, 9.65466896, 11.70181664]
     profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
@@ -29,7 +29,7 @@ def _load_complete_test_case() -> PandaPowerWrapper:
 
 def _load_base_configuration_to_run_opf() -> PandaPowerWrapper:
     wrapper = PandaPowerWrapper()
-    wrapper.load_mat_file_to_pandapower(filename_with_extension=get_path_case9_mat(), frequency_hz=60.0)
+    wrapper.load_mat_file_to_pandapower(file_path_with_extension=get_path_case9_mat(), frequency_hz=60.0)
     data1 = DataFrame()
     data1['load1_p'] = [67.28095505, 9.65466896, 11.70181664]
     profile1 = Profile(data=data1, components_indexes_in_power_system=[0], \
