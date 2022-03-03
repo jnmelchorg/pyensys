@@ -23,7 +23,7 @@ class PandaPowerManager():
     def load_mat_file_to_pandapower(self):
         if self._parameters.pandapower_mpc_settings.initialised:
             self.wrapper.load_mat_file_to_pandapower(\
-                filename_with_extension=self._parameters.pandapower_mpc_settings.mat_file_path, \
+                file_path_with_extension=self._parameters.pandapower_mpc_settings.mat_file_path, \
                 frequency_hz=self._parameters.pandapower_mpc_settings.system_frequency)
     
     def add_controllers_to_network(self):
