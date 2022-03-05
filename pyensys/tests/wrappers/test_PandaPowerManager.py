@@ -299,7 +299,7 @@ def test_run_timestep_opf_pandapower():
     manager = PandaPowerManager()
     parameters = _load_test_parameter_case_9()
     manager.initialise_pandapower_network(parameters)
-    manager.run_timestep_opf_pandapower()
+    manager.run_time_step_opf_pandapower()
     assert manager.wrapper.network.OPF_converged == True
     assert isclose(3583.53647, manager.wrapper.network.res_cost, abs_tol=1e-4)
 

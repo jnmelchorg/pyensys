@@ -177,7 +177,7 @@ class RecursiveFunction:
     def _run_opf(self):
         if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
             self._parameters.problem_settings.intertemporal:
-            self._opf.run_timestep_opf_pandapower()
+            self._opf.run_time_step_opf_pandapower()
 
     def _construction_of_solution(self, inter_iteration_information: InterIterationInformation) \
         -> InterIterationInformation:
