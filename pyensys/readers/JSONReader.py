@@ -1,9 +1,9 @@
-from typing import List
-from pandas import date_range, DataFrame, read_excel
+from pandas import read_excel
 from json import load
 from os.path import splitext
 from pyensys.readers.ReaderDataClasses import *
-    
+
+
 class ReadJSON:
     def __init__(self):
         self.parameters = Parameters()
@@ -22,7 +22,7 @@ class ReadJSON:
         p.optimisation_profiles_data = \
             self._load_optimisation_profiles_data()
         p.initialised = True
-    
+
     def _load_problem_settings(self) -> ProblemSettings:
         problem_settings = ProblemSettings()
         problem_settings_dict: dict = self.settings.pop("problem", None)
@@ -45,7 +45,7 @@ class ReadJSON:
                 problem_settings_dict.pop("return_rate_in_percentage", 0.0)
             problem_settings.initialised = True
         return problem_settings
-    
+
     def _load_opf_time_settings(self) -> DateTimeOptimisationSettings:
         settings_dict: dict = self.settings.pop("opf_time_settings", None)
         date_time_settings = DateTimeOptimisationSettings()
@@ -57,13 +57,13 @@ class ReadJSON:
             time_block: str = settings_dict.pop("time_block")
             frequency_pandas_alias = time_block + frequency_pandas_alias
             date_time_settings.date_time_settings = date_range(start=begin, \
-                end=end, freq=frequency_pandas_alias)
+                                                               end=end, freq=frequency_pandas_alias)
             date_time_settings.initialised = True
         return date_time_settings
-    
+
     def _load_pandapower_mpc_settings(self) -> PandaPowerMPCSettings:
         pandapower_mpc_settings = PandaPowerMPCSettings()
-        pandapower_mpc_settings_dict: dict = self.settings.pop(\
+        pandapower_mpc_settings_dict: dict = self.settings.pop( \
             "pandapower_mpc_settings", None)
         if pandapower_mpc_settings_dict is not None:
             pandapower_mpc_settings.mat_file_path = \
@@ -72,7 +72,6 @@ class ReadJSON:
                 pandapower_mpc_settings_dict.pop("frequency")
             pandapower_mpc_settings.initialised = True
         return pandapower_mpc_settings
-
 
     def _load_pandapower_profiles_data(self) -> PandaPowerProfilesData:
         profiles_data = PandaPowerProfilesData()
@@ -101,19 +100,19 @@ class ReadJSON:
 
     def _read_dataframe_data(self, profile_data_dict: dict) -> DataFrame:
         if profile_data_dict.get("data", None) is not None and \
-            profile_data_dict.get("dataframe_columns_names", None) is not None:
+                profile_data_dict.get("dataframe_columns_names", None) is not None:
             dataframe_data = DataframeData(data=profile_data_dict.pop("data"), \
-                column_names=profile_data_dict.pop("dataframe_columns_names"))
+                                           column_names=profile_data_dict.pop("dataframe_columns_names"))
             return self._create_dataframe(dataframe_data)
         elif profile_data_dict.get("data_path", None) is not None and \
-            profile_data_dict.get("excel_sheet_name", None) is not None:
+                profile_data_dict.get("excel_sheet_name", None) is not None:
             return self._read_file(profile_data_dict.pop("data_path"), profile_data_dict)
         else:
             return DataFrame()
-    
+
     def _create_dataframe(self, dataframe_data: DataframeData) -> DataFrame:
         return DataFrame(data=dataframe_data.data, columns=dataframe_data.column_names)
-    
+
     def _read_file(self, path: str, profile_data_dict: dict) -> DataFrame:
         _, file_extension = splitext(path)
         if file_extension == ".xlsx":
@@ -123,7 +122,7 @@ class ReadJSON:
                 return data.pop(name)
             elif isinstance(data, DataFrame):
                 return data
-    
+
     def _load_optimisation_profiles_data(self) -> OptimisationProfilesData:
         profiles_data = OptimisationProfilesData()
         profiles_data_dict = self.settings.pop("optimisation_profiles_data", None)
@@ -164,7 +163,6 @@ class ReadJSON:
         output_variable.variable_indexes = output_variable_dict.pop("variable_indexes")
         return output_variable
 
-
     def _load_pandapower_optimisation_settings(self) -> PandaPowerOptimisationSettings:
         pandapower_settings = PandaPowerOptimisationSettings()
         pandapower_optimisation_settings_dict: dict = \
@@ -185,8 +183,9 @@ class ReadJSON:
         for variable in optimisation_binary_variables_list:
             self.parameters.optimisation_binary_variables.append(
                 OptimisationBinaryVariables(element_type=variable.get("element_type"),
-                variable_name=variable.get("variable_name"), elements_ids=variable.get("elements_ids"),
-                elements_positions=variable.get("elements_positions", []),
-                costs=variable.get("costs", []), installation_time=variable.get("installation_time", []))
+                                            variable_name=variable.get("variable_name"),
+                                            elements_ids=variable.get("elements_ids"),
+                                            elements_positions=variable.get("elements_positions", []),
+                                            costs=variable.get("costs", []),
+                                            installation_time=variable.get("installation_time", []))
             )
-            
