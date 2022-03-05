@@ -199,3 +199,4 @@ pyensys/engines/cpp_energy_wrapper.cpp
 pyensys/engines/_glpk.c
 /pyensys/tests/excel/output*
 /.idea/*
+/files_to_ignore/*
