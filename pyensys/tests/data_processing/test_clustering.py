@@ -1,6 +1,5 @@
 from numpy.core.records import array
 from pandas import read_excel, DataFrame
-from os.path import dirname, abspath, join
 from sklearn.cluster import Birch
 from numpy import ndarray,array_equal, allclose, array
 from typing import List
@@ -8,7 +7,7 @@ from typing import List
 from pyensys.data_processing.clustering import Birch_Settings, Clustering, \
     TimeSeriesClustering, PropertiesofScenarioElement
 
-from pyensys.tests.tests_data_paths import get_clustering_test_data
+from pyensys.tests.test_data_paths import get_clustering_test_data
 
 def read_normalized_demand_profiles() -> dict:
     path = get_clustering_test_data()
@@ -38,9 +37,7 @@ def set_time_series(clustering: TimeSeriesClustering) -> TimeSeriesClustering:
     return clustering
 
 
-
-
-def test_initialise_birch_clustering_algorithm():
+def test_set_up_birch_algorithm():
     clusters = Clustering()
     birch_algorithm_settings = Birch_Settings()
     clusters.set_up_birch_algorithm(birch_algorithm_settings)
@@ -179,7 +176,3 @@ def test_calculate_single_time_step_centroids():
         1.75237939, 1.272457576, 1.544900112, 1.272457576, 1.082996991]
     assert allclose(time_clustering._calculate_single_time_step_centroids(\
         TEST_CLUSTER_IDS, TEST_ROW_DATA), EXPECTED_RESULTS)
-    
-    
-    
-    

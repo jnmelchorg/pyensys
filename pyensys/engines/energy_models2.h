@@ -9,13 +9,13 @@
 #include <typeinfo>
 #include <iterator>
 #include <cmath>
-#include <boost/tuple/tuple.hpp>
+#include "boost/tuple/tuple.hpp"
 #include "boost/graph/adjacency_list.hpp"
 #include "boost/variant.hpp"
 #include "boost/functional/hash.hpp"
-#include "coin/ClpSimplex.hpp"
-#include "coin/CoinHelperFunctions.hpp"
-#include "coin/CoinTime.hpp"
+#include "ClpSimplex.hpp"
+#include "CoinHelperFunctions.hpp"
+#include "CoinTime.hpp"
 #include <chrono>
 #include <future>
 #include <list>
@@ -909,6 +909,22 @@ class matrix_representation
             if (name == "active constraints") return active_rows;
             else if (name == "active variables") return active_columns;
         }
+    
+        void clear()
+        {
+            columns.clear();
+            rows.clear();
+            elements.clear();
+            objective.clear();
+            rowLower.clear();
+            rowUpper.clear();
+            colLower.clear();
+            colUpper.clear();
+            active_rows.clear();
+            active_columns.clear();
+            number_variables = 0;
+            number_constraints = 0;
+        }
     private:
         std::vector<int> columns;
         std::vector<int> rows;
@@ -1264,9 +1280,14 @@ class clp_model
             double *sol = model.primalColumnSolution();
             return(std::vector<double>(sol, sol+model.getNumCols()));
         }
+        void clear()
+        {
+            model = ClpSimplex();
+            active_rows.clear();
+            active_columns.clear();
+        }
     private:
-        ClpSimplex  model;
-        double objective_function;
+        ClpSimplex model;
         boost::unordered_map<information, std::vector<int> > active_rows;
         boost::unordered_map<information, std::vector<int> > active_columns;
 };
@@ -1372,7 +1393,7 @@ class models{
 
     private:
 
-        const double PENALTY = 1000000.0;
+        const double PENALTY = 1000000000.0;
         const double TOLERANCE_REACTANCE = 1e-8;
 
         int number_times_optimisation;
@@ -1435,5 +1456,7 @@ class models{
         int declare_moea_objectives();
 
         void convert2pu(information& candidate);
+
+        int get_position_in_graph(const std::string &graphname, const std::string &type);
 
 };

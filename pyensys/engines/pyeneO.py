@@ -90,7 +90,7 @@ class pyene2excel():
                 subscripts = model.get_latest_subscripts()
                 for key, value in subscripts.items():
                     if key == "pt":
-                        information_position_tree.append(value[0])
+                        information_position_tree.append(value[1])
                 # if out.exist("pt"):
                 #     information_position_tree.append(out.get_characteristic("pt"))
                 # else:

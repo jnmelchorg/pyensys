@@ -2,7 +2,8 @@ from os import read
 from pandas.core.frame import DataFrame
 from pyensys.readers.JSONReader import ReadJSON, DataframeData
 from pandas import Timestamp
-from pyensys.tests.tests_data_paths import get_path_pandapower_json_test_data
+from pyensys.tests.test_data_paths import get_path_pandapower_json_test_data, \
+    get_excel_timeseries, get_clustering_test_data
 
 def test_load_problem_settings_case1():
     power_system = ReadJSON()
@@ -85,7 +86,7 @@ def test_create_dataframe():
     assert  DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
         columns=["load1_p"]).equals(RESULTS)
     
-def test_load_profile_data():
+def test_load_pandapower_profile_data():
     power_system = ReadJSON()
     profile_data_dict = {
         "1": {
@@ -103,7 +104,7 @@ def test_load_profile_data():
     assert profile_data.element_type == "load"
     assert profile_data.active_columns_names == ["load1_p"]
 
-def test_load_profiles_data_case1():
+def test_load_pandapower_profiles_data_case1():
     power_system = ReadJSON()
     power_system.settings = {
         "pandapower_profiles_data": {
@@ -129,7 +130,7 @@ def test_load_profiles_data_case1():
     assert len(data.data) == 2
     assert data.initialised
 
-def test_load_profiles_data_case2():
+def test_load_pandapower_profiles_data_case2():
     power_system = ReadJSON()
     power_system.settings = {}
     data = power_system._load_pandapower_profiles_data()
@@ -229,3 +230,137 @@ def test_load_parameters_power_system_optimisation():
     assert p.problem_settings.initialised
     assert p.pandapower_profiles_data.initialised
     assert p.initialised
+
+def test_read_file():
+    read_json = ReadJSON()
+    path = get_excel_timeseries()
+    profile_data_dict = {"excel_sheet_name": "LoadP"}
+    RESULT = read_json._read_file(path, profile_data_dict)
+    assert DataFrame(data=[[0.089588, 0.294746], [0.089359, 0.293991], [0.087981, 0.289459]], \
+        columns=["B1", "B2"]).equals(RESULT)
+
+def test_read_dataframe_data_case1():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "dataframe_columns_names": ["load1_p"],
+        "data":[[67.28095505], [9.65466896], [11.70181664]],
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
+        columns=["load1_p"]).equals(RESULT)
+
+def test_read_dataframe_data_case2():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data":[[67.28095505], [9.65466896], [11.70181664]],
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case3():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "dataframe_columns_names": ["load1_p"]
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case4():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data_path": get_excel_timeseries(),
+        "excel_sheet_name": "LoadP",
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert DataFrame(data=[[0.089588, 0.294746], [0.089359, 0.293991], [0.087981, 0.289459]], \
+        columns=["B1", "B2"]).equals(RESULT)
+
+def test_read_dataframe_data_case5():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "data_path": get_excel_timeseries()
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_read_dataframe_data_case6():
+    read_json = ReadJSON()
+    profile_data_dict = {
+        "excel_sheet_name": "LoadP"
+    }
+    RESULT = read_json._read_dataframe_data(profile_data_dict)
+    assert RESULT.empty
+
+def test_load_optimisation_profile_data():
+    power_system = ReadJSON()
+    profile_data_dict = {
+        "data_path": get_clustering_test_data(),
+        "excel_sheet_name": "Sheet1",
+        "element_type": "load",
+        "variable_name": "p_mw"
+    }
+    profile_data = power_system._load_optimisation_profile_data(profile_data_dict)
+    assert profile_data.variable_name == "p_mw"
+    assert profile_data.element_type == "load"
+    assert profile_data.data.shape == (46, 8)
+
+def test_load_optimisation_profiles_data_case1():
+    power_system = ReadJSON()
+    power_system.settings = {
+        "optimisation_profiles_data": {
+            "1": {
+                "data_path": get_clustering_test_data(),
+                "excel_sheet_name": "Sheet1",
+                "element_type": "load",
+                "variable_name": "p_mw"
+            }
+        }
+    }
+    data = power_system._load_optimisation_profiles_data()
+    assert len(data.data) == 1
+    assert data.initialised
+
+def test_load_optimisation_profiles_data_case2():
+    power_system = ReadJSON()
+    power_system.settings = {}
+    data = power_system._load_optimisation_profiles_data()
+    assert not data.initialised
+    
+def test_load_optimisation_binary_variables():
+    power_system = ReadJSON()
+    power_system.settings = {
+        "optimisation_binary_variables": [
+            {
+            "element_type": "gen",
+            "variable_name": "installation",
+            "elements_ids": ["G0"],
+            "costs": [1.0],
+            "elements_positions": [3]
+            },
+            {
+            "element_type": "AC line",
+            "variable_name": "installation",
+            "elements_ids": ["L1"],
+            "costs": [2.0],
+            "elements_positions": [1]
+            }
+        ]
+    }
+    power_system._load_optimisation_binary_variables()
+    assert len(power_system.parameters.optimisation_binary_variables) == 2
+    assert power_system.parameters.optimisation_binary_variables[0].element_type == "gen"
+    assert power_system.parameters.optimisation_binary_variables[1].element_type == "AC line"
+    assert power_system.parameters.optimisation_binary_variables[1].variable_name == "installation"
+    assert power_system.parameters.optimisation_binary_variables[0].elements_ids == ["G0"]
+    assert power_system.parameters.optimisation_binary_variables[0].elements_positions == [3]
+    assert power_system.parameters.optimisation_binary_variables[1].costs == [2.0]
+
+def test_load_problem_settings_case1():
+    power_system = ReadJSON()
+    power_system.settings = {
+        "problem": {
+            "return_rate_in_percentage": 3.0
+        }
+    }
+    problem_settings = power_system._load_problem_settings()
+    assert problem_settings.return_rate_in_percentage == 3.0

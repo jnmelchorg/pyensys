@@ -7,8 +7,7 @@
         "intertemporal_opf": true,
         "opf_optimizer": "pandapower",
         "problem_optimizer": "recursive_function",
-        "opf_type": "ac",
-        "return_rate_in_percentage": 3.0
+        "opf_type": "ac"
     },
     "opf_time_settings": {
         "begin": "00:00:00",
@@ -22,31 +21,19 @@
     },
     "pandapower_profiles_data": {
         "1": {
-            "dataframe_columns_names": ["load1_p"],
-            "data":[[67.28095505],[9.65466896],[11.70181664],
-                [3.43219975],[32.61755449],[84.85360346],[29.95258074],
-                [39.20088948],[42.54484985],[20.04279764],[71.8828131],
-                [41.96986409],[7.21552544],[25.88618743],[26.54954622],
-                [17.21125963],[87.53580282],[87.63197474],[69.49124619],
-                [1.3286569],[10.60700364],[54.86348133],[13.76146653],
-                [18.54152069]],
-            "active_columns_names": ["load1_p"],
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\time_series_pandapower.xlsx",
+            "excel_sheet_name": "LoadP",
+            "all_active_columns_names": true,
             "element_type": "load",
-            "indexes": [0],
+            "all_indexes": true,
             "variable_name": "p_mw"
-        },
-        "2": {
-            "dataframe_columns_names": ["gen1_p"],
-            "data": [[240.44092015], [205.50525905], [18.7321705],
-                [136.89180324], [227.91854659], [243.98374614], [20.22587417],
-                [204.13000456], [142.52170518], [69.15390821], [75.08460741],
-                [100.18795258], [177.58383221], [105.98171684], [111.27365188],
-                [177.83779845], [163.92025682], [148.67520413],
-                [28.95077739], [116.63621831], [126.36468424], [164.58739745],
-                [71.51992487], [77.18482911]],
-            "active_columns_names": ["gen1_p"],
-            "element_type": "gen",
-            "indexes": [0],
+        }
+    },
+    "optimisation_profiles_data":{
+        "1": {
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\normalized_demand_profiles.xlsx",
+            "excel_sheet_name": "Sheet1",
+            "element_type": "load",
             "variable_name": "p_mw"
         }
     },
@@ -80,21 +67,5 @@
         "display_progress_bar": true,
         "continue_on_divergence": false,
         "optimisation_software": "pypower"
-    },
-    "optimisation_binary_variables": [
-        {
-        "element_type": "gen",
-        "variable_name": "installation",
-        "elements_ids": ["G0"],
-        "costs": [1.0],
-        "elements_positions": [0]
-        },
-        {
-        "element_type": "line",
-        "variable_name": "installation",
-        "elements_ids": ["TL0"],
-        "costs": [1.0],
-        "elements_positions": [0]
-        }
-    ]
+    }
 }

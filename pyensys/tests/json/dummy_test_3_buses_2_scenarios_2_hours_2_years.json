@@ -1,0 +1,72 @@
+{
+    "problem": {
+        "system": "distribution",
+        "name": "planning",
+        "multi_objective": true,
+        "stochastic": true,
+        "intertemporal_opf": true,
+        "opf_optimizer": "pandapower",
+        "problem_optimizer": "recursive_function",
+        "opf_type": "ac",
+        "return_rate_in_percentage": 3.0
+    },
+    "opf_time_settings": {
+        "begin": "00:00:00",
+        "end": "01:00:00",
+        "frequency": "hourly",
+        "time_block": "1"
+    },
+    "pandapower_mpc_settings": {
+        "mat_file_path" : "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\matpower\\case3.mat",
+        "frequency": 60.0
+    },
+    "pandapower_profiles_data": {
+        "1": {
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\dummy_test_2_scenarios_2_years_2_hours.xlsx",
+            "excel_sheet_name": "hours",
+            "all_active_columns_names": true,
+            "element_type": "load",
+            "all_indexes": true,
+            "variable_name": "p_mw"
+        }
+    },
+    "optimisation_profiles_data":{
+        "1": {
+            "data_path": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\dummy_test_2_scenarios_2_years_2_hours.xlsx",
+            "excel_sheet_name": "scenarios",
+            "element_type": "load",
+            "variable_name": "p_mw"
+        }
+    },
+    "output_settings": {
+        "directory": "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\outputs",
+        "format": ".xlsx",
+        "output_variables": {
+            "1": {
+                "name_dataset": "res_gen",
+                "name_variable": "p_mw",
+                "variable_indexes": []
+            },
+            "2": {
+                "name_dataset": "res_gen",
+                "name_variable": "q_mvar",
+                "variable_indexes": []
+            }
+        }
+    },
+    "pandapower_optimisation_settings": {
+        "display_progress_bar": true,
+        "continue_on_divergence": false,
+        "optimisation_software": "pypower"
+    },
+    "optimisation_binary_variables": [
+        {
+        "element_type": "line",
+        "variable_name": "installation",
+        "elements_ids": ["TL1", "TL3"],
+        "costs": [10000.0, 10000.0],
+        "elements_positions": [1, 3],
+        "installation_time": [0, 1]
+        }
+    ]
+}

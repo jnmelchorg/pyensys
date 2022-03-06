@@ -2,10 +2,10 @@ import click
 import numpy as np
 import cProfile
 import os
-from .cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
+from pyensys.cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
     test_pyenetest, hydro_example_tobeerased, test_pyeneRES
-from .engines.main import pyeneConfig
-from .engines.main import pyeneClass
+from pyensys.engines.main import pyeneConfig
+from pyensys.engines.main import pyeneClass
 
 from pyensys.managers.GeneralManager import main_access_function
 

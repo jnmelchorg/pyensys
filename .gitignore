@@ -187,3 +187,16 @@ tests/json/Myanmar_103_reduced.m
 # Ignore output subfolders
 pyensys/tests/outputs/*
 !pyensys/tests/outputs/__init__.py
+
+# Ignore third party software
+pyensys/ThirdPartySoftware/*
+!pyensys/ThirdPartySoftware/__init__.py
+/.vs
+/TestResults/junitresults_28bb8b44-c859-4923-9543-cb599a02c0d8.xml
+/TestResults
+
+pyensys/engines/cpp_energy_wrapper.cpp
+pyensys/engines/_glpk.c
+/pyensys/tests/excel/output*
+/.idea/*
+/files_to_ignore/*

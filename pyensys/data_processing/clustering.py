@@ -115,7 +115,7 @@ class TimeSeriesClustering:
             self.time_series_clusters.append(self._run_birch_algorithm(time_step_data))
     
     def calculate_clusters_centroids(self):
-        self.clusters_centroids = []
+        self.clusters_centroids: List[List[float]] = []
         for clusters_id_list, (_, time_step_data) in zip(self.time_series_clusters, \
             self.time_series.iterrows()):
             self.clusters_centroids.append(\
