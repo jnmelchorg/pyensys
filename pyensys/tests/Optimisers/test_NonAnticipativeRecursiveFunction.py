@@ -52,7 +52,7 @@ def test_verify_feasibility_of_sucessor_with_all_available_interventions_for_cur
     expected.append("2", 2)
     non_anticipative._operational_check = MagicMock()
     non_anticipative._is_opf_feasible = MagicMock(return_value=True)
-    assert non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year(info)
+    assert non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year(info)
     assert info.new_interventions == expected
     non_anticipative._operational_check.assert_called_once()
 
@@ -64,9 +64,9 @@ def test_verify_feasible_solution_in_successor_nodes_with_new_interventions():
     info = InterIterationInformation()
     info.level_in_graph = 0
     info.current_graph_node = 100
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year = MagicMock(return_value=True)
+    non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year = MagicMock(return_value=True)
     assert non_anticipative._verify_feasibility_of_solution_in_successor_nodes(info)
-    assert non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year.call_count == 3
+    assert non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year.call_count == 3
     assert info.level_in_graph == 0
     assert info.current_graph_node == 100
 
@@ -78,7 +78,7 @@ def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
     info = InterIterationInformation()
     info.level_in_graph = 0
     info.current_graph_node = 100
-    non_anticipative._verify_feasibility_of_sucessor_with_all_available_interventions_for_current_year = MagicMock(return_value=False)
+    non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year = MagicMock(return_value=False)
     assert not non_anticipative._verify_feasibility_of_solution_in_successor_nodes(info)
     assert info.level_in_graph == 0
     assert info.current_graph_node == 100
