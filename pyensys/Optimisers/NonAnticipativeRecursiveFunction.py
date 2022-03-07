@@ -11,36 +11,38 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         self._exploration_of_current_solution(inter_iteration_information)
         self._interventions_handler(inter_iteration_information)
 
-    def _interventions_handler(self, inter_iteration_information):
+    def _interventions_handler(self, inter_iteration_information: InterIterationInformation):
         _available_interventions = self._calculate_available_interventions(inter_iteration_information)
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
                 self._add_new_interventions_from_combinations(inter_iteration_information, combinations)
                 self._exploration_of_current_solution(inter_iteration_information)
 
-    def _exploration_of_current_solution(self, inter_iteration_information):
+    def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
         if self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
             inter_iteration_information = self._construction_of_solution(inter_iteration_information)
             self._graph_exploration(inter_iteration_information)
 
-    def _analysis_of_last_node_in_path(self, inter_iteration_information):
+    def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
         self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
         self._optimise_interventions_in_last_node(inter_iteration_information)
 
-    def _optimise_interventions_in_last_node(self, inter_iteration_information):
+    def _optimise_interventions_in_last_node(self, inter_iteration_information: InterIterationInformation):
         all_available_interventions = self._get_available_interventions_for_current_year(inter_iteration_information)
         for number_combinations in range(1, len(all_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(all_available_interventions, number_combinations):
                 self._add_new_interventions_from_combinations(inter_iteration_information, combinations)
                 self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
 
-    def _check_optimality_and_feasibility_of_current_solution(self, inter_iteration_information):
+    def _check_optimality_and_feasibility_of_current_solution(self,
+                                                              inter_iteration_information: InterIterationInformation):
         self._operational_check(inter_iteration_information)
         if self._is_opf_feasible():
             self._optimality_check(inter_iteration_information)
 
-    def _verify_feasibility_of_solution_in_successor_nodes(self, inter_iteration_information:
-                                                           InterIterationInformation) -> bool:
+    def _verify_feasibility_of_solution_in_successor_nodes(self,
+                                                           inter_iteration_information: InterIterationInformation) -> \
+            bool:
         parent_node = inter_iteration_information.current_graph_node
         inter_iteration_information.level_in_graph += 1
         feasible = True
