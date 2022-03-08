@@ -135,22 +135,24 @@ def test_analysis_of_last_node_in_path():
     non_anticipative._optimise_interventions_in_last_node.assert_called_once()
 
 
-@pytest.mark.parametrize("feasibility_flag, expected_calls", [(False, [0, 0]), (True, [1, 1])])
-def test_exploration_of_current_solution(feasibility_flag, expected_calls):
+@pytest.mark.parametrize("feasibility_flag, expected_calls, return_flag", [(False, [0, 0], False),
+                                                                           (True, [1, 1], True)])
+def test_exploration_of_current_solution(feasibility_flag, expected_calls, return_flag):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._verify_feasibility_of_solution_in_successor_nodes = MagicMock(return_value=feasibility_flag)
     non_anticipative._construction_of_solution = MagicMock(return_value=InterIterationInformation())
     non_anticipative._graph_exploration = MagicMock()
-    non_anticipative._exploration_of_current_solution(InterIterationInformation())
+    assert non_anticipative._exploration_of_current_solution(InterIterationInformation()) == return_flag
     assert non_anticipative._construction_of_solution.call_count == expected_calls[0]
     assert non_anticipative._graph_exploration.call_count == expected_calls[1]
 
 
-def test_interventions_handler():
+@pytest.mark.parametrize("feasibility_flag, return_flag", [(True, True), (False, False)])
+def test_interventions_handler(feasibility_flag, return_flag):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._calculate_available_interventions = MagicMock(return_value=[0, 1])
     non_anticipative._add_new_interventions_from_combinations = MagicMock()
-    non_anticipative._exploration_of_current_solution = MagicMock()
-    non_anticipative._interventions_handler(InterIterationInformation())
+    non_anticipative._exploration_of_current_solution = MagicMock(return_value=feasibility_flag)
+    assert non_anticipative._interventions_handler(InterIterationInformation()) == return_flag
     assert non_anticipative._add_new_interventions_from_combinations.call_count == 3
     assert non_anticipative._exploration_of_current_solution.call_count == 3
