@@ -4,24 +4,30 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Recu
 
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
-    def solve(self, inter_iteration_information: InterIterationInformation):
+    def solve(self, inter_iteration_information: InterIterationInformation) -> bool:
         # Optimality Check
         if not any(True for _ in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node)):
             self._analysis_of_last_node_in_path(inter_iteration_information)
         self._exploration_of_current_solution(inter_iteration_information)
-        self._interventions_handler(inter_iteration_information)
+        return self._interventions_handler(inter_iteration_information)
 
-    def _interventions_handler(self, inter_iteration_information: InterIterationInformation):
+    def _interventions_handler(self, inter_iteration_information: InterIterationInformation) -> bool:
         _available_interventions = self._calculate_available_interventions(inter_iteration_information)
+        feasible_solution_exist = False
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
                 self._add_new_interventions_from_combinations(inter_iteration_information, combinations)
-                self._exploration_of_current_solution(inter_iteration_information)
+                if self._exploration_of_current_solution(inter_iteration_information):
+                    feasible_solution_exist = True
+        return feasible_solution_exist
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
         if self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
             inter_iteration_information = self._construction_of_solution(inter_iteration_information)
             self._graph_exploration(inter_iteration_information)
+            return True
+        else:
+            return False
 
     def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
         self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
