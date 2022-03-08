@@ -42,7 +42,8 @@ def setup_package():
             jose.melchorgutierrez@manchester.ac.uk',
         packages=find_packages(),
         package_data={'pyensys': ['json/*.json', 'tests/json/*.json', 'tests/excel/*.xlsx', 'tests/ods/*.ods']},
-        install_requires=['click', 'pandas', 'pyomo', 'pypsa'],
+        install_requires=['click', 'pandas', 'pyomo', 'pypsa', 'networkx', 'pytest', 'pandapower', 'numpy', 'sklearn',
+                          'tables', 'odf'],
         extras_require={"test": ["pytest"]},
         cmdclass={"build_ext": new_build_ext},
         # use_scm_version=True,
@@ -58,7 +59,7 @@ def setup_package():
             "Operating System :: Microsoft :: Windows :: Windows 10"
         ],
     )
-    
+
     config = parse_optional_arguments()
 
     annotate = config["annotate"]
@@ -68,30 +69,35 @@ def setup_package():
 
     if config["trace"]:
         compiler_directives["linetrace"] = True
-    
+
     metadata["ext_modules"] = ext_modules = []
 
     if config["glpk"]:
         ext_modules.append(Extension("pyensys.engines.cython._glpk", ["pyensys/engines/_glpk.pyx"],
-        include_dirs=[findglpkheaderpath()] if findglpkheaderpath() is not None else [],
-        library_dirs=[findglpklibrarypath()] if findglpklibrarypath() is not None else [],
-        libraries=["glpk"],))
+                                     include_dirs=[findglpkheaderpath()] if findglpkheaderpath() is not None else [],
+                                     library_dirs=[findglpklibrarypath()] if findglpklibrarypath() is not None else [],
+                                     libraries=["glpk"], ))
 
     if config["clp"]:
         if platform.system() == "Windows":
-            ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
-            include_dirs=[
-                      os.path.dirname(os.path.abspath(__file__))+'\pyensys\ThirdPartySoftware\\boost_1_75_0',
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\Clp\include",
-                      os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\CoinUtils\include"],
-            libraries=['libClp', 'libCoinUtils'],
-            library_dirs=[os.path.dirname(os.path.abspath(__file__))+"\pyensys\ThirdPartySoftware\Clp\lib"],
-                            ))
+            ext_modules.append(
+                Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
+                          include_dirs=[
+                              os.path.dirname(os.path.abspath(__file__)) + '\pyensys\ThirdPartySoftware\\boost_1_75_0',
+                              os.path.dirname(os.path.abspath(__file__)) + '\pyensys\ThirdPartySoftware\Clp\include',
+                              os.path.dirname(
+                                  os.path.abspath(__file__)) + "\pyensys\ThirdPartySoftware\CoinUtils\include"],
+                          libraries=['libClp', 'libCoinUtils'],
+                          library_dirs=[
+                              os.path.dirname(os.path.abspath(__file__)) + "\pyensys\ThirdPartySoftware\Clp\lib"],
+                          ))
         elif platform.system() == "Linux":
-            ext_modules.append(Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
-            libraries=['Clp'],
-            ))
+            ext_modules.append(
+                Extension("pyensys.engines.cython.cpp_energy_wrapper", ["pyensys/engines/cpp_energy_wrapper.pyx"],
+                          libraries=['Clp'],
+                          ))
     setup(**metadata)
+
 
 def parse_optional_arguments():
     config = {
@@ -105,7 +111,7 @@ def parse_optional_arguments():
     if "--with-glpk" in sys.argv:
         config["glpk"] = True
         sys.argv.remove("--with-glpk")
-    
+
     if "--with-clp" in sys.argv:
         config["clp"] = True
         sys.argv.remove("--with-clp")
@@ -123,6 +129,7 @@ def parse_optional_arguments():
         sys.argv.remove("--enable-trace")
     return config
 
+
 def findglpkheaderpath():
     inc_arg = "-I"
     for arg in sys.argv:
@@ -138,10 +145,10 @@ def findglpkheaderpath():
         print(aux2)
         if aux1 == 'in':
             pythonpath = aux2
-    trypaths = [pythonpath+'/Library/include/glpk.h',
-                pythonpath+'/include/glpk.h',
-                pythonpath+'/Library/include/glpk.h',
-                pythonpath+'/include/glpk.h']
+    trypaths = [pythonpath + '/Library/include/glpk.h',
+                pythonpath + '/include/glpk.h',
+                pythonpath + '/Library/include/glpk.h',
+                pythonpath + '/include/glpk.h']
     glpkpath = None
     for paths in trypaths:
         if os.path.isfile(paths):
@@ -151,10 +158,11 @@ def findglpkheaderpath():
         print('Path for GLPK header has not been found in the predefined \
             directories')
         return
-    
+
     return glpkpath
 
-def findglpklibrarypath():   
+
+def findglpklibrarypath():
     lib_arg = "-L"
     for arg in sys.argv:
         if arg.startswith(lib_arg) and len(arg) > len(lib_arg):
@@ -169,10 +177,10 @@ def findglpklibrarypath():
         print(aux2)
         if aux1 == 'in':
             pythonpath = aux2
-    trypaths = [pythonpath+'/Library/lib/glpk.lib',
-                pythonpath+'/libs/glpk.lib',
-                pythonpath+'/Library/lib/libglpk.so',
-                pythonpath+'/lib/libglpk.so']
+    trypaths = [pythonpath + '/Library/lib/glpk.lib',
+                pythonpath + '/libs/glpk.lib',
+                pythonpath + '/Library/lib/libglpk.so',
+                pythonpath + '/lib/libglpk.so']
     glpkpath = None
     for paths in trypaths:
         if os.path.isfile(paths):
@@ -182,8 +190,9 @@ def findglpklibrarypath():
         print('Path for GLPK library has not been found in the predefined \
             directories')
         return
-    
+
     return glpkpath
+
 
 if __name__ == "__main__":
     setup_package()
