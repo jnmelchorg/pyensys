@@ -107,10 +107,9 @@ class RecursiveFunction:
     def solve(self, inter_iteration_information: InterIterationInformation):
         self._operational_check(inter_iteration_information)
         if self._is_opf_feasible():
-            inter_iteration_information = self._construction_of_solution( \
-                inter_iteration_information)
+            inter_iteration_information = self._construction_of_solution(inter_iteration_information)
             # Optimality Check
-            if not any(True for _ in self._control_graph.graph.neighbours( \
+            if not any(True for _ in self._control_graph.graph.neighbours(
                     inter_iteration_information.current_graph_node)):
                 self._optimality_check(inter_iteration_information)
                 return
@@ -129,8 +128,8 @@ class RecursiveFunction:
                 # Graph exploration
                 self._graph_exploration(inter_iteration_information)
 
-    def _add_new_interventions_from_combinations(self, \
-                                                 inter_iteration_information: InterIterationInformation, combination):
+    def _add_new_interventions_from_combinations(self, inter_iteration_information: InterIterationInformation,
+                                                 combination):
         inter_iteration_information.new_interventions = AbstractDataContainer()
         inter_iteration_information.new_interventions.create_list()
         for element in combination:
@@ -138,8 +137,7 @@ class RecursiveFunction:
 
     def _graph_exploration(self, inter_iteration_information: InterIterationInformation):
         parent_node = inter_iteration_information.current_graph_node
-        for neighbour in self._control_graph.graph.neighbours( \
-                inter_iteration_information.current_graph_node):
+        for neighbour in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node):
             inter_iteration_information.level_in_graph += 1
             inter_iteration_information.current_graph_node = neighbour
             self.solve(inter_iteration_information=inter_iteration_information)
@@ -215,8 +213,8 @@ class RecursiveFunction:
             inter_iteration_information.new_interventions)
         return _available_interventions
 
-    def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, \
-                                    length_set: int) -> Iterator[Tuple[int]]:
+    def _calculate_all_combinations(self, available_interventions: AbstractDataContainer, length_set: int) -> \
+            Iterator[Tuple[int]]:
         return combinations(available_interventions, length_set)
 
     def _create_new_pandapower_profiles(self, current_graph_node: int) \
@@ -259,16 +257,12 @@ class RecursiveFunction:
 
     def _replace_incumbent_if_candidate_is_better(self, key_in_incumbent: str,
                                                   inter_iteration_information: InterIterationInformation):
-        total_cost_candidate = self._calculate_investment_cost( \
-            inter_iteration_information.candidate_interventions) + \
-                               self._calculate_opteration_cost( \
-                                   inter_iteration_information.candidate_operation_cost)
-        total_cost_incumbent = \
-            inter_iteration_information.incumbent_investment_costs[key_in_incumbent] + \
+        total_cost_candidate = self._calculate_investment_cost(inter_iteration_information.candidate_interventions) + \
+                               self._calculate_opteration_cost(inter_iteration_information.candidate_operation_cost)
+        total_cost_incumbent = inter_iteration_information.incumbent_investment_costs[key_in_incumbent] + \
             inter_iteration_information.incumbent_operation_costs[key_in_incumbent]
         if total_cost_incumbent > total_cost_candidate:
-            self._replace_solution_in_incumbent_list(key_in_incumbent, \
-                                                     inter_iteration_information)
+            self._replace_solution_in_incumbent_list(key_in_incumbent, inter_iteration_information)
 
     def _replace_solution_in_incumbent_list(self, key_in_incumbent: str,
                                             inter_iteration_information: InterIterationInformation):
