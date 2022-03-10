@@ -88,23 +88,3 @@ def test_type_error_in_difference_abstract_data_containers():
     AO2 = []
     with raises(TypeError):
         difference_abstract_data_containers(AO1, AO2)
-
-
-def test_get_indexes_of_ordered_items_related_to_the_input_ordered_items():
-    ordered_items = AbstractDataContainer()
-    ordered_items.create_list()
-    ordered_items.append("0", 0)
-    ordered_items.append("1", 1)
-    ao1 = AbstractDataContainer()
-    ao1.create_list()
-    ao1.append("0", ordered_items)
-    ordered_items = AbstractDataContainer()
-    ordered_items.create_list()
-    ordered_items.append("2", 2)
-    ordered_items.append("1", 1)
-    ao1.append("0", ordered_items)
-    ao2 = AbstractDataContainer()
-    ao2.create_list()
-    ao2.append("0", 0)
-    assert get_indexes_of_ordered_items_related_to_the_input_ordered_items(ao1, ao2) == ["0"]
-

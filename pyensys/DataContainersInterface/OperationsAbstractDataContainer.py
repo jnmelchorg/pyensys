@@ -48,8 +48,3 @@ def _calculate_difference_if_containers_are_dictionaries(abstract_data_container
                 abstract_data_container1._container[key] == val:
             difference._container.pop(key)
     return difference
-
-
-def get_indexes_of_ordered_items_related_to_the_input_ordered_items(ordered_items: AbstractDataContainer,
-                                                                    input_items: AbstractDataContainer) -> List[str]:
-    return []
