@@ -1,5 +1,4 @@
-from copy import deepcopy
-from typing import Any, Type
+from typing import Any
 
 
 class AbstractDataContainer:
@@ -43,9 +42,11 @@ class AbstractDataContainer:
 
     def __eq__(self, other):
         if isinstance(other, AbstractDataContainer):
-            if (self._is_dictionary and other._is_dictionary) or \
-                    (self._is_list and other._is_list):
+            if (self._is_dictionary and other.is_dictionary()) or \
+                    (self._is_list and other.is_list()):
                 return self._container == other._container
+            elif not self._is_dictionary and not self._is_list and not other.is_dictionary() and not other.is_list():
+                return True
             else:
                 raise TypeError
         else:
@@ -72,9 +73,13 @@ class AbstractDataContainer:
         else:
             raise TypeError
 
+    def __repr__(self):
+        return 'AbstractDataContainer('f'container={self._container}, 'f'is_dictionary={self._is_dictionary}, ' \
+               f'is_list={self._is_list})'
+
     def _compare_dictionaries(self, other):
         for key1 in other._container.keys():
-            if (key1 not in self._container or self._container[key1] != other._container[key1]):
+            if key1 not in self._container or self._container[key1] != other._container[key1]:
                 return False
         return True
 

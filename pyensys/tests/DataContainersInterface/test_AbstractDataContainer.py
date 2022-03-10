@@ -238,6 +238,12 @@ def test_eq_op6():
         assert AO1 == AO2
 
 
+def test_eq_op7():
+    AO1 = AbstractDataContainer()
+    AO2 = AbstractDataContainer()
+    assert AO1 == AO2
+
+
 def test_ne_op1():
     AO1 = AbstractDataContainer()
     AO1.create_dictionary()
@@ -406,3 +412,12 @@ def test_is_list():
     ao = AbstractDataContainer()
     ao.create_list()
     assert ao.is_list()
+
+
+def test_repr():
+    ao = AbstractDataContainer()
+    ao.create_list()
+    for x in range(0, 1):
+        ao.append(str(x), x)
+    assert repr(ao) == f'AbstractDataContainer(container=[[\'0\', 0]], is_dictionary=False, is_list=True)'
+
