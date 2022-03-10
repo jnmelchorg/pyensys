@@ -191,14 +191,14 @@ class RecursiveFunction:
 
     def _construction_of_solution(self, inter_iteration_information: InterIterationInformation) \
             -> InterIterationInformation:
-        inter_iteration_information.candidate_solution_path.append(str(len( \
-            inter_iteration_information.candidate_solution_path)), \
+        inter_iteration_information.candidate_solution_path.append(str(len(
+            inter_iteration_information.candidate_solution_path)),
             inter_iteration_information.current_graph_node)
-        inter_iteration_information.candidate_interventions.append( \
-            str(inter_iteration_information.level_in_graph), \
+        inter_iteration_information.candidate_interventions.append(
+            str(inter_iteration_information.level_in_graph),
             deepcopy(inter_iteration_information.new_interventions))
-        inter_iteration_information.candidate_operation_cost.append( \
-            str(inter_iteration_information.level_in_graph), \
+        inter_iteration_information.candidate_operation_cost.append(
+            str(inter_iteration_information.level_in_graph),
             self._get_total_operation_cost())
         return inter_iteration_information
 
