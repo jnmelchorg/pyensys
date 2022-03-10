@@ -1,6 +1,8 @@
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, RecursiveFunction
 
+from typing import List
+
 
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
@@ -28,6 +30,39 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             return True
         else:
             return False
+
+    def _graph_exploration(self, inter_iteration_information: InterIterationInformation):
+        parent_node = inter_iteration_information.current_graph_node
+        feasible_solution_exist = True
+        for neighbour in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node):
+            inter_iteration_information.level_in_graph += 1
+            inter_iteration_information.current_graph_node = neighbour
+            if not self.solve(inter_iteration_information=inter_iteration_information):
+                feasible_solution_exist = False
+                break
+        inter_iteration_information.current_graph_node = parent_node
+        if not feasible_solution_exist:
+            pass
+
+    def _eliminate_siblings_of_candidate_in_incumbent(self, info: InterIterationInformation):
+        keys_to_eliminate = []
+        for key, path in info.incumbent_graph_paths:
+            if info.candidate_solution_path in path:
+                keys_to_eliminate.append(key)
+        for key in keys_to_eliminate:
+            info.incumbent_interventions.pop(key)
+            info.incumbent_graph_paths.pop(key)
+            info.incumbent_operation_costs.pop(key)
+            info.incumbent_investment_costs.pop(key)
+        remaining_keys = []
+        for key, _ in info.incumbent_graph_paths:
+            remaining_keys.append(key)
+        for num, key in enumerate(remaining_keys):
+            info.incumbent_interventions.append(str(num), info.incumbent_interventions.pop(key))
+            info.incumbent_graph_paths.append(str(num), info.incumbent_graph_paths.pop(key))
+            info.incumbent_operation_costs.append(str(num), info.incumbent_operation_costs.pop(key))
+            info.incumbent_investment_costs.append(str(num), info.incumbent_investment_costs.pop(key))
+
 
     def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
         self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)

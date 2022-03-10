@@ -5,6 +5,7 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Bina
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 
 from unittest.mock import MagicMock
+from copy import deepcopy
 
 
 def test_get_available_interventions_for_current_year():
@@ -156,3 +157,69 @@ def test_interventions_handler(feasibility_flag, return_flag):
     assert non_anticipative._interventions_handler(InterIterationInformation()) == return_flag
     assert non_anticipative._add_new_interventions_from_combinations.call_count == 3
     assert non_anticipative._exploration_of_current_solution.call_count == 3
+
+
+def _input_data_test_eliminate_siblings_of_candidate_in_incumbent() -> InterIterationInformation:
+    info = InterIterationInformation()
+    info.incumbent_graph_paths.create_list()
+    path = AbstractDataContainer()
+    path.create_list()
+    path.append("0", 0)
+    path.append("1", 1)
+    path.append("2", 2)
+    info.incumbent_graph_paths.append("0", deepcopy(path))
+    path.pop("2")
+    path.append("3", 3)
+    info.incumbent_graph_paths.append("1", deepcopy(path))
+    path.pop("3")
+    path.pop("1")
+    path.append("4", 4)
+    path.append("5", 5)
+    info.incumbent_graph_paths.append("2", deepcopy(path))
+    path.pop("4")
+    path.pop("5")
+    path.append("1", 1)
+    info.candidate_solution_path = path
+    info.incumbent_interventions.create_list()
+    info.incumbent_interventions.append("0", 0)
+    info.incumbent_interventions.append("1", 1)
+    info.incumbent_interventions.append("2", 2)
+    info.incumbent_operation_costs.create_list()
+    info.incumbent_operation_costs.append("0", 0)
+    info.incumbent_operation_costs.append("1", 1)
+    info.incumbent_operation_costs.append("2", 2)
+    info.incumbent_investment_costs.create_list()
+    info.incumbent_investment_costs.append("0", 0)
+    info.incumbent_investment_costs.append("1", 1)
+    info.incumbent_investment_costs.append("2", 2)
+    return info
+
+
+def _expected_output_from_eliminate_siblings_of_candidate_in_incumbent() -> InterIterationInformation:
+    info = InterIterationInformation()
+    info.incumbent_graph_paths.create_list()
+    path = AbstractDataContainer()
+    path.create_list()
+    path.append("0", 0)
+    path.append("4", 4)
+    path.append("5", 5)
+    info.incumbent_graph_paths.append("0", deepcopy(path))
+    path.pop("5")
+    path.pop("4")
+    path.append("1", 1)
+    info.candidate_solution_path = path
+    info.incumbent_interventions.create_list()
+    info.incumbent_interventions.append("0", 2)
+    info.incumbent_operation_costs.create_list()
+    info.incumbent_operation_costs.append("0", 2)
+    info.incumbent_investment_costs.create_list()
+    info.incumbent_investment_costs.append("0", 2)
+    return info
+
+
+def test_eliminate_siblings_of_candidate_in_incumbent():
+    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
+    expected = _expected_output_from_eliminate_siblings_of_candidate_in_incumbent()
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._eliminate_siblings_of_candidate_in_incumbent(info)
+    assert info == expected
