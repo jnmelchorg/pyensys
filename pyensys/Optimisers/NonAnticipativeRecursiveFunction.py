@@ -4,6 +4,39 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Recu
 from typing import List
 
 
+def _eliminate_siblings_of_candidate_in_incumbent(info: InterIterationInformation):
+    keys_to_eliminate = _find_keys_of_siblings_in_incumbent(info)
+    _delete_siblings_from_incumbent(info, keys_to_eliminate)
+    _renumber_keys_in_incumbent(info)
+
+
+def _find_keys_of_siblings_in_incumbent(info: InterIterationInformation) -> List[str]:
+    keys_to_eliminate = []
+    for key, path in info.incumbent_graph_paths:
+        if info.candidate_solution_path in path:
+            keys_to_eliminate.append(key)
+    return keys_to_eliminate
+
+
+def _delete_siblings_from_incumbent(info: InterIterationInformation, keys_to_eliminate: List[str]):
+    for key in keys_to_eliminate:
+        info.incumbent_interventions.pop(key)
+        info.incumbent_graph_paths.pop(key)
+        info.incumbent_operation_costs.pop(key)
+        info.incumbent_investment_costs.pop(key)
+
+
+def _renumber_keys_in_incumbent(info: InterIterationInformation):
+    remaining_keys = []
+    for key, _ in info.incumbent_graph_paths:
+        remaining_keys.append(key)
+    for num, key in enumerate(remaining_keys):
+        info.incumbent_interventions.append(str(num), info.incumbent_interventions.pop(key))
+        info.incumbent_graph_paths.append(str(num), info.incumbent_graph_paths.pop(key))
+        info.incumbent_operation_costs.append(str(num), info.incumbent_operation_costs.pop(key))
+        info.incumbent_investment_costs.append(str(num), info.incumbent_investment_costs.pop(key))
+
+
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
     def solve(self, inter_iteration_information: InterIterationInformation) -> bool:
@@ -43,26 +76,6 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         inter_iteration_information.current_graph_node = parent_node
         if not feasible_solution_exist:
             pass
-
-    def _eliminate_siblings_of_candidate_in_incumbent(self, info: InterIterationInformation):
-        keys_to_eliminate = []
-        for key, path in info.incumbent_graph_paths:
-            if info.candidate_solution_path in path:
-                keys_to_eliminate.append(key)
-        for key in keys_to_eliminate:
-            info.incumbent_interventions.pop(key)
-            info.incumbent_graph_paths.pop(key)
-            info.incumbent_operation_costs.pop(key)
-            info.incumbent_investment_costs.pop(key)
-        remaining_keys = []
-        for key, _ in info.incumbent_graph_paths:
-            remaining_keys.append(key)
-        for num, key in enumerate(remaining_keys):
-            info.incumbent_interventions.append(str(num), info.incumbent_interventions.pop(key))
-            info.incumbent_graph_paths.append(str(num), info.incumbent_graph_paths.pop(key))
-            info.incumbent_operation_costs.append(str(num), info.incumbent_operation_costs.pop(key))
-            info.incumbent_investment_costs.append(str(num), info.incumbent_investment_costs.pop(key))
-
 
     def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
         self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)

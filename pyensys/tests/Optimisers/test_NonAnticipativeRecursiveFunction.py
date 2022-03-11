@@ -1,11 +1,12 @@
-import pytest
-
 from pyensys.Optimisers.NonAnticipativeRecursiveFunction import NonAnticipativeRecursiveFunction
 from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, BinaryVariable
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
+from pyensys.Optimisers.NonAnticipativeRecursiveFunction import _eliminate_siblings_of_candidate_in_incumbent, \
+    _find_keys_of_siblings_in_incumbent, _delete_siblings_from_incumbent, _renumber_keys_in_incumbent
 
 from unittest.mock import MagicMock
 from copy import deepcopy
+import pytest
 
 
 def test_get_available_interventions_for_current_year():
@@ -220,6 +221,32 @@ def _expected_output_from_eliminate_siblings_of_candidate_in_incumbent() -> Inte
 def test_eliminate_siblings_of_candidate_in_incumbent():
     info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
     expected = _expected_output_from_eliminate_siblings_of_candidate_in_incumbent()
-    non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._eliminate_siblings_of_candidate_in_incumbent(info)
+    _eliminate_siblings_of_candidate_in_incumbent(info)
     assert info == expected
+
+
+def test_find_keys_of_siblings_in_incumbent():
+    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
+    siblings = _find_keys_of_siblings_in_incumbent(info)
+    assert siblings == ["0", "1"]
+
+
+def test_delete_siblings_from_incumbent():
+    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
+    _delete_siblings_from_incumbent(info, ["0", "1"])
+    assert info.incumbent_interventions.get("0") is None and info.incumbent_interventions.get("1") is None
+    assert info.incumbent_investment_costs.get("0") is None and info.incumbent_investment_costs.get("1") is None
+    assert info.incumbent_graph_paths.get("0") is None and info.incumbent_graph_paths.get("1") is None
+    assert info.incumbent_operation_costs.get("0") is None and info.incumbent_operation_costs.get("1") is None
+
+
+def test_renumber_keys_in_incumbent():
+    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
+    _delete_siblings_from_incumbent(info, ["0", "1"])
+    _renumber_keys_in_incumbent(info)
+    assert info.incumbent_graph_paths.get("0").get("0") == 0
+    assert info.incumbent_graph_paths.get("0").get("4") == 4
+    assert info.incumbent_graph_paths.get("0").get("5") == 5
+    assert info.incumbent_investment_costs.get("0") == 2
+    assert info.incumbent_interventions.get("0") == 2
+    assert info.incumbent_operation_costs.get("0") == 2
