@@ -383,8 +383,7 @@ def test_return_to_previous_state():
 
 
 def test_add_new_interventions_from_combinations():
-    combination: List[AbstractDataContainer] = []
-    combination.append(AbstractDataContainer())
+    combination: List[AbstractDataContainer] = [AbstractDataContainer()]
     combination[0].create_list()
     combination[0].append("0", 0)
     info = InterIterationInformation()

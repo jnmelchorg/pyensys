@@ -33,6 +33,9 @@ class InterIterationInformation:
         field(default_factory=lambda: AbstractDataContainer())
     new_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
+    new_interventions_remaining_construction_time: \
+        AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     current_graph_node: int = 0
     level_in_graph: int = 0
 
@@ -150,10 +153,8 @@ class RecursiveFunction:
 
     def _update_status_elements_opf(self, inter_iteration_information: InterIterationInformation):
         if len(inter_iteration_information.new_interventions) > 0:
-            self._update_status_elements_opf_per_intervention_group( \
-                inter_iteration_information.candidate_interventions)
-            self._update_status_elements_opf_per_intervention_group( \
-                inter_iteration_information.new_interventions)
+            self._update_status_elements_opf_per_intervention_group(inter_iteration_information.candidate_interventions)
+            self._update_status_elements_opf_per_intervention_group(inter_iteration_information.new_interventions)
         else:
             return
 
