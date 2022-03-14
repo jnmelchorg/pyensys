@@ -1,16 +1,16 @@
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
-from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, RecursiveFunction
+from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, RecursiveFunction, BinaryVariable
 
 from typing import List
 
 
-def _eliminate_siblings_of_candidate_in_incumbent(info: InterIterationInformation):
-    keys_to_eliminate = _find_keys_of_siblings_in_incumbent(info)
-    _delete_siblings_from_incumbent(info, keys_to_eliminate)
+def _eliminate_offsprings_of_candidate_in_incumbent(info: InterIterationInformation):
+    keys_to_eliminate = _find_keys_of_offsprings_in_incumbent(info)
+    _delete_offsprings_from_incumbent(info, keys_to_eliminate)
     _renumber_keys_in_incumbent(info)
 
 
-def _find_keys_of_siblings_in_incumbent(info: InterIterationInformation) -> List[str]:
+def _find_keys_of_offsprings_in_incumbent(info: InterIterationInformation) -> List[str]:
     keys_to_eliminate = []
     for key, path in info.incumbent_graph_paths:
         if info.candidate_solution_path in path:
@@ -18,7 +18,7 @@ def _find_keys_of_siblings_in_incumbent(info: InterIterationInformation) -> List
     return keys_to_eliminate
 
 
-def _delete_siblings_from_incumbent(info: InterIterationInformation, keys_to_eliminate: List[str]):
+def _delete_offsprings_from_incumbent(info: InterIterationInformation, keys_to_eliminate: List[str]):
     for key in keys_to_eliminate:
         info.incumbent_interventions.pop(key)
         info.incumbent_graph_paths.pop(key)
@@ -37,6 +37,19 @@ def _renumber_keys_in_incumbent(info: InterIterationInformation):
         info.incumbent_investment_costs.append(str(num), info.incumbent_investment_costs.pop(key))
 
 
+def _add_new_interventions_from_combinations(inter_iteration_information: InterIterationInformation,
+                                             combinations):
+    inter_iteration_information.new_interventions = AbstractDataContainer()
+    inter_iteration_information.new_interventions.create_list()
+    inter_iteration_information.new_interventions_remaining_construction_time = AbstractDataContainer()
+    inter_iteration_information.new_interventions_remaining_construction_time.create_list()
+    for combination in combinations:
+        for key, value in combination:
+            inter_iteration_information.new_interventions.append(key, value)
+            inter_iteration_information.new_interventions_remaining_construction_time.append(key,
+                                                                                             value.installation_time)
+
+
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
     def solve(self, inter_iteration_information: InterIterationInformation) -> bool:
@@ -51,31 +64,33 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         feasible_solution_exist = False
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
-                self._add_new_interventions_from_combinations(inter_iteration_information, combinations)
+                _add_new_interventions_from_combinations(inter_iteration_information, combinations)
                 if self._exploration_of_current_solution(inter_iteration_information):
                     feasible_solution_exist = True
         return feasible_solution_exist
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
-        if self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
+        if self._check_feasibility_of_current_solution(inter_iteration_information) and \
+                self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
             inter_iteration_information = self._construction_of_solution(inter_iteration_information)
-            self._graph_exploration(inter_iteration_information)
-            return True
+            return self._graph_exploration(inter_iteration_information)
         else:
             return False
 
-    def _graph_exploration(self, inter_iteration_information: InterIterationInformation):
+    def _graph_exploration(self, inter_iteration_information: InterIterationInformation) -> bool:
         parent_node = inter_iteration_information.current_graph_node
         feasible_solution_exist = True
+        inter_iteration_information.level_in_graph += 1
         for neighbour in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node):
-            inter_iteration_information.level_in_graph += 1
             inter_iteration_information.current_graph_node = neighbour
             if not self.solve(inter_iteration_information=inter_iteration_information):
                 feasible_solution_exist = False
                 break
         inter_iteration_information.current_graph_node = parent_node
+        inter_iteration_information.level_in_graph -= 1
         if not feasible_solution_exist:
-            pass
+            _eliminate_offsprings_of_candidate_in_incumbent(inter_iteration_information)
+        return feasible_solution_exist
 
     def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
         self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
@@ -85,13 +100,16 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         all_available_interventions = self._get_available_interventions_for_current_year(inter_iteration_information)
         for number_combinations in range(1, len(all_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(all_available_interventions, number_combinations):
-                self._add_new_interventions_from_combinations(inter_iteration_information, combinations)
+                _add_new_interventions_from_combinations(inter_iteration_information, combinations)
                 self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
+
+    def _check_feasibility_of_current_solution(self, info: InterIterationInformation) -> bool:
+        self._operational_check(info)
+        return self._is_opf_feasible()
 
     def _check_optimality_and_feasibility_of_current_solution(self,
                                                               inter_iteration_information: InterIterationInformation):
-        self._operational_check(inter_iteration_information)
-        if self._is_opf_feasible():
+        if self._check_feasibility_of_current_solution(inter_iteration_information):
             self._optimality_check(inter_iteration_information)
 
     def _verify_feasibility_of_solution_in_successor_nodes(self,

@@ -1,10 +1,11 @@
 from pyensys.Optimisers.NonAnticipativeRecursiveFunction import NonAnticipativeRecursiveFunction
 from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, BinaryVariable
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
-from pyensys.Optimisers.NonAnticipativeRecursiveFunction import _eliminate_siblings_of_candidate_in_incumbent, \
-    _find_keys_of_siblings_in_incumbent, _delete_siblings_from_incumbent, _renumber_keys_in_incumbent
+from pyensys.Optimisers.NonAnticipativeRecursiveFunction import _eliminate_offsprings_of_candidate_in_incumbent, \
+    _find_keys_of_offsprings_in_incumbent, _delete_offsprings_from_incumbent, _renumber_keys_in_incumbent, \
+    _add_new_interventions_from_combinations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from copy import deepcopy
 import pytest
 
@@ -99,32 +100,30 @@ def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
 
 def test_feasible_solution_in_check_optimality_and_feasibility_of_current_solution():
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._operational_check = MagicMock()
-    non_anticipative._is_opf_feasible = MagicMock(return_value=True)
+    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=True)
     non_anticipative._optimality_check = MagicMock()
     non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
     non_anticipative._optimality_check.assert_called_once()
-    non_anticipative._operational_check.assert_called_once()
+    non_anticipative._check_feasibility_of_current_solution.assert_called_once()
 
 
 def test_unfeasible_solution_in_check_optimality_and_feasibility_of_current_solution():
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._operational_check = MagicMock()
-    non_anticipative._is_opf_feasible = MagicMock(return_value=False)
+    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=False)
     non_anticipative._optimality_check = MagicMock()
     non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
     non_anticipative._optimality_check.assert_not_called()
-    non_anticipative._operational_check.assert_called_once()
+    non_anticipative._check_feasibility_of_current_solution.assert_called_once()
 
 
-def test_optimise_interventions_in_last_node():
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._add_new_interventions_from_combinations")
+def test_optimise_interventions_in_last_node(mock_method):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._get_available_interventions_for_current_year = MagicMock(return_value=[1, 2])
-    non_anticipative._add_new_interventions_from_combinations = MagicMock()
     non_anticipative._check_optimality_and_feasibility_of_current_solution = MagicMock()
     non_anticipative._optimise_interventions_in_last_node(InterIterationInformation())
     non_anticipative._get_available_interventions_for_current_year.assert_called_once()
-    assert non_anticipative._add_new_interventions_from_combinations.call_count == 3
+    assert mock_method.call_count == 3
     assert non_anticipative._check_optimality_and_feasibility_of_current_solution.call_count == 3
 
 
@@ -137,30 +136,33 @@ def test_analysis_of_last_node_in_path():
     non_anticipative._optimise_interventions_in_last_node.assert_called_once()
 
 
-@pytest.mark.parametrize("feasibility_flag, expected_calls, return_flag", [(False, [0, 0], False),
-                                                                           (True, [1, 1], True)])
-def test_exploration_of_current_solution(feasibility_flag, expected_calls, return_flag):
+@pytest.mark.parametrize("feasibility_offsprings, expected_calls, return_flag, graph_feasibility, feasibility_current",
+                         [(None, [0, 0], False, None, False), (False, [0, 0], False, None, True),
+                          (True, [1, 1], True, True, True), (True, [1, 1], False, False, True)])
+def test_exploration_of_current_solution(feasibility_offsprings, expected_calls, return_flag, graph_feasibility,
+                                         feasibility_current):
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._verify_feasibility_of_solution_in_successor_nodes = MagicMock(return_value=feasibility_flag)
+    non_anticipative._verify_feasibility_of_solution_in_successor_nodes = MagicMock(return_value=feasibility_offsprings)
+    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=feasibility_current)
     non_anticipative._construction_of_solution = MagicMock(return_value=InterIterationInformation())
-    non_anticipative._graph_exploration = MagicMock()
+    non_anticipative._graph_exploration = MagicMock(return_value=graph_feasibility)
     assert non_anticipative._exploration_of_current_solution(InterIterationInformation()) == return_flag
     assert non_anticipative._construction_of_solution.call_count == expected_calls[0]
     assert non_anticipative._graph_exploration.call_count == expected_calls[1]
 
 
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._add_new_interventions_from_combinations")
 @pytest.mark.parametrize("feasibility_flag, return_flag", [(True, True), (False, False)])
-def test_interventions_handler(feasibility_flag, return_flag):
+def test_interventions_handler(mock_method, feasibility_flag, return_flag):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._calculate_available_interventions = MagicMock(return_value=[0, 1])
-    non_anticipative._add_new_interventions_from_combinations = MagicMock()
     non_anticipative._exploration_of_current_solution = MagicMock(return_value=feasibility_flag)
     assert non_anticipative._interventions_handler(InterIterationInformation()) == return_flag
-    assert non_anticipative._add_new_interventions_from_combinations.call_count == 3
+    assert mock_method.call_count == 3
     assert non_anticipative._exploration_of_current_solution.call_count == 3
 
 
-def _input_data_test_eliminate_siblings_of_candidate_in_incumbent() -> InterIterationInformation:
+def _input_data_test_eliminate_offsprings_of_candidate_in_incumbent() -> InterIterationInformation:
     info = InterIterationInformation()
     info.incumbent_graph_paths.create_list()
     path = AbstractDataContainer()
@@ -196,7 +198,7 @@ def _input_data_test_eliminate_siblings_of_candidate_in_incumbent() -> InterIter
     return info
 
 
-def _expected_output_from_eliminate_siblings_of_candidate_in_incumbent() -> InterIterationInformation:
+def _expected_output_from_eliminate_offsprings_of_candidate_in_incumbent() -> InterIterationInformation:
     info = InterIterationInformation()
     info.incumbent_graph_paths.create_list()
     path = AbstractDataContainer()
@@ -218,22 +220,22 @@ def _expected_output_from_eliminate_siblings_of_candidate_in_incumbent() -> Inte
     return info
 
 
-def test_eliminate_siblings_of_candidate_in_incumbent():
-    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
-    expected = _expected_output_from_eliminate_siblings_of_candidate_in_incumbent()
-    _eliminate_siblings_of_candidate_in_incumbent(info)
+def test_eliminate_offsprings_of_candidate_in_incumbent():
+    info = _input_data_test_eliminate_offsprings_of_candidate_in_incumbent()
+    expected = _expected_output_from_eliminate_offsprings_of_candidate_in_incumbent()
+    _eliminate_offsprings_of_candidate_in_incumbent(info)
     assert info == expected
 
 
-def test_find_keys_of_siblings_in_incumbent():
-    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
-    siblings = _find_keys_of_siblings_in_incumbent(info)
-    assert siblings == ["0", "1"]
+def test_find_keys_of_offsprings_in_incumbent():
+    info = _input_data_test_eliminate_offsprings_of_candidate_in_incumbent()
+    offsprings = _find_keys_of_offsprings_in_incumbent(info)
+    assert offsprings == ["0", "1"]
 
 
-def test_delete_siblings_from_incumbent():
-    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
-    _delete_siblings_from_incumbent(info, ["0", "1"])
+def test_delete_offsprings_from_incumbent():
+    info = _input_data_test_eliminate_offsprings_of_candidate_in_incumbent()
+    _delete_offsprings_from_incumbent(info, ["0", "1"])
     assert info.incumbent_interventions.get("0") is None and info.incumbent_interventions.get("1") is None
     assert info.incumbent_investment_costs.get("0") is None and info.incumbent_investment_costs.get("1") is None
     assert info.incumbent_graph_paths.get("0") is None and info.incumbent_graph_paths.get("1") is None
@@ -241,8 +243,8 @@ def test_delete_siblings_from_incumbent():
 
 
 def test_renumber_keys_in_incumbent():
-    info = _input_data_test_eliminate_siblings_of_candidate_in_incumbent()
-    _delete_siblings_from_incumbent(info, ["0", "1"])
+    info = _input_data_test_eliminate_offsprings_of_candidate_in_incumbent()
+    _delete_offsprings_from_incumbent(info, ["0", "1"])
     _renumber_keys_in_incumbent(info)
     assert info.incumbent_graph_paths.get("0").get("0") == 0
     assert info.incumbent_graph_paths.get("0").get("4") == 4
@@ -250,3 +252,28 @@ def test_renumber_keys_in_incumbent():
     assert info.incumbent_investment_costs.get("0") == 2
     assert info.incumbent_interventions.get("0") == 2
     assert info.incumbent_operation_costs.get("0") == 2
+
+
+def test_add_new_interventions_from_combinations():
+    interventions: AbstractDataContainer = AbstractDataContainer()
+    interventions.create_list()
+    interventions.append("0", BinaryVariable(installation_time=2))
+    rf = NonAnticipativeRecursiveFunction()
+    combination = rf._calculate_all_combinations(available_interventions=interventions, length_set=1)
+    info = InterIterationInformation()
+    _add_new_interventions_from_combinations(info, combination)
+    assert len(info.new_interventions) == 1
+    assert info.new_interventions.get("0") == BinaryVariable(installation_time=2)
+    assert info.new_interventions_remaining_construction_time.get("0") == 2
+
+
+@pytest.mark.parametrize("flag, expected", [(True, True), (False, False)])
+def test_check_feasibility_of_current_solution(flag, expected):
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._operational_check = MagicMock()
+    non_anticipative._is_opf_feasible = MagicMock(return_value=flag)
+    assert non_anticipative._check_feasibility_of_current_solution(InterIterationInformation()) == expected
+
+
+def test_adjust_remaining_time():
+    assert False
