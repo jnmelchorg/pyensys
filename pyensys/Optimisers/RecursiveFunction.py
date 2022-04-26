@@ -100,10 +100,10 @@ class RecursiveFunction:
         self._pool_interventions.create_list()
         counter = 0
         for variables in self._parameters.optimisation_binary_variables:
-            for cost, position, id, time in zip(variables.costs, variables.elements_positions, \
+            for cost, position, id, time in zip(variables.costs, variables.elements_positions,
                                                 variables.elements_ids, variables.installation_time):
-                self._pool_interventions.append(str(counter), BinaryVariable( \
-                    element_type=variables.element_type, variable_name=variables.variable_name, \
+                self._pool_interventions.append(str(counter), BinaryVariable(
+                    element_type=variables.element_type, variable_name=variables.variable_name,
                     element_id=id, element_position=position, cost=cost, installation_time=time))
                 counter += 1
 
