@@ -50,12 +50,27 @@ def _add_new_interventions_from_combinations(inter_iteration_information: InterI
                                                                                              value.installation_time)
 
 
+def update_remaining_construction_time(info: InterIterationInformation) -> \
+        InterIterationInformation:
+    if isinstance(info, InterIterationInformation):
+        for _, interventions_time in info.candidate_interventions_remaining_construction_time:
+            for key, _ in interventions_time:
+                interventions_time[key] -= 1
+        for key, _ in info.new_interventions_remaining_construction_time:
+            info.new_interventions_remaining_construction_time[key] -= 1
+        return info
+    else:
+        raise TypeError("The input is not of type InterIterationInformation")
+
+
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
     def solve(self, inter_iteration_information: InterIterationInformation) -> bool:
-        # Optimality Check
+        inter_iteration_information = update_remaining_construction_time(inter_iteration_information)
         if not any(True for _ in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node)):
-            self._analysis_of_last_node_in_path(inter_iteration_information)
+            if self._check_feasibility_of_current_solution(inter_iteration_information):
+                self._optimality_check(inter_iteration_information)
+            self._optimise_interventions_in_last_node(inter_iteration_information)
         self._exploration_of_current_solution(inter_iteration_information)
         return self._interventions_handler(inter_iteration_information)
 
@@ -92,25 +107,17 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             _eliminate_offsprings_of_candidate_in_incumbent(inter_iteration_information)
         return feasible_solution_exist
 
-    def _analysis_of_last_node_in_path(self, inter_iteration_information: InterIterationInformation):
-        self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
-        self._optimise_interventions_in_last_node(inter_iteration_information)
-
     def _optimise_interventions_in_last_node(self, inter_iteration_information: InterIterationInformation):
         all_available_interventions = self._get_available_interventions_for_current_year(inter_iteration_information)
         for number_combinations in range(1, len(all_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(all_available_interventions, number_combinations):
                 _add_new_interventions_from_combinations(inter_iteration_information, combinations)
-                self._check_optimality_and_feasibility_of_current_solution(inter_iteration_information)
+                if self._check_feasibility_of_current_solution(inter_iteration_information):
+                    self._optimality_check(inter_iteration_information)
 
     def _check_feasibility_of_current_solution(self, info: InterIterationInformation) -> bool:
         self._operational_check(info)
         return self._is_opf_feasible()
-
-    def _check_optimality_and_feasibility_of_current_solution(self,
-                                                              inter_iteration_information: InterIterationInformation):
-        if self._check_feasibility_of_current_solution(inter_iteration_information):
-            self._optimality_check(inter_iteration_information)
 
     def _verify_feasibility_of_solution_in_successor_nodes(self,
                                                            inter_iteration_information: InterIterationInformation) -> \
