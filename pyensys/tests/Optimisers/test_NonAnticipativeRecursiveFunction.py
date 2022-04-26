@@ -3,7 +3,7 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Bina
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.Optimisers.NonAnticipativeRecursiveFunction import _eliminate_offsprings_of_candidate_in_incumbent, \
     _find_keys_of_offsprings_in_incumbent, _delete_offsprings_from_incumbent, _renumber_keys_in_incumbent, \
-    _add_new_interventions_from_combinations
+    _add_new_interventions_from_combinations, update_remaining_construction_time
 
 from unittest.mock import MagicMock, patch
 from copy import deepcopy
@@ -98,42 +98,18 @@ def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
     assert info.current_graph_node == 100
 
 
-def test_feasible_solution_in_check_optimality_and_feasibility_of_current_solution():
-    non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=True)
-    non_anticipative._optimality_check = MagicMock()
-    non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
-    non_anticipative._optimality_check.assert_called_once()
-    non_anticipative._check_feasibility_of_current_solution.assert_called_once()
-
-
-def test_unfeasible_solution_in_check_optimality_and_feasibility_of_current_solution():
-    non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=False)
-    non_anticipative._optimality_check = MagicMock()
-    non_anticipative._check_optimality_and_feasibility_of_current_solution(InterIterationInformation())
-    non_anticipative._optimality_check.assert_not_called()
-    non_anticipative._check_feasibility_of_current_solution.assert_called_once()
-
-
 @patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._add_new_interventions_from_combinations")
-def test_optimise_interventions_in_last_node(mock_method):
+@pytest.mark.parametrize("feasibility_flag, expected_values", [(True, [3, 3]), (False, [3, 0])])
+def test_optimise_interventions_in_last_node(mock_method, feasibility_flag, expected_values):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._get_available_interventions_for_current_year = MagicMock(return_value=[1, 2])
-    non_anticipative._check_optimality_and_feasibility_of_current_solution = MagicMock()
+    non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=feasibility_flag)
+    non_anticipative._optimality_check = MagicMock()
     non_anticipative._optimise_interventions_in_last_node(InterIterationInformation())
     non_anticipative._get_available_interventions_for_current_year.assert_called_once()
     assert mock_method.call_count == 3
-    assert non_anticipative._check_optimality_and_feasibility_of_current_solution.call_count == 3
-
-
-def test_analysis_of_last_node_in_path():
-    non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._check_optimality_and_feasibility_of_current_solution = MagicMock()
-    non_anticipative._optimise_interventions_in_last_node = MagicMock()
-    non_anticipative._analysis_of_last_node_in_path(InterIterationInformation())
-    non_anticipative._check_optimality_and_feasibility_of_current_solution.assert_called_once()
-    non_anticipative._optimise_interventions_in_last_node.assert_called_once()
+    assert non_anticipative._check_feasibility_of_current_solution.call_count == expected_values[0]
+    assert non_anticipative._optimality_check.call_count == expected_values[1]
 
 
 @pytest.mark.parametrize("feasibility_offsprings, expected_calls, return_flag, graph_feasibility, feasibility_current",
@@ -275,5 +251,25 @@ def test_check_feasibility_of_current_solution(flag, expected):
     assert non_anticipative._check_feasibility_of_current_solution(InterIterationInformation()) == expected
 
 
-def test_adjust_remaining_time():
-    assert False
+def test_update_remaining_construction_time():
+    info = InterIterationInformation()
+    info.candidate_interventions_remaining_construction_time.create_list()
+    info.candidate_interventions_remaining_construction_time.append("0", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["0"].create_list()
+    info.candidate_interventions_remaining_construction_time["0"].append("0", 1)
+    info.candidate_interventions_remaining_construction_time["0"].append("1", 2)
+    info.candidate_interventions_remaining_construction_time.append("1", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["1"].create_list()
+    info.new_interventions_remaining_construction_time.create_list()
+    info.new_interventions_remaining_construction_time.append("2", 3)
+    info.new_interventions_remaining_construction_time.append("3", 4)
+    update_remaining_construction_time(info)
+    assert info.candidate_interventions_remaining_construction_time.get("0").get("0") == 0
+    assert info.candidate_interventions_remaining_construction_time.get("0").get("1") == 1
+    assert info.new_interventions_remaining_construction_time.get("2") == 2
+    assert info.new_interventions_remaining_construction_time.get("3") == 3
+
+
+def test_type_error_update_remaining_construction_time():
+    with pytest.raises(TypeError):
+        update_remaining_construction_time(list())
