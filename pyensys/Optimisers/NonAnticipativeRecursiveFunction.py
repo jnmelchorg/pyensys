@@ -153,3 +153,25 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         for key, _ in all_available_interventions:
             inter_iteration_information.new_interventions.pop(key)
         return self._is_opf_feasible()
+
+    def _get_interventions_ready_to_operate_in_opf(self, info: InterIterationInformation) -> List[BinaryVariable]:
+        interventions = self._get_constructed_interventions_from_candidate(info)
+        interventions.extend(self._get_constructed_interventions_from_new_interventions(info))
+        return interventions
+
+    def _get_constructed_interventions_from_new_interventions(self, info: InterIterationInformation):
+        accepted_interventions = []
+        for (_, time), (_, intervention) in zip(info.new_interventions_remaining_construction_time,
+                                                info.new_interventions):
+            if time <= 0:
+                accepted_interventions.append(intervention)
+        return accepted_interventions
+
+    def _get_constructed_interventions_from_candidate(self, info: InterIterationInformation) -> List[BinaryVariable]:
+        accepted_interventions = []
+        for (_, interventions_time), (_, interventions) in zip(info.candidate_interventions_remaining_construction_time,
+                                                               info.candidate_interventions):
+            for key, time in interventions_time:
+                if time <= 0:
+                    accepted_interventions.append(interventions[key])
+        return accepted_interventions

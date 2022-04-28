@@ -274,7 +274,8 @@ def test_type_error_update_remaining_construction_time():
     with pytest.raises(TypeError):
         update_remaining_construction_time(list())
 
-def test_update_status_elements_ready_to_operate_in_opf():
+
+def test_get_interventions_ready_to_operate_in_opf():
     info = InterIterationInformation()
     info.candidate_interventions_remaining_construction_time.create_list()
     info.candidate_interventions_remaining_construction_time.append("0", AbstractDataContainer())
@@ -286,5 +287,16 @@ def test_update_status_elements_ready_to_operate_in_opf():
     info.new_interventions_remaining_construction_time.create_list()
     info.new_interventions_remaining_construction_time.append("2", 0)
     info.new_interventions_remaining_construction_time.append("3", 3)
-
-
+    info.candidate_interventions.create_list()
+    info.candidate_interventions.append("0", AbstractDataContainer())
+    info.candidate_interventions["0"].create_list()
+    info.candidate_interventions["0"].append("0", BinaryVariable(variable_name="a"))
+    info.candidate_interventions["0"].append("1", BinaryVariable(variable_name="b"))
+    info.new_interventions.create_list()
+    info.new_interventions.append("2", BinaryVariable(variable_name="c"))
+    info.new_interventions.append("3", BinaryVariable(variable_name="d"))
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    interventions = non_anticipative._get_interventions_ready_to_operate_in_opf(info)
+    assert len(interventions) == 2
+    assert  interventions[0].variable_name == "a"
+    assert  interventions[1].variable_name == "c"
