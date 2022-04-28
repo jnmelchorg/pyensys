@@ -273,3 +273,18 @@ def test_update_remaining_construction_time():
 def test_type_error_update_remaining_construction_time():
     with pytest.raises(TypeError):
         update_remaining_construction_time(list())
+
+def test_update_status_elements_ready_to_operate_in_opf():
+    info = InterIterationInformation()
+    info.candidate_interventions_remaining_construction_time.create_list()
+    info.candidate_interventions_remaining_construction_time.append("0", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["0"].create_list()
+    info.candidate_interventions_remaining_construction_time["0"].append("0", 0)
+    info.candidate_interventions_remaining_construction_time["0"].append("1", 2)
+    info.candidate_interventions_remaining_construction_time.append("1", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["1"].create_list()
+    info.new_interventions_remaining_construction_time.create_list()
+    info.new_interventions_remaining_construction_time.append("2", 0)
+    info.new_interventions_remaining_construction_time.append("3", 3)
+
+
