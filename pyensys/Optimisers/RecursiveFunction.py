@@ -36,6 +36,8 @@ class InterIterationInformation:
     new_interventions_remaining_construction_time: \
         AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
+    complete_tree: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     current_graph_node: int = 0
     level_in_graph: int = 0
 
@@ -248,13 +250,16 @@ class RecursiveFunction:
         if len(inter_iteration_information.incumbent_graph_paths) == 0:
             self._append_candidate_in_incumbent_list("0", inter_iteration_information)
         else:
-            key_path = check_if_candidate_path_has_been_stored_in_incumbent(inter_iteration_information)
-            if key_path == "not found":
-                self._append_candidate_in_incumbent_list(str(len(inter_iteration_information.incumbent_graph_paths)),
-                                                         inter_iteration_information)
-            else:
-                self._replace_incumbent_if_candidate_is_better(key_path, inter_iteration_information)
+            self._optimality_check_with_non_empty_incumbent(inter_iteration_information)
         self._return_to_previous_state(inter_iteration_information)
+
+    def _optimality_check_with_non_empty_incumbent(self, inter_iteration_information):
+        key_path = check_if_candidate_path_has_been_stored_in_incumbent(inter_iteration_information)
+        if key_path == "not found":
+            self._append_candidate_in_incumbent_list(str(len(inter_iteration_information.incumbent_graph_paths)),
+                                                     inter_iteration_information)
+        else:
+            self._replace_incumbent_if_candidate_is_better(key_path, inter_iteration_information)
 
     def _replace_incumbent_if_candidate_is_better(self, key_in_incumbent: str,
                                                   inter_iteration_information: InterIterationInformation):
