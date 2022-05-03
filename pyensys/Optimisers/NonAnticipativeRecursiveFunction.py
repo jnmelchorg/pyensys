@@ -1,7 +1,9 @@
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
-from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, RecursiveFunction, BinaryVariable
+from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, RecursiveFunction, BinaryVariable, \
+    UpdateParameterData, check_if_candidate_path_has_been_stored_in_incumbent
 
 from typing import List
+from copy import deepcopy
 
 
 def _eliminate_offsprings_of_candidate_in_incumbent(info: InterIterationInformation):
@@ -50,29 +52,34 @@ def _add_new_interventions_from_combinations(inter_iteration_information: InterI
                                                                                              value.installation_time)
 
 
-def update_remaining_construction_time(info: InterIterationInformation) -> \
+def update_remaining_construction_time(info: InterIterationInformation, period:int = -1) -> \
         InterIterationInformation:
     if isinstance(info, InterIterationInformation):
         for _, interventions_time in info.candidate_interventions_remaining_construction_time:
             for key, _ in interventions_time:
-                interventions_time[key] -= 1
+                interventions_time[key] += period
         for key, _ in info.new_interventions_remaining_construction_time:
-            info.new_interventions_remaining_construction_time[key] -= 1
+            info.new_interventions_remaining_construction_time[key] += period
         return info
     else:
         raise TypeError("The input is not of type InterIterationInformation")
 
 
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
+    def __init__(self):
+        super().__init__()
+        self.tree_nodes = [self._control_graph.graph]
 
-    def solve(self, inter_iteration_information: InterIterationInformation) -> bool:
-        inter_iteration_information = update_remaining_construction_time(inter_iteration_information)
-        if not any(True for _ in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node)):
-            if self._check_feasibility_of_current_solution(inter_iteration_information):
-                self._optimality_check(inter_iteration_information)
-            self._optimise_interventions_in_last_node(inter_iteration_information)
-        self._exploration_of_current_solution(inter_iteration_information)
-        return self._interventions_handler(inter_iteration_information)
+    def solve(self, info: InterIterationInformation) -> bool:
+        info = update_remaining_construction_time(info)
+        if not any(True for _ in self._control_graph.graph.neighbours(info.current_graph_node)):
+            if self._check_feasibility_of_current_solution(info):
+                self._optimality_check(info)
+            self._optimise_interventions_in_last_node(info)
+        self._exploration_of_current_solution(info)
+        feasible_solution_exist = self._interventions_handler(info)
+        info = update_remaining_construction_time(info, 1)
+        return feasible_solution_exist
 
     def _interventions_handler(self, inter_iteration_information: InterIterationInformation) -> bool:
         _available_interventions = self._calculate_available_interventions(inter_iteration_information)
@@ -98,7 +105,7 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         inter_iteration_information.level_in_graph += 1
         for neighbour in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node):
             inter_iteration_information.current_graph_node = neighbour
-            if not self.solve(inter_iteration_information=inter_iteration_information):
+            if not self.solve(info=inter_iteration_information):
                 feasible_solution_exist = False
                 break
         inter_iteration_information.current_graph_node = parent_node
@@ -175,3 +182,85 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                 if time <= 0:
                     accepted_interventions.append(interventions[key])
         return accepted_interventions
+
+    def _create_list_of_parameters_to_update_in_opf(self, variables: List[BinaryVariable]) -> \
+            List[UpdateParameterData]:
+        parameters = []
+        for variable in variables:
+            parameters.append(self._create_data_to_update_parameter(variable))
+        return parameters
+
+    def _update_status_elements_opf(self, inter_iteration_information: InterIterationInformation):
+        if len(inter_iteration_information.new_interventions) > 0:
+            self._opf.update_multiple_parameters(
+                self._create_list_of_parameters_to_update_in_opf(
+                    self._get_interventions_ready_to_operate_in_opf(inter_iteration_information)))
+
+    def _append_candidate_in_incumbent_list(self, key_in_incumbent: str,
+                                            info: InterIterationInformation) -> \
+            InterIterationInformation:
+        info.incumbent_graph_paths.append(key_in_incumbent, deepcopy(info.candidate_solution_path))
+        info = self._append_candidate_interventions_in_incumbent_interventions_list(key_in_incumbent, info)
+        info.incumbent_investment_costs.append(key_in_incumbent,
+                                               self._calculate_investment_cost(info.candidate_interventions))
+        info.incumbent_operation_costs.append(key_in_incumbent,
+                                              self._calculate_opteration_cost(info.candidate_operation_cost))
+        return info
+
+    def _append_candidate_interventions_in_incumbent_interventions_list(self, key_in_incumbent: str,
+                                            info: InterIterationInformation) -> InterIterationInformation:
+        info.incumbent_interventions.append(key_in_incumbent, self._get_already_build_interventions(info))
+        return info
+
+    def _get_already_build_interventions(self, info):
+        candidate_interventions = deepcopy(info.candidate_interventions)
+        for step, time_data in info.candidate_interventions_remaining_construction_time:
+            elements_to_remove = []
+            for key, time in time_data:
+                if time > 0:
+                    elements_to_remove.append(key)
+            for key in elements_to_remove:
+                candidate_interventions[step].pop(key)
+        return candidate_interventions
+
+    def _replace_incumbent_if_candidate_is_better(self, key_in_incumbent: str,
+                                                  info: InterIterationInformation):
+        total_cost_candidate = self._calculate_investment_cost(self._get_already_build_interventions(info)) + \
+                               self._calculate_opteration_cost(info.candidate_operation_cost)
+        total_cost_incumbent = info.incumbent_investment_costs[key_in_incumbent] + \
+                               info.incumbent_operation_costs[key_in_incumbent]
+        if total_cost_incumbent > total_cost_candidate:
+            self._replace_solution_in_incumbent_list(key_in_incumbent, info)
+
+    def _replace_solution_in_incumbent_list(self, key_in_incumbent: str,
+                                            info: InterIterationInformation):
+        info.incumbent_graph_paths[key_in_incumbent] = deepcopy(info.candidate_solution_path)
+        info = self._replace_incumbent_interventions_list_with_candidate_interventions(key_in_incumbent, info)
+        info.incumbent_investment_costs[key_in_incumbent] = \
+            self._calculate_investment_cost(self._get_already_build_interventions(info))
+        info.incumbent_operation_costs[key_in_incumbent] = \
+            self._calculate_opteration_cost(info.candidate_operation_cost)
+
+    def _replace_incumbent_interventions_list_with_candidate_interventions(self, key_in_incumbent: str,
+                                            info: InterIterationInformation) -> InterIterationInformation:
+        info.incumbent_interventions[key_in_incumbent] = self._get_already_build_interventions(info)
+        return info
+
+    def _optimality_check_with_non_empty_incumbent(self, inter_iteration_information):
+        key_path = check_if_candidate_path_has_been_stored_in_incumbent(inter_iteration_information)
+        if key_path == "not found":
+            self._append_candidate_in_incumbent_list(str(len(inter_iteration_information.incumbent_graph_paths)),
+                                                     inter_iteration_information)
+        else:
+            self._replace_incumbent_if_candidate_is_better(key_path, inter_iteration_information)
+
+    def _check_if_all_nodes_in_tree_have_been_visited(self, info: InterIterationInformation) -> bool:
+        remaining_nodes = deepcopy(self.tree_nodes)
+        for _, path in info.incumbent_graph_paths:
+            for _, node in path:
+                if node in remaining_nodes:
+                    remaining_nodes.remove(node)
+        if len(remaining_nodes) == 0:
+            return True
+        else:
+            return False

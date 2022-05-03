@@ -300,3 +300,65 @@ def test_get_interventions_ready_to_operate_in_opf():
     assert len(interventions) == 2
     assert  interventions[0].variable_name == "a"
     assert  interventions[1].variable_name == "c"
+
+def test_create_list_of_parameters_to_update_in_opf():
+    variables = []
+    variables.append(BinaryVariable(element_type="a"))
+    variables.append(BinaryVariable(element_position=0))
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    parameters = non_anticipative._create_list_of_parameters_to_update_in_opf(variables)
+    assert len(parameters) == 2
+    assert parameters[0].component_type == "a"
+    assert parameters[1].parameter_position == 0
+
+def test_update_status_elements_opf():
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._get_interventions_ready_to_operate_in_opf = MagicMock()
+    non_anticipative._create_list_of_parameters_to_update_in_opf = MagicMock()
+    non_anticipative._opf.update_multiple_parameters = MagicMock()
+    dummy = InterIterationInformation()
+    dummy.new_interventions.create_list()
+    dummy.new_interventions.append("0", 0)
+    non_anticipative._update_status_elements_opf(dummy)
+    non_anticipative._get_interventions_ready_to_operate_in_opf.assert_called_once()
+    non_anticipative._create_list_of_parameters_to_update_in_opf.assert_called_once()
+    non_anticipative._opf.update_multiple_parameters.assert_called_once()
+
+def test_update_remaining_construction_time_by_increasing_one_period():
+    info = InterIterationInformation()
+    info.candidate_interventions_remaining_construction_time.create_list()
+    info.candidate_interventions_remaining_construction_time.append("0", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["0"].create_list()
+    info.candidate_interventions_remaining_construction_time["0"].append("0", 1)
+    info.candidate_interventions_remaining_construction_time.append("1", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["1"].create_list()
+    info.new_interventions_remaining_construction_time.create_list()
+    info.new_interventions_remaining_construction_time.append("2", 3)
+    update_remaining_construction_time(info, 1)
+    assert info.candidate_interventions_remaining_construction_time.get("0").get("0") == 2
+    assert info.new_interventions_remaining_construction_time.get("2") == 4
+
+def test_append_candidate_interventions_in_incumbent_interventions_list():
+    info = InterIterationInformation()
+    info.incumbent_interventions.create_list()
+    info.incumbent_graph_paths.create_list()
+    info.incumbent_investment_costs.create_list()
+    info.incumbent_operation_costs.create_list()
+    info.candidate_interventions.create_list()
+    info.candidate_interventions.append("0", AbstractDataContainer())
+    info.candidate_interventions["0"].create_list()
+    info.candidate_interventions["0"].append("0", BinaryVariable(variable_name="c"))
+    info.candidate_interventions["0"].append("1", BinaryVariable(variable_name="d"))
+    info.candidate_interventions["0"].append("2", BinaryVariable(variable_name="e"))
+    info.candidate_interventions_remaining_construction_time.create_list()
+    info.candidate_interventions_remaining_construction_time.append("0", AbstractDataContainer())
+    info.candidate_interventions_remaining_construction_time["0"].create_list()
+    info.candidate_interventions_remaining_construction_time["0"].append("0", 0)
+    info.candidate_interventions_remaining_construction_time["0"].append("1", 1)
+    info.candidate_interventions_remaining_construction_time["0"].append("2", -1)
+    non_anticipative = NonAnticipativeRecursiveFunction()
+    non_anticipative._append_candidate_interventions_in_incumbent_interventions_list("0", info)
+    assert len(info.incumbent_interventions) == 1
+    assert len(info.incumbent_interventions["0"]["0"]) == 2
+    assert info.incumbent_interventions["0"]["0"]["0"].variable_name == "c"
+    assert info.incumbent_interventions["0"]["0"]["2"].variable_name == "e"
