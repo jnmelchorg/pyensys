@@ -13,6 +13,22 @@ from typing import Iterator, Tuple
 
 
 @dataclass
+class InvestmentPlanData:
+    interventions: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    operation_costs: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    investment_costs: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+    graph_paths: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
+
+    def is_empty(self):
+        return len(self.interventions) == 0 and len(self.operation_costs) == 0 and \
+                  len(self.investment_costs) == 0 and len(self.graph_paths) == 0
+
+
+@dataclass
 class InterIterationInformation:
     incumbent_interventions: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
@@ -36,8 +52,8 @@ class InterIterationInformation:
     new_interventions_remaining_construction_time: \
         AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
-    complete_tree: AbstractDataContainer = \
-        field(default_factory=lambda: AbstractDataContainer())
+    complete_tree: InvestmentPlanData = \
+        field(default_factory=lambda: InvestmentPlanData())
     current_graph_node: int = 0
     level_in_graph: int = 0
 

@@ -296,7 +296,7 @@ def test_get_interventions_ready_to_operate_in_opf():
     info.new_interventions.append("2", BinaryVariable(variable_name="c"))
     info.new_interventions.append("3", BinaryVariable(variable_name="d"))
     non_anticipative = NonAnticipativeRecursiveFunction()
-    interventions = non_anticipative._get_interventions_ready_to_operate_in_opf(info)
+    interventions = _get_interventions_ready_to_operate_in_opf(info)
     assert len(interventions) == 2
     assert  interventions[0].variable_name == "a"
     assert  interventions[1].variable_name == "c"
@@ -320,7 +320,7 @@ def test_update_status_elements_opf():
     dummy.new_interventions.create_list()
     dummy.new_interventions.append("0", 0)
     non_anticipative._update_status_elements_opf(dummy)
-    non_anticipative._get_interventions_ready_to_operate_in_opf.assert_called_once()
+    _get_interventions_ready_to_operate_in_opf.assert_called_once()
     non_anticipative._create_list_of_parameters_to_update_in_opf.assert_called_once()
     non_anticipative._opf.update_multiple_parameters.assert_called_once()
 
@@ -357,7 +357,7 @@ def test_append_candidate_interventions_in_incumbent_interventions_list():
     info.candidate_interventions_remaining_construction_time["0"].append("1", 1)
     info.candidate_interventions_remaining_construction_time["0"].append("2", -1)
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._append_candidate_interventions_in_incumbent_interventions_list("0", info)
+    _append_candidate_interventions_in_incumbent_interventions_list("0", info)
     assert len(info.incumbent_interventions) == 1
     assert len(info.incumbent_interventions["0"]["0"]) == 2
     assert info.incumbent_interventions["0"]["0"]["0"].variable_name == "c"
