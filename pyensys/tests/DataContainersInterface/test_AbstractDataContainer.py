@@ -421,3 +421,21 @@ def test_repr():
         ao.append(str(x), x)
     assert repr(ao) == f'AbstractDataContainer(container=[[\'0\', 0]], is_dictionary=False, is_list=True)'
 
+
+def test_len_list():
+    ao = AbstractDataContainer()
+    ao.create_list()
+    for x in range(0, 1):
+        ao.append(str(x), x)
+    assert len(ao) == 1
+
+def test_len_dictionary():
+    ao = AbstractDataContainer()
+    ao.create_dictionary()
+    for x in range(0, 1):
+        ao.append(str(x), x)
+    assert len(ao) == 1
+
+def test_len_uninitialised():
+    ao = AbstractDataContainer()
+    assert len(ao) == 0

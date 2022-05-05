@@ -38,7 +38,10 @@ class AbstractDataContainer:
             return item[0], item[1]
 
     def __len__(self):
-        return len(self._container)
+        if self._container is not None:
+            return len(self._container)
+        else:
+            return 0
 
     def __eq__(self, other):
         if isinstance(other, AbstractDataContainer):
