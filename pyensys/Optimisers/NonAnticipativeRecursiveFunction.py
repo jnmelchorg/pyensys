@@ -4,7 +4,6 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Recu
 
 from typing import List
 from copy import deepcopy
-from dataclasses import dataclass, field
 
 
 def _eliminate_offsprings_of_candidate_in_incumbent(info: InterIterationInformation):
@@ -132,7 +131,7 @@ def _store_complete_tree(info):
     info.complete_tree.operation_costs = info.incumbent_operation_costs
 
 
-def _replacement_of_investments_for_whole_tree(info):
+def _replacement_of_investments_for_whole_tree(info: InterIterationInformation):
     if info.complete_tree.is_empty():
         _store_complete_tree(info)
     else:
