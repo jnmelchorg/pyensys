@@ -1,9 +1,10 @@
-from pyensys.Optimisers.NonAnticipativeRecursiveFunction import NonAnticipativeRecursiveFunction
-from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, BinaryVariable
+from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, BinaryVariable, InvestmentPlanData
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.Optimisers.NonAnticipativeRecursiveFunction import _eliminate_offsprings_of_candidate_in_incumbent, \
     _find_keys_of_offsprings_in_incumbent, _delete_offsprings_from_incumbent, _renumber_keys_in_incumbent, \
-    _add_new_interventions_from_combinations, update_remaining_construction_time
+    _add_new_interventions_from_combinations, update_remaining_construction_time, \
+    _append_candidate_interventions_in_incumbent_interventions_list, _get_interventions_ready_to_operate_in_opf, \
+    NonAnticipativeRecursiveFunction, _replacement_of_investments_for_whole_tree
 
 from unittest.mock import MagicMock, patch
 from copy import deepcopy
@@ -311,16 +312,16 @@ def test_create_list_of_parameters_to_update_in_opf():
     assert parameters[0].component_type == "a"
     assert parameters[1].parameter_position == 0
 
-def test_update_status_elements_opf():
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._get_interventions_ready_to_operate_in_opf")
+def test_update_status_elements_opf(mock_function):
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._get_interventions_ready_to_operate_in_opf = MagicMock()
     non_anticipative._create_list_of_parameters_to_update_in_opf = MagicMock()
     non_anticipative._opf.update_multiple_parameters = MagicMock()
     dummy = InterIterationInformation()
     dummy.new_interventions.create_list()
-    dummy.new_interventions.append("0", 0)
+    dummy.new_interventions.append("0", AbstractDataContainer())
     non_anticipative._update_status_elements_opf(dummy)
-    _get_interventions_ready_to_operate_in_opf.assert_called_once()
+    mock_function.assert_called_once()
     non_anticipative._create_list_of_parameters_to_update_in_opf.assert_called_once()
     non_anticipative._opf.update_multiple_parameters.assert_called_once()
 
@@ -362,3 +363,55 @@ def test_append_candidate_interventions_in_incumbent_interventions_list():
     assert len(info.incumbent_interventions["0"]["0"]) == 2
     assert info.incumbent_interventions["0"]["0"]["0"].variable_name == "c"
     assert info.incumbent_interventions["0"]["0"]["2"].variable_name == "e"
+
+def test_replacement_of_investments_for_whole_tree_when_tree_is_empty():
+    info = InterIterationInformation()
+    info.incumbent_interventions.create_list()
+    info.incumbent_interventions.append("0", 0)
+    info.incumbent_graph_paths.create_list()
+    info.incumbent_graph_paths.append("0", "0")
+    info.incumbent_investment_costs.create_list()
+    info.incumbent_investment_costs.append("0", 0)
+    info.incumbent_operation_costs.create_list()
+    info.incumbent_operation_costs.append("0", 0)
+    _replacement_of_investments_for_whole_tree(info)
+    assert info.incumbent_interventions == info.complete_tree.interventions
+    assert info.incumbent_graph_paths == info.complete_tree.graph_paths
+    assert info.incumbent_investment_costs == info.complete_tree.investment_costs
+    assert info.incumbent_operation_costs == info.complete_tree.operation_costs
+
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._calculate_total_planning_cost")
+@pytest.mark.parametrize("mock_return", [(0, 1), (1, 0)])
+def test_replacement_of_investments_for_whole_tree_when_tree_is_not_empty(mock_function, mock_return):
+    info = InterIterationInformation()
+    info.incumbent_interventions.create_list()
+    info.incumbent_interventions.append("0", 0)
+    info.incumbent_graph_paths.create_list()
+    info.incumbent_graph_paths.append("0", "0")
+    info.incumbent_investment_costs.create_list()
+    info.incumbent_investment_costs.append("0", 0)
+    info.incumbent_operation_costs.create_list()
+    info.incumbent_operation_costs.append("0", 0)
+    info.complete_tree = _create_investment_plan_data()
+    mock_function.side_effect = mock_return
+    _replacement_of_investments_for_whole_tree(info)
+    reference_tree = _create_investment_plan_data()
+    if mock_return[0] == 0:
+        assert info.incumbent_interventions == info.complete_tree.interventions
+        assert info.incumbent_graph_paths == info.complete_tree.graph_paths
+        assert info.incumbent_investment_costs == info.complete_tree.investment_costs
+        assert info.incumbent_operation_costs == info.complete_tree.operation_costs
+    else:
+        assert info.complete_tree == reference_tree
+
+def _create_investment_plan_data() -> InvestmentPlanData:
+    complete_tree = InvestmentPlanData()
+    complete_tree.interventions.create_list()
+    complete_tree.interventions.append("a", "a")
+    complete_tree.graph_paths.create_list()
+    complete_tree.graph_paths.append("a", "a")
+    complete_tree.investment_costs.create_list()
+    complete_tree.investment_costs.append("a", "a")
+    complete_tree.operation_costs.create_list()
+    complete_tree.operation_costs.append("a", "a")
+    return complete_tree
