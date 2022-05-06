@@ -299,8 +299,9 @@ def test_get_interventions_ready_to_operate_in_opf():
     non_anticipative = NonAnticipativeRecursiveFunction()
     interventions = _get_interventions_ready_to_operate_in_opf(info)
     assert len(interventions) == 2
-    assert  interventions[0].variable_name == "a"
-    assert  interventions[1].variable_name == "c"
+    assert interventions[0].variable_name == "a"
+    assert interventions[1].variable_name == "c"
+
 
 def test_create_list_of_parameters_to_update_in_opf():
     variables = []
@@ -311,6 +312,7 @@ def test_create_list_of_parameters_to_update_in_opf():
     assert len(parameters) == 2
     assert parameters[0].component_type == "a"
     assert parameters[1].parameter_position == 0
+
 
 @patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._get_interventions_ready_to_operate_in_opf")
 def test_update_status_elements_opf(mock_function):
@@ -325,6 +327,7 @@ def test_update_status_elements_opf(mock_function):
     non_anticipative._create_list_of_parameters_to_update_in_opf.assert_called_once()
     non_anticipative._opf.update_multiple_parameters.assert_called_once()
 
+
 def test_update_remaining_construction_time_by_increasing_one_period():
     info = InterIterationInformation()
     info.candidate_interventions_remaining_construction_time.create_list()
@@ -338,6 +341,7 @@ def test_update_remaining_construction_time_by_increasing_one_period():
     update_remaining_construction_time(info, 1)
     assert info.candidate_interventions_remaining_construction_time.get("0").get("0") == 2
     assert info.new_interventions_remaining_construction_time.get("2") == 4
+
 
 def test_append_candidate_interventions_in_incumbent_interventions_list():
     info = InterIterationInformation()
@@ -364,6 +368,7 @@ def test_append_candidate_interventions_in_incumbent_interventions_list():
     assert info.incumbent_interventions["0"]["0"]["0"].variable_name == "c"
     assert info.incumbent_interventions["0"]["0"]["2"].variable_name == "e"
 
+
 def test_replacement_of_investments_for_whole_tree_when_tree_is_empty():
     info = InterIterationInformation()
     info.incumbent_interventions.create_list()
@@ -379,6 +384,7 @@ def test_replacement_of_investments_for_whole_tree_when_tree_is_empty():
     assert info.incumbent_graph_paths == info.complete_tree.graph_paths
     assert info.incumbent_investment_costs == info.complete_tree.investment_costs
     assert info.incumbent_operation_costs == info.complete_tree.operation_costs
+
 
 @patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._calculate_total_planning_cost")
 @pytest.mark.parametrize("mock_return", [(0, 1), (1, 0)])
@@ -403,6 +409,7 @@ def test_replacement_of_investments_for_whole_tree_when_tree_is_not_empty(mock_f
         assert info.incumbent_operation_costs == info.complete_tree.operation_costs
     else:
         assert info.complete_tree == reference_tree
+
 
 def _create_investment_plan_data() -> InvestmentPlanData:
     complete_tree = InvestmentPlanData()
