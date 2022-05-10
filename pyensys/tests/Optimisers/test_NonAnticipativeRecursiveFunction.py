@@ -147,10 +147,10 @@ def _input_data_test_eliminate_offsprings_of_candidate_in_incumbent() -> InterIt
     path.append("0", 0)
     path.append("1", 1)
     path.append("2", 2)
-    info.incumbent_graph_paths.append("0", deepcopy(path))
+    info.incumbent_graph_paths.append("1", deepcopy(path))
     path.pop("2")
     path.append("3", 3)
-    info.incumbent_graph_paths.append("1", deepcopy(path))
+    info.incumbent_graph_paths.append("0", deepcopy(path))
     path.pop("3")
     path.pop("1")
     path.append("4", 4)
@@ -161,16 +161,16 @@ def _input_data_test_eliminate_offsprings_of_candidate_in_incumbent() -> InterIt
     path.append("1", 1)
     info.candidate_solution_path = path
     info.incumbent_interventions.create_list()
-    info.incumbent_interventions.append("0", 0)
-    info.incumbent_interventions.append("1", 1)
+    info.incumbent_interventions.append("1", 0)
+    info.incumbent_interventions.append("0", 1)
     info.incumbent_interventions.append("2", 2)
     info.incumbent_operation_costs.create_list()
-    info.incumbent_operation_costs.append("0", 0)
-    info.incumbent_operation_costs.append("1", 1)
+    info.incumbent_operation_costs.append("1", 0)
+    info.incumbent_operation_costs.append("0", 1)
     info.incumbent_operation_costs.append("2", 2)
     info.incumbent_investment_costs.create_list()
-    info.incumbent_investment_costs.append("0", 0)
-    info.incumbent_investment_costs.append("1", 1)
+    info.incumbent_investment_costs.append("1", 0)
+    info.incumbent_investment_costs.append("0", 1)
     info.incumbent_investment_costs.append("2", 2)
     return info
 
@@ -207,7 +207,7 @@ def test_eliminate_offsprings_of_candidate_in_incumbent():
 def test_find_keys_of_offsprings_in_incumbent():
     info = _input_data_test_eliminate_offsprings_of_candidate_in_incumbent()
     offsprings = _find_keys_of_offsprings_in_incumbent(info)
-    assert offsprings == ["0", "1"]
+    assert len(offsprings) == 2 and (x in ["0", "1"] for x in offsprings)
 
 
 def test_delete_offsprings_from_incumbent():
@@ -422,3 +422,4 @@ def _create_investment_plan_data() -> InvestmentPlanData:
     complete_tree.operation_costs.create_list()
     complete_tree.operation_costs.append("a", "a")
     return complete_tree
+

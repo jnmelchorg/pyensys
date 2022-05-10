@@ -10,6 +10,8 @@ def _eliminate_offsprings_of_candidate_in_incumbent(info: InterIterationInformat
     keys_to_eliminate = _find_keys_of_offsprings_in_incumbent(info)
     _delete_offsprings_from_incumbent(info, keys_to_eliminate)
     _renumber_keys_in_incumbent(info)
+    if len(info.incumbent_interventions) == 0:
+        info.allow_deleting_solutions_in_incumbent = False
 
 
 def _find_keys_of_offsprings_in_incumbent(info: InterIterationInformation) -> List[str]:
@@ -29,14 +31,26 @@ def _delete_offsprings_from_incumbent(info: InterIterationInformation, keys_to_e
 
 
 def _renumber_keys_in_incumbent(info: InterIterationInformation):
-    remaining_keys = []
-    for key, _ in info.incumbent_graph_paths:
-        remaining_keys.append(key)
+    remaining_keys = _determine_keys_to_be_renumbered(info)
     for num, key in enumerate(remaining_keys):
         info.incumbent_interventions.append(str(num), info.incumbent_interventions.pop(key))
         info.incumbent_graph_paths.append(str(num), info.incumbent_graph_paths.pop(key))
         info.incumbent_operation_costs.append(str(num), info.incumbent_operation_costs.pop(key))
         info.incumbent_investment_costs.append(str(num), info.incumbent_investment_costs.pop(key))
+
+
+def _determine_keys_to_be_renumbered(info: InterIterationInformation) -> List[str]:
+    remaining_keys = []
+    for key, _ in info.incumbent_graph_paths:
+        remaining_keys.append(key)
+    keys_to_keep = []
+    for num, _ in enumerate(remaining_keys):
+        if str(num) in remaining_keys:
+            keys_to_keep.append(str(num))
+    for key in keys_to_keep:
+        if key in remaining_keys:
+            remaining_keys.remove(key)
+    return remaining_keys
 
 
 def _add_new_interventions_from_combinations(inter_iteration_information: InterIterationInformation,
@@ -177,19 +191,23 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         else:
             return False
 
-    def _graph_exploration(self, inter_iteration_information: InterIterationInformation) -> bool:
-        parent_node = inter_iteration_information.current_graph_node
+    def _graph_exploration(self, info: InterIterationInformation) -> bool:
+        feasible_solution_exist = self._exploration_of_successors(info)
+        if not feasible_solution_exist or info.allow_deleting_solutions_in_incumbent:
+            _eliminate_offsprings_of_candidate_in_incumbent(info)
+        return feasible_solution_exist
+
+    def _exploration_of_successors(self, info: InterIterationInformation) -> bool:
+        parent_node = info.current_graph_node
         feasible_solution_exist = True
-        inter_iteration_information.level_in_graph += 1
-        for neighbour in self._control_graph.graph.neighbours(inter_iteration_information.current_graph_node):
-            inter_iteration_information.current_graph_node = neighbour
-            if not self.solve(info=inter_iteration_information):
+        info.level_in_graph += 1
+        for neighbour in self._control_graph.graph.neighbours(info.current_graph_node):
+            info.current_graph_node = neighbour
+            if not self.solve(info=info):
                 feasible_solution_exist = False
                 break
-        inter_iteration_information.current_graph_node = parent_node
-        inter_iteration_information.level_in_graph -= 1
-        if not feasible_solution_exist:
-            _eliminate_offsprings_of_candidate_in_incumbent(inter_iteration_information)
+        info.current_graph_node = parent_node
+        info.level_in_graph -= 1
         return feasible_solution_exist
 
     def _optimise_interventions_in_last_node(self, inter_iteration_information: InterIterationInformation):
@@ -288,6 +306,7 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         else:
             self._replace_incumbent_if_candidate_is_better(key_path, info)
         if self._check_if_all_nodes_in_tree_have_been_visited(info):
+            info.allow_deleting_solutions_in_incumbent = True
             _replacement_of_investments_for_whole_tree(info)
 
     def _check_if_all_nodes_in_tree_have_been_visited(self, info: InterIterationInformation) -> bool:
