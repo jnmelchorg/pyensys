@@ -6,6 +6,7 @@ from pandas import date_range, DataFrame
 FREQUENCY_NAME_TO_PANDAS_ALIASES: dict = \
     {"hourly": "H"}
 
+
 @dataclass
 class ProblemSettings:
     system: str = ''
@@ -20,17 +21,20 @@ class ProblemSettings:
     return_rate_in_percentage: float = 0.0
     non_anticipativity: bool = False
 
+
 @dataclass
 class DateTimeOptimisationSettings:
     date_time_settings: DatetimeIndex = \
         field(default_factory=lambda: date_range(start="2021-1-1", periods=1))
     initialised: bool = False
 
+
 @dataclass
 class PandaPowerMPCSettings:
     mat_file_path: str = ''
     system_frequency: float = 0.0
     initialised: bool = False
+
 
 @dataclass
 class PandaPowerProfileData:
@@ -41,21 +45,25 @@ class PandaPowerProfileData:
     data: DataFrame = field(default_factory=DataFrame)
     active_columns_names: List[str] = field(default_factory=list)
 
+
 @dataclass
 class PandaPowerProfilesData:
     data: List[PandaPowerProfileData] = field(default_factory=list)
     initialised: bool = False
+
 
 @dataclass
 class DataframeData:
     data: List[List[Any]] = field(default_factory=list)
     column_names: List[str] = field(default_factory=list)
 
+
 @dataclass
 class OutputVariable:
     name_dataset: str = ''
     name_variable: str = ''
     variable_indexes: List[int] = field(default_factory=list)
+
 
 @dataclass
 class OutputSettings:
@@ -64,6 +72,7 @@ class OutputSettings:
     output_variables: List[OutputVariable] = field(default_factory=list)
     initialised: bool = False
 
+
 @dataclass
 class PandaPowerOptimisationSettings:
     display_progress_bar: bool = False
@@ -71,16 +80,19 @@ class PandaPowerOptimisationSettings:
     optimisation_software: str = ''
     initialised: bool = False
 
+
 @dataclass
 class OptimisationProfileData:
     element_type: str = ''
     variable_name: str = ''
     data: DataFrame = field(default_factory=DataFrame)
 
+
 @dataclass
 class OptimisationProfilesData:
     data: List[OptimisationProfileData] = field(default_factory=list)
-    initialised: bool =  False
+    initialised: bool = False
+
 
 @dataclass
 class OptimisationBinaryVariables:
@@ -90,6 +102,7 @@ class OptimisationBinaryVariables:
     elements_positions: List[int] = field(default_factory=list)
     costs: List[float] = field(default_factory=list)
     installation_time: List[int] = field(default_factory=list)
+
 
 @dataclass
 class Parameters:
@@ -106,6 +119,6 @@ class Parameters:
         field(default_factory=lambda: PandaPowerOptimisationSettings())
     optimisation_profiles_data: OptimisationProfilesData = \
         field(default_factory=lambda: OptimisationProfilesData())
-    optimisation_binary_variables: List[OptimisationBinaryVariables] =\
+    optimisation_binary_variables: List[OptimisationBinaryVariables] = \
         field(default_factory=list)
     initialised: bool = False
