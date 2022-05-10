@@ -23,9 +23,17 @@ class InvestmentPlanData:
     graph_paths: AbstractDataContainer = \
         field(default_factory=lambda: AbstractDataContainer())
 
+    def _assert_all_data_has_same_length(self):
+        assert len(self.interventions) == len(self.operation_costs) == len(self.investment_costs) == \
+               len(self.graph_paths), "All data must have the same length"
+
     def is_empty(self):
-        return len(self.interventions) == 0 and len(self.operation_costs) == 0 and \
-                  len(self.investment_costs) == 0 and len(self.graph_paths) == 0
+        self._assert_all_data_has_same_length()
+        return len(self.interventions) == 0
+
+    def __len__(self):
+        self._assert_all_data_has_same_length()
+        return len(self.interventions)
 
 
 @dataclass
@@ -56,6 +64,7 @@ class InterIterationInformation:
         field(default_factory=lambda: InvestmentPlanData())
     current_graph_node: int = 0
     level_in_graph: int = 0
+    allow_deleting_solutions_in_incumbent: bool = False
 
 
 @dataclass
@@ -244,8 +253,7 @@ class RecursiveFunction:
         return new_profiles
 
     def _create_new_pandapower_profile(self, modifier_info: ClusterData) -> PandaPowerProfileData:
-        profile = deepcopy(self.original_pp_profiles_data.data[ \
-                               self._get_profile_position_to_update(modifier_info)])
+        profile = deepcopy(self.original_pp_profiles_data.data[self._get_profile_position_to_update(modifier_info)])
         profile.data = profile.data * modifier_info.centroid
         return profile
 
@@ -282,7 +290,7 @@ class RecursiveFunction:
         total_cost_candidate = self._calculate_investment_cost(inter_iteration_information.candidate_interventions) + \
                                self._calculate_opteration_cost(inter_iteration_information.candidate_operation_cost)
         total_cost_incumbent = inter_iteration_information.incumbent_investment_costs[key_in_incumbent] + \
-            inter_iteration_information.incumbent_operation_costs[key_in_incumbent]
+                               inter_iteration_information.incumbent_operation_costs[key_in_incumbent]
         if total_cost_incumbent > total_cost_candidate:
             self._replace_solution_in_incumbent_list(key_in_incumbent, inter_iteration_information)
 
