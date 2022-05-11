@@ -1,8 +1,13 @@
-from pandas import read_excel
+from pandas import read_excel, DataFrame, date_range
 from json import load
 from os.path import splitext
-from pyensys.readers.ReaderDataClasses import *
 from typing import Any
+from typing import List
+
+from pyensys.readers.ReaderDataClasses import DataframeData, PandaPowerProfileData, OptimisationProfileData, \
+    OutputVariable, Parameters, ProblemSettings, DateTimeOptimisationSettings, PandaPowerMPCSettings, \
+    PandaPowerProfilesData, OptimisationProfilesData, OutputSettings, PandaPowerOptimisationSettings, \
+    OptimisationBinaryVariables, FREQUENCY_NAME_TO_PANDAS_ALIASES
 
 
 def _read_active_columns_names(profile_data_dict: dict, data: DataFrame) -> List[str]:
@@ -18,7 +23,7 @@ def _create_dataframe(dataframe_data: DataframeData) -> DataFrame:
 
 def _read_file(path: str, profile_data_dict: dict, header: Any = 0) -> DataFrame:
     if profile_data_dict.get("excel_sheet_name", None) is None:
-        raise Exception("Excel sheet name does not exist.")
+        raise NameError("Excel sheet name does not exist.")
     _, file_extension = splitext(path)
     if file_extension == ".xlsx":
         name = profile_data_dict.pop("excel_sheet_name")
@@ -166,6 +171,7 @@ class ReadJSON:
             self._load_pandapower_optimisation_settings()
         p.optimisation_profiles_data = \
             self._load_optimisation_profiles_data()
+        self._adjust_pandapower_profiles_to_time_settings()
         p.initialised = True
 
     def _load_problem_settings(self) -> ProblemSettings:
@@ -271,3 +277,26 @@ class ReadJSON:
                                             costs=variable.get("costs", []),
                                             installation_time=variable.get("installation_time", []))
             )
+
+    def _adjust_pandapower_profiles_to_time_settings(self):
+        for profile in self.parameters.pandapower_profiles_data.data:
+            if len(profile.data.index) > self.parameters.opf_time_settings.date_time_settings.size:
+                self._recalculate_pandapower_profile_data(profile)
+            elif len(profile.data.index) < self.parameters.opf_time_settings.date_time_settings.size:
+                raise ValueError(f"Length of profile data for type {profile.element_type} and variable "
+                                 f"{profile.variable_name} is {len(profile.data.index)}. The number of periods in the "
+                                 f"OPF settings are {self.parameters.opf_time_settings.date_time_settings.size}. The"
+                                 f" profile is not long enough to cover the time settings")
+
+    def _recalculate_pandapower_profile_data(self, profile: PandaPowerProfileData):
+        if len(profile.data.index) % self.parameters.opf_time_settings.date_time_settings.size == 0:
+            number_of_sub_periods = \
+                len(profile.data.index) // self.parameters.opf_time_settings.date_time_settings.size
+            adjusted_data = []
+            for period in range(self.parameters.opf_time_settings.date_time_settings.size):
+                adjusted_data.append(list(profile.data.iloc[period * number_of_sub_periods:
+                                                            (period + 1) * number_of_sub_periods, :].mean()))
+            profile.data = DataFrame(adjusted_data, columns=profile.data.columns)
+        else:
+            raise ValueError(f"The number of periods in the profile {len(profile.data.index)} must be a multiple "
+                             f"of the OPF time settings {self.parameters.opf_time_settings.date_time_settings.size}")

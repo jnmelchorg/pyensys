@@ -1,10 +1,9 @@
 from os.path import join, dirname
+from pandas import Timestamp, DataFrame
 
-from pandas import Timestamp
-
-from pyensys.readers.JSONReader import *
 from pyensys.readers.JSONReader import _create_dataframe, _load_pandapower_profile_data, _load_output_variable, \
-    _load_output_variables, _read_file, _read_dataframe_data, _load_optimisation_profile_data
+    _load_output_variables, _read_file, _read_dataframe_data, _load_optimisation_profile_data, ReadJSON
+from pyensys.readers.ReaderDataClasses import DataframeData
 from pyensys.tests.test_data_paths import get_path_pandapower_json_test_data, \
     get_excel_timeseries, get_clustering_test_data
 
@@ -269,7 +268,6 @@ def test_read_dataframe_data_case1():
 
 
 def test_read_dataframe_data_case2():
-    read_json = ReadJSON()
     profile_data_dict = {
         "data": [[67.28095505], [9.65466896], [11.70181664]],
     }
@@ -278,7 +276,6 @@ def test_read_dataframe_data_case2():
 
 
 def test_read_dataframe_data_case3():
-    read_json = ReadJSON()
     profile_data_dict = {
         "dataframe_columns_names": ["load1_p"]
     }
@@ -297,7 +294,6 @@ def test_read_dataframe_data_case4():
 
 
 def test_read_dataframe_data_case5():
-    read_json = ReadJSON()
     profile_data_dict = {
         "data_path": get_excel_timeseries()
     }
@@ -306,7 +302,6 @@ def test_read_dataframe_data_case5():
 
 
 def test_read_dataframe_data_case6():
-    read_json = ReadJSON()
     profile_data_dict = {
         "excel_sheet_name": "LoadP"
     }
@@ -413,3 +408,30 @@ def test_read_pandapower_profiles_with_attest_format_from_excel():
     assert profiles_data[1].indexes == [0, 2]
     assert profiles_data[0].active_columns_names == ["pd_0", "pd_2"]
     assert profiles_data[1].active_columns_names == ["qd_0", "qd_2"]
+
+
+def test_adjust_pandapower_profiles_to_time_settings():
+    readjs = ReadJSON()
+    readjs.settings = {
+        "opf_time_settings": {
+            "begin": "00:00:00",
+            "end": "01:00:00",
+            "frequency": "hourly",
+            "time_block": "1"
+        },
+        "pandapower_profiles_data": {
+            "1": {
+                    "data_path": join(dirname(__file__), "..", "excel", "time_series_pandapower_attest_format.xlsx"),
+                    "excel_sheet_name": "Sheet2",
+                    "element_type": "load",
+                    "format_data": "attest"
+            }
+        }
+    }
+    readjs.parameters.opf_time_settings = readjs._load_opf_time_settings()
+    readjs.parameters.pandapower_profiles_data = readjs._load_pandapower_profiles_data()
+    readjs._adjust_pandapower_profiles_to_time_settings()
+    assert DataFrame(data=[[3.0, 7.0], [4.0, 8.0]], columns=["pd_0", "pd_2"]).equals(
+        readjs.parameters.pandapower_profiles_data.data[0].data)
+    assert DataFrame(data=[[5.0, 9.0], [6.0, 10.0]], columns=["qd_0", "qd_2"]).equals(
+        readjs.parameters.pandapower_profiles_data.data[1].data)
