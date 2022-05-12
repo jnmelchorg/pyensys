@@ -1,7 +1,9 @@
-from pyensys.wrappers.PandapowerDataClasses import *
 from pyensys.wrappers.PandaPowerWrapper import PandaPowerWrapper
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfilesData
 from typing import List
+
+from pyensys.wrappers.PandapowerDataClasses import SimulationSettings, Profile, OutputVariableSet, \
+    TimeSeriesOutputFileSettings, UpdateParameterData
 
 
 class PandaPowerManager:
@@ -103,3 +105,6 @@ class PandaPowerManager:
 
     def get_total_cost(self) -> float:
         return self.wrapper.get_total_cost()
+
+    def run_ac_opf_pandapower(self):
+        self.wrapper.run_ac_opf(self.simulation_settings)

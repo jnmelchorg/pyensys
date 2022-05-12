@@ -1,11 +1,15 @@
 from pyensys.wrappers.PandaPowerWrapper import PandaPowerWrapper, log_variable_in_output_writer, \
     log_variables_in_output_writer
-from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
-from pyensys.wrappers.PandapowerDataClasses import *
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, get_path_case3_mat
 
 from pandas import DataFrame
 from pandapower.timeseries.output_writer import OutputWriter
 from math import isclose
+
+from pyensys.wrappers.PandapowerDataClasses import Profile, OutputVariableSet, TimeSeriesOutputFileSettings, \
+    SimulationSettings
+
+XLSX = '.xlsx'
 
 
 def _load_complete_test_case() -> PandaPowerWrapper:
@@ -24,12 +28,12 @@ def _load_complete_test_case() -> PandaPowerWrapper:
     variables = [OutputVariableSet('res_load', 'p_mw', []), OutputVariableSet('res_bus', 'vm_pu', []),
                  OutputVariableSet('res_line', 'loading_percent', []), OutputVariableSet('res_line', 'i_ka', [])]
     output_settings = TimeSeriesOutputFileSettings(directory=set_pandapower_test_output_directory(),
-                                                   number_time_steps=3, format='.xlsx')
+                                                   number_time_steps=3, format=XLSX)
     wrapper.add_output_writer_to_network(output_settings, variables)
     return wrapper
 
 
-def _load_base_configuration_to_run_opf() -> PandaPowerWrapper:
+def _load_base_configuration_to_run_timeseries_opf() -> PandaPowerWrapper:
     wrapper = PandaPowerWrapper()
     wrapper.load_mat_file_to_pandapower(file_path_with_extension=get_path_case9_mat(), frequency_hz=60.0)
     data1 = DataFrame()
@@ -45,7 +49,7 @@ def _load_base_configuration_to_run_opf() -> PandaPowerWrapper:
     variables = [OutputVariableSet('res_load', 'p_mw', []), OutputVariableSet('res_bus', 'vm_pu', []),
                  OutputVariableSet('res_line', 'loading_percent', []), OutputVariableSet('res_line', 'i_ka', [])]
     output_settings = TimeSeriesOutputFileSettings(directory=set_pandapower_test_output_directory(),
-                                                   number_time_steps=3, format='.xlsx')
+                                                   number_time_steps=3, format=XLSX)
     wrapper.add_output_writer_to_network(output_settings, variables)
     return wrapper
 
@@ -113,7 +117,7 @@ def test_output_writer():
     variables = [OutputVariableSet('res_load', 'p_mw', []), OutputVariableSet('res_bus', 'vm_pu', []),
                  OutputVariableSet('res_line', 'loading_percent', []), OutputVariableSet('res_line', 'i_ka', [])]
     output_settings = TimeSeriesOutputFileSettings(directory=set_pandapower_test_output_directory(),
-                                                   number_time_steps=3, format='.xlsx')
+                                                   number_time_steps=3, format=XLSX)
     wrapper.add_output_writer_to_network(output_settings, variables)
     output_writer_class = wrapper.network['output_writer'].iat[0, 0]
     assert len(output_writer_class.log_variables) == 4
@@ -121,7 +125,7 @@ def test_output_writer():
 
 
 def test_run_time_step_simulation():
-    wrapper = _load_base_configuration_to_run_opf()
+    wrapper = _load_base_configuration_to_run_timeseries_opf()
     settings = SimulationSettings(time_steps=list(range(3)), display_progress_bar=False, continue_on_divergence=False,
                                   optimisation_software='pypower', opf_type='ac')
     wrapper.run_time_step_simulation(settings)
@@ -196,8 +200,17 @@ def test_is_feasible():
 
 
 def test_get_total_cost():
-    wrapper = _load_base_configuration_to_run_opf()
+    wrapper = _load_base_configuration_to_run_timeseries_opf()
     settings = SimulationSettings(time_steps=list(range(3)), display_progress_bar=False,
                                   continue_on_divergence=False, optimisation_software='pypower', opf_type='ac')
     wrapper.run_time_step_simulation(settings)
     isclose(3583.53647, wrapper.get_total_cost(), abs_tol=1e-4)
+
+
+def test_run_ac_opf():
+    wrapper = PandaPowerWrapper()
+    wrapper.load_mat_file_to_pandapower(file_path_with_extension=get_path_case3_mat(), frequency_hz=60.0)
+    settings = SimulationSettings(display_progress_bar=False, optimisation_software='pypower', opf_type='ac')
+    wrapper.run_ac_opf(settings)
+    assert round(wrapper.network.res_ext_grid['p_mw'][0], 2) == 25.45
+    assert round(wrapper.network.res_ext_grid['q_mvar'][0], 2) == 13.64

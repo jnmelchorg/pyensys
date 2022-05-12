@@ -1,3 +1,5 @@
+from typing import List
+
 from pandapower.converter import from_mpc
 from pandapower.timeseries import DFData
 from pandapower.control import ConstControl
@@ -5,7 +7,8 @@ from pandapower.timeseries.output_writer import OutputWriter
 from pandapower import runopp, runpm_ac_opf, create_empty_network
 from pandapower.timeseries.run_time_series import run_timeseries
 
-from pyensys.wrappers.PandapowerDataClasses import *
+from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, TimeSeriesOutputFileSettings, \
+    SimulationSettings
 
 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS = {
     "ac": {
@@ -51,7 +54,10 @@ class PandaPowerWrapper:
 
     def add_output_writer_to_network(self, output_properties: TimeSeriesOutputFileSettings,
                                      variables_to_save: List[OutputVariableSet]):
-        range_time_steps = range(0, output_properties.number_time_steps)
+        if output_properties.number_time_steps is not None:
+            range_time_steps = range(0, output_properties.number_time_steps)
+        else:
+            range_time_steps = None
         writer = OutputWriter(self.network, range_time_steps,
                               output_path=output_properties.directory,
                               output_file_type=output_properties.format, log_variables=list())
@@ -83,3 +89,11 @@ class PandaPowerWrapper:
 
     def get_total_cost(self) -> float:
         return self.network.res_cost
+
+    def run_ac_opf(self, settings: SimulationSettings):
+        if settings.optimisation_software == "pypower":
+            OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
+                settings.optimisation_software](self.network, verbose=settings.display_progress_bar)
+        elif settings.optimisation_software == "power models":
+            OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
+                settings.optimisation_software](self.network, silence=not settings.display_progress_bar)
