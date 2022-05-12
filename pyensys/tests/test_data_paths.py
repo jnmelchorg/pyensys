@@ -29,6 +29,13 @@ def get_path_case9_mat() -> str:
     return path
 
 
+def get_path_case3_mat() -> str:
+    path = dirname(__file__)
+    path = join(path, "matpower")
+    path = join(path, "case3.mat")
+    return path
+
+
 def get_clustering_test_data() -> str:
     path = dirname(__file__)
     path = join(path, "excel")
