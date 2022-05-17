@@ -1,0 +1,306 @@
+{
+    "problem": {
+        "inter-temporal_opf": false,
+        "return_rate_in_percentage": 3.0
+    },
+    "pandapower_mpc_settings": {
+        "mat_file_path" : "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\matpower\\case3.mat",
+        "frequency": 60.0
+    },
+    "optimisation_profiles_data":{
+		"format_data": "attest",
+		"scenarios_data": [
+			{
+				"scenario" : "1",
+				"years_data" : [
+					{
+						"year" : "2020",
+						"parameters_data" : [
+							{
+								"data": [10.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [5.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2030",
+						"parameters_data" : [
+							{
+								"data": [12.02, 15.01],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [7.03, 10.04],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2040",
+						"parameters_data" : [
+							{
+								"data": [12.0, 20.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [7.0, 12.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					}
+				]
+			},
+			{
+				"scenario" : "2",
+				"years_data" : [
+					{
+						"year" : "2020",
+						"parameters_data" : [
+							{
+								"data": [10.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [5.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2030",
+						"parameters_data" : [
+							{
+								"data": [11.98, 14.99],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [6.97, 9.96],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2040",
+						"parameters_data" : [
+							{
+								"data": [12.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [7.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					}
+				]
+			},
+			{
+				"scenario" : "3",
+				"years_data" : [
+					{
+						"year" : "2020",
+						"parameters_data" : [
+							{
+								"data": [10.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [5.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2030",
+						"parameters_data" : [
+							{
+								"data": [8.03, 18.07],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [3.05, 11.02],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2040",
+						"parameters_data" : [
+							{
+								"data": [8.0, 18.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [3.0, 11.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					}
+				]
+			},
+			{
+				"scenario" : "4",
+				"years_data" : [
+					{
+						"year" : "2020",
+						"parameters_data" : [
+							{
+								"data": [10.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [5.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2030",
+						"parameters_data" : [
+							{
+								"data": [8.01, 18.02],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [3.02, 11.04],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2040",
+						"parameters_data" : [
+							{
+								"data": [12.02, 18.05],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [7.01, 11.08],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					}
+				]
+			},
+			{
+				"scenario" : "5",
+				"years_data" : [
+					{
+						"year" : "2020",
+						"parameters_data" : [
+							{
+								"data": [10.0, 15.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [5.0, 10.0],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2030",
+						"parameters_data" : [
+							{
+								"data": [7.96, 17.91],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [2.93, 10.94],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					},
+					{
+						"year" : "2040",
+						"parameters_data" : [
+							{
+								"data": [11.98, 17.95],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "p_mw"
+							},
+							{
+								"data": [6.99, 10.92],
+								"element_type": "load",			
+								"indexes": [0, 2],
+								"variable_name": "q_mvar"
+							}
+						]
+					}
+				]
+			}
+		]
+    },
+    "pandapower_optimisation_settings": {
+        "display_progress_bar": true,
+        "optimisation_software": "pypower"
+    },
+    "optimisation_binary_variables": [
+        {
+        "element_type": "line",
+        "costs": [1.0, 1.0],
+        "elements_positions": [1, 3]
+        }
+    ]
+}
