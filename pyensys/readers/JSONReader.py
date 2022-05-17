@@ -235,9 +235,19 @@ class ReadJSON:
         profiles_data = OptimisationProfilesData()
         profiles_data_dict = self.settings.pop("optimisation_profiles_data", None)
         if profiles_data_dict is not None:
-            for value in profiles_data_dict.values():
-                profiles_data.data.append(_load_optimisation_profile_data(value))
-            profiles_data.initialised = True
+            format_data = profiles_data_dict.pop("format_data", None)
+            if format_data == None:
+                for value in profiles_data_dict.values():
+                    profiles_data.data.append(_load_optimisation_profile_data(value))
+                profiles_data.initialised = True
+            elif format_data == "attest":
+                data = profiles_data_dict.pop("data", None)
+                if data is not None:
+                    self._extract_optimisation_profiles_data(data)
+                else:
+                    raise ValueError("No data found in the profiles data")
+            else:
+                raise ValueError(f"Unknown format_data: {format_data}")
         return profiles_data
 
     def _load_output_settings(self) -> OutputSettings:
@@ -300,3 +310,10 @@ class ReadJSON:
         else:
             raise ValueError(f"The number of periods in the profile {len(profile.data.index)} must be a multiple "
                              f"of the OPF time settings {self.parameters.opf_time_settings.date_time_settings.size}")
+
+    def _extract_optimisation_profiles_data(self, data: List[dict]):
+        self.parameters.optimisation_profiles_dataframes.create_dictionary()
+        for profile in data:
+            self.parameters.optimisation_profiles_dataframes.append(
+                profile.pop("group"), DataFrame(data=profile.pop("data"), columns=profile.pop("columns_names")))
+

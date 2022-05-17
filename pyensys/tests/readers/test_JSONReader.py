@@ -1,6 +1,8 @@
+from math import sqrt
 from os.path import join, dirname
 from pandas import Timestamp, DataFrame
 
+from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.readers.JSONReader import _create_dataframe, _load_pandapower_profile_data, _load_output_variable, \
     _load_output_variables, _read_file, _read_dataframe_data, _load_optimisation_profile_data, ReadJSON
 from pyensys.readers.ReaderDataClasses import DataframeData
@@ -435,3 +437,60 @@ def test_adjust_pandapower_profiles_to_time_settings():
         readjs.parameters.pandapower_profiles_data.data[0].data)
     assert DataFrame(data=[[5.0, 9.0], [6.0, 10.0]], columns=["qd_0", "qd_2"]).equals(
         readjs.parameters.pandapower_profiles_data.data[1].data)
+
+
+def test_store_profiles_dataframes_in_load_optimisation_profiles_data():
+    settings = {
+        "optimisation_profiles_data": {
+            "format_data": "attest",
+            "data": [
+                {
+                    "group": "a",
+                    "data": [
+                        [1.0]
+                    ],
+                    "columns_names": ["a"]
+                },
+                {
+                    "group": "b",
+                    "data": [
+                        [2.0]
+                    ],
+                    "columns_names": ["b"]
+                }
+            ]
+        }
+    }
+    reader = ReadJSON()
+    reader.settings = settings
+    reader._load_optimisation_profiles_data()
+    assert len(reader.parameters.optimisation_profiles_dataframes) == 2
+    assert DataFrame(data=[[1.0]], columns=["a"]).equals(reader.parameters.optimisation_profiles_dataframes["a"])
+    assert DataFrame(data=[[2.0]], columns=["b"]).equals(reader.parameters.optimisation_profiles_dataframes["b"])
+
+
+def test_calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles():
+    settings = {
+        "optimisation_profiles_data":{
+		"format_data": "attest",
+		"data": [
+			{
+				"group": "buses",
+				"data": [
+					[1, 2030, 0, 12.02, 7.03],
+					[1, 2030, 2, 15.01, 10.04],
+					[2, 2030, 0, 11.98, 6.97],
+					[2, 2030, 2, 14.99, 9.96]
+				],
+				"columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"]
+			}
+		]
+    }
+    }
+    reader = ReadJSON()
+    reader.settings = settings
+    expected = DataFrame(data=[[1, 2030, sqrt(12.02**2 + 7.03**2)+sqrt(15.01**2 + 10.04**2)],
+                               [2, 2030, sqrt(11.98**2 + 6.97**2)+sqrt(14.99**2 + 9.96**2)]])
+    assert len(reader.parameters.optimisation_profiles_dataframes) == 2
+    assert DataFrame(data=[[1.0]], columns=["a"]).equals(reader.parameters.optimisation_profiles_dataframes["a"])
+    assert DataFrame(data=[[2.0]], columns=["b"]).equals(reader.parameters.optimisation_profiles_dataframes["b"])
