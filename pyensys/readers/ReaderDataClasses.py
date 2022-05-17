@@ -3,6 +3,8 @@ from pandas.core.indexes.datetimes import DatetimeIndex
 from typing import List, Any
 from pandas import date_range, DataFrame
 
+from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
+
 FREQUENCY_NAME_TO_PANDAS_ALIASES: dict = \
     {"hourly": "H"}
 
@@ -121,4 +123,6 @@ class Parameters:
         field(default_factory=lambda: OptimisationProfilesData())
     optimisation_binary_variables: List[OptimisationBinaryVariables] = \
         field(default_factory=list)
+    optimisation_profiles_dataframes: AbstractDataContainer = \
+        field(default_factory=lambda: AbstractDataContainer())
     initialised: bool = False
