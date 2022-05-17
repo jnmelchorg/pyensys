@@ -9,286 +9,42 @@
     },
     "optimisation_profiles_data":{
 		"format_data": "attest",
-		"scenarios_data": [
+		"data": [
 			{
-				"scenario" : "1",
-				"years_data" : [
-					{
-						"year" : "2020",
-						"parameters_data" : [
-							{
-								"data": [10.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [5.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2030",
-						"parameters_data" : [
-							{
-								"data": [12.02, 15.01],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [7.03, 10.04],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2040",
-						"parameters_data" : [
-							{
-								"data": [12.0, 20.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [7.0, 12.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					}
-				]
-			},
-			{
-				"scenario" : "2",
-				"years_data" : [
-					{
-						"year" : "2020",
-						"parameters_data" : [
-							{
-								"data": [10.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [5.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2030",
-						"parameters_data" : [
-							{
-								"data": [11.98, 14.99],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [6.97, 9.96],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2040",
-						"parameters_data" : [
-							{
-								"data": [12.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [7.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					}
-				]
-			},
-			{
-				"scenario" : "3",
-				"years_data" : [
-					{
-						"year" : "2020",
-						"parameters_data" : [
-							{
-								"data": [10.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [5.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2030",
-						"parameters_data" : [
-							{
-								"data": [8.03, 18.07],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [3.05, 11.02],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2040",
-						"parameters_data" : [
-							{
-								"data": [8.0, 18.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [3.0, 11.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					}
-				]
-			},
-			{
-				"scenario" : "4",
-				"years_data" : [
-					{
-						"year" : "2020",
-						"parameters_data" : [
-							{
-								"data": [10.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [5.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2030",
-						"parameters_data" : [
-							{
-								"data": [8.01, 18.02],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [3.02, 11.04],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2040",
-						"parameters_data" : [
-							{
-								"data": [12.02, 18.05],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [7.01, 11.08],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					}
-				]
-			},
-			{
-				"scenario" : "5",
-				"years_data" : [
-					{
-						"year" : "2020",
-						"parameters_data" : [
-							{
-								"data": [10.0, 15.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [5.0, 10.0],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2030",
-						"parameters_data" : [
-							{
-								"data": [7.96, 17.91],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [2.93, 10.94],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					},
-					{
-						"year" : "2040",
-						"parameters_data" : [
-							{
-								"data": [11.98, 17.95],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "p_mw"
-							},
-							{
-								"data": [6.99, 10.92],
-								"element_type": "load",			
-								"indexes": [0, 2],
-								"variable_name": "q_mvar"
-							}
-						]
-					}
-				]
+				"group": "buses",
+				"data": [
+					[1, 2020, 0, 10.0, 5.0],
+					[1, 2020, 2, 15.0, 10.0],
+					[1, 2030, 0, 12.02, 7.03],
+					[1, 2030, 2, 15.01, 10.04],
+					[1, 2040, 0, 12.0, 7.0],
+					[1, 2040, 2, 20.0, 12.0],
+					[2, 2020, 0, 10.0, 5.0],
+					[2, 2020, 2, 15.0, 10.0],
+					[2, 2030, 0, 11.98, 6.97],
+					[2, 2030, 2, 14.99, 9.96],
+					[2, 2040, 0, 12.0, 7.0],
+					[2, 2040, 2, 15.0, 10.0],
+					[3, 2020, 0, 10.0, 5.0],
+					[3, 2020, 2, 15.0, 10.0],
+					[3, 2030, 0, 8.03, 3.05],
+					[3, 2030, 2, 18.07, 11.02],
+					[3, 2040, 0, 8.0, 3.0],
+					[3, 2040, 2, 18.0, 11.0],
+					[4, 2020, 0, 10.0, 5.0],
+					[4, 2020, 2, 15.0, 10.0],
+					[4, 2030, 0, 8.01, 3.02],
+					[4, 2030, 2, 18.02, 11.04],
+					[4, 2040, 0, 12.02, 7.01],
+					[4, 2040, 2, 18.05, 11.08],
+					[5, 2020, 0, 10.0, 5.0],
+					[5, 2020, 2, 15.0, 10.0],
+					[5, 2030, 0, 7.96, 2.93],
+					[5, 2030, 2, 17.91, 10.94],
+					[5, 2040, 0, 11.98, 6.99],
+					[5, 2040, 2, 17.95, 10.92]
+				],
+				"columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"]
 			}
 		]
     },
