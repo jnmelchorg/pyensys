@@ -161,18 +161,18 @@ class ReadJSON:
     def read_json_data(self, json_path: str):
         file = open(json_path)
         self.settings: dict = load(file)
-        p = self.parameters
-        p.problem_settings = self._load_problem_settings()
-        p.opf_time_settings = self._load_opf_time_settings()
-        p.pandapower_mpc_settings = self._load_pandapower_mpc_settings()
-        p.pandapower_profiles_data = self._load_pandapower_profiles_data()
-        p.output_settings = self._load_output_settings()
-        p.pandapower_optimisation_settings = \
-            self._load_pandapower_optimisation_settings()
-        p.optimisation_profiles_data = \
-            self._load_optimisation_profiles_data()
+        self._read_data_from_dictionary()
+
+    def _read_data_from_dictionary(self):
+        self.parameters.problem_settings = self._load_problem_settings()
+        self.parameters.opf_time_settings = self._load_opf_time_settings()
+        self.parameters.pandapower_mpc_settings = self._load_pandapower_mpc_settings()
+        self.parameters.pandapower_profiles_data = self._load_pandapower_profiles_data()
+        self.parameters.output_settings = self._load_output_settings()
+        self.parameters.pandapower_optimisation_settings = self._load_pandapower_optimisation_settings()
+        self.parameters.optimisation_profiles_data = self._load_optimisation_profiles_data()
         self._adjust_pandapower_profiles_to_time_settings()
-        p.initialised = True
+        self.parameters.initialised = True
 
     def _load_problem_settings(self) -> ProblemSettings:
         problem_settings = ProblemSettings()
