@@ -1,4 +1,8 @@
-from pyensys.Optimisers.RecursiveFunction import *
+from copy import deepcopy
+
+from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
+from pyensys.Optimisers.RecursiveFunction import RecursiveFunction, BinaryVariable, InterIterationInformation, \
+    check_if_candidate_path_has_been_stored_in_incumbent
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData, OptimisationBinaryVariables
 from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
@@ -12,6 +16,8 @@ from unittest.mock import MagicMock
 from pytest import raises
 from numpy.testing import assert_equal
 
+from pyensys.wrappers.PandaPowerManager import PandaPowerManager
+
 
 def load_test_case() -> Parameters:
     parameters = Parameters()
@@ -19,17 +25,17 @@ def load_test_case() -> Parameters:
     parameters.pandapower_mpc_settings.system_frequency = 50.0
     parameters.pandapower_mpc_settings.initialised = True
     parameters.pandapower_profiles_data.initialised = True
-    parameters.pandapower_profiles_data.data = [ \
-        PandaPowerProfileData(element_type="load", variable_name="p_mw", \
-                              indexes=[0], data=DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]], \
+    parameters.pandapower_profiles_data.data = [
+        PandaPowerProfileData(element_type="load", variable_name="p_mw",
+                              indexes=[0], data=DataFrame(data=[[67.28095505], [9.65466896], [11.70181664]],
                                                           columns=['load1_p']), active_columns_names=['load1_p']),
-        PandaPowerProfileData(element_type="gen", variable_name="p_mw", \
-                              indexes=[0], data=DataFrame(data=[[240], [200], [18]], \
+        PandaPowerProfileData(element_type="gen", variable_name="p_mw",
+                              indexes=[0], data=DataFrame(data=[[240], [200], [18]],
                                                           columns=['gen1_p']), active_columns_names=['gen1_p'])]
     parameters.output_settings.initialised = True
-    parameters.output_settings.output_variables = [OutputVariable(name_dataset='res_bus', \
+    parameters.output_settings.output_variables = [OutputVariable(name_dataset='res_bus',
                                                                   name_variable='p_mw', variable_indexes=[]),
-                                                   OutputVariable(name_dataset='res_line', \
+                                                   OutputVariable(name_dataset='res_line',
                                                                   name_variable='i_ka', variable_indexes=[])]
     parameters.output_settings.directory = set_pandapower_test_output_directory()
     parameters.output_settings.format = ".xlsx"
@@ -45,29 +51,28 @@ def load_test_case() -> Parameters:
     parameters.problem_settings.opf_optimizer = "pandapower"
     parameters.problem_settings.intertemporal = True
     parameters.optimisation_profiles_data.data = [
-        OptimisationProfileData( \
-            element_type="load", variable_name="p_mw", data=read_excel(io= \
-                                                                           get_clustering_data_test(),
+        OptimisationProfileData(
+            element_type="load", variable_name="p_mw", data=read_excel(io=
+                                                                       get_clustering_data_test(),
                                                                        sheet_name="Sheet1")),
-        OptimisationProfileData( \
-            element_type="gen", variable_name="p_mw", data=read_excel(io= \
-                                                                          get_clustering_data_test(),
+        OptimisationProfileData(
+            element_type="gen", variable_name="p_mw", data=read_excel(io=
+                                                                      get_clustering_data_test(),
                                                                       sheet_name="Sheet2"))]
     parameters.optimisation_profiles_data.initialised = True
     return parameters
 
 
 def load_data_multipliers() -> Dict[int, List[ClusterData]]:
-    profile_modifiers = {}
-    profile_modifiers[0] = []
-    profile_modifiers[0].append(ClusterData(scenarios=[1, 2, 3], centroid=0.1, level=0, \
+    profile_modifiers = {0: []}
+    profile_modifiers[0].append(ClusterData(scenarios=[1, 2, 3], centroid=0.1, level=0,
                                             element_type="load", variable_name="p_mw"))
-    profile_modifiers[0].append(ClusterData(scenarios=[1, 2, 3], centroid=0.2, level=0, \
+    profile_modifiers[0].append(ClusterData(scenarios=[1, 2, 3], centroid=0.2, level=0,
                                             element_type="gen", variable_name="p_mw"))
     profile_modifiers[1] = []
-    profile_modifiers[1].append(ClusterData(scenarios=[1, 2, 3], centroid=0.3, level=0, \
+    profile_modifiers[1].append(ClusterData(scenarios=[1, 2, 3], centroid=0.3, level=0,
                                             element_type="load", variable_name="p_mw"))
-    profile_modifiers[1].append(ClusterData(scenarios=[1, 2, 3], centroid=0.4, level=0, \
+    profile_modifiers[1].append(ClusterData(scenarios=[1, 2, 3], centroid=0.4, level=0,
                                             element_type="gen", variable_name="p_mw"))
     return profile_modifiers
 
@@ -211,7 +216,7 @@ def test_calculate_investment_cost():
     assert isclose(RF._calculate_investment_cost(interventions), 14.247, rel_tol=1e-3)
 
 
-def test_calculate_opteration_cost():
+def test_calculate_operation_cost():
     RF = RecursiveFunction()
     RF._parameters.problem_settings.return_rate_in_percentage = 3.0
     operation = AbstractDataContainer()
@@ -221,18 +226,18 @@ def test_calculate_opteration_cost():
     assert isclose(RF._calculate_opteration_cost(operation), 509.278, rel_tol=1e-3)
 
 
-def _create_dummy_candidate_solution(RF: RecursiveFunction) -> InterIterationInformation:
+def _create_dummy_candidate_solution(rf: RecursiveFunction) -> InterIterationInformation:
     inter_information = InterIterationInformation()
     inter_information.candidate_interventions.create_list()
     investments = AbstractDataContainer()
     investments.create_list()
-    investments.append("0", RF._pool_interventions["0"])
-    investments.append("1", RF._pool_interventions["2"])
+    investments.append("0", rf._pool_interventions["0"])
+    investments.append("1", rf._pool_interventions["2"])
     inter_information.candidate_interventions.append("0", investments)
     investments = AbstractDataContainer()
     investments.create_list()
-    investments.append("0", RF._pool_interventions["1"])
-    investments.append("1", RF._pool_interventions["3"])
+    investments.append("0", rf._pool_interventions["1"])
+    investments.append("1", rf._pool_interventions["3"])
     inter_information.candidate_interventions.append("1", investments)
     inter_information.candidate_operation_cost.create_list()
     inter_information.candidate_operation_cost.append("0", 200)
@@ -514,7 +519,7 @@ def test_update_status_elements_opf_without_new_interventions():
     recursive._update_status_elements_opf_per_intervention_group.assert_not_called()
 
 
-def test_update_status_elements_opf_per_intervention_group_with_binary_variablest():
+def test_update_status_elements_opf_per_intervention_group_with_binary_variables():
     recursive = RecursiveFunction()
     interventions = AbstractDataContainer()
     interventions.create_list()

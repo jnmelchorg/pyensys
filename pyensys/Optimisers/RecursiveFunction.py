@@ -230,14 +230,14 @@ class RecursiveFunction:
             self._get_total_operation_cost())
         return inter_iteration_information
 
-    def _calculate_available_interventions(self, inter_iteration_information: \
-            InterIterationInformation) -> AbstractDataContainer:
+    def _calculate_available_interventions(self, inter_iteration_information: InterIterationInformation) -> \
+            AbstractDataContainer:
         _available_interventions = deepcopy(self._pool_interventions)
         for _, previous in inter_iteration_information.candidate_interventions:
-            _available_interventions = difference_abstract_data_containers( \
+            _available_interventions = difference_abstract_data_containers(
                 _available_interventions, previous)
-        _available_interventions = difference_abstract_data_containers( \
-            _available_interventions, \
+        _available_interventions = difference_abstract_data_containers(
+            _available_interventions,
             inter_iteration_information.new_interventions)
         return _available_interventions
 
