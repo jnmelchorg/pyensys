@@ -2,7 +2,7 @@ from copy import deepcopy
 
 from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.Optimisers.RecursiveFunction import RecursiveFunction, BinaryVariable, InterIterationInformation, \
-    check_if_candidate_path_has_been_stored_in_incumbent
+    check_if_candidate_path_has_been_stored_in_incumbent, _create_data_to_update_status_of_parameter
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     OptimisationProfileData, OptimisationBinaryVariables
 from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, \
@@ -12,7 +12,7 @@ from pyensys.Optimisers.ControlGraphsCreator import ClusterData
 from pandas import DataFrame, date_range, read_excel
 from math import isclose
 from typing import List, Dict
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from pytest import raises
 from numpy.testing import assert_equal
 
@@ -49,7 +49,7 @@ def load_test_case() -> Parameters:
     parameters.problem_settings.initialised = True
     parameters.problem_settings.opf_type = "ac"
     parameters.problem_settings.opf_optimizer = "pandapower"
-    parameters.problem_settings.intertemporal = True
+    parameters.problem_settings.inter_temporal = True
     parameters.optimisation_profiles_data.data = [
         OptimisationProfileData(
             element_type="load", variable_name="p_mw", data=read_excel(io=
@@ -169,7 +169,7 @@ def test_create_pool_interventions():
     assert isinstance(RF._pool_interventions["2"], BinaryVariable)
     assert_equal(RF._pool_interventions["1"].element_type, "gen")
     assert_equal(RF._pool_interventions["1"].variable_name, "installation")
-    assert_equal(RF._pool_interventions["1"].element_id, "G1")
+    assert_equal(RF._pool_interventions["1"].element_id, "")
     assert_equal(RF._pool_interventions["1"].element_position, 1)
     assert_equal(RF._pool_interventions["1"].cost, 2.0)
     assert_equal(RF._pool_interventions["3"].cost, 6.0)
@@ -490,6 +490,7 @@ def test_is_opf_feasible():
 
 def test_operational_check():
     recursive = RecursiveFunction()
+    recursive._parameters.problem_settings.inter_temporal = True
     info = InterIterationInformation()
     recursive._update_status_elements_opf = MagicMock()
     recursive._update_pandapower_controllers = MagicMock()
@@ -519,20 +520,22 @@ def test_update_status_elements_opf_without_new_interventions():
     recursive._update_status_elements_opf_per_intervention_group.assert_not_called()
 
 
-def test_update_status_elements_opf_per_intervention_group_with_binary_variables():
+@patch("pyensys.Optimisers.RecursiveFunction._create_data_to_update_status_of_parameter")
+def test_update_status_elements_opf_per_intervention_group_with_binary_variables(mock_function):
     recursive = RecursiveFunction()
     interventions = AbstractDataContainer()
     interventions.create_list()
     interventions.append("0", BinaryVariable())
     interventions.append("1", BinaryVariable())
     recursive._opf.update_multiple_parameters = MagicMock()
-    recursive._create_data_to_update_parameter = MagicMock(return_value=0)
+    recursive._create_data_to_update_status_of_parameter = MagicMock(return_value=0)
     recursive._update_status_elements_opf_per_intervention_group(interventions)
-    assert_equal(recursive._create_data_to_update_parameter.call_count, 2)
+    assert_equal(mock_function.call_count, 2)
     recursive._opf.update_multiple_parameters.assert_called_once()
 
 
-def test_update_status_elements_opf_per_intervention_group_with_abstract_data_object_of_binary_variables():
+@patch("pyensys.Optimisers.RecursiveFunction._create_data_to_update_status_of_parameter")
+def test_update_status_elements_opf_per_intervention_group_with_abstract_data_object_of_binary_variables(mock_function):
     recursive = RecursiveFunction()
     interventions = AbstractDataContainer()
     interventions.create_list()
@@ -543,9 +546,9 @@ def test_update_status_elements_opf_per_intervention_group_with_abstract_data_ob
     path_investments.append("0", interventions)
     path_investments.append("1", interventions)
     recursive._opf.update_multiple_parameters = MagicMock()
-    recursive._create_data_to_update_parameter = MagicMock(return_value=0)
+    recursive._create_data_to_update_status_of_parameter = MagicMock(return_value=0)
     recursive._update_status_elements_opf_per_intervention_group(path_investments)
-    assert_equal(recursive._create_data_to_update_parameter.call_count, 4)
+    assert_equal(mock_function.call_count, 4)
     recursive._opf.update_multiple_parameters.assert_called_once()
 
 
@@ -563,7 +566,7 @@ def test_type_error_update_status_elements_opf_per_intervention_group():
 def test_create_data_to_update_parameter():
     recursive = RecursiveFunction()
     var = _create_dummy_binary_variable_to_test_create_data_to_update_parameter()
-    param = recursive._create_data_to_update_parameter(var)
+    param = _create_data_to_update_status_of_parameter(var)
     assert_equal(param.component_type, "dem")
     assert_equal(param.parameter_position, 2)
 
@@ -578,7 +581,7 @@ def _create_dummy_binary_variable_to_test_create_data_to_update_parameter() -> B
 def test_type_error_in_create_data_to_update_parameter_with_wrong_input():
     recursive = RecursiveFunction()
     with raises(TypeError):
-        recursive._create_data_to_update_parameter(list())
+        _create_data_to_update_status_of_parameter(list())
 
 
 def test_update_pandapower_controllers():
@@ -598,3 +601,9 @@ def test_run_opf():
     RF._run_opf()
     assert RF._opf.wrapper.network.OPF_converged == True
     assert isclose(3583.53647, RF._opf.wrapper.network.res_cost, abs_tol=1e-4)
+
+def test_initialise_case_attest():
+    RF = RecursiveFunction()
+    RF._initialise_pandapower = MagicMock()
+    RF._create_control_graph = MagicMock()
+    RF.initialise(parameters=load_test_case())

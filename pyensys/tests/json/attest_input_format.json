@@ -1,7 +1,8 @@
 {
     "problem": {
         "inter-temporal_opf": false,
-        "return_rate_in_percentage": 3.0
+        "return_rate_in_percentage": 3.0,
+		"non_anticipative": true
     },
     "pandapower_mpc_settings": {
         "mat_file_path" : "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\matpower\\case3.mat",
@@ -54,9 +55,10 @@
     },
     "optimisation_binary_variables": [
         {
-        "element_type": "line",
-        "costs": [1.0, 1.0],
-        "elements_positions": [1, 3]
+        	"element_type": "line",
+        	"costs": [10000.0, 10000.0],
+        	"elements_positions": [1, 3],
+			"installation_time": [0, 0]
         }
     ]
 }

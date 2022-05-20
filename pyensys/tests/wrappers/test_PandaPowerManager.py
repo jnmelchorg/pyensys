@@ -195,23 +195,6 @@ def test_define_simulation_settings_case3():
     assert manager.simulation_settings.optimisation_software == ""
 
 
-def test_define_simulation_settings_case4():
-    manager = PandaPowerManager()
-    parameters = Parameters()
-    parameters.pandapower_optimisation_settings.initialised = True
-    parameters.pandapower_optimisation_settings.continue_on_divergence = False
-    parameters.pandapower_optimisation_settings.display_progress_bar = False
-    parameters.pandapower_optimisation_settings.optimisation_software = 'pypower'
-    parameters.problem_settings.initialised = True
-    parameters.problem_settings.opf_type = "ac"
-    parameters.opf_time_settings.initialised = False
-    manager._parameters = parameters
-    manager.define_simulation_settings()
-    assert len(manager.simulation_settings.time_steps) == 0
-    assert manager.simulation_settings.opf_type == ""
-    assert manager.simulation_settings.optimisation_software == ""
-
-
 def test_define_simulation_settings_case5():
     manager = PandaPowerManager()
     parameters = Parameters()

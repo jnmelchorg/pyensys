@@ -35,6 +35,8 @@ def _create_dummy_information_to_test_get_available_interventions_for_current_ye
     info.candidate_interventions["1"].create_list()
     info.new_interventions.create_list()
     info.new_interventions.append("2", 2)
+    info.new_interventions_remaining_construction_time.create_list()
+    info.new_interventions_remaining_construction_time.append("2", 2)
     return info
 
 
@@ -66,7 +68,8 @@ def test_verify_feasibility_of_successor_with_all_available_interventions_for_cu
     non_anticipative._operational_check.assert_called_once()
 
 
-def test_verify_feasible_solution_in_successor_nodes_with_new_interventions():
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction.update_remaining_construction_time")
+def test_verify_feasible_solution_in_successor_nodes_with_new_interventions(mock_function):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._control_graph.graph.add_edge(100, 2)
     non_anticipative._control_graph.graph.add_edge(100, 15)
@@ -80,11 +83,11 @@ def test_verify_feasible_solution_in_successor_nodes_with_new_interventions():
     assert \
         non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year.call_count \
         == 3
-    assert info.level_in_graph == 0
-    assert info.current_graph_node == 100
+    assert mock_function.call_count == 2
 
 
-def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
+@patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction.update_remaining_construction_time")
+def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions(mock_function):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._control_graph.graph.add_edge(100, 2)
     non_anticipative._control_graph.graph.add_edge(100, 15)
@@ -95,8 +98,7 @@ def test_verify_unfeasible_solution_in_successor_nodes_with_new_interventions():
     non_anticipative._verify_feasibility_of_successor_with_all_available_interventions_for_current_year = MagicMock(
         return_value=False)
     assert not non_anticipative._verify_feasibility_of_solution_in_successor_nodes(info)
-    assert info.level_in_graph == 0
-    assert info.current_graph_node == 100
+    assert mock_function.call_count == 2
 
 
 @patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._add_new_interventions_from_combinations")
@@ -106,6 +108,7 @@ def test_optimise_interventions_in_last_node(mock_method, feasibility_flag, expe
     non_anticipative._get_available_interventions_for_current_year = MagicMock(return_value=[1, 2])
     non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=feasibility_flag)
     non_anticipative._optimality_check = MagicMock()
+    non_anticipative._construction_of_solution = MagicMock(return_value=InterIterationInformation())
     non_anticipative._optimise_interventions_in_last_node(InterIterationInformation())
     non_anticipative._get_available_interventions_for_current_year.assert_called_once()
     assert mock_method.call_count == 3
@@ -236,9 +239,10 @@ def test_add_new_interventions_from_combinations():
     interventions.create_list()
     interventions.append("0", BinaryVariable(installation_time=2))
     rf = NonAnticipativeRecursiveFunction()
-    combination = rf._calculate_all_combinations(available_interventions=interventions, length_set=1)
+    combinations = rf._calculate_all_combinations(available_interventions=interventions, length_set=1)
     info = InterIterationInformation()
-    _add_new_interventions_from_combinations(info, combination)
+    for combination in combinations:
+        _add_new_interventions_from_combinations(info, combination)
     assert len(info.new_interventions) == 1
     assert info.new_interventions.get("0") == BinaryVariable(installation_time=2)
     assert info.new_interventions_remaining_construction_time.get("0") == 2
@@ -387,7 +391,7 @@ def test_replacement_of_investments_for_whole_tree_when_tree_is_empty():
 
 
 @patch("pyensys.Optimisers.NonAnticipativeRecursiveFunction._calculate_total_planning_cost")
-@pytest.mark.parametrize("mock_return", [(0, 1), (1, 0)])
+@pytest.mark.parametrize("mock_return", [(1, 0), (0, 1)])
 def test_replacement_of_investments_for_whole_tree_when_tree_is_not_empty(mock_function, mock_return):
     info = InterIterationInformation()
     info.incumbent_interventions.create_list()
@@ -402,7 +406,7 @@ def test_replacement_of_investments_for_whole_tree_when_tree_is_not_empty(mock_f
     mock_function.side_effect = mock_return
     _replacement_of_investments_for_whole_tree(info)
     reference_tree = _create_investment_plan_data()
-    if mock_return[0] == 0:
+    if mock_return[0] == 1:
         assert info.incumbent_interventions == info.complete_tree.interventions
         assert info.incumbent_graph_paths == info.complete_tree.graph_paths
         assert info.incumbent_investment_costs == info.complete_tree.investment_costs

@@ -62,9 +62,12 @@ class InterIterationInformation:
         field(default_factory=lambda: AbstractDataContainer())
     complete_tree: InvestmentPlanData = \
         field(default_factory=lambda: InvestmentPlanData())
+    partial_tree: InvestmentPlanData = \
+        field(default_factory=lambda: InvestmentPlanData())
     current_graph_node: int = 0
     level_in_graph: int = 0
     allow_deleting_solutions_in_incumbent: bool = False
+    last_node_reached: bool = False
 
 
 @dataclass
@@ -99,6 +102,18 @@ def check_if_candidate_path_has_been_stored_in_incumbent(inter_iteration_informa
     return "not found"
 
 
+def _create_data_to_update_status_of_parameter(intervention: BinaryVariable) -> UpdateParameterData:
+    if isinstance(intervention, BinaryVariable):
+        parameter_to_update = UpdateParameterData()
+        parameter_to_update.component_type = intervention.element_type
+        parameter_to_update.parameter_name = "in_service"
+        parameter_to_update.parameter_position = intervention.element_position
+        parameter_to_update.new_value = True
+        return parameter_to_update
+    else:
+        raise TypeError
+
+
 class RecursiveFunction:
 
     def __init__(self):
@@ -107,9 +122,12 @@ class RecursiveFunction:
         self._pool_interventions = AbstractDataContainer()
         self._opf = PandaPowerManager()
         self.__DAYS_PER_YEAR = 365
+        self._replace_parameters_individually = False
 
     def initialise(self, parameters: Parameters):
         self._parameters = parameters
+        if len(self._parameters.optimisation_profiles_dataframes) > 0:
+            self._replace_parameters_individually = True
         self._create_control_graph()
         self._create_pool_interventions()
         if self._parameters.problem_settings.opf_optimizer == "pandapower":
@@ -127,11 +145,10 @@ class RecursiveFunction:
         self._pool_interventions.create_list()
         counter = 0
         for variables in self._parameters.optimisation_binary_variables:
-            for cost, position, id, time in zip(variables.costs, variables.elements_positions,
-                                                variables.elements_ids, variables.installation_time):
+            for cost, position, time in zip(variables.costs, variables.elements_positions, variables.installation_time):
                 self._pool_interventions.append(str(counter), BinaryVariable(
                     element_type=variables.element_type, variable_name=variables.variable_name,
-                    element_id=id, element_position=position, cost=cost, installation_time=time))
+                    element_id='', element_position=position, cost=cost, installation_time=time))
                 counter += 1
 
     def solve(self, inter_iteration_information: InterIterationInformation):
@@ -175,7 +192,10 @@ class RecursiveFunction:
 
     def _operational_check(self, inter_iteration_information: InterIterationInformation):
         self._update_status_elements_opf(inter_iteration_information)
-        self._update_pandapower_controllers(inter_iteration_information.current_graph_node)
+        if self._parameters.problem_settings.inter_temporal:
+            self._update_pandapower_controllers(inter_iteration_information.current_graph_node)
+        if self._replace_parameters_individually:
+            self._update_parameters_in_opf(inter_iteration_information)
         self._run_opf()
 
     def _update_status_elements_opf(self, inter_iteration_information: InterIterationInformation):
@@ -189,24 +209,13 @@ class RecursiveFunction:
         parameters_to_update = []
         for _, intervention in interventions:
             if isinstance(intervention, BinaryVariable):
-                parameters_to_update.append(self._create_data_to_update_parameter(intervention))
+                parameters_to_update.append(_create_data_to_update_status_of_parameter(intervention))
             elif isinstance(intervention, AbstractDataContainer):
                 for _, value in intervention:
-                    parameters_to_update.append(self._create_data_to_update_parameter(value))
+                    parameters_to_update.append(_create_data_to_update_status_of_parameter(value))
             else:
                 raise TypeError
         self._opf.update_multiple_parameters(parameters_to_update)
-
-    def _create_data_to_update_parameter(self, intervention: BinaryVariable) -> UpdateParameterData:
-        if isinstance(intervention, BinaryVariable):
-            parameter_to_update = UpdateParameterData()
-            parameter_to_update.component_type = intervention.element_type
-            parameter_to_update.parameter_name = "in_service"
-            parameter_to_update.parameter_position = intervention.element_position
-            parameter_to_update.new_value = True
-            return parameter_to_update
-        else:
-            raise TypeError
 
     def _update_pandapower_controllers(self, current_graph_node: int):
         new_profiles = self._create_new_pandapower_profiles(current_graph_node)
@@ -214,8 +223,10 @@ class RecursiveFunction:
 
     def _run_opf(self):
         if self._parameters.problem_settings.opf_optimizer == "pandapower" and \
-                self._parameters.problem_settings.intertemporal:
+                self._parameters.problem_settings.inter_temporal:
             self._opf.run_time_step_opf_pandapower()
+        elif self._parameters.problem_settings.opf_optimizer == "pandapower":
+            self._opf.run_ac_opf_pandapower()
 
     def _construction_of_solution(self, inter_iteration_information: InterIterationInformation) \
             -> InterIterationInformation:
@@ -225,6 +236,9 @@ class RecursiveFunction:
         inter_iteration_information.candidate_interventions.append(
             str(inter_iteration_information.level_in_graph),
             deepcopy(inter_iteration_information.new_interventions))
+        inter_iteration_information.candidate_interventions_remaining_construction_time.append(
+            str(inter_iteration_information.level_in_graph),
+            deepcopy(inter_iteration_information.new_interventions_remaining_construction_time))
         inter_iteration_information.candidate_operation_cost.append(
             str(inter_iteration_information.level_in_graph),
             self._get_total_operation_cost())
@@ -319,13 +333,16 @@ class RecursiveFunction:
                    self._calculate_opteration_cost(inter_iteration_information.candidate_operation_cost))
 
     def _return_to_previous_state(self, inter_iteration_information: InterIterationInformation):
-        inter_iteration_information.candidate_interventions.pop( \
+        inter_iteration_information.candidate_interventions.pop(
             str(inter_iteration_information.level_in_graph))
-        inter_iteration_information.candidate_operation_cost.pop( \
+        inter_iteration_information.candidate_interventions_remaining_construction_time.pop(
             str(inter_iteration_information.level_in_graph))
-        inter_iteration_information.candidate_solution_path.pop(str(len( \
+        inter_iteration_information.candidate_operation_cost.pop(
+            str(inter_iteration_information.level_in_graph))
+        inter_iteration_information.candidate_solution_path.pop(str(len(
             inter_iteration_information.candidate_solution_path) - 1))
-        inter_iteration_information.level_in_graph -= 1
+        if not self._parameters.problem_settings.non_anticipative:
+            inter_iteration_information.level_in_graph -= 1
 
     def _calculate_investment_cost(self, interventions: AbstractDataContainer) -> float:
         total_cost = 0.0
@@ -345,3 +362,22 @@ class RecursiveFunction:
                         (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** year)) * \
                          operation_cost
         return total_cost
+
+    def _update_parameters_in_opf(self, info: InterIterationInformation):
+        parameters_to_update = []
+        for name, row in self._control_graph.map_node_to_data_power_system[info.current_graph_node]["buses"].iterrows():
+            if "p_mw" in row.index:
+                parameter_to_update = UpdateParameterData()
+                parameter_to_update.component_type = "load"
+                parameter_to_update.parameter_position = int(row["bus_index"])
+                parameter_to_update.parameter_name = "p_mw"
+                parameter_to_update.new_value = float(row["p_mw"])
+                parameters_to_update.append(parameter_to_update)
+            if "q_mvar" in row.index:
+                parameter_to_update = UpdateParameterData()
+                parameter_to_update.component_type = "load"
+                parameter_to_update.parameter_position = int(row["bus_index"])
+                parameter_to_update.parameter_name = "q_mvar"
+                parameter_to_update.new_value = float(row["q_mvar"])
+                parameters_to_update.append(parameter_to_update)
+        self._opf.update_multiple_parameters(parameters_to_update, False)

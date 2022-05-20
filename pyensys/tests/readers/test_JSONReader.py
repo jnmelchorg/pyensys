@@ -1,10 +1,13 @@
 from math import sqrt
 from os.path import join, dirname
+
+import pytest
 from pandas import Timestamp, DataFrame
 
-from pyensys.DataContainersInterface.AbstractDataContainer import AbstractDataContainer
 from pyensys.readers.JSONReader import _create_dataframe, _load_pandapower_profile_data, _load_output_variable, \
-    _load_output_variables, _read_file, _read_dataframe_data, _load_optimisation_profile_data, ReadJSON
+    _load_output_variables, _read_file, _read_dataframe_data, _load_optimisation_profile_data, ReadJSON, \
+    _calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles, \
+    _normalise_system_apparent_power
 from pyensys.readers.ReaderDataClasses import DataframeData
 from pyensys.tests.test_data_paths import get_path_pandapower_json_test_data, \
     get_excel_timeseries, get_clustering_test_data
@@ -18,7 +21,7 @@ def test_load_problem_settings_case1():
             "name": "planning",
             "multi_objective": True,
             "stochastic": True,
-            "intertemporal": True,
+            "inter_temporal": True,
             "opf_optimizer": "pandapower",
             "problem_optimizer": "recursive_function",
             "opf_type": "ac"
@@ -28,7 +31,7 @@ def test_load_problem_settings_case1():
     assert problem_settings.problem == "planning"
     assert problem_settings.multi_objective
     assert problem_settings.stochastic
-    assert problem_settings.intertemporal
+    assert problem_settings.inter_temporal
     assert problem_settings.initialised
     assert problem_settings.opf_optimizer == "pandapower"
     assert problem_settings.problem_optimizer == "recursive_function"
@@ -423,10 +426,10 @@ def test_adjust_pandapower_profiles_to_time_settings():
         },
         "pandapower_profiles_data": {
             "1": {
-                    "data_path": join(dirname(__file__), "..", "excel", "time_series_pandapower_attest_format.xlsx"),
-                    "excel_sheet_name": "Sheet2",
-                    "element_type": "load",
-                    "format_data": "attest"
+                "data_path": join(dirname(__file__), "..", "excel", "time_series_pandapower_attest_format.xlsx"),
+                "excel_sheet_name": "Sheet2",
+                "element_type": "load",
+                "format_data": "attest"
             }
         }
     }
@@ -439,11 +442,8 @@ def test_adjust_pandapower_profiles_to_time_settings():
         readjs.parameters.pandapower_profiles_data.data[1].data)
 
 
-def test_store_profiles_dataframes_in_load_optimisation_profiles_data():
-    settings = {
-        "optimisation_profiles_data": {
-            "format_data": "attest",
-            "data": [
+def test_extract_optimisation_profiles_data_with_attest_format():
+    settings = [
                 {
                     "group": "a",
                     "data": [
@@ -459,38 +459,61 @@ def test_store_profiles_dataframes_in_load_optimisation_profiles_data():
                     "columns_names": ["b"]
                 }
             ]
-        }
-    }
     reader = ReadJSON()
-    reader.settings = settings
-    reader._load_optimisation_profiles_data()
+    reader._extract_optimisation_profiles_data(settings)
     assert len(reader.parameters.optimisation_profiles_dataframes) == 2
     assert DataFrame(data=[[1.0]], columns=["a"]).equals(reader.parameters.optimisation_profiles_dataframes["a"])
     assert DataFrame(data=[[2.0]], columns=["b"]).equals(reader.parameters.optimisation_profiles_dataframes["b"])
 
 
 def test_calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles():
+    data = DataFrame(data=[[1, 2030, 0, 12.02, 7.03], [1, 2030, 2, 15.01, 10.04], [2, 2030, 0, 11.98, 6.97],
+                           [2, 2030, 2, 14.99, 9.96]], columns=["scenario", "year", "bus_index", "p_mw", "q_mvar"])
+    expected = DataFrame(data=[[1, 2030, sqrt(12.02 ** 2 + 7.03 ** 2) + sqrt(15.01 ** 2 + 10.04 ** 2)],
+                               [2, 2030, sqrt(11.98 ** 2 + 6.97 ** 2) + sqrt(14.99 ** 2 + 9.96 ** 2)]],
+                         columns=["scenario", "year", "s_mva"])
+    results = _calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles(data)
+    assert expected.equals(results)
+
+
+def test_normalise_system_apparent_power():
+    data = DataFrame(data=[[1, 2020, 10.0], [2, 2020, 10.0], [1, 2030, 12.0], [2, 2030, 8.0]],
+                     columns=["scenario", "year", "s_mva"])
+    expected = DataFrame(data=[[1, 2020, 10.0, 1.0], [2, 2020, 10.0, 1.0], [1, 2030, 12.0, 1.2], [2, 2030, 8.0, 0.8]],
+                         columns=["scenario", "year", "s_mva", "normalised"])
+    _normalise_system_apparent_power(data)
+    assert expected.equals(data)
+
+
+def test_value_error_in_normalise_system_apparent_power():
+    data = DataFrame(data=[[1, 2020, 10.0], [2, 2020, 10.1], [1, 2030, 12.0], [2, 2030, 8.0]],
+                     columns=["scenario", "year", "s_mva"])
+    with pytest.raises(ValueError):
+        _normalise_system_apparent_power(data)
+
+
+def test_load_optimisation_profiles_data_from_input_with_attest_format():
     settings = {
-        "optimisation_profiles_data":{
-		"format_data": "attest",
-		"data": [
-			{
-				"group": "buses",
-				"data": [
-					[1, 2030, 0, 12.02, 7.03],
-					[1, 2030, 2, 15.01, 10.04],
-					[2, 2030, 0, 11.98, 6.97],
-					[2, 2030, 2, 14.99, 9.96]
-				],
-				"columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"]
-			}
-		]
-    }
+        "optimisation_profiles_data": {
+            "format_data": "attest",
+            "data": [
+                {
+                    "group": "buses",
+                    "data": [
+                        [1, 2020, 0, 8.0, 6.0],
+                        [1, 2030, 0, 12.0, 9.0],
+                        [2, 2020, 0, 8.0, 6.0],
+                        [2, 2030, 0, 3.0, 4.0]
+                    ],
+                    "columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"]
+                }
+            ]
+        }
     }
     reader = ReadJSON()
     reader.settings = settings
-    expected = DataFrame(data=[[1, 2030, sqrt(12.02**2 + 7.03**2)+sqrt(15.01**2 + 10.04**2)],
-                               [2, 2030, sqrt(11.98**2 + 6.97**2)+sqrt(14.99**2 + 9.96**2)]])
-    assert len(reader.parameters.optimisation_profiles_dataframes) == 2
-    assert DataFrame(data=[[1.0]], columns=["a"]).equals(reader.parameters.optimisation_profiles_dataframes["a"])
-    assert DataFrame(data=[[2.0]], columns=["b"]).equals(reader.parameters.optimisation_profiles_dataframes["b"])
+    result = reader._load_optimisation_profiles_data()
+    expected = DataFrame(data=[[1.0, 1.0], [1.5, 0.5]], columns=["scenario 1", "scenario 2"], index=["2020", "2030"])
+    assert result.initialised
+    assert len(result.data) == 1
+    assert result.data[0].data.equals(expected)

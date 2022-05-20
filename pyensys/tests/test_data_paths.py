@@ -50,6 +50,13 @@ def get_clustering_data_test() -> str:
     return path
 
 
+def get_attest_json_test_data() -> str:
+    path = dirname(__file__)
+    path = join(path, "json")
+    path = join(path, "attest_input_format.json")
+    return path
+
+
 def set_pandapower_test_output_directory() -> str:
     path = dirname(__file__)
     path = join(path, "outputs")

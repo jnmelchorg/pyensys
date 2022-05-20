@@ -1,4 +1,6 @@
-from pandas import read_excel, DataFrame, date_range
+from math import sqrt
+
+from pandas import read_excel, DataFrame, date_range, concat
 from json import load
 from os.path import splitext
 from typing import Any
@@ -153,6 +155,41 @@ def _load_output_variables(output_variables_dict: dict) -> List[OutputVariable]:
     return output_variables
 
 
+def _calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles(data: DataFrame) -> DataFrame:
+    scenarios = data["scenario"].unique()
+    years = data["year"].unique()
+    apparent_power_system_for_all_scenarios_and_years = DataFrame()
+    for scenario in scenarios:
+        for year in years:
+            apparent_power_system_for_all_scenarios_and_years = \
+                concat([apparent_power_system_for_all_scenarios_and_years,
+                        DataFrame(data=[[scenario, year, _calculate_total_system_apparent_power(data, scenario, year)]],
+                                  columns=["scenario", "year", "s_mva"])], ignore_index=True)
+    return apparent_power_system_for_all_scenarios_and_years
+
+
+def _calculate_total_system_apparent_power(data, scenario, year):
+    buses_data = data[(data["scenario"] == scenario) & (data["year"] == year)]
+    apparent_power_system = 0.0
+    for _, row in buses_data.iterrows():
+        if row["p_mw"] is not None and row["q_mvar"] is not None:
+            apparent_power_system += sqrt(row["p_mw"] ** 2 + row["q_mvar"] ** 2)
+        else:
+            raise ValueError(f"The dataframe does not contain data for p_mw and q_mvar for bus "
+                             f"{row['bus_index']}")
+    return apparent_power_system
+
+
+def _normalise_system_apparent_power(data: DataFrame):
+    if len(data[data["year"] == min(data["year"])]["s_mva"].unique()) > 1:
+        raise ValueError(f"The dataframe does not contain the same system apparent power for the initial year "
+                         f"{min(data['year'])} for all scenarios")
+    s_mva = data["s_mva"]
+    min_s = min(data[data["year"] == min(data["year"])]["s_mva"])
+    normalised = s_mva/min_s
+    data["normalised"] = normalised
+
+
 class ReadJSON:
     def __init__(self):
         self.settings = None
@@ -171,6 +208,7 @@ class ReadJSON:
         self.parameters.output_settings = self._load_output_settings()
         self.parameters.pandapower_optimisation_settings = self._load_pandapower_optimisation_settings()
         self.parameters.optimisation_profiles_data = self._load_optimisation_profiles_data()
+        self._load_optimisation_binary_variables()
         self._adjust_pandapower_profiles_to_time_settings()
         self.parameters.initialised = True
 
@@ -184,16 +222,18 @@ class ReadJSON:
                 problem_settings_dict.pop("multi_objective", False)
             problem_settings.stochastic = \
                 problem_settings_dict.pop("stochastic", False)
-            problem_settings.intertemporal = \
-                problem_settings_dict.pop("intertemporal", False)
+            problem_settings.inter_temporal = \
+                problem_settings_dict.pop("inter_temporal", False)
             problem_settings.opf_optimizer = \
-                problem_settings_dict.pop("opf_optimizer", '')
+                problem_settings_dict.pop("opf_optimizer", 'pandapower')
             problem_settings.problem_optimizer = \
                 problem_settings_dict.pop("problem_optimizer", '')
             problem_settings.opf_type = \
-                problem_settings_dict.pop("opf_type", '')
+                problem_settings_dict.pop("opf_type", 'ac')
             problem_settings.return_rate_in_percentage = \
                 problem_settings_dict.pop("return_rate_in_percentage", 0.0)
+            problem_settings.non_anticipative = \
+                problem_settings_dict.pop("non_anticipative", False)
             problem_settings.initialised = True
         return problem_settings
 
@@ -236,7 +276,7 @@ class ReadJSON:
         profiles_data_dict = self.settings.pop("optimisation_profiles_data", None)
         if profiles_data_dict is not None:
             format_data = profiles_data_dict.pop("format_data", None)
-            if format_data == None:
+            if format_data is None:
                 for value in profiles_data_dict.values():
                     profiles_data.data.append(_load_optimisation_profile_data(value))
                 profiles_data.initialised = True
@@ -244,6 +284,7 @@ class ReadJSON:
                 data = profiles_data_dict.pop("data", None)
                 if data is not None:
                     self._extract_optimisation_profiles_data(data)
+                    profiles_data = self._create_optimisation_profiles_based_on_attest_dataframes()
                 else:
                     raise ValueError("No data found in the profiles data")
             else:
@@ -267,11 +308,11 @@ class ReadJSON:
             self.settings.pop("pandapower_optimisation_settings", None)
         if pandapower_optimisation_settings_dict is not None:
             pandapower_settings.continue_on_divergence = \
-                pandapower_optimisation_settings_dict.pop("continue_on_divergence")
+                pandapower_optimisation_settings_dict.pop("continue_on_divergence", False)
             pandapower_settings.display_progress_bar = \
-                pandapower_optimisation_settings_dict.pop("display_progress_bar")
+                pandapower_optimisation_settings_dict.pop("display_progress_bar", False)
             pandapower_settings.optimisation_software = \
-                pandapower_optimisation_settings_dict.pop("optimisation_software")
+                pandapower_optimisation_settings_dict.pop("optimisation_software", "pypower")
             pandapower_settings.initialised = True
         return pandapower_settings
 
@@ -317,3 +358,31 @@ class ReadJSON:
             self.parameters.optimisation_profiles_dataframes.append(
                 profile.pop("group"), DataFrame(data=profile.pop("data"), columns=profile.pop("columns_names")))
 
+    def _create_optimisation_profiles_based_on_attest_dataframes(self) -> OptimisationProfilesData:
+        year_scenario_apparent_power = \
+            _calculate_total_apparent_power_per_scenario_and_per_year_for_optimisation_profiles(
+                self.parameters.optimisation_profiles_dataframes["buses"])
+        _normalise_system_apparent_power(year_scenario_apparent_power)
+        scenarios = year_scenario_apparent_power["scenario"].unique()
+        years = list(year_scenario_apparent_power["year"].unique())
+        years.sort()
+        multipliers = []
+        for year in years:
+            multipliers_per_year = []
+            for scenario in scenarios:
+                multipliers_per_year.append(float(year_scenario_apparent_power[
+                                                (year_scenario_apparent_power["year"] == year) &
+                                                (year_scenario_apparent_power["scenario"] == scenario)]["normalised"]))
+            multipliers.append(multipliers_per_year)
+        rows = []
+        for year in years:
+            rows.append(str(year))
+        columns = []
+        for scenario in scenarios:
+            columns.append(f"scenario {scenario}")
+        optimisation_data = OptimisationProfileData()
+        optimisation_data.data = DataFrame(data=multipliers, columns=columns, index=rows)
+        profiles_data = OptimisationProfilesData()
+        profiles_data.data = [optimisation_data]
+        profiles_data.initialised = True
+        return profiles_data

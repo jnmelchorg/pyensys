@@ -15,13 +15,13 @@ class ProblemSettings:
     problem: str = ''
     multi_objective: bool = False
     stochastic: bool = False
-    intertemporal: bool = False
+    inter_temporal: bool = False
     initialised: bool = False
     opf_optimizer: str = ''
     problem_optimizer: str = ''
     opf_type: str = ''
     return_rate_in_percentage: float = 0.0
-    non_anticipativity: bool = False
+    non_anticipative: bool = False
 
 
 @dataclass

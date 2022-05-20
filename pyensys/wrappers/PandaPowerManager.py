@@ -74,6 +74,17 @@ class PandaPowerManager:
                 optimisation_software=
                 self._parameters.pandapower_optimisation_settings.optimisation_software,
                 opf_type=self._parameters.problem_settings.opf_type)
+        elif self._parameters.pandapower_optimisation_settings.initialised and \
+                self._parameters.problem_settings.initialised:
+            self.simulation_settings = SimulationSettings(
+                time_steps=[],
+                display_progress_bar=
+                self._parameters.pandapower_optimisation_settings.display_progress_bar,
+                continue_on_divergence=
+                self._parameters.pandapower_optimisation_settings.continue_on_divergence,
+                optimisation_software=
+                self._parameters.pandapower_optimisation_settings.optimisation_software,
+                opf_type=self._parameters.problem_settings.opf_type)
 
     def run_time_step_opf_pandapower(self):
         self.wrapper.run_time_step_simulation(self.simulation_settings)
@@ -93,15 +104,23 @@ class PandaPowerManager:
     def update_parameter(self, parameter_data: UpdateParameterData):
         self.wrapper = PandaPowerWrapper()
         self._initialise()
-        self.wrapper.network[parameter_data.component_type].at[ \
+        self.wrapper.network[parameter_data.component_type].at[
             parameter_data.parameter_position, parameter_data.parameter_name] = parameter_data.new_value
 
-    def update_multiple_parameters(self, list_parameter_data: List[UpdateParameterData]):
-        self.wrapper = PandaPowerWrapper()
-        self._initialise()
+    def update_multiple_parameters(self, list_parameter_data: List[UpdateParameterData], initialise: bool = True):
+        if initialise:
+            self.wrapper = PandaPowerWrapper()
+            self._initialise()
         for parameter in list_parameter_data:
-            self.wrapper.network[parameter.component_type].at[ \
-                parameter.parameter_position, parameter.parameter_name] = parameter.new_value
+            if parameter.component_type == "load":
+                self.wrapper.network[parameter.component_type].at[
+                    list(self.wrapper.network[parameter.component_type][
+                        self.wrapper.network[parameter.component_type]["bus"] ==
+                        parameter.parameter_position].index)[0],
+                    parameter.parameter_name] = parameter.new_value
+            else:
+                self.wrapper.network[parameter.component_type].at[ \
+                    parameter.parameter_position, parameter.parameter_name] = parameter.new_value
 
     def get_total_cost(self) -> float:
         return self.wrapper.get_total_cost()
