@@ -389,6 +389,37 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                     remaining_nodes.remove(node)
         return remaining_nodes
 
+    def _calculate_investment_cost(self, interventions: AbstractDataContainer) -> float:
+        total_cost = 0.0
+        for level, (_, investments) in enumerate(interventions):
+            partial_cost = 0.0
+            for _, investment in investments:
+                partial_cost = partial_cost + investment.cost
+            if level == 0:
+                total_cost = total_cost + (1 / (
+                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** 0)) * \
+                             partial_cost
+            else:
+                years_difference = self._control_graph.optimisation_years[level] - \
+                                   self._control_graph.optimisation_years[level - 1]
+                total_cost = total_cost + (1 / (
+                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference))\
+                             * partial_cost
+        return total_cost
+
+    def _calculate_opteration_cost(self, operation_cost_per_year: AbstractDataContainer) -> float:
+        total_cost = 0.0
+        for level, (_, operation_cost) in enumerate(operation_cost_per_year):
+            if level == 0:
+                total_cost = operation_cost
+            else:
+                years_difference = self._control_graph.optimisation_years[level] - \
+                                   self._control_graph.optimisation_years[level - 1]
+                total_cost = total_cost + (1 / (
+                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference))\
+                             * operation_cost
+        return total_cost
+
     def get_solution(self, info: InterIterationInformation) -> List[dict]:
         solutions_lines = {"group": "lines", "data": DataFrame(columns=["scenario", "year", "line_index"])}
         solutions_investment_costs = {"group": "investment_costs", "data": DataFrame(columns=["scenario", "cost"])}
