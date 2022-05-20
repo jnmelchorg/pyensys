@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Dict, Set
 from dataclasses import dataclass, field
 
@@ -93,6 +94,7 @@ class GraphandClusterData:
     nodes_data: Dict[int, ClusterData] = field(default_factory=dict)
     graph: DirectedGraph = field(default_factory=lambda: DirectedGraph())
     map_node_to_data_power_system: Dict[int, AbstractDataContainer] = field(default_factory=dict)
+    optimisation_years: list = field(default_factory=list)
 
 
 class GraphtoTreeConverter:
@@ -260,6 +262,8 @@ class RecursiveFunctionGraphCreator:
         years_number = []
         for year in years_names:
             years_number.append(int(year))
+        self._control_graph.optimisation_years = deepcopy(years_number)
+        self._control_graph.optimisation_years.sort()
         for number_node, node in self._control_graph.nodes_data.items():
             self._control_graph.map_node_to_data_power_system[number_node] = AbstractDataContainer()
             self._control_graph.map_node_to_data_power_system[number_node].create_dictionary()
