@@ -22,6 +22,16 @@ class PandaPowerManager:
         self.add_controllers_to_network()
         self.add_output_writer_to_network()
         self.define_simulation_settings()
+        self.create_static_generators_for_flexibility()
+
+    def create_static_generators_for_flexibility(self):
+        if len(self._parameters.optimisation_profiles_dataframes) > 0 and \
+                self._parameters.optimisation_profiles_dataframes.get("generators") is not None:
+            generators_data = self._parameters.optimisation_profiles_dataframes.get("generators")
+            buses_indexes = list(generators_data["bus_index"].unique())
+            for bus_index in buses_indexes:
+                self.wrapper.create_poly_cost(index=self.wrapper.create_static_generator(bus_index),
+                                              type_element="sgen")
 
     def load_mat_file_to_pandapower(self):
         if self._parameters.pandapower_mpc_settings.initialised:
