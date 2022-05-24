@@ -4,7 +4,7 @@ from pandapower.converter import from_mpc
 from pandapower.timeseries import DFData
 from pandapower.control import ConstControl
 from pandapower.timeseries.output_writer import OutputWriter
-from pandapower import runopp, runpm_ac_opf, create_empty_network
+from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost
 from pandapower.timeseries.run_time_series import run_timeseries
 
 from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, TimeSeriesOutputFileSettings, \
@@ -87,6 +87,12 @@ class PandaPowerWrapper:
     def is_feasible(self) -> bool:
         return self.network.OPF_converged
 
+    def create_static_generator(self, bus_index) -> int:
+        return create_sgen(self.network, bus=bus_index, p_mw=0.0, controllable=True)
+
+    def create_poly_cost(self, index, type_element):
+        create_poly_cost(self.network, element=index, et=type_element, cp1_eur_per_mw=0.0)
+
     def get_total_cost(self) -> float:
         return self.network.res_cost
 
@@ -95,7 +101,7 @@ class PandaPowerWrapper:
             self.converged = True
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
-                    settings.optimisation_software](self.network, verbose=settings.display_progress_bar)
+                    settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)
