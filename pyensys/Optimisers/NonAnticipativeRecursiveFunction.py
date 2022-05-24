@@ -226,6 +226,10 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                             info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
                     _eliminate_offsprings_of_candidate_in_incumbent(info)
                     info.last_node_reached = False
+                info.new_interventions = AbstractDataContainer()
+                info.new_interventions.create_list()
+                info.new_interventions_remaining_construction_time = AbstractDataContainer()
+                info.new_interventions_remaining_construction_time.create_list()
         if not info.partial_tree.is_empty():
             info.incumbent_graph_paths = deepcopy(info.partial_tree.graph_paths)
             info.incumbent_interventions = deepcopy(info.partial_tree.interventions)
@@ -234,8 +238,9 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         return feasible_solution_exist
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
-        if self._check_feasibility_of_current_solution(inter_iteration_information) and \
-                self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
+        # if self._check_feasibility_of_current_solution(inter_iteration_information) and \
+        #         self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
+        if self._check_feasibility_of_current_solution(inter_iteration_information):
             inter_iteration_information = self._construction_of_solution(inter_iteration_information)
             feasible_solution_exist = self._graph_exploration(inter_iteration_information)
             self._return_to_previous_state(inter_iteration_information)
@@ -401,9 +406,9 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                              partial_cost
             else:
                 years_difference = self._control_graph.optimisation_years[level] - \
-                                   self._control_graph.optimisation_years[level - 1]
+                                   self._control_graph.optimisation_years[0]
                 total_cost = total_cost + (1 / (
-                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference))\
+                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference)) \
                              * partial_cost
         return total_cost
 
@@ -414,9 +419,9 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                 total_cost = operation_cost
             else:
                 years_difference = self._control_graph.optimisation_years[level] - \
-                                   self._control_graph.optimisation_years[level - 1]
+                                   self._control_graph.optimisation_years[0]
                 total_cost = total_cost + (1 / (
-                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference))\
+                        (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** years_difference)) \
                              * operation_cost
         return total_cost
 
