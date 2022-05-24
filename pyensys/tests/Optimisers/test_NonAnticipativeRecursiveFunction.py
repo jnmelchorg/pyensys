@@ -116,16 +116,16 @@ def test_optimise_interventions_in_last_node(mock_method, feasibility_flag, expe
     assert non_anticipative._optimality_check.call_count == expected_values[1]
 
 
-@pytest.mark.parametrize("feasibility_offsprings, expected_calls, return_flag, graph_feasibility, feasibility_current",
-                         [(None, [0, 0], False, None, False), (False, [0, 0], False, None, True),
-                          (True, [1, 1], True, True, True), (True, [1, 1], False, False, True)])
-def test_exploration_of_current_solution(feasibility_offsprings, expected_calls, return_flag, graph_feasibility,
+@pytest.mark.parametrize("expected_calls, return_flag, graph_feasibility, feasibility_current",
+                         [([0, 0], False, None, False), ([1, 1], False, False, True),
+                          ([1, 1], True, True, True)])
+def test_exploration_of_current_solution(expected_calls, return_flag, graph_feasibility,
                                          feasibility_current):
     non_anticipative = NonAnticipativeRecursiveFunction()
-    non_anticipative._verify_feasibility_of_solution_in_successor_nodes = MagicMock(return_value=feasibility_offsprings)
     non_anticipative._check_feasibility_of_current_solution = MagicMock(return_value=feasibility_current)
     non_anticipative._construction_of_solution = MagicMock(return_value=InterIterationInformation())
     non_anticipative._graph_exploration = MagicMock(return_value=graph_feasibility)
+    non_anticipative._return_to_previous_state = MagicMock()
     assert non_anticipative._exploration_of_current_solution(InterIterationInformation()) == return_flag
     assert non_anticipative._construction_of_solution.call_count == expected_calls[0]
     assert non_anticipative._graph_exploration.call_count == expected_calls[1]
