@@ -238,8 +238,6 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         return feasible_solution_exist
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
-        # if self._check_feasibility_of_current_solution(inter_iteration_information) and \
-        #         self._verify_feasibility_of_solution_in_successor_nodes(inter_iteration_information):
         if self._check_feasibility_of_current_solution(inter_iteration_information):
             inter_iteration_information = self._construction_of_solution(inter_iteration_information)
             feasible_solution_exist = self._graph_exploration(inter_iteration_information)
