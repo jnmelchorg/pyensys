@@ -114,6 +114,15 @@ def _create_data_to_update_status_of_parameter(intervention: BinaryVariable) -> 
         raise TypeError
 
 
+def _create_load_parameter(row, parameter_name: str):
+    parameter_to_update = UpdateParameterData()
+    parameter_to_update.component_type = "load"
+    parameter_to_update.parameter_position = int(row["bus_index"])
+    parameter_to_update.parameter_name = parameter_name
+    parameter_to_update.new_value = float(row[parameter_name])
+    return parameter_to_update
+
+
 class RecursiveFunction:
 
     def __init__(self):
@@ -350,7 +359,7 @@ class RecursiveFunction:
             partial_cost = 0.0
             for _, investment in investments:
                 partial_cost = partial_cost + investment.cost
-            total_cost = total_cost + (1 / ( \
+            total_cost = total_cost + (1 / (
                         (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** year)) * \
                          partial_cost
         return total_cost
@@ -358,7 +367,7 @@ class RecursiveFunction:
     def _calculate_opteration_cost(self, operation_cost_per_year: AbstractDataContainer) -> float:
         total_cost = 0.0
         for year, (_, operation_cost) in enumerate(operation_cost_per_year):
-            total_cost = total_cost + (1 / ( \
+            total_cost = total_cost + (1 / (
                         (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** year)) * \
                          operation_cost
         return total_cost
@@ -367,17 +376,9 @@ class RecursiveFunction:
         parameters_to_update = []
         for name, row in self._control_graph.map_node_to_data_power_system[info.current_graph_node]["buses"].iterrows():
             if "p_mw" in row.index:
-                parameter_to_update = UpdateParameterData()
-                parameter_to_update.component_type = "load"
-                parameter_to_update.parameter_position = int(row["bus_index"])
-                parameter_to_update.parameter_name = "p_mw"
-                parameter_to_update.new_value = float(row["p_mw"])
+                parameter_to_update = _create_load_parameter(row, "p_mw")
                 parameters_to_update.append(parameter_to_update)
             if "q_mvar" in row.index:
-                parameter_to_update = UpdateParameterData()
-                parameter_to_update.component_type = "load"
-                parameter_to_update.parameter_position = int(row["bus_index"])
-                parameter_to_update.parameter_name = "q_mvar"
-                parameter_to_update.new_value = float(row["q_mvar"])
+                parameter_to_update = _create_load_parameter(row, "q_mvar")
                 parameters_to_update.append(parameter_to_update)
         self._opf.update_multiple_parameters(parameters_to_update, False)
