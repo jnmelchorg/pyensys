@@ -3,7 +3,7 @@ from pyensys.wrappers.PandaPowerManager import PandaPowerManager
 from pyensys.wrappers.PandapowerDataClasses import UpdateParameterData
 from pyensys.readers.ReaderDataClasses import Parameters, PandaPowerProfileData, OutputVariable, \
     PandaPowerProfilesData
-from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory
+from pyensys.tests.test_data_paths import get_path_case9_mat, set_pandapower_test_output_directory, get_path_case3_mat
 
 from pandas import DataFrame, date_range
 from math import isclose
@@ -405,3 +405,18 @@ def test_get_total_cost():
     manager = PandaPowerManager()
     manager.wrapper.get_total_cost = MagicMock(return_value=3)
     assert manager.get_total_cost() == 3
+
+
+def test_create_static_generators_for_flexibility():
+    manager = PandaPowerManager()
+    manager._parameters.pandapower_mpc_settings.initialised = True
+    manager._parameters.pandapower_mpc_settings.mat_file_path = get_path_case3_mat()
+    manager._parameters.pandapower_mpc_settings.system_frequency = 60
+    manager.load_mat_file_to_pandapower()
+    flexible_units = DataFrame(data=[[0], [2]], columns=["bus_index"])
+    manager._parameters.optimisation_profiles_dataframes.create_dictionary()
+    manager._parameters.optimisation_profiles_dataframes.append("generators", flexible_units)
+    manager.create_static_generators_for_flexibility()
+    assert len(manager.wrapper.network.sgen.index) == 2
+    assert len(manager.wrapper.network.poly_cost.index) == 3
+
