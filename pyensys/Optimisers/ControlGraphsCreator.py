@@ -254,6 +254,34 @@ class RecursiveFunctionGraphCreator:
         self._control_graph = converter.convert()
 
     def _create_map_node_to_data_power_system(self, parameters: Parameters):
+        scenarios_number, years_number = self._determine_scenarios_and_years_in_dataframes()
+        self._control_graph.optimisation_years = deepcopy(years_number)
+        self._control_graph.optimisation_years.sort()
+        for number_node, node in self._control_graph.nodes_data.items():
+            self._control_graph.map_node_to_data_power_system[number_node] = AbstractDataContainer()
+            self._control_graph.map_node_to_data_power_system[number_node].create_dictionary()
+            for group, data in parameters.optimisation_profiles_dataframes:
+                if group == "buses":
+                    self._adapt_information_buses(data, group, node, number_node, scenarios_number, years_number)
+                elif group == "flexible_units":
+                    self._adapt_information_flexible_units(data, group, node, number_node, scenarios_number,
+                                                           years_number)
+
+    def _adapt_information_buses(self, data, group, node, number_node, scenarios_number, years_number):
+        related_data_to_node = data[data["scenario"].isin([scenarios_number[y] for y in node[0].scenarios])]
+        related_data_to_node = related_data_to_node[related_data_to_node["year"] == years_number[node[0].level]]
+        elements_numbers_in_data = list(related_data_to_node["bus_index"].unique())
+        averaged_data_for_elements = DataFrame()
+        for number in elements_numbers_in_data:
+            specific_bus_data = related_data_to_node[related_data_to_node["bus_index"] == number]
+            averaged_data_for_elements = concat([averaged_data_for_elements, DataFrame(
+                data=[[years_number[node[0].level], number, specific_bus_data["p_mw"].mean(),
+                       specific_bus_data["q_mvar"].mean()]],
+                columns=["year", "bus_index", "p_mw", "q_mvar"])], ignore_index=True)
+        self._control_graph.map_node_to_data_power_system[number_node].append(group,
+                                                                              averaged_data_for_elements)
+
+    def _determine_scenarios_and_years_in_dataframes(self):
         scenarios_name_raw = list(self._profiles.data[0].data.columns)
         scenarios_number = []
         for scenario in scenarios_name_raw:
@@ -262,23 +290,29 @@ class RecursiveFunctionGraphCreator:
         years_number = []
         for year in years_names:
             years_number.append(int(year))
-        self._control_graph.optimisation_years = deepcopy(years_number)
-        self._control_graph.optimisation_years.sort()
-        for number_node, node in self._control_graph.nodes_data.items():
-            self._control_graph.map_node_to_data_power_system[number_node] = AbstractDataContainer()
-            self._control_graph.map_node_to_data_power_system[number_node].create_dictionary()
-            for group, data in parameters.optimisation_profiles_dataframes:
-                if group == "buses":
-                    related_data_to_node = data[data["scenario"].isin([scenarios_number[y] for y in node[0].scenarios])]
-                    related_data_to_node = related_data_to_node[related_data_to_node["year"] ==
-                                                                years_number[node[0].level]]
-                    elements_numbers_in_data =list(related_data_to_node["bus_index"].unique())
-                    averaged_data_for_elements = DataFrame()
-                    for number in elements_numbers_in_data:
-                        specific_bus_data = related_data_to_node[related_data_to_node["bus_index"] == number]
-                        averaged_data_for_elements = concat([averaged_data_for_elements, DataFrame(
-                            data=[[years_number[node[0].level], number, specific_bus_data["p_mw"].mean(),
-                                   specific_bus_data["q_mvar"].mean()]],
-                            columns=["year", "bus_index", "p_mw", "q_mvar"])], ignore_index=True)
-                    self._control_graph.map_node_to_data_power_system[number_node].append(group,
-                                                                                          averaged_data_for_elements)
+        return scenarios_number, years_number
+
+    def _adapt_information_flexible_units(self, data, group, node, number_node, scenarios_number, years_number):
+        related_data_to_node = data[data["scenario"].isin([scenarios_number[y] for y in node[0].scenarios])]
+        related_data_to_node = related_data_to_node[related_data_to_node["year"] == years_number[node[0].level]]
+        elements_numbers_in_data = list(related_data_to_node["bus_index"].unique())
+        averaged_data_for_elements = DataFrame()
+        for number in elements_numbers_in_data:
+            specific_bus_data = related_data_to_node[related_data_to_node["bus_index"] == number]
+            averaged_data_for_elements = concat([averaged_data_for_elements, DataFrame(
+                data=[[years_number[node[0].level], number,
+                       specific_bus_data["max_p_mw"].mean() if "max_p_mw" in specific_bus_data.columns else 0,
+                       specific_bus_data["min_p_mw"].mean() if "min_p_mw" in specific_bus_data.columns else 0,
+                       specific_bus_data["max_q_mvar"].mean() if "max_q_mvar" in specific_bus_data.columns else 0,
+                       specific_bus_data["min_q_mvar"].mean() if "min_q_mvar" in specific_bus_data.columns else 0,
+                       specific_bus_data["cp2_eur_per_mw2"].mean() if "cp2_eur_per_mw2" in specific_bus_data.columns else 0,
+                       specific_bus_data["cp1_eur_per_mw"].mean() if "cp1_eur_per_mw" in specific_bus_data.columns else 0,
+                       specific_bus_data["cp0_eur"].mean() if "cp0_eur" in specific_bus_data.columns else 0,
+                       specific_bus_data["cq2_eur_per_mvar2"].mean() if "cq2_eur_per_mvar2" in specific_bus_data.columns else 0,
+                       specific_bus_data["cq1_eur_per_mvar"].mean() if "cq1_eur_per_mvar" in specific_bus_data.columns else 0,
+                       specific_bus_data["cq0_eur"].mean() if "cq0_eur" in specific_bus_data.columns else 0
+                       ]],
+                columns=["year", "bus_index", "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar", "cp2_eur_per_mw2",
+                         "cp1_eur_per_mw", "cp0_eur", "cq2_eur_per_mvar2", "cq1_eur_per_mvar", "cq0_eur"])], ignore_index=True)
+        self._control_graph.map_node_to_data_power_system[number_node].append(group,
+                                                                              averaged_data_for_elements)
