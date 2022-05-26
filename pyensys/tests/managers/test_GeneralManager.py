@@ -9,7 +9,7 @@ def test_main_access_function():
     start = time.time()
     # main_access_function(file_path=get_attest_json_test_data())
     solution = main_access_function(
-        file_path="C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\json\\attest_input_format_m3.json")
+        file_path="C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\json\\attest_input_format_m4.json")
     output_dir = "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\outputs"
     output_path = join(output_dir, "output.json")
     save_in_json(solution, output_path)

@@ -98,7 +98,6 @@ class PandaPowerWrapper:
 
     def run_ac_opf(self, settings: SimulationSettings):
         try:
-            self.converged = True
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
