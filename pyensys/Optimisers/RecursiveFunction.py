@@ -9,7 +9,7 @@ from pyensys.DataContainersInterface.OperationsAbstractDataContainer import diff
 from dataclasses import dataclass, field
 from itertools import combinations
 from copy import deepcopy
-from typing import Iterator, Tuple
+from typing import Iterator, Tuple, List
 
 
 @dataclass
@@ -120,6 +120,23 @@ def _create_load_parameter(row, parameter_name: str):
     parameter_to_update.parameter_position = int(row["bus_index"])
     parameter_to_update.parameter_name = parameter_name
     parameter_to_update.new_value = float(row[parameter_name])
+    return parameter_to_update
+
+
+def _create_static_generator_parameter(row, parameter_name: str, position: int):
+    parameter_to_update = UpdateParameterData()
+    parameter_to_update.component_type = "sgen"
+    parameter_to_update.parameter_position = position
+    parameter_to_update.parameter_name = parameter_name
+    parameter_to_update.new_value = float(row[parameter_name])
+    return parameter_to_update
+
+def _create_parameter(component_type: str, parameter_name: str, position: int, value):
+    parameter_to_update = UpdateParameterData()
+    parameter_to_update.component_type = component_type
+    parameter_to_update.parameter_position = position
+    parameter_to_update.parameter_name = parameter_name
+    parameter_to_update.new_value = value
     return parameter_to_update
 
 
@@ -373,6 +390,11 @@ class RecursiveFunction:
         return total_cost
 
     def _update_parameters_in_opf(self, info: InterIterationInformation):
+        parameters_to_update = self._parameters_for_buses(info)
+        parameters_to_update.extend(self._parameters_for_flexible_units(info))
+        self._opf.update_multiple_parameters(parameters_to_update, False)
+
+    def _parameters_for_buses(self, info: InterIterationInformation) -> list:
         parameters_to_update = []
         for name, row in self._control_graph.map_node_to_data_power_system[info.current_graph_node]["buses"].iterrows():
             if "p_mw" in row.index:
@@ -381,4 +403,55 @@ class RecursiveFunction:
             if "q_mvar" in row.index:
                 parameter_to_update = _create_load_parameter(row, "q_mvar")
                 parameters_to_update.append(parameter_to_update)
-        self._opf.update_multiple_parameters(parameters_to_update, False)
+        return parameters_to_update
+
+    def _parameters_for_flexible_units(self, info: InterIterationInformation) -> list:
+        parameters_to_update = []
+        for name, row in self._control_graph.map_node_to_data_power_system[info.current_graph_node]["flexible units"].iterrows():
+            index = self._get_index_of_element_based_on_parameter("sgen", "bus", int(row["bus_index"]))
+            if "max_p_mw" in row.index:
+                parameter_to_update = _create_static_generator_parameter(row, "max_p_mw", index)
+                parameters_to_update.append(parameter_to_update)
+            if "min_p_mw" in row.index:
+                parameter_to_update = _create_static_generator_parameter(row, "min_p_mw", index)
+                parameters_to_update.append(parameter_to_update)
+            if "max_q_mvar" in row.index:
+                parameter_to_update = _create_static_generator_parameter(row, "max_q_mvar", index)
+                parameters_to_update.append(parameter_to_update)
+            if "min_q_mvar" in row.index:
+                parameter_to_update = _create_static_generator_parameter(row, "min_q_mvar", index)
+                parameters_to_update.append(parameter_to_update)
+            index = self._get_index_of_element_based_on_multiple_parameters("poly_cost", ["element", "et"],
+                                                                            [index, "sgen"])
+            if "cp2_eur_per_mw2" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cp2_eur_per_mw2", index,
+                                                        float(row["cp2_eur_per_mw2"]))
+                parameters_to_update.append(parameter_to_update)
+            if "cp1_eur_per_mw" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cp1_eur_per_mw", index,
+                                                        float(row["cp1_eur_per_mw"]))
+                parameters_to_update.append(parameter_to_update)
+            if "cp0_eur" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cp0_eur", index,
+                                                        float(row["cp0_eur"]))
+                parameters_to_update.append(parameter_to_update)
+            if "cq2_eur_per_mvar2" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cq2_eur_per_mvar2", index,
+                                                        float(row["cq2_eur_per_mvar2"]))
+                parameters_to_update.append(parameter_to_update)
+            if "cq1_eur_per_mvar" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cq1_eur_per_mvar", index,
+                                                        float(row["cq1_eur_per_mvar"]))
+                parameters_to_update.append(parameter_to_update)
+            if "cq0_eur" in row.index:
+                parameter_to_update = _create_parameter("poly_cost", "cq0_eur", index,
+                                                        float(row["cq0_eur"]))
+                parameters_to_update.append(parameter_to_update)
+        return parameters_to_update
+
+    def _get_index_of_element_based_on_parameter(self, element_name: str, parameter_name: str, value):
+        return self._opf._get_index_of_element_based_on_parameter(element_name, parameter_name, value)
+
+    def _get_index_of_element_based_on_multiple_parameters(self, element_name: str, parameters_names: List[str],
+                                                           values: list):
+        return self._opf._get_index_of_element_based_on_multiple_parameters(element_name, parameters_names, values)

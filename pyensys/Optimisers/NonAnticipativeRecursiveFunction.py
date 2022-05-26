@@ -176,7 +176,11 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         super().__init__()
 
     def solve(self, info: InterIterationInformation) -> bool:
-        info = update_remaining_construction_time(info)
+        time_adjustment = -1
+        if info.current_graph_node != 0:
+            time_adjustment = self._control_graph.optimisation_years[info.level_in_graph]-\
+                              self._control_graph.optimisation_years[info.level_in_graph - 1]
+            info = update_remaining_construction_time(info, -time_adjustment)
         if not any(True for _ in self._control_graph.graph.neighbours(info.current_graph_node)):
             info.last_node_reached = True
             feasible_solution_exist = False
@@ -196,7 +200,8 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             return feasible_solution_exist
         self._exploration_of_current_solution(info)
         feasible_solution_exist = self._interventions_handler(info)
-        info = update_remaining_construction_time(info, 1)
+        if info.current_graph_node != 0:
+            info = update_remaining_construction_time(info, time_adjustment)
         info.level_in_graph -= 1
         return feasible_solution_exist
 

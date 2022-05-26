@@ -88,7 +88,8 @@ class PandaPowerWrapper:
         return self.network.OPF_converged
 
     def create_static_generator(self, bus_index) -> int:
-        return create_sgen(self.network, bus=bus_index, p_mw=0.0, controllable=True)
+        return create_sgen(self.network, bus=bus_index, p_mw=0.0, controllable=True, min_p_mw=0.0, max_p_mw=0.0,
+                           min_q_mvar=0.0, max_q_mvar=0.0)
 
     def create_poly_cost(self, index, type_element):
         create_poly_cost(self.network, element=index, et=type_element, cp1_eur_per_mw=0.0)

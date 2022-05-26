@@ -263,10 +263,9 @@ class RecursiveFunctionGraphCreator:
             for group, data in parameters.optimisation_profiles_dataframes:
                 if group == "buses":
                     self._adapt_information_buses(data, group, node, number_node, scenarios_number, years_number)
-                elif group == "flexible_units":
+                elif group == "flexible units":
                     self._adapt_information_flexible_units(data, group, node, number_node, scenarios_number,
                                                            years_number)
-                    pass
 
     def _adapt_information_buses(self, data, group, node, number_node, scenarios_number, years_number):
         related_data_to_node = data[data["scenario"].isin([scenarios_number[y] for y in node[0].scenarios])]

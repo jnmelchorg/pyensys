@@ -26,8 +26,8 @@ class PandaPowerManager:
 
     def create_static_generators_for_flexibility(self):
         if len(self._parameters.optimisation_profiles_dataframes) > 0 and \
-                self._parameters.optimisation_profiles_dataframes.get("flexible_units") is not None:
-            generators_data = self._parameters.optimisation_profiles_dataframes.get("flexible_units")
+                self._parameters.optimisation_profiles_dataframes.get("flexible units") is not None:
+            generators_data = self._parameters.optimisation_profiles_dataframes.get("flexible units")
             buses_indexes = list(generators_data["bus_index"].unique())
             for bus_index in buses_indexes:
                 self.wrapper.create_poly_cost(index=self.wrapper.create_static_generator(bus_index),
@@ -137,3 +137,15 @@ class PandaPowerManager:
 
     def run_ac_opf_pandapower(self):
         self.wrapper.run_ac_opf(self.simulation_settings)
+
+    def _get_index_of_element_based_on_parameter(self, element_name: str, parameter_name: str, value):
+        return self.wrapper.network[element_name][self.wrapper.network[element_name][parameter_name] == value].index[0]
+
+    def _get_index_of_element_based_on_multiple_parameters(self, element_name: str, parameters_names: List[str],
+                                                           values: list):
+        if len(parameters_names) != len(values):
+            raise ValueError("The number of parameters and values must be equal")
+        row = self.wrapper.network[element_name]
+        for parameter_name, value in zip(parameters_names, values):
+            row = row[row[parameter_name] == value]
+        return row.index[0]

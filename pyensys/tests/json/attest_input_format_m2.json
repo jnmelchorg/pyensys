@@ -48,7 +48,7 @@
 				"columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"]
 			},
 			{
-				"group": "flexibility_units",
+				"group": "flexible units",
 				"data": [
 					[1, 2020, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
 					[1, 2020, 2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
