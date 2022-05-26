@@ -407,6 +407,8 @@ class RecursiveFunction:
 
     def _parameters_for_flexible_units(self, info: InterIterationInformation) -> list:
         parameters_to_update = []
+        if self._control_graph.map_node_to_data_power_system[info.current_graph_node].get("flexible units") is None:
+            return []
         for name, row in self._control_graph.map_node_to_data_power_system[info.current_graph_node]["flexible units"].iterrows():
             index = self._get_index_of_element_based_on_parameter("sgen", "bus", int(row["bus_index"]))
             if "max_p_mw" in row.index:

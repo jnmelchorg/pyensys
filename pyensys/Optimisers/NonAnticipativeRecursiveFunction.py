@@ -177,6 +177,10 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
     def solve(self, info: InterIterationInformation) -> bool:
         time_adjustment = -1
+        info.new_interventions = AbstractDataContainer()
+        info.new_interventions.create_list()
+        info.new_interventions_remaining_construction_time = AbstractDataContainer()
+        info.new_interventions_remaining_construction_time.create_list()
         if info.current_graph_node != 0:
             time_adjustment = self._control_graph.optimisation_years[info.level_in_graph]-\
                               self._control_graph.optimisation_years[info.level_in_graph - 1]
@@ -185,10 +189,6 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             info.last_node_reached = True
             feasible_solution_exist = False
             if self._check_feasibility_of_current_solution(info):
-                info.new_interventions = AbstractDataContainer()
-                info.new_interventions.create_list()
-                info.new_interventions_remaining_construction_time = AbstractDataContainer()
-                info.new_interventions_remaining_construction_time.create_list()
                 info = self._construction_of_solution(info)
                 self._optimality_check(info)
                 feasible_solution_exist = True
@@ -199,6 +199,8 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             info.level_in_graph -= 1
             return feasible_solution_exist
         self._exploration_of_current_solution(info)
+        if info.last_node_reached:
+            self._store_partial_tree(info)
         feasible_solution_exist = self._interventions_handler(info)
         if info.current_graph_node != 0:
             info = update_remaining_construction_time(info, time_adjustment)
@@ -214,33 +216,42 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                 if self._exploration_of_current_solution(info):
                     feasible_solution_exist = True
                 if info.last_node_reached:
-                    if info.partial_tree.is_empty():
-                        info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
-                        info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
-                        info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
-                        info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
-                    else:
-                        cost_existing_tree = _calculate_total_planning_cost(info.partial_tree.investment_costs,
-                                                                            info.partial_tree.operation_costs)
-                        cost_candidate_tree = _calculate_total_planning_cost(info.incumbent_investment_costs,
-                                                                             info.incumbent_operation_costs)
-                        if cost_existing_tree > cost_candidate_tree:
-                            info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
-                            info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
-                            info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
-                            info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
-                    _eliminate_offsprings_of_candidate_in_incumbent(info)
-                    info.last_node_reached = False
+                    self._store_partial_tree(info)
                 info.new_interventions = AbstractDataContainer()
                 info.new_interventions.create_list()
                 info.new_interventions_remaining_construction_time = AbstractDataContainer()
                 info.new_interventions_remaining_construction_time.create_list()
-        if not info.partial_tree.is_empty():
+        if not info.partial_tree.is_empty() and len(info.incumbent_graph_paths) == 0:
             info.incumbent_graph_paths = deepcopy(info.partial_tree.graph_paths)
             info.incumbent_interventions = deepcopy(info.partial_tree.interventions)
             info.incumbent_investment_costs = deepcopy(info.partial_tree.investment_costs)
             info.incumbent_operation_costs = deepcopy(info.partial_tree.operation_costs)
         return feasible_solution_exist
+
+    def _store_partial_tree(self, info):
+        if info.partial_tree.is_empty():
+            info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
+            info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
+            info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
+            info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
+            _eliminate_offsprings_of_candidate_in_incumbent(info)
+        elif len(info.partial_tree.graph_paths) < len(info.incumbent_graph_paths):
+            info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
+            info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
+            info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
+            info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
+            _eliminate_offsprings_of_candidate_in_incumbent(info)
+        elif info.partial_tree.graph_paths == info.incumbent_graph_paths:
+            cost_existing_tree = _calculate_total_planning_cost(info.partial_tree.investment_costs,
+                                                                info.partial_tree.operation_costs)
+            cost_candidate_tree = _calculate_total_planning_cost(info.incumbent_investment_costs,
+                                                                 info.incumbent_operation_costs)
+            if cost_existing_tree > cost_candidate_tree:
+                info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
+                info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
+                info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
+                info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
+        info.last_node_reached = False
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
         if self._check_feasibility_of_current_solution(inter_iteration_information):
