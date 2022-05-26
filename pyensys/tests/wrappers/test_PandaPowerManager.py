@@ -415,7 +415,7 @@ def test_create_static_generators_for_flexibility():
     manager.load_mat_file_to_pandapower()
     flexible_units = DataFrame(data=[[0], [2]], columns=["bus_index"])
     manager._parameters.optimisation_profiles_dataframes.create_dictionary()
-    manager._parameters.optimisation_profiles_dataframes.append("generators", flexible_units)
+    manager._parameters.optimisation_profiles_dataframes.append("flexible_units", flexible_units)
     manager.create_static_generators_for_flexibility()
     assert len(manager.wrapper.network.sgen.index) == 2
     assert len(manager.wrapper.network.poly_cost.index) == 3
