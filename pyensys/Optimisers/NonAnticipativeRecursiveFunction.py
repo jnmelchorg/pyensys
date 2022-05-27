@@ -5,8 +5,10 @@ from pyensys.Optimisers.RecursiveFunction import InterIterationInformation, Recu
     UpdateParameterData, check_if_candidate_path_has_been_stored_in_incumbent, \
     _create_data_to_update_status_of_parameter
 
-from typing import List
+from typing import List, Dict
 from copy import deepcopy
+
+from pyensys.readers.ReaderDataClasses import Parameters
 
 
 def _eliminate_offsprings_of_candidate_in_incumbent(info: InterIterationInformation):
@@ -174,6 +176,20 @@ def _replacement_of_investments_for_whole_tree(info: InterIterationInformation):
 class NonAnticipativeRecursiveFunction(RecursiveFunction):
     def __init__(self):
         super().__init__()
+        self._number_opf_per_node: Dict[int, int] = {}
+        self._successful_opf_per_node: Dict[int, bool] = {}
+
+    def initialise(self, parameters: Parameters):
+        self._parameters = parameters
+        if len(self._parameters.optimisation_profiles_dataframes) > 0:
+            self._replace_parameters_individually = True
+        self._create_control_graph()
+        self._create_pool_interventions()
+        for node in self._control_graph.nodes_data.keys():
+            self._number_opf_per_node[node] = 0
+            self._successful_opf_per_node[node] = False
+        if self._parameters.problem_settings.opf_optimizer == "pandapower":
+            self._initialise_pandapower()
 
     def solve(self, info: InterIterationInformation) -> bool:
         time_adjustment = -1
@@ -219,6 +235,7 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                 _add_new_interventions_from_combinations(info, combinations)
                 if self._exploration_of_current_solution(info):
                     feasible_solution_exist = True
+                    self._successful_opf_per_node[info.current_graph_node] = True
                 if info.last_node_reached:
                     self._store_partial_tree(info)
                 if len([0 for _ in self._control_graph.graph.neighbours(info.current_graph_node)]) > 1 and \
@@ -285,24 +302,26 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         info.current_graph_node = parent_node
         return feasible_solution_exist
 
-    def _optimise_interventions_in_last_node(self, inter_iteration_information: InterIterationInformation) -> bool:
+    def _optimise_interventions_in_last_node(self, info: InterIterationInformation) -> bool:
         feasible_solution_exist = False
-        all_available_interventions = self._get_available_interventions_for_current_year(inter_iteration_information)
+        all_available_interventions = self._get_available_interventions_for_current_year(info)
         for number_combinations in range(1, len(all_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(all_available_interventions, number_combinations):
-                _add_new_interventions_from_combinations(inter_iteration_information, combinations)
-                if self._check_feasibility_of_current_solution(inter_iteration_information):
+                _add_new_interventions_from_combinations(info, combinations)
+                if self._check_feasibility_of_current_solution(info):
                     feasible_solution_exist = True
-                    inter_iteration_information = self._construction_of_solution(inter_iteration_information)
-                    self._optimality_check(inter_iteration_information)
-                inter_iteration_information.new_interventions = AbstractDataContainer()
-                inter_iteration_information.new_interventions.create_list()
-                inter_iteration_information.new_interventions_remaining_construction_time = AbstractDataContainer()
-                inter_iteration_information.new_interventions_remaining_construction_time.create_list()
+                    self._successful_opf_per_node[info.current_graph_node] = True
+                    info = self._construction_of_solution(info)
+                    self._optimality_check(info)
+                info.new_interventions = AbstractDataContainer()
+                info.new_interventions.create_list()
+                info.new_interventions_remaining_construction_time = AbstractDataContainer()
+                info.new_interventions_remaining_construction_time.create_list()
         return feasible_solution_exist
 
     def _check_feasibility_of_current_solution(self, info: InterIterationInformation) -> bool:
         self._operational_check(info)
+        self._number_opf_per_node[info.current_graph_node] += 1
         return self._is_opf_feasible()
 
     def _verify_feasibility_of_solution_in_successor_nodes(self,
