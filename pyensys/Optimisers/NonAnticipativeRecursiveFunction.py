@@ -201,6 +201,10 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         self._exploration_of_current_solution(info)
         if info.last_node_reached:
             self._store_partial_tree(info)
+        if len([0 for _ in self._control_graph.graph.neighbours(info.current_graph_node)]) > 1 and \
+                info.last_node_reached:
+            _eliminate_offsprings_of_candidate_in_incumbent(info)
+            info.last_node_reached = False
         feasible_solution_exist = self._interventions_handler(info)
         if info.current_graph_node != 0:
             info = update_remaining_construction_time(info, time_adjustment)
@@ -217,6 +221,10 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                     feasible_solution_exist = True
                 if info.last_node_reached:
                     self._store_partial_tree(info)
+                if len([0 for _ in self._control_graph.graph.neighbours(info.current_graph_node)]) > 1 and \
+                        info.last_node_reached:
+                    _eliminate_offsprings_of_candidate_in_incumbent(info)
+                    info.last_node_reached = False
                 info.new_interventions = AbstractDataContainer()
                 info.new_interventions.create_list()
                 info.new_interventions_remaining_construction_time = AbstractDataContainer()
@@ -234,13 +242,11 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
             info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
             info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
             info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
-            _eliminate_offsprings_of_candidate_in_incumbent(info)
-        elif len(info.partial_tree.graph_paths) < len(info.incumbent_graph_paths):
+        elif len(info.incumbent_graph_paths) > len(info.partial_tree.graph_paths):
             info.partial_tree.graph_paths = deepcopy(info.incumbent_graph_paths)
             info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
             info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
             info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
-            _eliminate_offsprings_of_candidate_in_incumbent(info)
         elif info.partial_tree.graph_paths == info.incumbent_graph_paths:
             cost_existing_tree = _calculate_total_planning_cost(info.partial_tree.investment_costs,
                                                                 info.partial_tree.operation_costs)
@@ -251,7 +257,6 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                 info.partial_tree.interventions = deepcopy(info.incumbent_interventions)
                 info.partial_tree.investment_costs = deepcopy(info.incumbent_investment_costs)
                 info.partial_tree.operation_costs = deepcopy(info.incumbent_operation_costs)
-        info.last_node_reached = False
 
     def _exploration_of_current_solution(self, inter_iteration_information: InterIterationInformation):
         if self._check_feasibility_of_current_solution(inter_iteration_information):
