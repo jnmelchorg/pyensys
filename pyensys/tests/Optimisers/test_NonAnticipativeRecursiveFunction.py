@@ -137,6 +137,7 @@ def test_interventions_handler(mock_method, feasibility_flag, return_flag):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._calculate_available_interventions = MagicMock(return_value=[0, 1])
     non_anticipative._exploration_of_current_solution = MagicMock(return_value=feasibility_flag)
+    non_anticipative._control_graph.graph.neighbours = MagicMock(return_value=[0])
     assert non_anticipative._interventions_handler(InterIterationInformation()) == return_flag
     assert mock_method.call_count == 3
     assert non_anticipative._exploration_of_current_solution.call_count == 3
@@ -252,6 +253,7 @@ def test_add_new_interventions_from_combinations():
 def test_check_feasibility_of_current_solution(flag, expected):
     non_anticipative = NonAnticipativeRecursiveFunction()
     non_anticipative._operational_check = MagicMock()
+    non_anticipative._number_opf_per_node = [0]
     non_anticipative._is_opf_feasible = MagicMock(return_value=flag)
     assert non_anticipative._check_feasibility_of_current_solution(InterIterationInformation()) == expected
 

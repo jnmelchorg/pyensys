@@ -1,3 +1,5 @@
+from os.path import dirname, join
+
 import pytest
 
 from pyensys.wrappers.PandasWrapper import DataFrame, SpreadSheet
@@ -19,8 +21,8 @@ def test_get_column_headers():
 
 
 class TestSpreadSheet:
-    EXCEL_PATH = "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\excel\\pandas_excel_test.xlsx"
-    ODS_PATH = "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\ods\\pandas_ods_test.ods"
+    EXCEL_PATH = join(dirname(__file__), "..", "excel", "pandas_excel_test.xlsx")
+    ODS_PATH = join(dirname(__file__), "..", "ods", "pandas_ods_test.ods")
 
     @pytest.mark.parametrize("sheet_name, header, expected_size, expected_headers, file_path",
                              [(0, None, 1, [0], EXCEL_PATH), ("Sheet2", 0, 2, ["label"], EXCEL_PATH),
