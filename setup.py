@@ -43,7 +43,7 @@ def setup_package():
         packages=find_packages(),
         package_data={'pyensys': ['json/*.json', 'tests/json/*.json', 'tests/excel/*.xlsx', 'tests/ods/*.ods']},
         install_requires=['click', 'pandas', 'pyomo', 'pypsa', 'networkx', 'pytest', 'pandapower', 'numpy', 'sklearn',
-                          'tables', 'odfpy'],
+                          'tables', 'odfpy', 'openpyxl'],
         extras_require={"test": ["pytest"]},
         cmdclass={"build_ext": new_build_ext},
         # use_scm_version=True,
