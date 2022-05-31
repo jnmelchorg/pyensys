@@ -5,7 +5,7 @@
 		"non_anticipative": true
     },
     "pandapower_mpc_settings": {
-        "mat_file_path" : "C:\\Users\\f09903jm\\git projects\\pyensys\\pyensys\\tests\\matpower\\case3.mat",
+        "mat_file_path" : "C:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\tests\\matpower\\case3.mat",
         "frequency": 60.0
     },
     "optimisation_profiles_data":{

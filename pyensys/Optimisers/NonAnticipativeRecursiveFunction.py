@@ -466,7 +466,7 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
     def get_solution(self, info: InterIterationInformation) -> List[dict]:
         solutions_lines = {"group": "lines", "data": DataFrame(columns=["scenario", "year", "line_index"])}
         solutions_investment_costs = {"group": "investment_costs", "data": DataFrame(columns=["scenario", "cost"])}
-        solutions_operation_costs = {"group": "investment_costs", "data": DataFrame(columns=["scenario", "cost"])}
+        solutions_operation_costs = {"group": "operation_costs", "data": DataFrame(columns=["scenario", "cost"])}
         for solution_number, path in info.complete_tree.graph_paths:
             last_node = -1
             for level, node in path:
