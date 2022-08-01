@@ -1445,14 +1445,14 @@ class Networkmodel():
                 self.MaxConvGen[i] = obj.Gen.Conv[i].get_Max()
             #TODO: Generalise for N number of pieces per generator
             self.ACoeffPWConvGen = np.empty((self.NumberConvGen,\
-                self.PWConvGen[0])) # Coefficient A of the piece Ax + b for
+                max(self.PWConvGen))) # Coefficient A of the piece Ax + b for
                                     # conventional generation
             for i in range(self.NumberConvGen):
                 for j in range(self.PWConvGen[i]):
                     self.ACoeffPWConvGen[i, j] = \
                         obj.Gen.Conv[i].cost['LCost'][j][0]
             self.BCoeffPWConvGen = np.empty((self.NumberConvGen,\
-                self.PWConvGen[0])) # Coefficient b of the piece Ax + b for
+                max(self.PWConvGen))) # Coefficient b of the piece Ax + b for
                                     # conventional generation
             for i in range(self.NumberConvGen):
                 for j in range(self.PWConvGen[i]):
@@ -4861,6 +4861,8 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.LLNodesAfter, self.ConnectionTreeGen)
 
     def GetObjectiveFunctionENM(self):
+        if not hasattr(self, 'solver_problem'):
+            self.solver_problem = "GLPK"
         if self.solver_problem == "GLPK":
             return self.solver.get_obj_val()
         elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \
