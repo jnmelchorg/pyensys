@@ -151,10 +151,12 @@ def read_input_data(ods_file_name, country = "HR", test_case = "HR_2020_Location
         ci_catalogue = []
         ci_cost = []
         # lines
-        ci_catalogue.append([10,50,100,200,500,800])
+        # ci_catalogue.append([10,50,100,200,500,800]) 
+        ci_catalogue.append([0.003,0.006,0.009,0.015,0.03,0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0]) # more realistic data for distribution networks
         ci_cost.append( [20 * i for i in ci_catalogue[0]])
         # transformers
-        ci_catalogue.append([560,880,1200,2400,5600])
+        # ci_catalogue.append([560,880,1200,2400,5600])
+        ci_catalogue.append([0.003,0.006,0.009,0.015,0.03,0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0]) # more realistic data for distribution networks
         ci_cost.append( [20 * i for i in ci_catalogue[1]])
         
         

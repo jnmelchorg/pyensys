@@ -132,4 +132,4 @@ mpc.gencost = [
 2	0	0	2	0	4	0	;
 2	0	0	2	0	6	0	;
 2	0	0	2	0	10	0	;
-];																						
+]; % no cost data was provided. These values need to be replaced later.																						

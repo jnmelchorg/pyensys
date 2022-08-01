@@ -155,7 +155,7 @@ def mult_for_bus(busMult_input, multiplier, mpc):
             for xsc in range(len(multiplier[xy])):
                 mult_bus[xy].append([])
                 
-                temp_mult =  [multiplier[xy][xsc]]*mpc["NoBranch"]
+                temp_mult =  [multiplier[xy][xsc]]*mpc["NoBus"]
                 mult_bus[xy][xsc]= temp_mult
     
     else:
