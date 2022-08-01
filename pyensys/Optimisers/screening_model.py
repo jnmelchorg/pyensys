@@ -763,7 +763,18 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
             temp_interv_list, temp_prev_invest, temp_interv_clust = model_screening(mpc,  cont_list , prev_invest, peak_Pd, mult, NoTime)
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
-                        
+
+            # reduce catalogue in the interv. clustering:
+            for xbr in range(mpc["NoBranch"]):
+                if temp_interv_clust[xbr] > 0 :
+                    if mpc["branch"]["TAP"][xbr] == 0:  # line
+                        temp_interv_clust[xbr] = min([i for i in ci_catalogue[0] if i >= temp_interv_clust[xbr]])
+                    else: # transformer
+                        temp_interv_clust[xbr] = min([i for i in ci_catalogue[1] if i >= temp_interv_clust[xbr]])
+
+            
+            interv_clust.append(temp_interv_clust) 
+
             # print("scenario interv_list : ", temp_interv_list)
             
             # record intervention lists for each branch
@@ -773,6 +784,7 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
             # print("scenario interv_dict : ", interv_dict)
 
             
+            
         prev_invest = [a+b for a,b in zip(temp_prev_invest,prev_invest)]    
         # print("pre_invest for next year:",prev_invest)
         
@@ -781,7 +793,7 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
     # interv_list.sort()  
     
    
-    return interv_dict
+    return interv_dict, interv_clust
 
 # TODO: for distribution T3.1, output results for combinations of each node
 
@@ -857,7 +869,7 @@ penalty_cost = 1e3
 
 
 ''' Outputs '''
-interv_dict = main_screening(mpc, multiplier_bus ,cicost, penalty_cost ,peak_Pd, cont_list)
+interv_dict, interv_clust = main_screening(mpc, multiplier_bus ,cicost, penalty_cost ,peak_Pd, cont_list)
 
 
 print("interv_dict")
@@ -881,6 +893,28 @@ for xbr in range(mpc["NoBranch"]):
 print("\n -------------------------")        
 print("Reduced intervention dict: ",interv_dict)
 
+
+print()
+print("interv_clust")
+print(interv_clust)
+
+final_interv_clust = []
+
+for i in range(len(interv_clust)):
+    fl = False
+    for ii in range(len(final_interv_clust)):
+        if interv_clust[i] == final_interv_clust[ii]:
+            fl = True
+    
+    if fl == False:
+        final_interv_clust.append(interv_clust[i])
+
+print()
+print("There are ",len(final_interv_clust)," distinguishable investment plans (clusters)")
+
+for plan in range(len(final_interv_clust)):
+    print("Plan #",plan,":")
+    print(final_interv_clust[plan])
 
 
 ''' Output json file for the screening model''' 
