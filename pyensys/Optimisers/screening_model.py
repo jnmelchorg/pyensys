@@ -407,8 +407,8 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
                 return m.Pbra[xbr, xk, xt] == 0 #Constraint.Skip
             else:             
                 if m.para["Branch"+str(xbr)+"_RATE_A"] != 0:                  
-                    # return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] # incude investments in previous years
-                    return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + 0 + m.para["Branch"+str(xbr)+"_RATE_A"] # without investments in previous years
+                    return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] # incude investments in previous years
+                    # return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + 0 + m.para["Branch"+str(xbr)+"_RATE_A"] # without investments in previous years
                     
                 else:   
                     return  m.Pbra[xbr, xk, xt]  <=  float('inf')
