@@ -4861,8 +4861,6 @@ class EnergyandNetwork(Energymodel, Networkmodel):
             self.LLNodesAfter, self.ConnectionTreeGen)
 
     def GetObjectiveFunctionENM(self):
-        if not hasattr(self, 'solver_problem'):
-            self.solver_problem = "GLPK"
         if self.solver_problem == "GLPK":
             return self.solver.get_obj_val()
         elif self.solver_problem == "CLP" or self.solver_problem == "CLP-I" \

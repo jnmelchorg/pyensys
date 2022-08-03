@@ -374,7 +374,7 @@ class ReadJSON:
                 # A *.mat file has to be created based on the *.m file
                 _build_mat_file(MatPath)
                 MatPath = MatPath + 'at'
-            
+
             pandapower_mpc_settings.mat_file_path = MatPath
             pandapower_mpc_settings.system_frequency = \
                 pandapower_mpc_settings_dict.pop("frequency")
