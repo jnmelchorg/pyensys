@@ -121,6 +121,9 @@ def _get_digit_string(str):
     for character in str:
         if character.isdigit():
             Num.append(character)
+        elif character == '.':
+            Num.append(character)
+        
     if Num == []:
         return False, ' '
     else:
