@@ -404,10 +404,11 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
                 temp_line_stat = 1
             
             if cont_list[xk][xbr] == 0 or temp_line_stat == 0:
-                return Constraint.Skip
+                return m.Pbra[xbr, xk, xt] == 0 #Constraint.Skip
             else:             
                 if m.para["Branch"+str(xbr)+"_RATE_A"] != 0:                  
-                    return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] 
+                    return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] # incude investments in previous years
+                    # return m.Pbra[xbr, xk, xt] <=   m.ICbra[xbr, xt] + 0 + m.para["Branch"+str(xbr)+"_RATE_A"] # without investments in previous years
                     
                 else:   
                     return  m.Pbra[xbr, xk, xt]  <=  float('inf')
@@ -423,10 +424,12 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
             
             
             if cont_list[xk][xbr] == 0 or temp_line_stat == 0:
-                return  Constraint.Skip
+                return  m.Pbra[xbr, xk, xt] == 0 #Constraint.Skip
             else:             
                 if m.para["Branch"+str(xbr)+"_RATE_A"] != 0:
-                    return  - m.Pbra[xbr,xk,  xt] <=  m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] 
+                    # return  - m.Pbra[xbr,xk,  xt] <=  m.ICbra[xbr, xt] + prev_invest[xbr] + m.para["Branch"+str(xbr)+"_RATE_A"] 
+                    return  - m.Pbra[xbr,xk,  xt] <=  m.ICbra[xbr, xt] + 0 + m.para["Branch"+str(xbr)+"_RATE_A"] # without prev investments
+
                 
                 else:
                     return  - m.Pbra[xbr,xk,  xt]  <=  float('inf') 
@@ -439,7 +442,6 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
         
         # Nodal power balance
         def nodeBalance_rule(m, xb,xk,xt):
-            
     
             return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
                     + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
@@ -599,8 +601,9 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
     
         if peak_Pd !=[] :
             Pd = peak_Pd
-            
     
+            
+        
        
         return (noDiff, genCbus, braFbus, braTbus, Pd)
     
@@ -687,7 +690,9 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
     
     # print("PMAX: ", mult *sum( mpc["gen"]["PMAX"]))
     # print("Pgen: ", Val(sum(model.Pgen[xg,0,0] for xg in range(mpc["NoGen"]))))
-    # print("Pd: ", mult *sum(Pd))
+    # print("Pd: ", mult[0]*sum(Pd))
+    print('Total network P consumption: ',mult[0]*sum(Pd),' MW')
+    # model.Pbra.pprint() # print model power flow outputs
     
     for xk in model.Set['Cont']:
         # print(xk, "_Load curtailment: ", Val(sum( model.Plc[xb,xk,xt]  for xb in model.Set['Bus'] for xt in model.Set['Tim'])))
@@ -713,9 +718,9 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
         maxICbra.append( max(tempICbra) )
         if maxICbra[xb] > 0:
             interv.append( maxICbra[xb])
-            print('Increase ', str(maxICbra[xb]),' on Branch '+ str(xb))#, ", Cap:", maxICbra[xb]+mpc["branch"]["RATE_A"][xb]  )
-                  # + ", from bus: " + str(mpc["branch"]["F_BUS"][xb]) 
-                  # + ", to bus: " + str(mpc["branch"]["T_BUS"][xb]) )
+            print('Increase ', str(maxICbra[xb]),' on Branch '+ str(xb)#, ", Cap:", maxICbra[xb]+mpc["branch"]["RATE_A"][xb]  )
+                  + ", from bus: " + str(mpc["branch"]["F_BUS"][xb]) 
+                  + ", to bus: " + str(mpc["branch"]["T_BUS"][xb]) )
     
     # if sum(maxICbra) == 0:
     #     print('No requirement for line capacity increase')   
@@ -726,7 +731,13 @@ def model_screening(mpc,cont_list , prev_invest, peak_Pd, mult,NoTime = 1):
     interv.sort()
     # print("intervention list: ",interv)
 
-    return interv, maxICbra
+    # model.ICbra.pprint()
+
+    # print(Val(model.ICbra[:,0])) # print vector of investments (additional capacities)
+
+    interv_vect = Val(model.ICbra[:,0])
+
+    return interv, maxICbra, interv_vect
 
 
 def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
@@ -737,6 +748,7 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
     # initialise branch investments
     prev_invest = [0]*mpc["NoBranch"]
     interv_list = []
+    interv_clust = [] # clusters of investment options (required for the main distribution network planning tool)
     
     interv_dict = {k: [] for k in range(mpc["NoBranch"])}
     
@@ -748,10 +760,21 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
             mult = multiplier[xy][xsc]
             
             # each run will take preveious years last scenraio investment as the previous investment
-            temp_interv_list, temp_prev_invest = model_screening(mpc,  cont_list , prev_invest, peak_Pd, mult, NoTime)
+            temp_interv_list, temp_prev_invest, temp_interv_clust = model_screening(mpc,  cont_list , prev_invest, peak_Pd, mult, NoTime)
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
-                        
+
+            # reduce catalogue in the interv. clustering:
+            for xbr in range(mpc["NoBranch"]):
+                if temp_interv_clust[xbr] > 0 :
+                    if mpc["branch"]["TAP"][xbr] == 0:  # line
+                        temp_interv_clust[xbr] = min([i for i in ci_catalogue[0] if i >= temp_interv_clust[xbr]])
+                    else: # transformer
+                        temp_interv_clust[xbr] = min([i for i in ci_catalogue[1] if i >= temp_interv_clust[xbr]])
+
+            
+            interv_clust.append(temp_interv_clust) 
+
             # print("scenario interv_list : ", temp_interv_list)
             
             # record intervention lists for each branch
@@ -761,6 +784,7 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
             # print("scenario interv_dict : ", interv_dict)
 
             
+            
         prev_invest = [a+b for a,b in zip(temp_prev_invest,prev_invest)]    
         # print("pre_invest for next year:",prev_invest)
         
@@ -769,7 +793,7 @@ def main_screening(mpc,multiplier,cicost, penalty_cost, peak_Pd, cont_list):
     # interv_list.sort()  
     
    
-    return interv_dict
+    return interv_dict, interv_clust
 
 # TODO: for distribution T3.1, output results for combinations of each node
 
@@ -791,21 +815,24 @@ ods_file_name = "case_template_port_modified_R1"
 # if True, consider status from .m file; 
 # if False, all gen and lines are on
 gen_status = False 
-line_status = False  
+line_status = True #consider lines status in mpc 
+
 
 ''' Test case '''
-country = "HR"  # Select country for case study: "PT", "UK" or "HR"
+country = "UK"  # Select country for case study: "PT", "UK" or "HR"
 # test_case= 'Transmission_Network_PT_2020_ods' # name of the .m file
 #'case5' #'Transmission_Network_PT_2020_ods'  #'Transmission_Network_UK3' #  "HR_Location1" #"HR_2020_Location_1"#"Location_3_ods"
 
 
-test_case = join(dirname(__file__), "..", "tests\\matpower\\A_KPC_35_v2")
-
+test_case = join(dirname(__file__), "..", "tests\\matpower\\Distribution_Network_Semi_Urban_UK_v2") # A_KPC_35_v2, A_BJ_35_v2, NW_CROATIA_v2, Distribution_Network_PT1
+# Distribution_Network_PT2_v2b, Distribution_Network_Urban_UK_v2, Distribution_Network_Semi_Urban_UK_v2
 
 
 # read input data outputs mpc and load infor
 # mpc, base_time_series_data, multiplier, NoCon = read_input_data( cont_list, country,test_case)
 mpc, multiplier, NoCon,cont_list,ci_catalogue,ci_cost= read_input_data( ods_file_name, country,test_case)
+
+# print(mpc["branch"]["BR_STATUS"])
 
 cont_list = [[1]*mpc['NoBranch']] # --> do not consider contingencies
 
@@ -835,18 +862,18 @@ peak_Pd = []# get_peak_data(mpc, base_time_series_data, peak_hour)
 
 ''' Cost information'''
 # linear cost for the screening model
-cicost = 20 # £/Mw/km
+cicost = 20 # £/Mw/km --> actually used in the screening model!
 # curtailment cost
 penalty_cost = 1e3
 
 
 
 ''' Outputs '''
-interv_dict = main_screening(mpc, multiplier_bus ,cicost, penalty_cost ,peak_Pd, cont_list)
+interv_dict, interv_clust = main_screening(mpc, multiplier_bus ,cicost, penalty_cost ,peak_Pd, cont_list)
 
 
-
-
+print("interv_dict")
+print(interv_dict)
 
 # reduce catalogue in the interv dictionary
 for xbr in range(mpc["NoBranch"]):
@@ -866,6 +893,28 @@ for xbr in range(mpc["NoBranch"]):
 print("\n -------------------------")        
 print("Reduced intervention dict: ",interv_dict)
 
+
+print()
+print("interv_clust")
+print(interv_clust)
+
+final_interv_clust = []
+
+for i in range(len(interv_clust)):
+    fl = False
+    for ii in range(len(final_interv_clust)):
+        if interv_clust[i] == final_interv_clust[ii]:
+            fl = True
+    
+    if fl == False:
+        final_interv_clust.append(interv_clust[i])
+
+print()
+print("There are ",len(final_interv_clust)," distinguishable investment plans (clusters)")
+
+for plan in range(len(final_interv_clust)):
+    print("Plan #",plan,":")
+    print(final_interv_clust[plan])
 
 
 ''' Output json file for the screening model''' 
