@@ -121,6 +121,9 @@ def _get_digit_string(str):
     for character in str:
         if character.isdigit():
             Num.append(character)
+        elif character == '.':
+            Num.append(character)
+        
     if Num == []:
         return False, ' '
     else:
@@ -374,7 +377,7 @@ class ReadJSON:
                 # A *.mat file has to be created based on the *.m file
                 _build_mat_file(MatPath)
                 MatPath = MatPath + 'at'
-            
+
             pandapower_mpc_settings.mat_file_path = MatPath
             pandapower_mpc_settings.system_frequency = \
                 pandapower_mpc_settings_dict.pop("frequency")

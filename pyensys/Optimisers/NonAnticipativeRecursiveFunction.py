@@ -230,6 +230,8 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
     def _interventions_handler(self, info: InterIterationInformation) -> bool:
         _available_interventions = self._calculate_available_interventions(info)
         feasible_solution_exist = False
+        print('printing _available_interventions ...')
+        print(_available_interventions)
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
                 _add_new_interventions_from_combinations(info, combinations)
