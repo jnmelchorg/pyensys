@@ -101,7 +101,8 @@ class PandaPowerWrapper:
         try:
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
-                    settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
+                    # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
+                    settings.optimisation_software](self.network, verbose=0, numba=False)
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)

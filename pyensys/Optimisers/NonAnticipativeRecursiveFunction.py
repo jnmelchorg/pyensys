@@ -232,8 +232,10 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         feasible_solution_exist = False
         print('printing number_combinations ...')
         print(len(_available_interventions) + 1)
-        print('printing _available_interventions ...')
-        print(_available_interventions)
+        # print('printing _available_interventions ...')
+        # print(_available_interventions)
+        # print('info ...')
+        # print(info)
         for number_combinations in range(1, len(_available_interventions) + 1):
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
                 _add_new_interventions_from_combinations(info, combinations)
@@ -492,7 +494,21 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                     concat([solutions_operation_costs["data"],
                             DataFrame(data=[[scenario, info.complete_tree.operation_costs[solution_number]]],
                                       columns=["scenario", "cost"])])
-        solutions_lines["data"] = solutions_lines["data"].drop_duplicates(ignore_index=True)
+        print('solutions_lines...')
+        print(solutions_lines)
+        print('solutions_lines["data"]')
+        print(solutions_lines["data"])
+        # solutions_lines["data"] = solutions_lines["data"].drop_duplicates(ignore_index=True)
+
+        # print([dict(t) for t in {tuple(d.items()) for d in solutions_lines["data"]}])
+
+        # import numpy as np 
+        # print(DataFrame(np.unique(solutions_lines["data"]), columns=solutions_lines["data"].columns))
+
+        # sol
+        # for i in range(len(solutions_lines["data"])):
+        #     if i == 0:
+
         solutions_lines["data"] = solutions_lines["data"].sort_values(by=["scenario", "year"], ignore_index=True)
         solutions_investment_costs["data"] = solutions_investment_costs["data"].drop_duplicates(ignore_index=True)
         solutions_investment_costs["data"] = solutions_investment_costs["data"].sort_values(by=["scenario"],
