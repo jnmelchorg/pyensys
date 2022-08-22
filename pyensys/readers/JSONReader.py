@@ -448,7 +448,8 @@ class ReadJSON:
                                             elements_ids=variable.get("elements_ids"),
                                             elements_positions=variable.get("elements_positions", []),
                                             costs=variable.get("costs", []),
-                                            installation_time=variable.get("installation_time", []))
+                                            installation_time=variable.get("installation_time", []),
+                                            capacity_to_be_added_MW=variable.get("capacity_to_be_added_MW", []))
             )
 
     def _adjust_pandapower_profiles_to_time_settings(self):

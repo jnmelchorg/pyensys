@@ -198,6 +198,9 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         info.new_interventions_remaining_construction_time = AbstractDataContainer()
         info.new_interventions_remaining_construction_time.create_list()
         if info.current_graph_node != 0:
+            print()
+            print('info.current_graph_node: ',info.current_graph_node)
+            print('self._control_graph.optimisation_years[info.level_in_graph]: ',self._control_graph.optimisation_years[info.level_in_graph])
             time_adjustment = self._control_graph.optimisation_years[info.level_in_graph]-\
                               self._control_graph.optimisation_years[info.level_in_graph - 1]
             info = update_remaining_construction_time(info, -time_adjustment)
@@ -230,14 +233,14 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
     def _interventions_handler(self, info: InterIterationInformation) -> bool:
         _available_interventions = self._calculate_available_interventions(info)
         feasible_solution_exist = False
-        print('printing number_combinations ...')
-        print(len(_available_interventions) + 1)
-        # print('printing _available_interventions ...')
-        # print(_available_interventions)
-        # print('info ...')
-        # print(info)
+        print('number_combinations: ',len(_available_interventions) + 1)
+        # print('available_interventions: ',_available_interventions)
         for number_combinations in range(1, len(_available_interventions) + 1):
+            # print('info.candidate_interventions:')
+            # print(info.candidate_interventions)
             for combinations in self._calculate_all_combinations(_available_interventions, number_combinations):
+                print('info.candidate_interventions:')
+                print(info.candidate_interventions)
                 _add_new_interventions_from_combinations(info, combinations)
                 if self._exploration_of_current_solution(info):
                     feasible_solution_exist = True
@@ -440,9 +443,13 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
 
     def _calculate_investment_cost(self, interventions: AbstractDataContainer) -> float:
         total_cost = 0.0
+        # print('interventions: ')
+        # print(interventions)
         for level, (_, investments) in enumerate(interventions):
             partial_cost = 0.0
+            # print('investments: ',investments)
             for _, investment in investments:
+                # print('investment: ',investment)
                 partial_cost = partial_cost + investment.cost
             if level == 0:
                 total_cost = total_cost + (1 / (
@@ -496,19 +503,8 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
                                       columns=["scenario", "cost"])])
         print('solutions_lines...')
         print(solutions_lines)
-        print('solutions_lines["data"]')
-        print(solutions_lines["data"])
-        # solutions_lines["data"] = solutions_lines["data"].drop_duplicates(ignore_index=True)
 
-        # print([dict(t) for t in {tuple(d.items()) for d in solutions_lines["data"]}])
-
-        # import numpy as np 
-        # print(DataFrame(np.unique(solutions_lines["data"]), columns=solutions_lines["data"].columns))
-
-        # sol
-        # for i in range(len(solutions_lines["data"])):
-        #     if i == 0:
-
+        # solutions_lines["data"] = solutions_lines["data"].drop_duplicates(ignore_index=True) # why did Nicolas have any duplicates?
         solutions_lines["data"] = solutions_lines["data"].sort_values(by=["scenario", "year"], ignore_index=True)
         solutions_investment_costs["data"] = solutions_investment_costs["data"].drop_duplicates(ignore_index=True)
         solutions_investment_costs["data"] = solutions_investment_costs["data"].sort_values(by=["scenario"],

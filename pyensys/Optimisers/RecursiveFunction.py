@@ -372,13 +372,18 @@ class RecursiveFunction:
 
     def _calculate_investment_cost(self, interventions: AbstractDataContainer) -> float:
         total_cost = 0.0
+        print('interventions: ')
+        print(interventions)
         for year, (_, investments) in enumerate(interventions):
             partial_cost = 0.0
+            print('investments: ')
+            print(investments)
             for _, investment in investments:
                 partial_cost = partial_cost + investment.cost
             total_cost = total_cost + (1 / (
                         (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** year)) * \
                          partial_cost
+        error[2000] #this function is not working
         return total_cost
 
     def _calculate_opteration_cost(self, operation_cost_per_year: AbstractDataContainer) -> float:

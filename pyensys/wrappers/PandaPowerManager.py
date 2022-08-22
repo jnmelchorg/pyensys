@@ -121,11 +121,11 @@ class PandaPowerManager:
         if initialise:
             self.wrapper = PandaPowerWrapper()
             self._initialise()
-            print('list_parameter_data...')
-            print(list_parameter_data)
+            # print('list_parameter_data...')
+            # print(list_parameter_data)
         for parameter in list_parameter_data:
-            print('parameter...')
-            print(parameter)
+            # print('parameter...')
+            # print(parameter)
             if parameter.component_type == "load":
                 self.wrapper.network[parameter.component_type].at[
                     list(self.wrapper.network[parameter.component_type][
@@ -133,16 +133,33 @@ class PandaPowerManager:
                         parameter.parameter_position].index)[0],
                     parameter.parameter_name] = parameter.new_value
             else:
-                print('print parameter.parameter_position...')
-                print(parameter.parameter_position)
+                # print('print parameter.parameter_position...')
+                # print(parameter.parameter_position)
                 # if len(parameter.parameter_position) == 1:
-                if isinstance(parameter.parameter_position, int) == True:
-                    self.wrapper.network[parameter.component_type].at[ \
-                        parameter.parameter_position, parameter.parameter_name] = parameter.new_value
-                else:
-                    for iii in range(len(parameter.parameter_position)):
+                if isinstance(parameter.parameter_position, int) == True: # if investment option is just a single line
+                    # self.wrapper.network[parameter.component_type].at[ \
+                    #     parameter.parameter_position, parameter.parameter_name] = parameter.new_value
+
+                    print("parameter.parameter_position: ",parameter.parameter_position)
+                    print("self.wrapper.network.line: ")
+                    print(self.wrapper.network.line)
+
+                    self.wrapper.network.line.max_i_ka[parameter.parameter_position] = 555
+
+
+                    # self.wrapper.network['line'].at[ \
+                    #     parameter.parameter_position, 'p_mw'] += 2 # new lines
+                    # error[2002]
+                else: # if investment option is a cluster of lines
+                    # for iii in range(len(parameter.parameter_position)): # activating new lines (old approach)
+                    #     self.wrapper.network['line'].at[ \
+                    #     parameter.parameter_position[iii], 'in_service'] = True # new lines
+                    for iii in range(2): # adding capacity to existing lines (new approach)
+                        print("We are here!!!!")
+                        error[2001]
                         self.wrapper.network['line'].at[ \
-                        parameter.parameter_position[iii], 'in_service'] = True # new lines
+                        iii, 'p_mw'] += 2 # new lines
+                        
 
 
     def get_total_cost(self) -> float:

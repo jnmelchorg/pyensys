@@ -10,4 +10,6 @@ def read_parameters(file_path: str) -> Parameters:
         reader = ReadJSON()
         reader.read_json_data(file_path)
         parameters = reader.parameters
+        print('parameters.optimisation_binary_variables: ')
+        print(parameters.optimisation_binary_variables)
     return parameters
