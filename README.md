@@ -1,4 +1,4 @@
-# Python Energy Systems Simulator (PyEnSyS) for FutureDAMS
+# Python Energy Systems Simulator (PyEnSyS)
 
 This repository contains the `PyEnSyS` model which was originally developed to 
 model energy and water-energy systems within the context of the FutureDAMS project [1],
