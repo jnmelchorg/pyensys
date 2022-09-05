@@ -39,5 +39,8 @@ Examples on how to run pyenesys can be found clicking in the icon for Google Col
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jnmelchorg/pyensys/blob/master/docs/Tutorial%20PowerTech%202021/PowerTech%20Tutorial%20PyEnSyS%20Part1.ipynb)
 
+### REFERENCES:
+
 [1] https://www.futuredams.org/
+
 [2] https://attest-project.eu/
