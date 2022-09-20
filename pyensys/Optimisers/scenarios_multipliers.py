@@ -12,7 +12,7 @@ def get_mult(country_selected= "HR"):
     # country_selected = "HR" 
     
     # Select if scenarios should be plotted:
-    plot_scenarios = False
+    plot_scenarios = True
     
     # Input data: mean annual growth (%) - available in D2.3 report
     

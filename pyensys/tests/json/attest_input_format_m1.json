@@ -58,7 +58,8 @@
         	"element_type": "line",
         	"costs": [100000.0, 100000.0],
         	"elements_positions": [1, 3],
-			"installation_time": [0, 0]
+			"installation_time": [0, 0],
+			"capacity_to_be_added_MW": [12, 19]
         }
     ]
 }

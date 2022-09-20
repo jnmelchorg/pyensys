@@ -48,7 +48,7 @@ def _build_mat_file(path):
                 NoStrings = len(Split_Line)
 
                 if Components[xelement] == 1:
-                    # Should the first sting be checked?
+                    # Should the first string be checked?
                     if Equal >= 0:
                         xstring = 0
                     else:
@@ -449,7 +449,7 @@ class ReadJSON:
                                             elements_positions=variable.get("elements_positions", []),
                                             costs=variable.get("costs", []),
                                             installation_time=variable.get("installation_time", []),
-                                            capacity_to_be_added_MW=variable.get("capacity_to_be_added_MW", []))
+                                            capacity_to_be_added_MW=variable.get("capacity_to_be_added_MW", [])) # new data added (MW)
             )
 
     def _adjust_pandapower_profiles_to_time_settings(self):

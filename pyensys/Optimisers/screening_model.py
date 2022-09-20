@@ -819,12 +819,12 @@ line_status = True #consider lines status in mpc
 
 
 ''' Test case '''
-country = "UK"  # Select country for case study: "PT", "UK" or "HR"
+country = "PT"  # Select country for case study: "PT", "UK" or "HR"
 # test_case= 'Transmission_Network_PT_2020_ods' # name of the .m file
 #'case5' #'Transmission_Network_PT_2020_ods'  #'Transmission_Network_UK3' #  "HR_Location1" #"HR_2020_Location_1"#"Location_3_ods"
 
 
-test_case = join(dirname(__file__), "..", "tests\\matpower\\Distribution_Network_Semi_Urban_UK_v2") # A_KPC_35_v2, A_BJ_35_v2, NW_CROATIA_v2, Distribution_Network_PT1
+test_case = join(dirname(__file__), "..", "tests\\matpower\\Distribution_Network_Urban_UK_v2") # A_KPC_35_v2, A_KPC_10_v2, A_BJ_35_v2, NW_CROATIA_v2, Distribution_Network_PT1
 # Distribution_Network_PT2_v2b, Distribution_Network_Urban_UK_v2, Distribution_Network_Semi_Urban_UK_v2
 
 
