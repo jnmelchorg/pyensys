@@ -130,7 +130,7 @@ class PandaPowerManager:
                 self.wrapper.network[parameter.component_type].at[
                     list(self.wrapper.network[parameter.component_type][
                         self.wrapper.network[parameter.component_type]["bus"] ==
-                        parameter.parameter_position-1].index)[0],
+                        parameter.parameter_position].index)[0],
                     parameter.parameter_name] = parameter.new_value
             else:
                 print('list_parameter_data:')

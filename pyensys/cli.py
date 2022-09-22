@@ -303,6 +303,12 @@ def network_simulation_pyenetst(**kwargs):
     mthd = kwargs.pop('test')
     test_pyenetest(mthd)
 
+@cli.command('New_command')
+@click.option('--test', default=0, help='Example to be executed')
+def network_simulation_pyenetst(**kwargs):
+    ''' This is just a test '''
+    print('Hello world')
+
 @cli.command('run_pyene')
 @click.argument('file_path', type=click.Path(exists=True))
 def network_simulation_pyenetst(**kwargs):

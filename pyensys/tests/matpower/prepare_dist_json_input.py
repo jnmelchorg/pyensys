@@ -38,9 +38,9 @@ mpc_0 = json.load(open(os.path.join(os.path.dirname(__file__), str(country)+".js
 
 ref_bus = mpc_0["Slack"] # there could be errors if the load forecast is set in the JSON input for the reference bus
 
-Years = [2020, 2030] # number of years (snapshots) in the planning horizon
+# Years = [2020, 2030] # number of years (snapshots) in the planning horizon
 # Years = [2020]
-# Years = [2020, 2030, 2040, 2050]
+Years = [2020, 2030, 2040, 2050]
 N_sc = 1 # number of scenarios to construct the planning decision tree
 
 
