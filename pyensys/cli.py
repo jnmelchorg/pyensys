@@ -2,12 +2,13 @@ import click
 import numpy as np
 import cProfile
 import os
+import time
 from pyensys.cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
     test_pyenetest, hydro_example_tobeerased, test_pyeneRES
 from pyensys.engines.main import pyeneConfig
 from pyensys.engines.main import pyeneClass
 
-from pyensys.managers.GeneralManager import main_access_function
+from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
 
 pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
@@ -303,11 +304,6 @@ def network_simulation_pyenetst(**kwargs):
     mthd = kwargs.pop('test')
     test_pyenetest(mthd)
 
-@cli.command('New_command')
-@click.option('--test', default=0, help='Example to be executed')
-def network_simulation_pyenetst(**kwargs):
-    ''' This is just a test '''
-    print('Hello world')
 
 @cli.command('run_pyene')
 @click.argument('file_path', type=click.Path(exists=True))
@@ -324,3 +320,24 @@ def network_simulation_pyenetst(**kwargs):
 def pyensys_entry_point(**kwargs):
     file_path: str = kwargs.pop('file_path')
     main_access_function(file_path)
+
+
+@cli.command('run-dist_invest')
+@click.option('--input_dir', default=
+              os.path.join(os.path.dirname(__file__), 'tests', 'json',
+                           'attest_input_format_m1.json'),
+              help='Loacation and name of input JSON')
+@click.option('--output_dir', default=
+              os.path.join(os.path.dirname(__file__), 'tests', 'outputs',
+                           'output.json'),
+              help='Loacation and name of output ')
+def pyensys_ATTEST_Distribution(**kwargs):
+    ''' Call ATTEST's distribution network planning tool '''
+    input_dir = kwargs.pop('input_dir')
+    output_dir = kwargs.pop('output_dir')
+
+    start = time.time()
+    solution = main_access_function(file_path=input_dir)
+    save_in_json(solution, output_dir)
+    end = time.time()
+    print('\nTime required by the tool:', end - start)
