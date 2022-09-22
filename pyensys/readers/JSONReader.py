@@ -108,6 +108,7 @@ def _build_mat_file(path):
 
         xline += 1
     path = path + 'at'
+
     from scipy.io import savemat
     savemat(path, Vars)
 
@@ -117,17 +118,35 @@ def _create_dataframe(dataframe_data: DataframeData) -> DataFrame:
 
 
 def _get_digit_string(str):
+    '''Convert string into a floating number'''
+    Multiplier = 1
     Num = []
-    for character in str:
+    Nostr = len(str)
+    # Check for digits
+    for xstr in range (Nostr):
+        character = str[xstr]
         if character.isdigit():
             Num.append(character)
         elif character == '.':
             Num.append(character)
+        elif character == 'e': # Check for exponentials
+            aux = 10**int(''.join(str[xstr+2:Nostr]))
+            if str[xstr+1] == '+':
+                Multiplier *= aux
+            else:
+                Multiplier /= aux
+            break
         
     if Num == []:
         return False, ' '
     else:
-        return True, float(''.join(Num))
+        # Check for negatives
+        if str[0] == '-':
+            Multiplier *= -1
+
+        Num = Multiplier * float(''.join(Num))
+
+        return True, Num
 
 
 def _read_active_columns_names(profile_data_dict: dict, data: DataFrame) -> List[str]:
