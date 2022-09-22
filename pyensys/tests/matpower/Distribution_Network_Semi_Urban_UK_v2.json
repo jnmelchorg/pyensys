@@ -1,7 +1,7 @@
 {
     "metadata": {
-        "title": "c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\Distribution_Network_Semi_Urban_UK_v2",
-        "description": "power system of c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\Distribution_Network_Semi_Urban_UK_v2"
+        "title": "Distribution_Network_Semi_Urban_UK_v2",
+        "description": "power system of Distribution_Network_Semi_Urban_UK_v2"
     },
     "version": 2,
     "baseMVA": 100.0,
@@ -943,7 +943,7 @@
             0.0
         ],
         "BR_STATUS": [
-            0,
+            1,
             1,
             1,
             1,

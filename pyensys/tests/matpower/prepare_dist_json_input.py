@@ -9,10 +9,12 @@ os.chdir(dname)
 print(abspath)
 print(dname)
 
-# function to read MATPOWER files:
-from conversion_model_mat2json import any2json
-# function to get demand multipliers for future years
-from scenarios_multipliers import get_multipliers
+## function to read MATPOWER files:
+# from conversion_model_mat2json import any2json
+from pyensys.Optimisers.conversion_model_mat2json import any2json
+## function to get demand multipliers for future years
+# from scenarios_multipliers import get_multipliers
+from pyensys.Optimisers.scenarios_multipliers import get_mult as get_multipliers
 
 
 converter = any2json()
@@ -61,9 +63,10 @@ for n_sc in range(N_sc):
             if mpc_0["bus"]["PD"][i]+mpc_0["bus"]["QD"][i] != 0: # exclude buses with no load
                 if load_increase == True:
                     ## Note - multipliers should be fixed to match each scenario!
-                    attest_input['data'].append([n_sc+1, Years[years], mpc_0["bus"]["BUS_I"][i], mpc_0["bus"]["PD"][i]*mult[str(Years[years])][0], mpc_0["bus"]["QD"][i]*mult[str(Years[years])][0] ])
+                    ## Note - 'i-1' must be used to correctly prepare nodes numbering for input json file
+                    attest_input['data'].append([n_sc+1, Years[years], mpc_0["bus"]["BUS_I"][i-1], mpc_0["bus"]["PD"][i]*mult[years][0], mpc_0["bus"]["QD"][i]*mult[years][0] ])
                 else:       
-                    attest_input['data'].append([n_sc+1, Years[years], mpc_0["bus"]["BUS_I"][i], mpc_0["bus"]["PD"][i], mpc_0["bus"]["QD"][i]])
+                    attest_input['data'].append([n_sc+1, Years[years], mpc_0["bus"]["BUS_I"][i-1], mpc_0["bus"]["PD"][i], mpc_0["bus"]["QD"][i]])
 
 
 with open('attest_input.json', 'w') as outfile:

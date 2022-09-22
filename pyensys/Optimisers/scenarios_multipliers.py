@@ -12,7 +12,7 @@ def get_mult(country_selected= "HR"):
     # country_selected = "HR" 
     
     # Select if scenarios should be plotted:
-    plot_scenarios = True
+    plot_scenarios = False
     
     # Input data: mean annual growth (%) - available in D2.3 report
     
@@ -141,6 +141,9 @@ def get_mult(country_selected= "HR"):
     aux = [2020,2030,2040,2050]
     for i in range(4):
         multiplier.append(mult.pop(str(aux[i]), None))
+
+    print('multiplier: ')
+    print(multiplier)
    
         
    
