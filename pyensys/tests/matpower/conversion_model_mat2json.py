@@ -163,9 +163,9 @@ class any2json:
                 if flags_bus and line.split() != [] and line.split()[0] != '];':
                     aux1 = line.split()
                     for val, pos in zip(aux1, jsonformat['bus'].keys()):
-                        if pos == 'BUS_TYPE' and int(aux1[1]) == 3:
-                            jsonformat['Slack'] = int(aux1[0])
-                            jsonformat['bus']['BUS_TYPE'].append(int(aux1[1]))
+                        if pos == 'BUS_TYPE' and int(float(aux1[1])) == 3:
+                            jsonformat['Slack'] = int(float(aux1[0]))
+                            jsonformat['bus']['BUS_TYPE'].append(int(float(aux1[1])))
                         elif pos == 'VMIN':
                             aux2 = ""
                             for x in val:
@@ -176,7 +176,7 @@ class any2json:
                             pos != 'BUS_AREA' and pos != 'ZONE':
                             jsonformat['bus'][pos].append(float(val))
                         else:
-                            jsonformat['bus'][pos].append(int(val))
+                            jsonformat['bus'][pos].append(int(float(val)))
                 elif flags_bus and line.split() != [] and line.split()[0] == '];':
                     flags_bus = False
                 
@@ -192,7 +192,7 @@ class any2json:
                         elif pos != 'GEN_BUS' and pos != 'GEN':
                             jsonformat['gen'][pos].append(float(val))
                         else:
-                            jsonformat['gen'][pos].append(int(val))
+                            jsonformat['gen'][pos].append(int(float(val)))
                 elif flags_gen and line.split() != [] and line.split()[0] == '];':
                     flags_gen = False
                 
@@ -209,7 +209,7 @@ class any2json:
                             pos != 'BR_STATUS':
                             jsonformat['branch'][pos].append(float(val))
                         else:
-                            jsonformat['branch'][pos].append(int(val))
+                            jsonformat['branch'][pos].append(int(float(val)))
                 elif flags_branch and line.split() != [] and line.split()[0] == '];':
                     flags_branch = False
                 
