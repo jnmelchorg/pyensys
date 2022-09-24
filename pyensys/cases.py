@@ -10,6 +10,14 @@ from .engines.main import pyeneClass, pyeneConfig
 from pyomo.core import ConcreteModel
 from pyomo.environ import SolverFactory
 from .engines.pyeneO import PrintinScreen as PSc
+import os
+import json
+import time
+import numpy as np
+from pyensys.tests.matpower.conversion_model_mat2json import any2json
+from pyensys.Optimisers.process_data import mult_for_bus
+from pyensys.Optimisers.screening_model_CLI import main_screening
+from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
 
 def get_pyene(conf=None):
@@ -439,3 +447,303 @@ def test_pyenetest(mthd):
     txt = 'test' + str(mthd)
     method_to_call = getattr(TestClass, txt)
     method_to_call(TestClass)
+
+
+def get_mpc(test_case):
+    '''Load MPC data'''
+    file_name = test_case[:-2]
+    x = len(file_name)-1
+    while file_name[x] != '\\' and file_name[x] != '/':
+        x -= 1
+
+    converter = any2json()
+    converter.matpower2json(folder_path=file_name[0:x],
+                            name_matpower=file_name[x+1:],
+                            name_json=file_name[x+1:])
+    mpc = json.load(open(os.path.join(file_name[0:x],
+                                      file_name[x+1:]+'.json')))
+
+    return mpc
+
+
+def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
+                       ci_catalogue, cont_list, Max_clusters):
+    '''Produce list of investment clusters'''
+    mpc = get_mpc(test_case)
+    cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
+
+    # multipliers for each bus
+    busMult_input = []
+    # expand multiplier for each bus
+    multiplier_bus = mult_for_bus(busMult_input, multiplier, mpc)
+
+    # Load information
+    # update peak demand values, get peak load for screening model
+    peak_Pd = []  # get_peak_data(mpc, base_time_series_data, peak_hour)
+
+    # Cost information
+    # linear cost for the screening model
+    cicost = 20  # £/Mw/km --> actually used in the screening model!
+    # curtailment cost
+    penalty_cost = 1e3
+
+    # Outputs
+    interv_dict, interv_clust = \
+        main_screening(mpc, gen_status, line_status, multiplier_bus,
+                       cicost, penalty_cost, peak_Pd, ci_catalogue,
+                       cont_list)
+
+    # reduce catalogue in the interv dictionary
+    for xbr in range(mpc["NoBranch"]):
+        if sum(interv_dict[xbr]) > 0:
+            for xi in range(len(interv_dict[xbr])):
+                if mpc["branch"]["TAP"][xbr] == 0:  # line
+                    interv_dict[xbr][xi] = \
+                        min([i for i in ci_catalogue[0]
+                             if i >= interv_dict[xbr][xi]])
+                else:  # transformer
+                    interv_dict[xbr][xi] = \
+                        min([i for i in ci_catalogue[1]
+                             if i >= interv_dict[xbr][xi]])
+
+            interv_dict[xbr] = list(set(interv_dict[xbr]))
+            interv_dict[xbr].sort()
+        else:
+            interv_dict[xbr] = []
+
+    final_interv_clust = []
+
+    for i in range(len(interv_clust)):
+        fl = False
+        for ii in range(len(final_interv_clust)):
+            if interv_clust[i] == final_interv_clust[ii]:
+                fl = True
+
+        if not fl:
+            final_interv_clust.append(interv_clust[i])
+
+    # Limiting number of clusters to use
+    NoClusters = len(final_interv_clust)-1
+    NoCols = len(final_interv_clust[0])
+    for x1 in range(1, NoClusters+1):
+        for x2 in range(NoClusters-x1):
+            flg = False
+            x3 = 0
+            while not flg and x3 < NoCols:
+                if final_interv_clust[x1][x3] > \
+                        final_interv_clust[x1+x2+1][x3]:
+                    flg = True
+                x3 += 1
+            if flg:
+                aux = final_interv_clust[x1]
+                final_interv_clust[x1] = final_interv_clust[x1+x2+1]
+                final_interv_clust[x1+x2+1] = aux
+    if NoClusters > Max_clusters:
+        final_interv_clust = \
+            [final_interv_clust[int(plan)]
+             for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
+    else:
+        pos = []
+        for x1 in range(NoClusters+1):
+            flg = True
+            x2 = 0
+            while flg and x2 < NoCols:
+                if final_interv_clust[x1][x2] > 0:
+                    flg = False
+                x2 += 1
+            if not flg:
+                pos.append(x1)
+        final_interv_clust = [final_interv_clust[x] for x in pos]
+
+    return final_interv_clust, mpc
+
+
+def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
+               ci_cost, ci_catalogue, line_length, scenarios, oversize):
+    '''Create main json input file'''
+    # Build structure of json file
+    data = {
+        'problem': {
+            'inter-temporal_opf': False,
+            'return_rate_in_percentage': 3.0,
+            'non_anticipative': True
+            },
+        'pandapower_mpc_settings': {
+            'mat_file_path': test_case,
+            'frequency': 60.0
+            },
+        'optimisation_profiles_data': {
+            'format_data': 'attest',
+            'data': [{
+                'group': 'buses',
+                'data': [],
+                'columns_names': ['scenario', 'year', 'bus_index', 'p_mw',
+                                  'q_mvar']
+                }]
+            },
+        'pandapower_optimisation_settings': {
+            'display_progress_bar': True,
+            'optimisation_software': 'pypower'
+            },
+        'optimisation_binary_variables': [{
+            'element_type': "line",
+            'costs': [],
+            'elements_positions': [],
+            'installation_time': [],
+            'capacity_to_be_added_MW': []
+            }]
+        }
+
+    # Add demand growth scenarios
+
+    # find position of buses with non-zero demand
+    pos_demand = []
+    PD = mpc['bus']['PD']
+    QD = mpc['bus']['QD']
+    for xd in range(len(PD)):
+        if PD[xd] != 0:
+            pos_demand.append(xd)
+
+    # Build scenarios
+    NoYrs = len(yrs)
+    NoSce = len(multiplier[NoYrs-1])
+    if len(scenarios) == 0:
+        scenarios = range(NoSce)
+    else:
+        scenarios = [int(x) for x in scenarios]
+    for xs in scenarios:
+        for xy in range(NoYrs):
+            pos = int(np.ceil((xs+1)/2**(NoYrs-1)*2**xy)-1)
+            for xb in pos_demand:
+                (data['optimisation_profiles_data']['data'][0]['data'].
+                 append([xs+1, int(yrs[xy]), xb, PD[xb]*multiplier[xy][pos],
+                         QD[xb]*multiplier[xy][pos]]))
+
+    # Add investment clusters
+    NoClu = len(final_interv_clust)
+    NoBra = len(final_interv_clust[0])
+    for xc in range(NoClu):
+        costs = 0
+        elements = []
+        Ins_time = 0
+        capacity = []
+        for xb in range(NoBra):
+            if final_interv_clust[xc][xb] > 0:
+                x = 0
+                while final_interv_clust[xc][xb] != ci_catalogue[0][x]:
+                    x += 1
+                x += oversize  # Oversize
+                costs += ci_cost[0][x]*line_length[xb]
+                elements.append(xb+1)
+                capacity.append(ci_catalogue[0][x])
+        data['optimisation_binary_variables'][0]['costs'].append(costs)
+        (data['optimisation_binary_variables'][0]
+         ['elements_positions'].append(elements))
+        (data['optimisation_binary_variables'][0]
+         ['installation_time'].append(Ins_time))
+        (data['optimisation_binary_variables'][0]
+         ['capacity_to_be_added_MW'].append(capacity))
+
+    return data
+
+
+def kwargs2ListF(kwargs, txt):
+    '''Convert string to floating list'''
+    var = kwargs.pop(txt)
+    res = []
+    for s in var:
+        if s.isdigit():
+            res.append(float(s))
+
+    return res
+
+
+def attest_invest(kwargs):
+    '''Call ATTEST's distribution network planning tool '''
+    Base_Path = os.path.dirname(__file__)
+    output_dir = kwargs.pop('output_dir')
+    test_case = kwargs.pop('case')
+    ci_catalogue = [kwargs.pop('line_capacities'),
+                    kwargs.pop('trs_capacities')]
+    cont_list = kwargs.pop('cont_list')
+    cluster = kwargs.pop('cluster')
+    line_length = kwargs2ListF(kwargs, 'line_length')
+    scenarios = kwargs2ListF(kwargs, 'scenarios')
+    oversize = kwargs.pop('oversize')
+    NoCon = len(cont_list)
+
+    ci_cost = [[], []]
+    if len(ci_cost[0]) == 0:
+        ci_cost[0] = [40000 * i for i in ci_catalogue[0]]
+    else:
+        ci_cost[0] = kwargs.pop('line_Costs')
+
+    if len(ci_cost[1]) == 0:
+        ci_cost[1] = [40000 * i for i in ci_catalogue[1]]
+    else:
+        ci_cost[0] = kwargs.pop('trs_Costs')
+
+    growth = kwargs.pop('growth')
+    Max_clusters = kwargs.pop('max_clusters')
+
+    keys = list(growth.keys())
+    yrs = list(growth[keys[0]].keys())
+    multiplier = [[1]]
+    for yr in range(len(yrs)-1):
+        mul = []
+        aux = (int(yrs[yr+1])-int(yrs[yr]))/100
+        aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
+        aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
+        aux3 = (aux1-aux2)/(2**(yr+1)-1)
+        for bs in range(2**(yr+1)):
+            mul.append(aux1)
+            aux1 -= aux3
+        multiplier.append(mul)
+
+    print('\nScreening for investment options\n')
+    if cluster is None:
+        gen_status = False
+        line_status = True
+        final_interv_clust, mpc = \
+            Sceenning_clusters(gen_status, line_status, test_case, multiplier,
+                               ci_catalogue, cont_list, Max_clusters)
+    else:
+        final_interv_clust = cluster
+        mpc = get_mpc(test_case)
+
+    # Check line lengths
+    NoLines = len(mpc['branch']['F_BUS'])
+    if len(line_length) == 0:
+        line_length = [1 for x in range(NoLines)]
+    else:
+        for x in range(NoLines-len(line_length)):
+            line_length.append(line_length[0])
+
+    # Pass data to JSON file
+    filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
+    with open(filename, 'w', encoding='utf-8') as f:
+        data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
+                          ci_cost, ci_catalogue, line_length, scenarios,
+                          oversize)
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+    # Distribution network optimisation
+    print('\nOptimising investment strategies\n')
+    start = time.time()
+    solution = main_access_function(file_path=filename)
+    save_in_json(solution, output_dir)
+    end = time.time()
+    print('\nTime required by the tool:', end - start)
+
+
+def attest_invest_path(kwargs):
+    '''Call ATTEST's distribution network planning tool with paths '''
+    input_dir = kwargs.pop('input_dir')
+    output_dir = kwargs.pop('output_dir')
+
+    print('\nOptimising investment strategies\n')
+    start = time.time()
+    solution = main_access_function(file_path=input_dir)
+    save_in_json(solution, output_dir)
+    end = time.time()
+    print('\nTime required by the tool:', end - start)

@@ -68,8 +68,9 @@ def get_mult(country_selected= "HR"):
                 "2050":0.7
             }
         }
-    
-    # Output data: defining the demand multipliers for years and scenarios (relative values compared to the year 2020)
+
+    # Output data: defining the demand multipliers for years and scenarios
+    # (relative values compared to the year 2020)
     mult = {"2020":[1],
             "2030":[None]*2,
             "2040":[None]*4,
