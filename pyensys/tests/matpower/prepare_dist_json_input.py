@@ -44,7 +44,9 @@ Years = [2020, 2030, 2040, 2050]
 N_sc = 1 # number of scenarios to construct the planning decision tree
 
 
-load_increase = True
+# load_increase = True # increase loads year by year
+load_increase = False # keep same loads (for testing purposes)
+
 
 attest_input = {
     "columns_names": ["scenario", "year", "bus_index", "p_mw", "q_mvar"],

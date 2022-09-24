@@ -108,10 +108,8 @@ mpc.gencost = [
 mpc.bus(:,3:4) = mpc.bus(:,3:4)*1.932125
 saved_MVA = mpc.branch(:,6)
 mpc.branch(:,6) = 0
-
 mpc = runopf(mpc)
-
 fprintf('max(abs):')
 to_copare = max([abs(mpc.branch(:,14)+mpc.branch(:,15)*1i), abs(mpc.branch(:,16)+mpc.branch(:,17)*1i)],[],2)
 fprintf('compare:')
-[(1:length(mpc.branch(:,6)))',to_copare,saved_MVA,to_copare>=saved_MVA]
+[()to_copare,saved_MVA,to_copare>=saved_MVA]
