@@ -430,7 +430,7 @@ def hydro_example_tobeerased(conf):
         hydroInNode.value = 10000
         hydroInNode.index = xh+1
         EN.set_Hydro(hydroInNode.index, hydroInNode.value)
-    
+
     # Run integrated pyene
     m = ConcreteModel()
     m = EN.run(m)
@@ -467,7 +467,7 @@ def get_mpc(test_case):
 
 
 def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                       ci_catalogue, cont_list, Max_clusters):
+                       flex, ci_catalogue, cont_list, Max_clusters):
     '''Produce list of investment clusters'''
     mpc = get_mpc(test_case)
     cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
@@ -475,7 +475,7 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     # multipliers for each bus
     busMult_input = []
     # expand multiplier for each bus
-    multiplier_bus = mult_for_bus(busMult_input, multiplier, mpc)
+    multiplier_bus = mult_for_bus(busMult_input, multiplier, flex, mpc)
 
     # Load information
     # update peak demand values, get peak load for screening model
@@ -684,20 +684,30 @@ def attest_invest(kwargs):
         ci_cost[0] = kwargs.pop('trs_Costs')
 
     growth = kwargs.pop('growth')
+    DSR = kwargs.pop('dsr')
     Max_clusters = kwargs.pop('max_clusters')
 
     keys = list(growth.keys())
     yrs = list(growth[keys[0]].keys())
-    multiplier = [[1]]
+    multiplier = [[1*(1+growth[keys[0]][yrs[0]])]]
+    flex = [[1-DSR[keys[0]][yrs[0]]]]
     for yr in range(len(yrs)-1):
         mul = []
         aux = (int(yrs[yr+1])-int(yrs[yr]))/100
         aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
         aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
         aux3 = (aux1-aux2)/(2**(yr+1)-1)
+
+        dsr = []
+        dsrax1 = 1-DSR[keys[0]][yrs[yr+1]]
+        dsrax2 = (dsrax1+DSR[keys[1]][yrs[yr+1]]-1)/(2**(yr+1)-1)
+
         for bs in range(2**(yr+1)):
             mul.append(aux1)
+            dsr.append(dsrax1)
             aux1 -= aux3
+            dsrax1 -= dsrax2
+        flex.append(dsr)
         multiplier.append(mul)
 
     print('\nScreening for investment options\n')
@@ -706,7 +716,7 @@ def attest_invest(kwargs):
         line_status = True
         final_interv_clust, mpc = \
             Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                               ci_catalogue, cont_list, Max_clusters)
+                               flex, ci_catalogue, cont_list, Max_clusters)
     else:
         final_interv_clust = cluster
         mpc = get_mpc(test_case)

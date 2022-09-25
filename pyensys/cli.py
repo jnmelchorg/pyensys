@@ -346,11 +346,13 @@ def pyensys_entry_point(**kwargs):
 @click.option('--cont_list', default=[], help='Contingencies (list)')
 @click.option('--line_length', default=[], help='Length branches (list, km)')
 @click.option('--growth',
-              default={"Active": {'2020': 0, '2030': 1.89, '2040': 3.0,
-                                  '2050': 2.5},
-                       "Slow": {'2020': 0, '2030': 1.1, '2040': 2.0,
-                                '2050': 1.0}},
+              default={"Active": {'2020': 0, '2030': 1.89, '2040': 3.0},
+                       "Slow": {'2020': 0, '2030': 1.1, '2040': 2.0}},
               help='Demand growth (dictionary)')
+@click.option('--DSR',
+              default={"Active": {'2020': 0, '2030': 0.05, '2040': 0.05},
+                       "Slow": {'2020': 0, '2030': 0.02, '2040': 0.02}},
+              help='DSR per scenario (dictionary)')
 @click.option('--cluster',
               default=None, help='List of investment clusters')
 @click.option('--oversize',

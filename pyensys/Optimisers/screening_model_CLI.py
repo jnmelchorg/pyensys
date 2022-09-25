@@ -74,8 +74,8 @@ class nodes_info_network:
 
 # ####################################################################
 # ####################################################################
-def model_screening(mpc, gen_status, line_status, cicost, penalty_cost, cont_list , prev_invest,
-                    peak_Pd, mult,NoTime = 1):
+def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
+                    cont_list, prev_invest, peak_Pd, mult, NoTime=1):
     ''''read paras and vars from jason file'''
     def readVarPara():
     
