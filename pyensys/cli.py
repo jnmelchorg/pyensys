@@ -418,7 +418,7 @@ def pyensys_ATTEST_Distribution(**kwargs):
               default=os.path.join(os.path.dirname(__file__), 'tests',
                                    'outputs', 'output.json'),
               help='Loacation and name of output ')
-@click.option('--numlines', default=5, help='Number of lines')
+@click.option('--numlines', default=38, help='Number of lines')
 def pyensys_ATTEST_Distribution_Path(**kwargs):
     ''' Call ATTEST's distribution network planning tool '''
     attest_invest_path(kwargs)

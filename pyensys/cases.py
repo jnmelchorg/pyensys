@@ -658,6 +658,114 @@ def kwargs2ListF(kwargs, txt):
     return res
 
 
+def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                  clusters_capacity, case_name, yrs=[], scen=[]):
+    '''Save results in json file'''
+    data = {
+        'Country': case_name,
+        'Case name': case_name,
+        'Scenario 1': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            },
+        'Scenario 2': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            }
+        }
+
+    # Get first and last scenarios and the position of the data
+    NoRes = len(solution[0]['data']['scenario'])  # Number of results
+    scenarios = [1000, 0]
+    pos = [[], []]
+    for xs in range(NoRes):
+        scen = solution[0]['data']['scenario'][xs]
+        if scenarios[0] > scen:
+            pos[0] = []
+            scenarios[0] = scen
+
+        if scenarios[1] < scen:
+            pos[1] = []
+            scenarios[1] = scen
+
+        if scenarios[0] == scen:
+            pos[0].append(xs)
+
+        if scenarios[1] == scen:
+            pos[1].append(xs)
+
+    # Only one scenario was available
+    if scenarios[0] == scenarios[1]:
+        pos[1] = []
+
+    # Get years
+    if len(yrs) == 0:
+        NoYrs = 0
+        yrs = []
+        for xp in range(2):
+            for xy in pos[xp]:
+                y = solution[0]['data']['year'][xy]
+                flg = True
+                x = 0
+                while flg and x < NoYrs:
+                    if yrs[x] == y:
+                        flg = False
+                    x += 1
+                if flg:
+                    NoYrs += 1
+                    yrs.append(y)
+    else:
+        NoYrs = len(yrs)
+
+    for xp in range(2):
+        for xy in yrs:
+            data['Scenario ' + str(xp+1)][str(xy)] = {
+                'Operation cost (EUR-million/year)': 0,
+                'Branch investment (MVA)': [0 for x in range(NoLines)],
+                'Flexibility investment (MW)': [0 for x in range(NoLines)]
+                }
+
+    # Add interventions
+    for xp in range(2):
+        txt = 'Scenario ' + str(xp+1)
+        for xy in pos[xp]:
+            yr = str(solution[0]['data']['year'][xy])
+            lin_cluster = solution[0]['data']['line_index'][xy]
+            NoC1 = len(lin_cluster)
+            # Find corresponding cluster
+            xc1 = -1
+            flg = True
+            while flg:
+                xc1 += 1
+                NoC2 = len(clusters_positions[xc1])
+                if NoC1 == NoC2:
+                    xc2 = 0
+                    while xc2 < NoC1 and flg:
+                        if lin_cluster[xc2] != clusters_positions[xc1][xc2]:
+                            flg = False
+                        xc2 += 1
+                    if NoC1 == xc2:
+                        flg = False
+            for xc in range(NoC1):
+                ax = clusters_positions[xc1][xc]
+                data[txt][yr]['Branch investment (MVA)'][ax] = \
+                    clusters_capacity[xc1][xc]
+
+    for xs in solution[1]['data'].values:
+        if xs[0] == 0:
+            data['Scenario 1']['Total investment cost (EUR-million)'] = \
+                xs[1]/1000000
+        if xs[0] == scen:
+            data['Scenario 2']['Total investment cost (EUR-million)'] = \
+                xs[1]/1000000
+
+    # Save output file
+    with open(output_dir, 'w') as fp:
+        json.dump(data, fp, indent=4)
+
+
 def attest_invest(kwargs):
     '''Call ATTEST's distribution network planning tool '''
     Base_Path = os.path.dirname(__file__)
@@ -670,7 +778,7 @@ def attest_invest(kwargs):
     line_length = kwargs2ListF(kwargs, 'line_length')
     scenarios = kwargs2ListF(kwargs, 'scenarios')
     oversize = kwargs.pop('oversize')
-    NoCon = len(cont_list)
+    # NoCon = len(cont_list)
 
     ci_cost = [[], []]
     if len(ci_cost[0]) == 0:
@@ -711,6 +819,7 @@ def attest_invest(kwargs):
         multiplier.append(mul)
 
     print('\nScreening for investment options\n')
+    NoScens = len(multiplier[-1])-1
     if cluster is None:
         gen_status = False
         line_status = True
@@ -740,97 +849,30 @@ def attest_invest(kwargs):
     # Distribution network optimisation
     print('\nOptimising investment strategies\n')
     start = time.time()
-    solution = main_access_function(file_path=filename)
-    save_in_jsonW(solution, output_dir, NoLines)
+    solution, info = main_access_function(file_path=filename)
+
+    # Get clusters
+    clusters_positions = []
+    clusters_capacity = []
+    for x in info.incumbent_interventions._container[0][1]._container:
+        aux = x[1]._container
+        if len(aux) > 0:
+            clusters_positions.append(aux[0][1].element_position)
+            clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+    x1 = len(test_case)-1
+    while test_case[x1] != '.':
+        x1 -= 1
+    x2 = x1-1
+    while test_case[x2] != '/' and test_case[x2] != '\\':
+        x2 -= 1
+    case_name = test_case[x2+1:x1]
+    save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                  clusters_capacity, case_name, yrs, NoScens)
+
     end = time.time()
     print('\nTime required by the tool:', end - start)
 
-
-def save_in_jsonW(solution, output_dir, NoLines):
-    '''Save results in json file'''
-    data = {
-        'Country': 'Unamed',
-        'Case name': 'Unamed',
-        'Scenario 1': {
-            'Total investment cost (EUR-million)': None,
-            'Flexibility investment cost (EUR-million)': None,
-            'Net Present Operation Cost (EUR-million)': None
-            },
-        'Scenario 2': {
-            'Total investment cost (EUR-million)': None,
-            'Flexibility investment cost (EUR-million)': None,
-            'Net Present Operation Cost (EUR-million)': None
-            }
-        }
-
-    NoRes = len(solution[0][0]['data']['scenario'])  # Number of results
-
-    # Get first and last scenarios and the position of the data
-    scenarios = [1000, 0]
-    pos = [[], []]
-    for xs in range(NoRes):
-        scen = solution[0][0]['data']['scenario'][xs]
-        if scenarios[0] > scen:
-            pos[0] = []
-            scenarios[0] = scen
-
-        if scenarios[1] < scen:
-            pos[1] = []
-            scenarios[1] = scen
-
-        if scenarios[0] == scen:
-            pos[0].append(xs)
-
-        if scenarios[1] == scen:
-            pos[1].append(xs)
-
-    # Get years
-    NoYrs = 0
-    yrs = []
-    for xp in range(2):
-        for xy in pos[xp]:
-            y = solution[0][0]['data']['year'][xy]
-            print('Year', xy, y)
-            flg = True
-            x = 0
-            while flg and x < NoYrs:
-                if yrs[x] == y:
-                    flg = False
-                x += 1
-            if flg:
-                NoYrs += 1
-                yrs.append(y)
-
-    for xp in range(2):
-        for xy in yrs:
-            data['Scenario ' + str(xp+1)][str(xy)] = {
-                'Operation cost (EUR-million/year)': 0,
-                'Branch investment (MVA)': [0 for x in range(NoLines)],
-                'Flexibility investment (MW)': [0 for x in range(NoLines)]
-                }
-
-    # Add interventions
-    for xp in range(2):cl
-        txt = 'Scenario ' + str(xp+1)
-        for xy in pos[xp]:
-            lin = solution[0][0]['data']['line_index'][xy]-1
-            #data[txt][str(xy)]['Branch investment (MVA)'][lin] = \
-                
-            
-    
-    print()
-    print(scenarios)
-    print()
-    print(pos)
-    print()
-    print(yrs)
-    print()
-    print(data)
-    print()
-    #solution[1]
-    #solution[2]
-
-    
 
 def attest_invest_path(kwargs):
     '''Call ATTEST's distribution network planning tool with paths '''
@@ -840,25 +882,26 @@ def attest_invest_path(kwargs):
 
     print('\nOptimising investment strategies\n')
     start = time.time()
-    solution = main_access_function(file_path=input_dir)
-    #print()
-    #print(solution)
-    #print()
-    #print(lnes)
-    #print()
-    #print(inv_costs)
-    #print()
-    #print(op_costs)
-    #print()
-    
-    #print('----------------------------------------')
-    #print(info.complete_tree.interventions)
-    #print()
-    #print()
-    #print()
-    #aux[1000]
+    solution, info = main_access_function(file_path=input_dir)
 
-    #save_in_jsonW(solution, output_dir, numlines)
-    save_in_json(solution, output_dir)
+    # Get clusters
+    clusters_positions = []
+    clusters_capacity = []
+    for x in info.incumbent_interventions._container[0][1]._container:
+        aux = x[1]._container
+        if len(aux) > 0:
+            clusters_positions.append(aux[0][1].element_position)
+            clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+    x1 = len(input_dir)-1
+    while input_dir[x1] != '.':
+        x1 -= 1
+    x2 = x1-1
+    while input_dir[x2] != '/' and input_dir[x2] != '\\':
+        x2 -= 1
+    case_name = input_dir[x2+1:x1]
+    save_in_jsonW(solution, output_dir, numlines, clusters_positions,
+                  clusters_capacity, case_name)
+
     end = time.time()
     print('\nTime required by the tool:', end - start)
