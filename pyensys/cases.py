@@ -679,7 +679,7 @@ def attest_invest(kwargs):
         ci_cost[0] = kwargs.pop('line_Costs')
 
     if len(ci_cost[1]) == 0:
-        ci_cost[1] = [40000 * i for i in ci_catalogue[1]]
+        ci_cost[1] = [7000 * i for i in ci_catalogue[1]]
     else:
         ci_cost[0] = kwargs.pop('trs_Costs')
 
