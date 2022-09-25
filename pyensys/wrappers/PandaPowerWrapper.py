@@ -102,7 +102,7 @@ class PandaPowerWrapper:
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
-                    settings.optimisation_software](self.network, verbose=1, numba=False) # change verbose=0 to silence the solver
+                    settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)

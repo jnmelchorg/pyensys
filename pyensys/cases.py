@@ -741,19 +741,124 @@ def attest_invest(kwargs):
     print('\nOptimising investment strategies\n')
     start = time.time()
     solution = main_access_function(file_path=filename)
-    save_in_json(solution, output_dir)
+    save_in_jsonW(solution, output_dir, NoLines)
     end = time.time()
     print('\nTime required by the tool:', end - start)
 
+
+def save_in_jsonW(solution, output_dir, NoLines):
+    '''Save results in json file'''
+    data = {
+        'Country': 'Unamed',
+        'Case name': 'Unamed',
+        'Scenario 1': {
+            'Total investment cost (EUR-million)': None,
+            'Flexibility investment cost (EUR-million)': None,
+            'Net Present Operation Cost (EUR-million)': None
+            },
+        'Scenario 2': {
+            'Total investment cost (EUR-million)': None,
+            'Flexibility investment cost (EUR-million)': None,
+            'Net Present Operation Cost (EUR-million)': None
+            }
+        }
+
+    NoRes = len(solution[0][0]['data']['scenario'])  # Number of results
+
+    # Get first and last scenarios and the position of the data
+    scenarios = [1000, 0]
+    pos = [[], []]
+    for xs in range(NoRes):
+        scen = solution[0][0]['data']['scenario'][xs]
+        if scenarios[0] > scen:
+            pos[0] = []
+            scenarios[0] = scen
+
+        if scenarios[1] < scen:
+            pos[1] = []
+            scenarios[1] = scen
+
+        if scenarios[0] == scen:
+            pos[0].append(xs)
+
+        if scenarios[1] == scen:
+            pos[1].append(xs)
+
+    # Get years
+    NoYrs = 0
+    yrs = []
+    for xp in range(2):
+        for xy in pos[xp]:
+            y = solution[0][0]['data']['year'][xy]
+            print('Year', xy, y)
+            flg = True
+            x = 0
+            while flg and x < NoYrs:
+                if yrs[x] == y:
+                    flg = False
+                x += 1
+            if flg:
+                NoYrs += 1
+                yrs.append(y)
+
+    for xp in range(2):
+        for xy in yrs:
+            data['Scenario ' + str(xp+1)][str(xy)] = {
+                'Operation cost (EUR-million/year)': 0,
+                'Branch investment (MVA)': [0 for x in range(NoLines)],
+                'Flexibility investment (MW)': [0 for x in range(NoLines)]
+                }
+
+    # Add interventions
+    for xp in range(2):cl
+        txt = 'Scenario ' + str(xp+1)
+        for xy in pos[xp]:
+            lin = solution[0][0]['data']['line_index'][xy]-1
+            #data[txt][str(xy)]['Branch investment (MVA)'][lin] = \
+                
+            
+    
+    print()
+    print(scenarios)
+    print()
+    print(pos)
+    print()
+    print(yrs)
+    print()
+    print(data)
+    print()
+    #solution[1]
+    #solution[2]
+
+    
 
 def attest_invest_path(kwargs):
     '''Call ATTEST's distribution network planning tool with paths '''
     input_dir = kwargs.pop('input_dir')
     output_dir = kwargs.pop('output_dir')
+    numlines = kwargs.pop('numlines')
 
     print('\nOptimising investment strategies\n')
     start = time.time()
     solution = main_access_function(file_path=input_dir)
+    #print()
+    #print(solution)
+    #print()
+    #print(lnes)
+    #print()
+    #print(inv_costs)
+    #print()
+    #print(op_costs)
+    #print()
+    
+    #print('----------------------------------------')
+    #print(info.complete_tree.interventions)
+    #print()
+    #print()
+    #print()
+    #aux[1000]
+
+    #save_in_jsonW(solution, output_dir, numlines)
     save_in_json(solution, output_dir)
     end = time.time()
     print('\nTime required by the tool:', end - start)
