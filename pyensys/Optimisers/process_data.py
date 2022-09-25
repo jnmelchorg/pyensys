@@ -146,21 +146,20 @@ def replaceGenCost(mpc, gen_cost, action):
     return mpc
 
 
-def mult_for_bus(busMult_input, multiplier, mpc):
-    
-    if busMult_input == []: 
+def mult_for_bus(busMult_input, multiplier, flex, mpc):
+
+    if busMult_input == []:
         mult_bus = []
         for xy in range(len(multiplier)):
             mult_bus.append([])
             for xsc in range(len(multiplier[xy])):
                 mult_bus[xy].append([])
-                
-                temp_mult =  [multiplier[xy][xsc]]*mpc["NoBus"]
-                mult_bus[xy][xsc]= temp_mult
-    
+
+                temp_mult = [multiplier[xy][xsc]*flex[xy][xsc]]*mpc["NoBus"]
+                mult_bus[xy][xsc] = temp_mult
     else:
         mult_bus = busMult_input.copy()
-        
+
     return mult_bus
 
 
