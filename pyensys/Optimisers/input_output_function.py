@@ -24,8 +24,8 @@ Input and output functions
 import json
 import os
 import pandas as pd
-from conversion_model_mat2json import any2json
-from scenarios_multipliers import get_mult
+from pyensys.tests.matpower.conversion_model_mat2json import any2json
+from pyensys.Optimisers.scenarios_multipliers import get_mult
 import numpy as np
 
 
@@ -36,82 +36,26 @@ def json_directory():
 
 
 
-def read_input_data(ods_file_name, country = "HR", test_case = "HR_2020_Location_1" ):
+def read_input_data(country = "HR", test_case = "HR_2020_Location_1" ):
     cont_list = []
-    file_name  = test_case 
-    
+    file_name = test_case[:-2]
+
     # todo: update json input to exclude dummy generators?
     '''load m file'''
     converter = any2json()
     converter.matpower2json(folder_path=json_directory(), \
                             name_matpower=file_name, name_json=file_name)
-    print('m file converted to json')
 
     
     filepath = os.path.join(json_directory(), file_name+'.json')
 
     ''' Load json file''' 
     # load json file from file directory
-    mpc = json.load(open(filepath))
-    print('load json file')                             
-    
-    
+    mpc = json.load(open(filepath))                           
+
     '''Load multipliers for different scnearios'''
-    multiplier = get_mult(country) # default to HR
-    
-    # ''' Load xlsx file'''
-    # base_time_series_data = get_data("Transmission_Network_PT_2020_24hGenerationLoadData.ods")
-    # base_time_series_data  = pd.read_excel('tests/excel/'+ xlsx_file_name + ".xlsx", sheet_name=None)
-    # print('load xlsx file')
-   
-    # ''' Load ods for contingencies file''' 
-    # # ods_file_name = "case_template_CR_L3"
-    # ods_file = 'SCOPF_R5/input_data/'+ ods_file_name + ".ods"
-    
-    # if os.path.exists(ods_file):
-    #     cont_ods = pd.read_excel(ods_file,sheet_name = "contingencies")
-    
-    #     NoCon =  len(cont_ods)
-    #     con_bra = []
-        
-    #     for xc in range(NoCon):
-            
-    #         fbus = cont_ods["From"][xc]
-    #         tbus = cont_ods["To"][xc]
-            
-    #         # find all branch fron the bus
-    #         con_bra_fbus = [index for (index, item) in enumerate(mpc["branch"]["F_BUS"]) if item == fbus]
-    #         con_bra_tbus = [index for (index, item) in enumerate(mpc["branch"]["T_BUS"]) if item == tbus]
-    #         con_bra.append( list(set(con_bra_fbus).intersection(set(con_bra_tbus)))[0] )
-        
-        
-    #     # create contingecy list
-    #     cont_list = [[1]*mpc["NoBranch"]]     
-        
-    #     for xc in range(NoCon):
-            
-    #         temp_list = [[1]*mpc["NoBranch"]]  
-            
-    #         temp_list[0][con_bra[xc]] = 0
-            
-    #         cont_list.extend(temp_list)
-        
-        
-    # else:
-    #     print("input data for contiengcy not found. Use N-1 for simulation")
-    #     # generate N-1 contingencies
-    #     if cont_list==[]:
-    #         cont_list = [[1]*mpc["NoBranch"]] 
+    multiplier = get_mult(country)  # default to HR
 
-    #         temp_list = (cont_list[0]-np.diag(cont_list[0]) ).tolist()
-            
-    #         # # reduce the size of contingency list
-    #         # temp_list = temp_list[:len(temp_list)//29]
-
-    #         cont_list.extend(temp_list)
-    
-    
-    
     ''' Load intervention infor''' 
     
     if os.path.exists('tests/json/intervention.json'):
@@ -119,7 +63,7 @@ def read_input_data(ods_file_name, country = "HR", test_case = "HR_2020_Location
         intv = json.load(file)
         file.close()
         
-        print("Reading intervention lists and costs data")
+        # print("Reading intervention lists and costs data")
         ci_catalogue = []
         ci_catalogue.append( intv["line_list"] )
         ci_catalogue.append( intv["transformer_list"])
