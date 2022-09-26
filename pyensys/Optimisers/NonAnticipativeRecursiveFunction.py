@@ -477,8 +477,8 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         return total_cost
 
     def get_solution(self, info: InterIterationInformation) -> List[dict]:
-        print('info:')
-        print(info)
+        # print('info:')
+        # print(info)
         solutions_lines = {"group": "lines", "data": DataFrame(columns=["scenario", "year", "line_index"])}
         solutions_investment_costs = {"group": "investment_costs", "data": DataFrame(columns=["scenario", "cost"])}
         solutions_operation_costs = {"group": "operation_costs", "data": DataFrame(columns=["scenario", "cost"])}
@@ -514,4 +514,4 @@ class NonAnticipativeRecursiveFunction(RecursiveFunction):
         solutions_operation_costs["data"] = solutions_operation_costs["data"].drop_duplicates(ignore_index=True)
         solutions_operation_costs["data"] = solutions_operation_costs["data"].sort_values(by=["scenario"],
                                                                                           ignore_index=True)
-        return [solutions_lines, solutions_investment_costs, solutions_operation_costs]
+        return [solutions_lines, solutions_investment_costs, solutions_operation_costs], info
