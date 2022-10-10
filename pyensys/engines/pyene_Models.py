@@ -1445,14 +1445,14 @@ class Networkmodel():
                 self.MaxConvGen[i] = obj.Gen.Conv[i].get_Max()
             #TODO: Generalise for N number of pieces per generator
             self.ACoeffPWConvGen = np.empty((self.NumberConvGen,\
-                self.PWConvGen[0])) # Coefficient A of the piece Ax + b for
+                max(self.PWConvGen))) # Coefficient A of the piece Ax + b for
                                     # conventional generation
             for i in range(self.NumberConvGen):
                 for j in range(self.PWConvGen[i]):
                     self.ACoeffPWConvGen[i, j] = \
                         obj.Gen.Conv[i].cost['LCost'][j][0]
             self.BCoeffPWConvGen = np.empty((self.NumberConvGen,\
-                self.PWConvGen[0])) # Coefficient b of the piece Ax + b for
+                max(self.PWConvGen))) # Coefficient b of the piece Ax + b for
                                     # conventional generation
             for i in range(self.NumberConvGen):
                 for j in range(self.PWConvGen[i]):

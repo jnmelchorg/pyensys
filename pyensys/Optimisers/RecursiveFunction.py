@@ -78,12 +78,14 @@ class BinaryVariable:
     element_type: str = ""
     variable_name: str = ""
     installation_time: int = -1
+    capacity_to_be_added_MW: float = 0.0
 
     def __eq__(self, other):
         if isinstance(other, BinaryVariable):
             return (self.element_id == other.element_id) and (self.cost == other.cost) and \
                    (self.element_position == other.element_position) and \
-                   (self.element_type == other.element_type) and (self.variable_name == other.variable_name)
+                   (self.element_type == other.element_type) and (self.variable_name == other.variable_name) and\
+                    (self.capacity_to_be_added_MW == other.capacity_to_be_added_MW)
 
 
 @dataclass
@@ -109,6 +111,10 @@ def _create_data_to_update_status_of_parameter(intervention: BinaryVariable) -> 
         parameter_to_update.parameter_name = "in_service"
         parameter_to_update.parameter_position = intervention.element_position
         parameter_to_update.new_value = True
+        # print('self.capacity_to_be_added_MW:')
+        # print(self.capacity_to_be_added_MW)
+        # parameter_to_update.capacity_to_be_added_MW = 777 # for testing purposes
+        parameter_to_update.capacity_to_be_added_MW = intervention.capacity_to_be_added_MW
         return parameter_to_update
     else:
         raise TypeError
@@ -170,11 +176,15 @@ class RecursiveFunction:
     def _create_pool_interventions(self):
         self._pool_interventions.create_list()
         counter = 0
-        for variables in self._parameters.optimisation_binary_variables:
-            for cost, position, time in zip(variables.costs, variables.elements_positions, variables.installation_time):
+        for variables in self._parameters.optimisation_binary_variables: 
+            # for cost, position, time in zip(variables.costs, variables.elements_positions, variables.installation_time): # (previous version)
+            #     self._pool_interventions.append(str(counter), BinaryVariable(
+            #         element_type=variables.element_type, variable_name=variables.variable_name,
+            #         element_id='', element_position=position, cost=cost, installation_time=time))
+            for cost, position, time, capacity_to_be_added_MW in zip(variables.costs, variables.elements_positions, variables.installation_time, variables.capacity_to_be_added_MW): # (new version with additional capacity in MW)
                 self._pool_interventions.append(str(counter), BinaryVariable(
                     element_type=variables.element_type, variable_name=variables.variable_name,
-                    element_id='', element_position=position, cost=cost, installation_time=time))
+                    element_id='', element_position=position, cost=cost, installation_time=time, capacity_to_be_added_MW=capacity_to_be_added_MW))
                 counter += 1
 
     def solve(self, inter_iteration_information: InterIterationInformation):
@@ -372,13 +382,18 @@ class RecursiveFunction:
 
     def _calculate_investment_cost(self, interventions: AbstractDataContainer) -> float:
         total_cost = 0.0
+        print('interventions: ')
+        print(interventions)
         for year, (_, investments) in enumerate(interventions):
             partial_cost = 0.0
+            print('investments: ')
+            print(investments)
             for _, investment in investments:
                 partial_cost = partial_cost + investment.cost
             total_cost = total_cost + (1 / (
                         (1 - (self._parameters.problem_settings.return_rate_in_percentage / 100)) ** year)) * \
                          partial_cost
+        error[2000] #this function is not working
         return total_cost
 
     def _calculate_opteration_cost(self, operation_cost_per_year: AbstractDataContainer) -> float:

@@ -2,12 +2,15 @@ import click
 import numpy as np
 import cProfile
 import os
+import time
 from pyensys.cases import test_pyene, test_pyeneE, test_pyeneN, test_pyeneAC, \
-    test_pyenetest, hydro_example_tobeerased, test_pyeneRES
+    test_pyenetest, hydro_example_tobeerased, test_pyeneRES, attest_invest, \
+    attest_invest_path
 from pyensys.engines.main import pyeneConfig
 from pyensys.engines.main import pyeneClass
-
-from pyensys.managers.GeneralManager import main_access_function
+from pyensys.Optimisers.input_output_function import  get_peak_data, \
+    read_input_data
+from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
 
 pass_conf = click.make_pass_decorator(pyeneConfig, ensure=True)
@@ -303,6 +306,7 @@ def network_simulation_pyenetst(**kwargs):
     mthd = kwargs.pop('test')
     test_pyenetest(mthd)
 
+
 @cli.command('run_pyene')
 @click.argument('file_path', type=click.Path(exists=True))
 def network_simulation_pyenetst(**kwargs):
@@ -318,3 +322,103 @@ def network_simulation_pyenetst(**kwargs):
 def pyensys_entry_point(**kwargs):
     file_path: str = kwargs.pop('file_path')
     main_access_function(file_path)
+
+
+@cli.command('run-dist_invest')
+@click.option('--output_dir',
+              default=os.path.join(os.path.dirname(__file__), 'tests',
+                                   'outputs', 'output.json'),
+              help='Full path of the outputs. By default:' +
+              os.path.join(os.path.dirname(__file__), 'tests', 'outputs',
+                           'output.json') + '.')
+@click.option('--case', default=os.path.join(os.path.dirname(__file__),
+                                             'tests', 'matpower', 'case3.m'),
+              help='Location and name of m file. By default' +
+              os.path.join(os.path.dirname(__file__), 'tests', 'matpower',
+                           'case3.m') + '.')
+@click.option('--line_capacities',
+              default=[0.045, 0.075, 0.1125, 0.15, 0.225, 0.3, 0.5, 0.75, 1.0,
+                       2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0,
+                       100.0, 250.0, 500.0],
+              help='List of line capacities [MVA]. By default: ' +
+              '[0.045, 0.075, 0.1125, 0.15, 0.225, 0.3, 0.5, 0.75, 1.0, ' +
+              '2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, ' +
+              '250.0, 500.0].')
+@click.option('--TRS_capacities',
+              default=[1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0,
+                       80.0, 100.0, 250.0, 500.0],
+              help='List of transformer capacities [MVA]. By default: ' +
+              '[1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, ' +
+              '100.0, 250.0, 500.0].')
+@click.option('--line_Costs', default=[],
+              help='Line costs [£/km]. By default it is an empty list [] ' +
+              'and the model assumes 60000*line capacity. The costs can also' +
+              'be added here, e.g., using the line capacities above: ' +
+              '[1800, 3000, 4500, 6000, 9000, 12000, 20000, 30000, 40000, ' +
+              '80000, 200000, 400000, 800000, 1200000, 1600000, 2000000, ' +
+              '2400000, 3200000, 4000000, 10000000, 20000000].')
+@click.option('--TRS_costs', default=[],
+              help='Transformer costs [£]. By default it is an empty list []' +
+              ' and the model assumes 7000*transformer capacity. The costs ' +
+              'can also be added here, e.g., using the transformer ' +
+              'capacities above: [7000, 14000, 35000, 70000, 140000, ' +
+              '210000, 280000, 350000, 420000, 560000, 700000, 1750000, ' +
+              '3500000].')
+@click.option('--cont_list', default=[],
+              help='List of line contingencies. By default is its empty [].')
+@click.option('--line_length',
+              default=[], help='Length of each branch [km], by default it' +
+              ' is empty [] and the model assumes all lines are 1km long ' +
+              'i.e.,[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ' +
+              '1, 1, 1].')
+@click.option('--growth',
+              default={'Active': {'2020': 0, '2030': 1.89, '2040': 3.0},
+                       'Slow': {'2020': 0, '2030': 1.1, '2040': 2.0}},
+              help='Dictionary with demand growth [%] for selected years ' +
+              '(e.g., 2020, 2030 and 2040) and scenarios (e.g., active and ' +
+              'slow). The first year is taken as the current year and should' +
+              ' be assign a growth of 0%. By default: ' +
+              '{\'Active\': {\'2020\': 0, \'2030\': 1.89, \'2040\': 3.0},' +
+              '\'Slow\': {\'2020\': 0, \'2030\': 1.1, \'2040\': 2.0}}.')
+@click.option('--DSR',
+              default={"Active": {'2020': 0, '2030': 0.05, '2040': 0.05},
+                       "Slow": {'2020': 0, '2030': 0.02, '2040': 0.02}},
+              help='Dictionary with DSR [%] for selected years ' +
+              '(e.g., 2020, 2030 and 2040) and scenarios (e.g., active and ' +
+              'slow). The format of the information must match --growth. ' +
+              'By default: {\'Active\': {\'2020\': 0, \'2030\': 0.05, ' +
+              '\'2040\': 0.05}, \'Slow\': {\'2020\': 0, \'2030\': 0.02, ' +
+              '\'2040\': 0.02}}.')
+@click.option('--cluster', default=None,
+              help='List of investment clusters [MVA]. By default it is ' +
+              'set to None and the model will calculate the adequate ' +
+              'investment options.')
+@click.option('--oversize', default=0,
+              help='Option to intentionally oversize investments by ' +
+              'selecting the next available value from the ' +
+              '--line_capacities. By default it is set to 0 (no oversize).')
+@click.option('--Max_clusters', default=3,
+              help='Constraint on the maximum number of clusters considered' +
+              '. By default it is set to 5.')
+@click.option('--scenarios', default=[],
+              help='List of scenarios to model. By default it is left empty ' +
+              '[] and the model will consider all available scenarios, ' +
+              'e.g., [0, 1, 2, 3].')
+def pyensys_ATTEST_Distribution(**kwargs):
+    ''' Call ATTEST's distribution network planning tool '''
+    attest_invest(kwargs)
+
+
+@cli.command('run-dist_path')
+@click.option('--input_dir',
+              default=os.path.join(os.path.dirname(__file__), 'tests',
+                                   'json', 'attest_input_format_Default.json'),
+              help='Loacation and name of output ')
+@click.option('--output_dir',
+              default=os.path.join(os.path.dirname(__file__), 'tests',
+                                   'outputs', 'output.json'),
+              help='Loacation and name of output ')
+@click.option('--numlines', default=38, help='Number of lines')
+def pyensys_ATTEST_Distribution_Path(**kwargs):
+    ''' Call ATTEST's distribution network planning tool '''
+    attest_invest_path(kwargs)

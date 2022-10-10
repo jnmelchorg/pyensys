@@ -12,15 +12,148 @@ from pyensys.readers.ReaderDataClasses import DataframeData, PandaPowerProfileDa
     OptimisationBinaryVariables, FREQUENCY_NAME_TO_PANDAS_ALIASES
 
 
+def _build_mat_file(path):
+    with open(path, 'r') as f:
+        contents = f.readlines()
+
+    # We know the file will contain the following elements:
+    Elements = ["version", "baseMVA", "bus", "gen", "branch", "gencost"]
+    Components = [1, 1, 13, 21, 13, 6]
+    NoElements = len(Elements)
+    NoContents = len(contents)
+    Vars = {}
+    Vars['mpc'] = {}
+    xline = 0
+    while xline < NoContents:
+        Split_Line = contents[xline].split()
+        # Check if the line is not empty
+        if Split_Line != []:
+            # Check if the string includes the = symbol
+            Equal = Split_Line[0].find('=')
+            if Equal >= 0:
+                Text = Split_Line[0][0:Equal]
+            else:
+                Text = Split_Line[0]
+
+            # Check if the line contains one of the elements
+            xelement = 0
+            while xelement < NoElements:
+                if Text == "mpc." + Elements[xelement]:
+                    break
+                xelement += 1
+
+            # Has an element been found?
+            if xelement < NoElements:
+                # Number of strings in this line
+                NoStrings = len(Split_Line)
+
+                if Components[xelement] == 1:
+                    # Should the first string be checked?
+                    if Equal >= 0:
+                        xstring = 0
+                    else:
+                        xstring = 1
+
+                    # Look for the numeric value in this line
+                    while xstring < NoStrings:
+                        a, b = _get_digit_string(Split_Line[xstring])
+                        if a:
+                            Vars['mpc'][Elements[xelement]] = b
+                            break
+                        xstring += 1
+
+                    # Raise exception if the number was not found
+                    if xstring == NoStrings:
+                        print('\nThe information in %s '
+                              % Elements[xelement], end='')
+                        print(' must be in a single line in the *.m file')
+                        raise Exception('Sorry, please edit the *.m file')
+                else:
+                    # Check if there are values in the first line
+                    xstring = 0
+                    if NoStrings > Components[xelement]:
+                        a = False
+                        while not a:
+                            a, _ = _get_digit_string(Split_Line[xstring])
+                            xstring += 1
+                    else:
+                        xline += 1
+                        Split_Line = contents[xline].split()
+                        NoStrings = len(Split_Line)
+
+                    Full_List = []
+                    while NoStrings >= Components[xelement]:
+                        Part_List = []
+                        for xval in range(Components[xelement]):
+                            a, b = _get_digit_string(Split_Line[xstring])
+
+                            if not a:
+                                print('\nThe numerical values in %s '
+                                      % Elements[xelement], end='')
+                                print(' could not be loaded.')
+
+                                raise Exception('Sorry, please edit the',
+                                                ' *.m file')
+
+                            Part_List.append(b)
+                            xstring += 1
+                        Full_List.append(Part_List)
+
+                        xstring = 0
+                        xline += 1
+                        Split_Line = contents[xline].split()
+                        NoStrings = len(Split_Line)
+
+                    Vars['mpc'][Elements[xelement]] = Full_List
+
+        xline += 1
+    path = path + 'at'
+
+    from scipy.io import savemat
+    savemat(path, Vars)
+
+
+def _create_dataframe(dataframe_data: DataframeData) -> DataFrame:
+    return DataFrame(data=dataframe_data.data, columns=dataframe_data.column_names)
+
+
+def _get_digit_string(str):
+    '''Convert string into a floating number'''
+    Multiplier = 1
+    Num = []
+    Nostr = len(str)
+    # Check for digits
+    for xstr in range (Nostr):
+        character = str[xstr]
+        if character.isdigit():
+            Num.append(character)
+        elif character == '.':
+            Num.append(character)
+        elif character == 'e': # Check for exponentials
+            aux = 10**int(''.join(str[xstr+2:Nostr]))
+            if str[xstr+1] == '+':
+                Multiplier *= aux
+            else:
+                Multiplier /= aux
+            break
+        
+    if Num == []:
+        return False, ' '
+    else:
+        # Check for negatives
+        if str[0] == '-':
+            Multiplier *= -1
+
+        Num = Multiplier * float(''.join(Num))
+
+        return True, Num
+
+
 def _read_active_columns_names(profile_data_dict: dict, data: DataFrame) -> List[str]:
     if profile_data_dict.get("active_columns_names", None) is not None:
         return profile_data_dict.pop("active_columns_names")
     elif profile_data_dict.get("all_active_columns_names", False):
         return data.columns.tolist()
-
-
-def _create_dataframe(dataframe_data: DataframeData) -> DataFrame:
-    return DataFrame(data=dataframe_data.data, columns=dataframe_data.column_names)
 
 
 def _read_file(path: str, profile_data_dict: dict, header: Any = 0) -> DataFrame:
@@ -253,10 +386,18 @@ class ReadJSON:
 
     def _load_pandapower_mpc_settings(self) -> PandaPowerMPCSettings:
         pandapower_mpc_settings = PandaPowerMPCSettings()
-        pandapower_mpc_settings_dict: dict = self.settings.pop("pandapower_mpc_settings", None)
+        pandapower_mpc_settings_dict: dict = \
+            self.settings.pop("pandapower_mpc_settings", None)
         if pandapower_mpc_settings_dict is not None:
-            pandapower_mpc_settings.mat_file_path = \
-                pandapower_mpc_settings_dict.pop("mat_file_path")
+
+            # Is this a *.m file?
+            MatPath = pandapower_mpc_settings_dict.pop("mat_file_path")
+            if MatPath[-1] == 'm':
+                # A *.mat file has to be created based on the *.m file
+                _build_mat_file(MatPath)
+                MatPath = MatPath + 'at'
+
+            pandapower_mpc_settings.mat_file_path = MatPath
             pandapower_mpc_settings.system_frequency = \
                 pandapower_mpc_settings_dict.pop("frequency")
             pandapower_mpc_settings.initialised = True
@@ -326,7 +467,8 @@ class ReadJSON:
                                             elements_ids=variable.get("elements_ids"),
                                             elements_positions=variable.get("elements_positions", []),
                                             costs=variable.get("costs", []),
-                                            installation_time=variable.get("installation_time", []))
+                                            installation_time=variable.get("installation_time", []),
+                                            capacity_to_be_added_MW=variable.get("capacity_to_be_added_MW", [])) # new data added (MW)
             )
 
     def _adjust_pandapower_profiles_to_time_settings(self):

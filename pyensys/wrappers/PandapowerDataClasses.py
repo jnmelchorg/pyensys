@@ -41,4 +41,6 @@ class UpdateParameterData:
     component_type: str = ''
     parameter_name: str = ''
     parameter_position: int = 0
+    # parameter_position: Any = ''
     new_value: Any = ''
+    capacity_to_be_added_MW: Any = '' # changing the way intervention decisions are handled
