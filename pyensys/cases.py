@@ -870,6 +870,8 @@ def attest_invest(kwargs):
     save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
                   clusters_capacity, case_name, yrs, NoScens)
 
+    # save_in_json(solution, output_dir)
+
     end = time.time()
     print('\nTime required by the tool:', end - start)
 

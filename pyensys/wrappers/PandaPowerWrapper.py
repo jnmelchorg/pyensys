@@ -41,7 +41,7 @@ class PandaPowerWrapper:
                                     frequency_hz: float, case_name_in_mpc_file: str = "mpc"):
         self.network = from_mpc(file_path_with_extension, f_hz=frequency_hz, casename_mpc_file=case_name_in_mpc_file)
         # self.network.ext_grid.at[0,"vm_pu"] = 1.06 # volage tests
-        # bus = self.network.ext_grid.at[0,"vm_pu"] = 1.038 # volage tests
+        # bus = self.network.ext_grid.at[0,"vm_pu"] = 1.038 # 
 
     def add_controllers_to_network(self, profiles: List[Profile]):
         for profile in profiles:
@@ -104,7 +104,7 @@ class PandaPowerWrapper:
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
-                    settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
+                    settings.optimisation_software](self.network, verbose=1, numba=False) # change verbose=0 to silence the solver
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)
