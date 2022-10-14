@@ -776,9 +776,6 @@ def attest_invest(kwargs):
     test_case = kwargs.pop('case')
     ci_catalogue = [kwargs2ListF(kwargs, 'line_capacities'),
                     kwargs2ListF(kwargs, 'trs_capacities')]
-    print()
-    print(ci_catalogue)
-    print()
     cont_list = kwargs.pop('cont_list')
     cluster = kwargs.pop('cluster')
     line_length = kwargs2ListF(kwargs, 'line_length')
@@ -798,6 +795,9 @@ def attest_invest(kwargs):
         ci_cost[0] = kwargs.pop('trs_Costs')
 
     growth = kwargs.pop('growth')
+    if isinstance(growth, str):
+        growth = eval(growth)
+
     DSR = kwargs.pop('dsr')
     Max_clusters = kwargs.pop('max_clusters')
 
@@ -833,9 +833,12 @@ def attest_invest(kwargs):
             Sceenning_clusters(gen_status, line_status, test_case, multiplier,
                                flex, ci_catalogue, cont_list, Max_clusters)
     else:
-        final_interv_clust = cluster
+        final_interv_clust = eval(cluster)
         mpc = get_mpc(test_case)
-
+    
+    print()
+    print(final_interv_clust)
+    print()
     # Check line lengths
     NoLines = len(mpc['branch']['F_BUS'])
     if len(line_length) == 0:
