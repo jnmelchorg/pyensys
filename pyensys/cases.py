@@ -650,10 +650,13 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
 def kwargs2ListF(kwargs, txt):
     '''Convert string to floating list'''
     var = kwargs.pop(txt)
-    res = []
-    for s in var:
-        if s.isdigit():
-            res.append(float(s))
+    if isinstance(var, str):
+        res = []
+        for s in var:
+            if s.isdigit():
+                res.append(float(s))
+    else:
+        res = var
 
     return res
 
@@ -771,8 +774,11 @@ def attest_invest(kwargs):
     Base_Path = os.path.dirname(__file__)
     output_dir = kwargs.pop('output_dir')
     test_case = kwargs.pop('case')
-    ci_catalogue = [kwargs.pop('line_capacities'),
-                    kwargs.pop('trs_capacities')]
+    ci_catalogue = [kwargs2ListF(kwargs, 'line_capacities'),
+                    kwargs2ListF(kwargs, 'trs_capacities')]
+    print()
+    print(ci_catalogue)
+    print()
     cont_list = kwargs.pop('cont_list')
     cluster = kwargs.pop('cluster')
     line_length = kwargs2ListF(kwargs, 'line_length')
