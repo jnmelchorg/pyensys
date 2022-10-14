@@ -835,10 +835,7 @@ def attest_invest(kwargs):
     else:
         final_interv_clust = eval(cluster)
         mpc = get_mpc(test_case)
-    
-    print()
-    print(final_interv_clust)
-    print()
+
     # Check line lengths
     NoLines = len(mpc['branch']['F_BUS'])
     if len(line_length) == 0:
