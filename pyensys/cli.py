@@ -350,7 +350,7 @@ def pyensys_entry_point(**kwargs):
               help='List of transformer capacities [MVA]. By default: ' +
               '[1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, ' +
               '100.0, 250.0, 500.0].')
-@click.option('--line_Costs', default=[],
+@click.option('--line_costs', default=[],
               help='Line costs [£/km]. By default it is an empty list [] ' +
               'and the model assumes 60000*line capacity. The costs can also' +
               'be added here, e.g., using the line capacities above: ' +

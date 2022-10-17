@@ -784,15 +784,21 @@ def attest_invest(kwargs):
     # NoCon = len(cont_list)
 
     ci_cost = [[], []]
-    if len(ci_cost[0]) == 0:
+    line_costs = kwargs.pop('line_costs')
+    if isinstance(line_costs, str):
+        line_costs = eval(line_costs)
+    if len(line_costs) == 0:
         ci_cost[0] = [40000 * i for i in ci_catalogue[0]]
     else:
-        ci_cost[0] = kwargs.pop('line_Costs')
+        ci_cost[0] = line_costs
 
-    if len(ci_cost[1]) == 0:
+    trs_costs = kwargs.pop('trs_costs')
+    if isinstance(trs_costs, str):
+        trs_costs = eval(trs_costs)
+    if len(trs_costs) == 0:
         ci_cost[1] = [7000 * i for i in ci_catalogue[1]]
     else:
-        ci_cost[0] = kwargs.pop('trs_Costs')
+        ci_cost[0] = trs_costs
 
     growth = kwargs.pop('growth')
     if isinstance(growth, str):
