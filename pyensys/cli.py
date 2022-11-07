@@ -397,7 +397,7 @@ def pyensys_entry_point(**kwargs):
               help='Option to intentionally oversize investments by ' +
               'selecting the next available value from the ' +
               '--line_capacities. By default it is set to 0 (no oversize).')
-@click.option('--Max_clusters', default=5,
+@click.option('--Max_clusters', default=1,
               help='Constraint on the maximum number of clusters considered' +
               '. By default it is set to 5.')
 @click.option('--scenarios', default=[],

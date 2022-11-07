@@ -671,6 +671,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     # solve pyomo model
     solver = SolverFactory('glpk')
     results = solver.solve(model)
+    print("results.solver.status: ",results.solver.status)
 
 
     maxICbra=[]
