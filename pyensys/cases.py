@@ -621,6 +621,7 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
 
     # Add investment clusters
     NoClu = len(final_interv_clust)
+    # print("final_interv_clust = ",final_interv_clust)
     NoBra = len(final_interv_clust[0])
     for xc in range(NoClu):
         costs = 0
