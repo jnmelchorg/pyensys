@@ -1,7 +1,8 @@
 {
     "metadata": {
-        "title": "c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\Distribution_Network_PT1",
-        "description": "power system of c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\Distribution_Network_PT1"
+        "title": "Distribution_Network_PT1",
+        "description": "power system of Distribution_Network_PT1",
+        "minimum_version": "0.4"
     },
     "version": 2,
     "baseMVA": 100.0,
