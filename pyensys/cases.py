@@ -512,15 +512,18 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
             interv_dict[xbr] = []
 
     final_interv_clust = []
-
+    
+    print("interv_clust: ",interv_clust)
     for i in range(len(interv_clust)):
         fl = False
         for ii in range(len(final_interv_clust)):
             if interv_clust[i] == final_interv_clust[ii]:
                 fl = True
+                print("interv_clust[i] == final_interv_clust[ii] ...")
 
         if not fl:
             final_interv_clust.append(interv_clust[i])
+            print("appending final_interv_clust...")
 
     # Limiting number of clusters to use
     NoClusters = len(final_interv_clust)-1
@@ -538,11 +541,15 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
                 aux = final_interv_clust[x1]
                 final_interv_clust[x1] = final_interv_clust[x1+x2+1]
                 final_interv_clust[x1+x2+1] = aux
+    print("NoClusters = ",NoClusters)
+    print("Max_clusters = ",NoClusters)
     if NoClusters > Max_clusters:
         final_interv_clust = \
             [final_interv_clust[int(plan)]
              for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
+        print("NoClusters > Max_clusters")
     else:
+        print("NoClusters < Max_clusters")
         pos = []
         for x1 in range(NoClusters+1):
             flg = True
@@ -555,6 +562,7 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
                 pos.append(x1)
         final_interv_clust = [final_interv_clust[x] for x in pos]
 
+    print("Sceenning_clusters... final_interv_clust = ",final_interv_clust)
     return final_interv_clust, mpc
 
 
@@ -621,7 +629,7 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
 
     # Add investment clusters
     NoClu = len(final_interv_clust)
-    # print("final_interv_clust = ",final_interv_clust)
+    print("final_interv_clust = ",final_interv_clust)
     NoBra = len(final_interv_clust[0])
     for xc in range(NoClu):
         costs = 0
@@ -867,6 +875,7 @@ def attest_invest(kwargs):
     # Get clusters
     clusters_positions = []
     clusters_capacity = []
+    print("Get clusters... info.incumbent_interventions:", info.incumbent_interventions)
     for x in info.incumbent_interventions._container[0][1]._container:
         aux = x[1]._container
         if len(aux) > 0:
