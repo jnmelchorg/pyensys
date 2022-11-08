@@ -514,6 +514,13 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     final_interv_clust = []
     
     print("interv_clust: ",interv_clust)
+    # sum_interv_clust = 0
+    # for i in range(len(interv_clust)):
+    #     sum_interv_clust += sum(interv_clust[i])
+    # if sum_interv_clust == 0:
+    #     print()
+    #     print("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL ABORTS HERE")
+    #     print()
     for i in range(len(interv_clust)):
         fl = False
         for ii in range(len(final_interv_clust)):
@@ -647,11 +654,11 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
                 capacity.append(ci_catalogue[0][x])
         data['optimisation_binary_variables'][0]['costs'].append(costs)
         (data['optimisation_binary_variables'][0]
-         ['elements_positions'].append(elements))
+        ['elements_positions'].append(elements))
         (data['optimisation_binary_variables'][0]
-         ['installation_time'].append(Ins_time))
+        ['installation_time'].append(Ins_time))
         (data['optimisation_binary_variables'][0]
-         ['capacity_to_be_added_MW'].append(capacity))
+        ['capacity_to_be_added_MW'].append(capacity))
 
     return data
 
@@ -859,41 +866,49 @@ def attest_invest(kwargs):
         for x in range(NoLines-len(line_length)):
             line_length.append(line_length[0])
 
-    # Pass data to JSON file
-    filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
-    with open(filename, 'w', encoding='utf-8') as f:
-        data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
-                          ci_cost, ci_catalogue, line_length, scenarios,
-                          oversize)
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    if final_interv_clust == []:
+        print()
+        print("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL ABORTS HERE")
+        print()
+        # Save output file
+        with open(output_dir, 'w') as fp:
+            json.dump("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL WAS ABORTED", fp, indent=4)
+    else:
+        # Pass data to JSON file
+        filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
+        with open(filename, 'w', encoding='utf-8') as f:
+            data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
+                            ci_cost, ci_catalogue, line_length, scenarios,
+                            oversize)
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
-    # Distribution network optimisation
-    print('\nOptimising investment strategies\n')
-    start = time.time()
-    solution, info = main_access_function(file_path=filename)
+        # Distribution network optimisation
+        print('\nOptimising investment strategies\n')
+        start = time.time()
+        solution, info = main_access_function(file_path=filename)
+        
+        # Get clusters
+        clusters_positions = []
+        clusters_capacity = []
+        print("Get clusters... info.incumbent_interventions:", info.incumbent_interventions)
+        for x in info.incumbent_interventions._container[0][1]._container:
+            aux = x[1]._container
+            if len(aux) > 0:
+                clusters_positions.append(aux[0][1].element_position)
+                clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
 
-    # Get clusters
-    clusters_positions = []
-    clusters_capacity = []
-    print("Get clusters... info.incumbent_interventions:", info.incumbent_interventions)
-    for x in info.incumbent_interventions._container[0][1]._container:
-        aux = x[1]._container
-        if len(aux) > 0:
-            clusters_positions.append(aux[0][1].element_position)
-            clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+        x1 = len(test_case)-1
+        while test_case[x1] != '.':
+            x1 -= 1
+        x2 = x1-1
+        while test_case[x2] != '/' and test_case[x2] != '\\':
+            x2 -= 1
+        case_name = test_case[x2+1:x1]
+        save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                    clusters_capacity, case_name, yrs, NoScens)
 
-    x1 = len(test_case)-1
-    while test_case[x1] != '.':
-        x1 -= 1
-    x2 = x1-1
-    while test_case[x2] != '/' and test_case[x2] != '\\':
-        x2 -= 1
-    case_name = test_case[x2+1:x1]
-    save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
-                  clusters_capacity, case_name, yrs, NoScens)
-
-    end = time.time()
-    print('\nTime required by the tool:', end - start)
+        end = time.time()
+        print('\nTime required by the tool:', end - start)
 
 
 def attest_invest_path(kwargs):
