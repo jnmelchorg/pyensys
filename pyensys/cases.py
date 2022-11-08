@@ -887,28 +887,36 @@ def attest_invest(kwargs):
         start = time.time()
         solution, info = main_access_function(file_path=filename)
         
-        # Get clusters
-        clusters_positions = []
-        clusters_capacity = []
-        print("Get clusters... info.incumbent_interventions:", info.incumbent_interventions)
-        for x in info.incumbent_interventions._container[0][1]._container:
-            aux = x[1]._container
-            if len(aux) > 0:
-                clusters_positions.append(aux[0][1].element_position)
-                clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+        if info.incumbent_interventions._container == []:
+            print()
+            print("WARNING: THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
+            print()
+            # Save output file
+            with open(output_dir, 'w') as fp:
+                json.dump("THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
+        else:
+            # Get clusters
+            clusters_positions = []
+            clusters_capacity = []
+            print("info.incumbent_interventions:", info.incumbent_interventions)
+            for x in info.incumbent_interventions._container[0][1]._container:
+                aux = x[1]._container
+                if len(aux) > 0:
+                    clusters_positions.append(aux[0][1].element_position)
+                    clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
 
-        x1 = len(test_case)-1
-        while test_case[x1] != '.':
-            x1 -= 1
-        x2 = x1-1
-        while test_case[x2] != '/' and test_case[x2] != '\\':
-            x2 -= 1
-        case_name = test_case[x2+1:x1]
-        save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
-                    clusters_capacity, case_name, yrs, NoScens)
+            x1 = len(test_case)-1
+            while test_case[x1] != '.':
+                x1 -= 1
+            x2 = x1-1
+            while test_case[x2] != '/' and test_case[x2] != '\\':
+                x2 -= 1
+            case_name = test_case[x2+1:x1]
+            save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                        clusters_capacity, case_name, yrs, NoScens)
 
-        end = time.time()
-        print('\nTime required by the tool:', end - start)
+            end = time.time()
+            print('\nTime required by the tool:', end - start)
 
 
 def attest_invest_path(kwargs):
