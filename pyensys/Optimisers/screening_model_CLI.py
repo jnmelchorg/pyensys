@@ -34,8 +34,8 @@ from pyomo.core import value as Val
 import networkx as nx
 import pyomo.environ as pyo
 from dataclasses import dataclass
-# import json
-# import os
+import json
+import os
 import math
 import numpy as np
 # from scenarios_multipliers import get_mult
@@ -45,6 +45,8 @@ import numpy as np
 # import pstats
 
 from os.path import join, dirname
+
+import pandas as pd # to read new EV load data
 
 @dataclass
 class network_parameter:
@@ -75,7 +77,7 @@ class nodes_info_network:
 # ####################################################################
 # ####################################################################
 def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
-                    cont_list, prev_invest, peak_Pd, mult, NoTime=1):
+                    cont_list, prev_invest, peak_Pd, mult, Pd_additions, NoTime=1):
     ''''read paras and vars from jason file'''
     def readVarPara():
     
@@ -447,7 +449,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
             return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
                     + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
                     == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
-                      + mult[xb] *Pd[xb] - m.Plc[xb,xk,xt]
+                      + mult[xb] *Pd[xb] - m.Plc[xb,xk,xt] + Pd_additions[xb]
     
         def loadcurtail_rule(m, xb,xk,xt):
             
@@ -704,16 +706,40 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
     interv_clust = []  # clusters of investment options
 
     interv_dict = {k: [] for k in range(mpc["NoBranch"])}
+    year_name = [2020, 2030, 2040, 2050]
 
     for xy in range(len(multiplier)):
         for xsc in range(len(multiplier[xy])):
             mult = multiplier[xy][xsc]
 
+            use_data_update = True # activate to use new loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
+            # use_data_update = False # use initial load data (do not include additional EV-PV loads)
+
+            if use_data_update == True:
+                if year_name[xy] != 2020:
+
+                    EV_data_path = "C:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\tests" # to be updated
+                    EV_data_file_name = 'EV-PV-Storage_Data_for_Simulations.xlsx' # !we need to add this to CLI!
+                    EV_data_file_path = os.path.join(EV_data_path, EV_data_file_name)
+
+
+                    EV_data_sheet_names = 'PT_Dx_01_' # !we need to add this to CLI!
+                    # EV_data_sheet_names = 'HR_Dx_01_' # !we need to add this to CLI!
+
+                    EV_load_data = pd.read_excel(EV_data_file_path, sheet_name = EV_data_sheet_names + str(year_name[xy]), skiprows = 1)
+                    EV_load_data_MW_profile = EV_load_data["EV load (MW)"]
+                    EV_load_data_MW_max = np.max(EV_load_data_MW_profile[0:24])
+                    Pd_additions = EV_load_data["Node Ratio"]*EV_load_data_MW_max # how much new load per node
+                else:
+                    Pd_additions = [0] * mpc['NoBus'] # zero additional EV load
+            else:
+                Pd_additions = [0] * mpc['NoBus'] # zero additional EV load
+
             #  take preveious years investment
             temp_interv_list, temp_prev_invest, temp_interv_clust = \
                 model_screening(mpc, gen_status, line_status,  cicost,
                                 penalty_cost, cont_list, prev_invest, peak_Pd,
-                                mult, NoTime)
+                                mult, Pd_additions, NoTime)
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
 
@@ -737,5 +763,12 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
                 interv_dict[xbr].sort()
 
         prev_invest = [a+b for a, b in zip(temp_prev_invest, prev_invest)]
+
+    # Save screening results separately:
+    file_name = "screen_result_interv_dict"
+    with open(join(dirname(__file__), "..", "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(interv_dict, fp)
+
+    print("TEST TEST TEST 2")
 
     return interv_dict, interv_clust
