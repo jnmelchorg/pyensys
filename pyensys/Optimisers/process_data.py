@@ -160,7 +160,13 @@ def mult_for_bus(busMult_input, multiplier, flex, mpc):
     else:
         mult_bus = busMult_input.copy()
 
+    print('\nmult_bus: ')
+    print(mult_bus)
+    print()
+    
     return mult_bus
+
+
 
 
 

@@ -372,23 +372,23 @@ def pyensys_entry_point(**kwargs):
               'i.e.,[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ' +
               '1, 1, 1].')
 @click.option('--growth',
-              default={'Active': {'2020': 0, '2030': 1.89, '2040': 3.0},
-                        'Slow': {'2020': 0, '2030': 1.1, '2040': 2.0}},
+              default={'Active': {'2020': 0, '2030': 1.89, '2040': 3.0, '2050': 3.0},
+                        'Slow': {'2020': 0, '2030': 1.1, '2040': 2.0, '2050': 3.0}},
               help='Dictionary with demand growth [%] for selected years ' +
               '(e.g., 2020, 2030 and 2040) and scenarios (e.g., active and ' +
               'slow). The first year is taken as the current year and should' +
               ' be assign a growth of 0%. By default: ' +
-              '{\'Active\': {\'2020\': 0, \'2030\': 1.89, \'2040\': 3.0},' +
-              '\'Slow\': {\'2020\': 0, \'2030\': 1.1, \'2040\': 2.0}}.')
+              '{\'Active\': {\'2020\': 0, \'2030\': 1.89, \'2040\': 3.0, \'2050\': 3.0},' +
+              '\'Slow\': {\'2020\': 0, \'2030\': 1.1, \'2040\': 2.0, \'2050\': 2.0}}.')
 @click.option('--DSR',
-              default={"Active": {'2020': 0, '2030': 0.05, '2040': 0.05},
-                        "Slow": {'2020': 0, '2030': 0.02, '2040': 0.02}},
+              default={"Active": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00},
+                        "Slow": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00}},
               help='Dictionary with DSR [%] for selected years ' +
               '(e.g., 2020, 2030 and 2040) and scenarios (e.g., active and ' +
               'slow). The format of the information must match --growth. ' +
-              'By default: {\'Active\': {\'2020\': 0, \'2030\': 0.05, ' +
-              '\'2040\': 0.05}, \'Slow\': {\'2020\': 0, \'2030\': 0.02, ' +
-              '\'2040\': 0.02}}.')
+              'By default: {\'Active\': {\'2020\': 0, \'2030\': 0.00, ' +
+              '\'2040\': 0.00, \'2050\': 3.0}, \'Slow\': {\'2020\': 0, \'2030\': 0.00, ' +
+              '\'2040\': 0.00, \'2050\': 0.00}}.')
 @click.option('--cluster', default=None,
               help='List of investment clusters [MVA]. By default it is ' +
               'set to None and the model will calculate the adequate ' +

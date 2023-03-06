@@ -712,8 +712,8 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
         for xsc in range(len(multiplier[xy])):
             mult = multiplier[xy][xsc]
 
-            use_data_update = True # activate to use new loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
-            # use_data_update = False # use initial load data (do not include additional EV-PV loads)
+            # use_data_update = True # activate to use new loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
+            use_data_update = False # use initial load data (do not include additional EV-PV loads)
 
             if use_data_update == True:
                 if year_name[xy] != 2020:
@@ -723,8 +723,9 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
                     EV_data_file_path = os.path.join(EV_data_path, EV_data_file_name)
 
 
-                    EV_data_sheet_names = 'PT_Dx_01_' # !we need to add this to CLI!
+                    # EV_data_sheet_names = 'PT_Dx_01_' # !we need to add this to CLI!
                     # EV_data_sheet_names = 'HR_Dx_01_' # !we need to add this to CLI!
+                    EV_data_sheet_names = 'UK_Dx_01_' # !we need to add this to CLI!
 
                     EV_load_data = pd.read_excel(EV_data_file_path, sheet_name = EV_data_sheet_names + str(year_name[xy]), skiprows = 1)
                     EV_load_data_MW_profile = EV_load_data["EV load (MW)"]
@@ -768,7 +769,5 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
     file_name = "screen_result_interv_dict"
     with open(join(dirname(__file__), "..", "tests\\outputs\\")+file_name+".json", 'w') as fp:
         json.dump(interv_dict, fp)
-
-    print("TEST TEST TEST 2")
 
     return interv_dict, interv_clust

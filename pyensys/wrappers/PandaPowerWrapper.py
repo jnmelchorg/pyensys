@@ -6,13 +6,14 @@ from pandapower.control import ConstControl
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid
 from pandapower.timeseries.run_time_series import run_timeseries
+from pandapower import runpp
 
 from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, TimeSeriesOutputFileSettings, \
     SimulationSettings
 
 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS = {
     "ac": {
-        'pypower': runopp,
+        'pypower': runpp, # runopp
         'power models': runpm_ac_opf
     }
 }

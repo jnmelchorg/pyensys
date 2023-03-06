@@ -826,6 +826,7 @@ def attest_invest(kwargs):
     keys = list(growth.keys())
     yrs = list(growth[keys[0]].keys())
     multiplier = [[1*(1+growth[keys[0]][yrs[0]])]]
+
     flex = [[1-DSR[keys[0]][yrs[0]]]]
     for yr in range(len(yrs)-1):
         mul = []
@@ -845,6 +846,10 @@ def attest_invest(kwargs):
             dsrax1 -= dsrax2
         flex.append(dsr)
         multiplier.append(mul)
+    
+    print('\nmultiplier (growth input) = ')
+    print(multiplier)
+    print()
 
     print('\nScreening for investment options\n')
     NoScens = len(multiplier[-1])-1

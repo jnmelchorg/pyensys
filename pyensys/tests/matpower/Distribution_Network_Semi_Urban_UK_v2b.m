@@ -104,3 +104,8 @@ mpc.gen = [
 mpc.gencost = [
 2	0	0	2	0	1	0
 	];
+
+% mpc.bus(:,3) = mpc.bus(:,3)*2
+res = runpf(mpc)
+
+

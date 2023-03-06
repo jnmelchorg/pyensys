@@ -3,7 +3,7 @@ import os
 import json
 
 
-def get_mult(country_selected= "HR"):
+def get_mult(country_selected= "UK"):
     # abspath = os.path.abspath(__file__)
     # dname = os.path.dirname(abspath)
     # os.chdir(dname)
@@ -12,6 +12,7 @@ def get_mult(country_selected= "HR"):
     # country_selected = "HR" 
     
     # Select if scenarios should be plotted:
+    # plot_scenarios = True
     plot_scenarios = False
     
     # Input data: mean annual growth (%) - available in D2.3 report
@@ -149,6 +150,8 @@ def get_mult(country_selected= "HR"):
         
    
     return multiplier
+
+# get_mult("UK")
 
 
 
