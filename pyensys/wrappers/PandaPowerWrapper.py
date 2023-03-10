@@ -13,7 +13,7 @@ from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, T
 
 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS = {
     "ac": {
-        'pypower': runpp, # runopp
+        'pypower': runopp, # runopp
         'power models': runpm_ac_opf
     }
 }

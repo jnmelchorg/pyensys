@@ -142,7 +142,7 @@ class PandaPowerManager:
                 # print('new_line_parameter_count:')
                 # print(new_line_parameter_count)
                 # if len(parameter.parameter_position) == 1:
-                if isinstance(parameter.parameter_position, int) == True: # if investment option is just a single line
+                if isinstance(parameter.parameter_position, int) == True: # if investment option is just a single line (this was added by Wangwei and Andrey during the tests)
                     # self.wrapper.network[parameter.component_type].at[ \
                     #     parameter.parameter_position, parameter.parameter_name] = parameter.new_value # activating new lines - modify this?
 
@@ -156,6 +156,8 @@ class PandaPowerManager:
 
                     self.wrapper.network[parameter.component_type].at[ \
                         parameter.parameter_position, 'max_i_ka'] += parameter.capacity_to_be_added_MW*1e6/(volt_bus*1e3)/(3**0.5)/1e3 # calculating the line limit in kA
+                    # print('\n---------->parameter.capacity_to_be_added_MW:')
+                    print(parameter.capacity_to_be_added_MW)
                     
                     line_impedance_factor2 = self.wrapper.network[parameter.component_type].at[parameter.parameter_position, 'max_i_ka']
 
@@ -185,7 +187,7 @@ class PandaPowerManager:
                     # print('self._parameters.optimisation_binary_variables:')
                     # print(self._parameters.optimisation_binary_variables[0].capacity_to_be_added_MW)
 
-                else: # if investment option is a cluster of lines
+                else: # if investment option is a cluster of lines (this was added by Wangwei and Andrey during the tests)
                     for iii in range(len(parameter.parameter_position)): 
                         self.wrapper.network['line'].at[ \
                         parameter.parameter_position[iii], 'in_service'] = True # activating new lines (old approach)
@@ -196,6 +198,8 @@ class PandaPowerManager:
 
                         self.wrapper.network[parameter.component_type].at[ \
                         parameter.parameter_position[iii], 'max_i_ka'] += parameter.capacity_to_be_added_MW[iii]*1e6/(volt_bus*1e3)/(3**0.5)/1e3 # calculating the new line limit in kA
+                        print('\n---------->parameter.capacity_to_be_added_MW:')
+                        print(parameter.capacity_to_be_added_MW[iii])
 
                         line_impedance_factor2 = self.wrapper.network[parameter.component_type].at[parameter.parameter_position[iii], 'max_i_ka']
 

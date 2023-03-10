@@ -879,7 +879,10 @@ def attest_invest(kwargs):
         with open(output_dir, 'w') as fp:
             json.dump("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL WAS ABORTED", fp, indent=4)
     else:
-        # Pass data to JSON file
+        # # manually add interventions for tests:
+        # final_interv_clust = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.75, 0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0]]
+        
+        # # Pass data to JSON file
         filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
         with open(filename, 'w', encoding='utf-8') as f:
             data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
@@ -900,7 +903,7 @@ def attest_invest(kwargs):
             with open(output_dir, 'w') as fp:
                 json.dump("THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
         else:
-            # Get clusters
+            # # Get clusters
             clusters_positions = []
             clusters_capacity = []
             print("info.incumbent_interventions:", info.incumbent_interventions)
