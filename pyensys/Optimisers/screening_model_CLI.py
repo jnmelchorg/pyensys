@@ -77,7 +77,7 @@ class nodes_info_network:
 # ####################################################################
 # ####################################################################
 def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
-                    cont_list, prev_invest, peak_Pd, mult, Pd_additions, NoTime=1):
+                    cont_list, prev_invest, peak_Pd, mult, Pd_additions, Q_load_correction, NoTime=1):
     ''''read paras and vars from jason file'''
     def readVarPara():
     
@@ -157,7 +157,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
                 nw_parameters.append(branch_para_temp)
         del auxBranch, branch_para_temp, branch_para_name
         
-     
+    
         
         return nw_parameters
     
@@ -691,11 +691,28 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
 
     interv_vect = Val(model.ICbra[:, 0])
 
+    # print('interv:')
+    # print(interv)
+    # print('maxICbra:')
+    # print(maxICbra)
+    # print('interv_vect:')
+    # print(interv_vect)
+
+    # # the following corrections can be used to account for additional Q power flows:
+    for ii in range(len(interv)):
+        interv[ii] *= Q_load_correction
+
+    for ii in range(len(maxICbra)):
+        maxICbra[ii] *= Q_load_correction
+
+    for ii in range(len(interv_vect)):
+        interv_vect[ii] *= Q_load_correction
+
     return interv, maxICbra, interv_vect
 
 
 def main_screening(mpc, gen_status, line_status, multiplier, cicost,
-                   penalty_cost, peak_Pd, ci_catalogue, cont_list):
+                   penalty_cost, peak_Pd, ci_catalogue, cont_list, Q_load_correction):
     ''' Time point '''
     # Number of time points
     NoTime = 1
@@ -744,6 +761,8 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
 
+            
+
             # reduce catalogue in the interv. clustering:
             for xbr in range(mpc["NoBranch"]):
                 if temp_interv_clust[xbr] > 0:
@@ -760,7 +779,8 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
 
             # record intervention lists for each branch
             for xbr in range(mpc["NoBranch"]):
-                interv_dict[xbr].append(temp_prev_invest[xbr])
+                # interv_dict[xbr].append(temp_prev_invest[xbr])
+                interv_dict[xbr].append(temp_prev_invest[xbr]) 
                 interv_dict[xbr].sort()
 
         prev_invest = [a+b for a, b in zip(temp_prev_invest, prev_invest)]

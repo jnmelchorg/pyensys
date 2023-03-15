@@ -6,7 +6,9 @@ from pandapower.control import ConstControl
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid
 from pandapower.timeseries.run_time_series import run_timeseries
+
 from pandapower import runpp
+import pandapower
 
 from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, TimeSeriesOutputFileSettings, \
     SimulationSettings
@@ -101,6 +103,13 @@ class PandaPowerWrapper:
         return self.network.res_cost
 
     def run_ac_opf(self, settings: SimulationSettings):
+        # print('\nself.network.load:')
+        # print(self.network.load)
+        # print('\nself.network.line:')
+        # print(self.network.line)
+
+        # pandapower.to_json(self.network, "self_network_export.json") # save network for testing
+
         try:
             if settings.optimisation_software == "pypower":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][

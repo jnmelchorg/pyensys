@@ -472,6 +472,11 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     mpc = get_mpc(test_case)
     cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
 
+    PD_sum = sum(mpc["bus"]["PD"])
+    QD_sum = sum(mpc["bus"]["QD"])
+
+    Q_load_correction = 1 + QD_sum/PD_sum # increase line capacity to match Q demand as well (DCOPF screening model cannot include Q)
+
     # multipliers for each bus
     busMult_input = []
     # expand multiplier for each bus
@@ -491,7 +496,8 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     interv_dict, interv_clust = \
         main_screening(mpc, gen_status, line_status, multiplier_bus,
                        cicost, penalty_cost, peak_Pd, ci_catalogue,
-                       cont_list)
+                       cont_list, Q_load_correction)
+
 
     # reduce catalogue in the interv dictionary
     for xbr in range(mpc["NoBranch"]):
