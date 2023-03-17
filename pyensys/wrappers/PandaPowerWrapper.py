@@ -4,7 +4,7 @@ from pandapower.converter import from_mpc
 from pandapower.timeseries import DFData
 from pandapower.control import ConstControl
 from pandapower.timeseries.output_writer import OutputWriter
-from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid
+from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid, create_gen
 from pandapower.timeseries.run_time_series import run_timeseries
 
 from pandapower import runpp
@@ -112,6 +112,15 @@ class PandaPowerWrapper:
 
         try:
             if settings.optimisation_software == "pypower":
+                # # Create a gerenator instead of ext_grid:
+                self.network.poly_cost['et'] = 'gen'
+                # create_gen(self.network, bus=net_test.ext_grid['bus'][0], p_mw=1, vm_pu=1.00, max_q_mvar=net_test.ext_grid['max_q_mvar'][0], min_q_mvar=net_test.ext_grid['min_q_mvar'][0],\
+                #             min_p_mw=net_test.ext_grid['min_p_mw'][0], max_p_mw=net_test.ext_grid['max_p_mw'][0], scaling=1.0, slack=True, controllable=True)
+                del self.network.ext_grid
+
+                print('self.network:')
+                print(self.network)
+
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
                     settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
