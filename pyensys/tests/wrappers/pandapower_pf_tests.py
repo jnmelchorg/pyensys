@@ -37,7 +37,7 @@ print(net_test.load)
 print('\nnet_test.bus:')
 print(net_test.bus)
 
-net_test.poly_cost['et'] = 'gen'
+net_test.poly_cost['et'] = 'gen' # could be a problem if we have multiple generators/external grids
 print('\nnet_test.poly_cost:')
 print(net_test.poly_cost)
 
@@ -45,7 +45,7 @@ print(net_test.poly_cost)
 create_gen(net_test, bus=net_test.ext_grid['bus'][0], p_mw=1, vm_pu=1.00, max_q_mvar=net_test.ext_grid['max_q_mvar'][0], min_q_mvar=net_test.ext_grid['min_q_mvar'][0],\
                        min_p_mw=net_test.ext_grid['min_p_mw'][0], max_p_mw=net_test.ext_grid['max_p_mw'][0], scaling=1.0, slack=True, controllable=True)
 
-del net_test.ext_grid
+# del net_test.ext_grid # impossible to just delete - need to replace with an empty ext_grid
 
 # # Add line capacity upgrades:
 # line_upgrades = [14-1,15-1,16-1,29-1]
@@ -86,6 +86,9 @@ print(net_test)
 
 # print('net_test.bus:')
 # print(net_test.bus)
+
+print('net_test.gen:')
+print(net_test.gen)
 
 
 

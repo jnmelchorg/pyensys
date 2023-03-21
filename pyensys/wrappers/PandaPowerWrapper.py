@@ -113,17 +113,35 @@ class PandaPowerWrapper:
         try:
             if settings.optimisation_software == "pypower":
                 # # Create a gerenator instead of ext_grid:
-                self.network.poly_cost['et'] = 'gen'
-                # create_gen(self.network, bus=net_test.ext_grid['bus'][0], p_mw=1, vm_pu=1.00, max_q_mvar=net_test.ext_grid['max_q_mvar'][0], min_q_mvar=net_test.ext_grid['min_q_mvar'][0],\
-                #             min_p_mw=net_test.ext_grid['min_p_mw'][0], max_p_mw=net_test.ext_grid['max_p_mw'][0], scaling=1.0, slack=True, controllable=True)
-                del self.network.ext_grid
+                create_gen(self.network, bus=self.network.ext_grid['bus'][0], p_mw=1, vm_pu=1.06, max_q_mvar=self.network.ext_grid['max_q_mvar'][0], min_q_mvar=self.network.ext_grid['min_q_mvar'][0],\
+                            min_p_mw=self.network.ext_grid['min_p_mw'][0], max_p_mw=self.network.ext_grid['max_p_mw'][0], scaling=1.0, slack=True, controllable=True)
+                self.network.poly_cost['et'] = 'gen' # could be a problem if we have multiple generators/external grids
+                
+                # self.network.ext_grid['vm_pu'] = 1.06 # manually adjust voltage - does not work
 
-                print('self.network:')
-                print(self.network)
+                empty_net = create_empty_network()
+                empty_ext_grid = empty_net.ext_grid
+                self.network.ext_grid = empty_net.ext_grid # removing the external grid
+
+                # print('self.network:')
+                # print(self.network)
+
+                # print('self.network.bus:')
+                # print(self.network.bus)
+
+                # print('self.network.ext_grid:')
+                # print(self.network.ext_grid)
+
+                # print('self.network.gen:')
+                # print(self.network.gen)
 
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
-                    settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
+                    settings.optimisation_software](self.network, verbose=1, numba=False) # change verbose=0 to silence the solver
+                
+                # print('\nself.network.res_bus:')
+                # print(self.network.res_bus)
+
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)
