@@ -77,7 +77,7 @@ class nodes_info_network:
 # ####################################################################
 # ####################################################################
 def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
-                    cont_list, prev_invest, peak_Pd, mult, Pd_additions, Q_load_correction, NoTime=1):
+                    cont_list, prev_invest, peak_Pd, peak_Qd, mult, Pd_additions, Q_load_correction, NoTime=1):
     ''''read paras and vars from jason file'''
     def readVarPara():
     
@@ -449,7 +449,8 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
             return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
                     + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
                     == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
-                      + mult[xb] *Pd[xb] - m.Plc[xb,xk,xt] + Pd_additions[xb]
+                    + mult[xb]*Pd[xb] + mult[xb]*Qd[xb]- m.Plc[xb,xk,xt] \
+                    + Pd_additions[xb] # additional loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
     
         def loadcurtail_rule(m, xb,xk,xt):
             
@@ -586,6 +587,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
         braTbus = []
         # only 1 timepoint for Pd
         Pd = []
+        Qd = [] # introducing Q loads as well
         for xb in range(mpc["NoBus"]):
             bus_number = mpc["bus"]["BUS_I"][xb]
             # find generator connections
@@ -601,14 +603,18 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
             
             # record demand value
             Pd.append( mpc['bus']['PD'][xb])
+            Qd.append( mpc['bus']['QD'][xb])
     
         if peak_Pd !=[] :
             Pd = peak_Pd
+
+        if peak_Qd !=[] :
+            Qd = peak_Qd
     
             
         
        
-        return (noDiff, genCbus, braFbus, braTbus, Pd)
+        return (noDiff, genCbus, braFbus, braTbus, Pd, Qd)
     
     
     
@@ -647,7 +653,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     NoPieces, lcost, min_y = genCost_rule(mpc)
     
     # if not specified, demand value PD is read from mpc file
-    noDiff, genCbus, braFbus, braTbus, Pd = nodeConnections_rule()
+    noDiff, genCbus, braFbus, braTbus, Pd, Qd = nodeConnections_rule()
     
     
     ''' Build a pyomo model '''
@@ -699,20 +705,21 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     # print(interv_vect)
 
     # # the following corrections can be used to account for additional Q power flows:
-    for ii in range(len(interv)):
-        interv[ii] *= Q_load_correction
+    # print('\n-----> Q_load_correction: ',Q_load_correction)
+    # for ii in range(len(interv)):
+    #     interv[ii] *= Q_load_correction
 
-    for ii in range(len(maxICbra)):
-        maxICbra[ii] *= Q_load_correction
+    # for ii in range(len(maxICbra)):
+    #     maxICbra[ii] *= Q_load_correction
 
-    for ii in range(len(interv_vect)):
-        interv_vect[ii] *= Q_load_correction
+    # for ii in range(len(interv_vect)):
+    #     interv_vect[ii] *= Q_load_correction
 
     return interv, maxICbra, interv_vect
 
 
 def main_screening(mpc, gen_status, line_status, multiplier, cicost,
-                   penalty_cost, peak_Pd, ci_catalogue, cont_list, Q_load_correction):
+                   penalty_cost, peak_Pd, peak_Qd, ci_catalogue, cont_list, Q_load_correction):
     ''' Time point '''
     # Number of time points
     NoTime = 1
@@ -756,8 +763,8 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
             #  take preveious years investment
             temp_interv_list, temp_prev_invest, temp_interv_clust = \
                 model_screening(mpc, gen_status, line_status,  cicost,
-                                penalty_cost, cont_list, prev_invest, peak_Pd,
-                                mult, Pd_additions, NoTime)
+                                penalty_cost, cont_list, prev_invest, peak_Pd, peak_Qd,
+                                mult, Pd_additions, Q_load_correction, NoTime)
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
 

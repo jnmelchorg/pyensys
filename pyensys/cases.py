@@ -475,7 +475,12 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     PD_sum = sum(mpc["bus"]["PD"])
     QD_sum = sum(mpc["bus"]["QD"])
 
+    # print('\nPD_sum: ',PD_sum)
+    # print('\nQD_sum: ',QD_sum)
+    
+
     Q_load_correction = 1 + QD_sum/PD_sum # increase line capacity to match Q demand as well (DCOPF screening model cannot include Q)
+    # print('\nQ_load_correction: ',Q_load_correction)
 
     # multipliers for each bus
     busMult_input = []
@@ -486,6 +491,8 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     # update peak demand values, get peak load for screening model
     peak_Pd = []  # get_peak_data(mpc, base_time_series_data, peak_hour)
 
+    peak_Qd = [] # not used now
+
     # Cost information
     # linear cost for the screening model
     cicost = 20  # £/Mw/km --> actually used in the screening model!
@@ -495,7 +502,7 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     # Outputs
     interv_dict, interv_clust = \
         main_screening(mpc, gen_status, line_status, multiplier_bus,
-                       cicost, penalty_cost, peak_Pd, ci_catalogue,
+                       cicost, penalty_cost, peak_Pd, peak_Qd, ci_catalogue,
                        cont_list, Q_load_correction)
 
 
@@ -555,7 +562,7 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
                 final_interv_clust[x1] = final_interv_clust[x1+x2+1]
                 final_interv_clust[x1+x2+1] = aux
     print("NoClusters = ",NoClusters)
-    print("Max_clusters = ",NoClusters)
+    print("Max_clusters = ",Max_clusters)
     if NoClusters > Max_clusters:
         final_interv_clust = \
             [final_interv_clust[int(plan)]
