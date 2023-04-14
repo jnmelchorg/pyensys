@@ -829,6 +829,8 @@ def attest_invest(kwargs):
     else:
         ci_cost[0] = trs_costs
 
+    Option_Growth = 2  # Demand growth model
+
     growth = kwargs.pop('growth')
     if isinstance(growth, str):
         growth = eval(growth)
@@ -843,26 +845,36 @@ def attest_invest(kwargs):
     flex = [[1-DSR[keys[0]][yrs[0]]]]
     for yr in range(len(yrs)-1):
         mul = []
-        aux = (int(yrs[yr+1])-int(yrs[yr]))/100
-        aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
-        aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
-        aux3 = (aux1-aux2)/(2**(yr+1)-1)
-
         dsr = []
-        dsrax1 = 1-DSR[keys[0]][yrs[yr+1]]
-        dsrax2 = (dsrax1+DSR[keys[1]][yrs[yr+1]]-1)/(2**(yr+1)-1)
+        
+        if Option_Growth == 1:  # Annual growth
+            aux = (int(yrs[yr+1])-int(yrs[yr]))/100
+            aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
+            aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
+            aux3 = (aux1-aux2)/(2**(yr+1)-1)
 
-        for bs in range(2**(yr+1)):
-            mul.append(aux1)
-            dsr.append(dsrax1)
-            aux1 -= aux3
-            dsrax1 -= dsrax2
+            dsrax1 = 1-DSR[keys[0]][yrs[yr+1]]
+            dsrax2 = (dsrax1+DSR[keys[1]][yrs[yr+1]]-1)/(2**(yr+1)-1)
+
+            for bs in range(2**(yr+1)):
+                mul.append(aux1)
+                dsr.append(dsrax1)
+                aux1 -= aux3
+                dsrax1 -= dsrax2
+        else:  # Specific growth selected for each year
+            aux1 = 1+growth[keys[0]][yrs[yr+1]]/100
+            aux2 =(growth[keys[1]][yrs[yr+1]]-growth[keys[0]][yrs[yr+1]]) / \
+                100/(2**(yr+1)-1)
+            aux3 = 1-DSR[keys[0]][yrs[yr+1]]
+            aux4 = (-DSR[keys[1]][yrs[yr+1]]+DSR[keys[0]][yrs[yr+1]])/ \
+                (2**(yr+1)-1)
+            for bs in range(2**(yr+1)):
+                mul.append(aux1)
+                aux1 += aux2
+                dsr.append(aux3)
+                aux3 += aux4
         flex.append(dsr)
         multiplier.append(mul)
-    
-    print('\nmultiplier (growth input) = ')
-    print(multiplier)
-    print()
 
     print('\nScreening for investment options\n')
     NoScens = len(multiplier[-1])-1
