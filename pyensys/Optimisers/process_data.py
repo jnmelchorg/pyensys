@@ -9,6 +9,9 @@ from pyomo.core import ConcreteModel, Constraint, minimize, NonNegativeReals, \
  Objective, Var, RangeSet, Binary, Set, Reals
 from pyomo.core import value as Val
 
+import json
+from os.path import join, dirname
+
 
 def record_bra_from_pyo_result(model,mpc,NoSce, pyo_var, year_peak):
     
@@ -163,6 +166,11 @@ def mult_for_bus(busMult_input, multiplier, flex, mpc):
     print('\nmult_bus: ')
     print(mult_bus)
     print()
+
+    # Save multipliers for buses and scenarios:
+    file_name = "mult_bus_export"
+    with open(join(dirname(__file__), "..", "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(mult_bus, fp)
     
     return mult_bus
 

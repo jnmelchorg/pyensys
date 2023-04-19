@@ -22,7 +22,7 @@ net_test = from_mpc(test_system_path)
 
 
 # # Increase loads manually (using a load growth multiplier):
-# net_test.load['p_mw'] = net_test.load['p_mw']*1.20
+# net_test.load['p_mw'] = net_test.load['p_mw']*1.93
 # net_test.load['q_mvar'] = net_test.load['q_mvar']*1.93
 
 # net_test.load['controllable'][0] = True
@@ -93,9 +93,21 @@ print(net_test.gen)
 
 
 # # runpp(net_test,numba=False) # run power flow
-runopp(net_test,numba=False) # run OPF
+# runopp(net_test,numba=False, verbose=1) # run OPF
 
-print('\nnet_test:')
-print(net_test)
-print('\nnet_test.res_bus:')
-print(net_test.res_bus)
+solution_found = 0
+try:
+    runopp(net_test,numba=False, verbose=1)
+    solution_found = 1
+except:
+    pass
+
+if solution_found == 1:
+    print('\nA solution was found - the OPF model converged!')
+    print('\nnet_test:')
+    print(net_test)
+    print('\nnet_test.res_bus:')
+    print(net_test.res_bus)
+else:
+    print('\nNo solution found - the OPF model did not converged!')
+
