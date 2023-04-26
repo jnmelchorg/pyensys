@@ -466,8 +466,9 @@ def get_mpc(test_case):
     return mpc
 
 
-def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                       flex, ci_catalogue, cont_list, Max_clusters):
+def Screenning_clusters(gen_status, line_status, test_case, multiplier,
+                       flex, ci_catalogue, cont_list, ci_cost,
+                       Max_clusters):
     '''Produce list of investment clusters'''
     mpc = get_mpc(test_case)
     cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
@@ -545,33 +546,62 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
             final_interv_clust.append(interv_clust[i])
             print("appending final_interv_clust...")
 
-    # Limiting number of clusters to use
-    NoClusters = len(final_interv_clust)-1
+    # To limit the number of clusters to use, the clusters are first sorted
+    NoClusters = len(final_interv_clust)
     NoCols = len(final_interv_clust[0])
-    for x1 in range(1, NoClusters+1):
-        for x2 in range(NoClusters-x1):
+    for x1 in range(NoClusters):
+        for x2 in range(x1+1, NoClusters):
             flg = False
             x3 = 0
             while not flg and x3 < NoCols:
                 if final_interv_clust[x1][x3] > \
-                        final_interv_clust[x1+x2+1][x3]:
+                        final_interv_clust[x2][x3]:
                     flg = True
                 x3 += 1
             if flg:
                 aux = final_interv_clust[x1]
-                final_interv_clust[x1] = final_interv_clust[x1+x2+1]
-                final_interv_clust[x1+x2+1] = aux
-    print("NoClusters = ",NoClusters)
-    print("Max_clusters = ",Max_clusters)
-    if NoClusters > Max_clusters:
-        final_interv_clust = \
-            [final_interv_clust[int(plan)]
-             for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
+                final_interv_clust[x1] = final_interv_clust[x2]
+                final_interv_clust[x2] = aux
+
+    # print('Full list of clusters', final_interv_clust)
+    if NoClusters > Max_clusters:  # Updated clustering approach based on costs
+        # Calculate cluster costs
+        cluster_cost = [0 for x1 in range(NoClusters)]
+        for x1 in range(NoClusters):
+            for x2 in range(NoCols):
+                if final_interv_clust[x1][x2] > 0:
+                    x3 = 0
+                    while final_interv_clust[x1][x2] != ci_catalogue[0][x3]:
+                        x3 += 1
+                    cluster_cost[x1] += ci_cost[0][x3]
+
+        # Select clusters that are closer to the ideal costs
+        Max_Cost = cluster_cost[NoClusters-1]
+        Ideal_Costs = \
+            np.linspace(Max_Cost/Max_clusters, Max_Cost, Max_clusters)
+        clust_list = [True for x1 in range(Max_clusters)]
+        clus_flg = [True for x1 in range(NoClusters)]
+        for x1 in range(Max_clusters):
+            aux1 = np.inf
+            for x2 in range(NoClusters):
+                if clus_flg[x2]:
+                    aux2 = abs(Ideal_Costs[x1]-cluster_cost[x2])
+                    if abs(Ideal_Costs[x1]-aux1) > aux2:
+                        aux1 = cluster_cost[x2]
+                        clust_list[x1] = x2
+            clus_flg[clust_list[x1]] = False
+        clust_list.sort()
+        final_interv_clust = [final_interv_clust[x1] for x1 in clust_list]
+        
+        # final_interv_clust = \
+        #     [final_interv_clust[int(plan)]
+        #      for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
         print("NoClusters > Max_clusters")
     else:
+        # Append non-empty clusters
         print("NoClusters < Max_clusters")
         pos = []
-        for x1 in range(NoClusters+1):
+        for x1 in range(NoClusters):
             flg = True
             x2 = 0
             while flg and x2 < NoCols:
@@ -582,7 +612,8 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
                 pos.append(x1)
         final_interv_clust = [final_interv_clust[x] for x in pos]
 
-    print("Sceenning_clusters... final_interv_clust = ",final_interv_clust)
+    print("Screenning_clusters... final_interv_clust = ",final_interv_clust)
+
     return final_interv_clust, mpc
 
 
@@ -827,7 +858,7 @@ def attest_invest(kwargs):
     if len(trs_costs) == 0:
         ci_cost[1] = [7000 * i for i in ci_catalogue[1]]
     else:
-        ci_cost[0] = trs_costs
+        ci_cost[1] = trs_costs
 
     Option_Growth = 2  # Demand growth model
 
@@ -882,8 +913,9 @@ def attest_invest(kwargs):
         gen_status = False
         line_status = True
         final_interv_clust, mpc = \
-            Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                               flex, ci_catalogue, cont_list, Max_clusters)
+            Screenning_clusters(gen_status, line_status, test_case, multiplier,
+                               flex, ci_catalogue, cont_list, ci_cost,
+                               Max_clusters)
     else:
         final_interv_clust = eval(cluster)
         mpc = get_mpc(test_case)
