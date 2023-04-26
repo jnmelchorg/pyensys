@@ -571,38 +571,41 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
                 final_interv_clust[x2] = aux
 
     # print('Full list of clusters', final_interv_clust)
-    if NoClusters > Max_clusters:  # Updated clustering approach based on costs
-        # Calculate cluster costs
-        cluster_cost = [0 for x1 in range(NoClusters)]
-        for x1 in range(NoClusters):
-            for x2 in range(NoCols):
-                if final_interv_clust[x1][x2] > 0:
-                    x3 = 0
-                    while final_interv_clust[x1][x2] != ci_catalogue[0][x3]:
-                        x3 += 1
-                    cluster_cost[x1] += ci_cost[0][x3]
+    Option_Cluster = 1  # Clustering options
+    if NoClusters > Max_clusters:  
+        # Updated clustering approach based on costs
+        if Option_Cluster == 1:
+            # Calculate cluster costs
+            cluster_cost = [0 for x1 in range(NoClusters)]
+            for x1 in range(NoClusters):
+                for x2 in range(NoCols):
+                    if final_interv_clust[x1][x2] > 0:
+                        x3 = 0
+                        while final_interv_clust[x1][x2] != ci_catalogue[0][x3]:
+                            x3 += 1
+                        cluster_cost[x1] += ci_cost[0][x3]
 
-        # Select clusters that are closer to the ideal costs
-        Max_Cost = cluster_cost[NoClusters-1]
-        Ideal_Costs = \
-            np.linspace(Max_Cost/Max_clusters, Max_Cost, Max_clusters)
-        clust_list = [True for x1 in range(Max_clusters)]
-        clus_flg = [True for x1 in range(NoClusters)]
-        for x1 in range(Max_clusters):
-            aux1 = np.inf
-            for x2 in range(NoClusters):
-                if clus_flg[x2]:
-                    aux2 = abs(Ideal_Costs[x1]-cluster_cost[x2])
-                    if abs(Ideal_Costs[x1]-aux1) > aux2:
-                        aux1 = cluster_cost[x2]
-                        clust_list[x1] = x2
-            clus_flg[clust_list[x1]] = False
-        clust_list.sort()
-        final_interv_clust = [final_interv_clust[x1] for x1 in clust_list]
-        
-        # final_interv_clust = \
-        #     [final_interv_clust[int(plan)]
-        #      for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
+            # Select clusters that are closer to the ideal costs
+            Max_Cost = cluster_cost[NoClusters-1]
+            Ideal_Costs = \
+                np.linspace(Max_Cost/Max_clusters, Max_Cost, Max_clusters)
+            clust_list = [True for x1 in range(Max_clusters)]
+            clus_flg = [True for x1 in range(NoClusters)]
+            for x1 in range(Max_clusters):
+                aux1 = np.inf
+                for x2 in range(NoClusters):
+                    if clus_flg[x2]:
+                        aux2 = abs(Ideal_Costs[x1]-cluster_cost[x2])
+                        if abs(Ideal_Costs[x1]-aux1) > aux2:
+                            aux1 = cluster_cost[x2]
+                            clust_list[x1] = x2
+                clus_flg[clust_list[x1]] = False
+            clust_list.sort()
+            final_interv_clust = [final_interv_clust[x1] for x1 in clust_list]
+        else:  # Original clustering approach based on position in the list
+            final_interv_clust = \
+                [final_interv_clust[int(plan)]
+                 for plan in np.ceil(np.linspace(0, NoClusters-1, Max_clusters))]
         print("NoClusters > Max_clusters")
     else:
         # Append non-empty clusters
@@ -620,6 +623,7 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
         final_interv_clust = [final_interv_clust[x] for x in pos]
 
     print("Sceenning_clusters (final_interv_clust) = ",final_interv_clust)
+
     # Save final screening clusters:
     file_name = "screen_result_final_interv_clust"
     with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
