@@ -19,6 +19,8 @@ from pyensys.Optimisers.process_data import mult_for_bus
 from pyensys.Optimisers.screening_model_CLI import main_screening
 from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
+from os.path import join, dirname
+
 
 def get_pyene(conf=None):
     """ Get pyene object."""
@@ -528,6 +530,11 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
     final_interv_clust = []
     
     print("interv_clust: ",interv_clust)
+    # Save all screening clusters:
+    file_name = "screen_result_all_interv_clust"
+    with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(interv_clust, fp)
+
     # sum_interv_clust = 0
     # for i in range(len(interv_clust)):
     #     sum_interv_clust += sum(interv_clust[i])
@@ -612,7 +619,11 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
                 pos.append(x1)
         final_interv_clust = [final_interv_clust[x] for x in pos]
 
-    print("Screenning_clusters... final_interv_clust = ",final_interv_clust)
+    print("Sceenning_clusters (final_interv_clust) = ",final_interv_clust)
+    # Save final screening clusters:
+    file_name = "screen_result_final_interv_clust"
+    with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(final_interv_clust, fp)
 
     return final_interv_clust, mpc
 
@@ -860,7 +871,7 @@ def attest_invest(kwargs):
     else:
         ci_cost[1] = trs_costs
 
-    Option_Growth = 2  # Demand growth model
+    Option_Growth = 1  # Demand growth model
 
     growth = kwargs.pop('growth')
     if isinstance(growth, str):
@@ -948,6 +959,12 @@ def attest_invest(kwargs):
                             ci_cost, ci_catalogue, line_length, scenarios,
                             oversize)
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+        # # Save a separate output with the costs of selected clusters:
+        # # just saves a catalogue - we should change it to the overall cluster costs
+        file_name = "screen_result_final_interv_clust_costs"
+        with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+            json.dump(ci_cost, fp)
 
         # Distribution network optimisation
         print('\nOptimising investment strategies\n')
