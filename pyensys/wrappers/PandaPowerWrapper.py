@@ -137,7 +137,7 @@ class PandaPowerWrapper:
 
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
-                    settings.optimisation_software](self.network, verbose=1, numba=False) # change verbose=0 to silence the solver
+                    settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
                 
                 # print('\nself.network.res_bus:')
                 # print(self.network.res_bus)

@@ -37,6 +37,9 @@ N_clust = len(screen_result_final_interv_clust) # number of clusters
 print('\nN_clust:')
 print(N_clust)
 
+N_lines = len(screen_result_final_interv_clust[0]) # number of lines in the system
+print('\nN_lines: ',N_lines)
+
 # clust_costs = np.zeros(N_clust)
 clust_costs = [0]*N_clust
 for cl in range(N_clust):
@@ -52,10 +55,19 @@ print(screen_result_final_interv_clust)
 print('\nclust_costs:')
 print(clust_costs)
 
-N_tree_years = len(mult_bus) # numebr of years (time intervals)
-print('\nN_tree_nodes: ',N_tree_years)
+N_tree_years = len(mult_bus) # number of years (time intervals)
+print('\nN_tree_years: ',N_tree_years)
+N_tree_nodes = 0 # number of nodes in the tree
+for n in range(N_tree_years):
+    N_tree_nodes += 2**n
+print('\nN_tree_nodes: ',N_tree_nodes)
+
+solutions_lines = [[0]*N_lines for i in range(N_tree_nodes)]
+solutions_investment_costs = [[0] for i in range(N_tree_nodes)]
+solutions_operation_costs = [[0] for i in range(N_tree_nodes)]
 
 node_i = 0
+no_feasible_plan = False # indicate if there are no feasible clusters found for a specific year/scenario
 for year in range(N_tree_years):
     for node in range(len(mult_bus[year])):
         print('--------------- year = ',year,', node_i = ',node_i,'---------------')
@@ -63,13 +75,13 @@ for year in range(N_tree_years):
         # # Read the initial network:
         net_test = from_mpc(test_system_path)
 
-        # # # Increase loads using multipliers for nodes in the scenario tree:
-        # net_test.load['p_mw'] = net_test.load['p_mw']*mult_bus[year][node][0] # same load increase for all buses
-        # net_test.load['q_mvar'] = net_test.load['q_mvar']*mult_bus[year][node][0] # same load increase for all buses
+        # # Increase loads using multipliers for nodes in the scenario tree:
+        net_test.load['p_mw'] = net_test.load['p_mw']*mult_bus[year][node][0] # same load increase for all buses
+        net_test.load['q_mvar'] = net_test.load['q_mvar']*mult_bus[year][node][0] # same load increase for all buses
 
-        # # Manually reduce loads (flexibility):
-        net_test.load['p_mw'] = net_test.load['p_mw']*mult_bus[year][node][0]*0.9
-        net_test.load['q_mvar'] = net_test.load['q_mvar']*mult_bus[year][node][0]*0.9
+        # # # Manually reduce loads (flexibility):
+        # net_test.load['p_mw'] = net_test.load['p_mw']*mult_bus[year][node][0]*0.9
+        # net_test.load['q_mvar'] = net_test.load['q_mvar']*mult_bus[year][node][0]*0.9
 
         # # Replace the external grid to avoid voltage issues:
         net_test.poly_cost['et'] = 'gen' # could be a problem if we have multiple generators/external grids
@@ -100,6 +112,14 @@ for year in range(N_tree_years):
                     # print(net_test)
                     # print('\nnet_test.res_bus:')
                     # print(net_test.res_bus)
+                    solutions_lines[2**year + node] = screen_result_final_interv_clust[cl]
+                    solutions_investment_costs[2**year + node] = clust_costs[cl]
                 else:
                     print('No solution found - the OPF model did not converged!')
+
+            if cl == N_clust and solution_found == 0:
+                print('No feasible solutions found - all clusters lead to infeasible network operation!')
+                no_feasible_plan = True
         node_i += 1
+
+# return [solutions_lines, solutions_investment_costs, solutions_operation_costs]

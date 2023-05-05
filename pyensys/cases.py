@@ -21,6 +21,9 @@ from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
 from os.path import join, dirname
 
+from pyensys.Optimisers.clusters_verification_function import clust_verification_function
+from pyensys.readers.JSONReader import _build_mat_file
+
 
 def get_pyene(conf=None):
     """ Get pyene object."""
@@ -470,7 +473,7 @@ def get_mpc(test_case):
 
 def Screenning_clusters(gen_status, line_status, test_case, multiplier,
                        flex, ci_catalogue, cont_list, ci_cost,
-                       Max_clusters):
+                       Max_clusters, use_load_data_update,add_load_data_case_name):
     '''Produce list of investment clusters'''
     mpc = get_mpc(test_case)
     cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
@@ -506,7 +509,7 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
     interv_dict, interv_clust = \
         main_screening(mpc, gen_status, line_status, multiplier_bus,
                        cicost, penalty_cost, peak_Pd, peak_Qd, ci_catalogue,
-                       cont_list, Q_load_correction)
+                       cont_list, Q_load_correction, use_load_data_update, add_load_data_case_name)
 
 
     # reduce catalogue in the interv dictionary
@@ -571,6 +574,8 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
                 final_interv_clust[x2] = aux
 
     # print('Full list of clusters', final_interv_clust)
+    print('NoClusters = ',NoClusters)
+    print('Max_clusters = ',Max_clusters)
     Option_Cluster = 1  # Clustering options
     if NoClusters > Max_clusters:  
         # Updated clustering approach based on costs
@@ -735,19 +740,19 @@ def kwargs2ListF(kwargs, txt):
 
     return res
 
-
+## original function - to define the output format
 def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
                   clusters_capacity, case_name, yrs=[], scen=[]):
     '''Save results in json file'''
     data = {
         'Country': case_name,
         'Case name': case_name,
-        'Scenario 1': {
+        'Scenario 1 (Active economy)': {
             'Total investment cost (EUR-million)': 0,
             'Flexibility investment cost (EUR-million)': 0,
             'Net Present Operation Cost (EUR-million)': 0
             },
-        'Scenario 2': {
+        'Scenario 2 (Slow economy)': {
             'Total investment cost (EUR-million)': 0,
             'Flexibility investment cost (EUR-million)': 0,
             'Net Present Operation Cost (EUR-million)': 0
@@ -798,8 +803,13 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
         NoYrs = len(yrs)
 
     for xp in range(2):
+        if xp == 0:
+            economy_name = ' (Active economy)'
+        else:
+            economy_name = ' (Slow economy)'
+
         for xy in yrs:
-            data['Scenario ' + str(xp+1)][str(xy)] = {
+            data['Scenario ' + str(xp+1) + economy_name][str(xy)] = {
                 'Operation cost (EUR-million/year)': 0,
                 'Branch investment (MVA)': [0 for x in range(NoLines)],
                 'Flexibility investment (MW)': [0 for x in range(NoLines)]
@@ -833,10 +843,10 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
 
     for xs in solution[1]['data'].values:
         if xs[0] == 0:
-            data['Scenario 1']['Total investment cost (EUR-million)'] = \
+            data['Scenario 1 (Active economy)']['Total investment cost (EUR-million)'] = \
                 xs[1]/1000000
         if xs[0] == scen:
-            data['Scenario 2']['Total investment cost (EUR-million)'] = \
+            data['Scenario 2 (Slow economy)']['Total investment cost (EUR-million)'] = \
                 xs[1]/1000000
 
     # Save output file
@@ -844,11 +854,67 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
         json.dump(data, fp, indent=4)
 
 
+## new function - save output of the cluster verification
+def save_in_jsonW_2(solution, output_dir, NoLines, case_name, yrs=[], scen=[]):
+    '''Save results in json file'''
+    data = {
+        'Country': case_name,
+        'Case name': case_name,
+        'Scenario 1 (Active economy)': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            },
+        'Scenario 2 (Slow economy)': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            }
+        }
+
+    # print('NoLines: ',NoLines)
+    # print('yrs: ',yrs)
+    # print('scen: ',scen)
+    # print('output_dir: ',output_dir)
+    # print('case_name: ',case_name)
+    # print('\nsolution:')
+    # print(solution)
+    # print('\ndata: ')
+    # print(data)
+
+    for xp in range(2): # consider only two scenarios in the tree: active and slow
+            if xp == 0:
+                economy_name = ' (Active economy)'
+                node_i = [0, 1, 3, 7] # which tree nodes correspond to this scenario
+            else:
+                economy_name = ' (Slow economy)'
+                node_i = [0, 2, 6, 14] # which tree nodes correspond to this scenario
+
+            y_i = 0 # number of a time interval
+            for xy in yrs:
+                data['Scenario ' + str(xp+1) + economy_name][str(xy)] = {
+                    'Operation cost (EUR-million/year)': 0,
+                    'Branch investment (MVA)': solution[0][node_i[y_i]],
+                    'Flexibility investment (MW)': [0 for x in range(NoLines)],
+                    'Total investment cost (EUR-million)': solution[1][node_i[y_i]],
+                    }
+                data['Scenario ' + str(xp+1) + economy_name]['Total investment cost (EUR-million)'] = solution[1][node_i[y_i]]
+                    
+                y_i += 1
+
+    # Save output file
+    with open(output_dir, 'w') as fp:
+        json.dump(data, fp, indent=4)
+
+    print('\nResults have been saved to /pyensys/tests/outputs/output.json')
+
+
 def attest_invest(kwargs):
     '''Call ATTEST's distribution network planning tool '''
     Base_Path = os.path.dirname(__file__)
     output_dir = kwargs.pop('output_dir')
-    test_case = kwargs.pop('case')
+    # test_case = kwargs.pop('case') # to give an absolute path
+    test_case = os.path.join(os.path.dirname(__file__), 'tests', 'matpower', kwargs.pop('case')) 
     ci_catalogue = [kwargs2ListF(kwargs, 'line_capacities'),
                     kwargs2ListF(kwargs, 'trs_capacities')]
     cont_list = kwargs.pop('cont_list')
@@ -875,7 +941,9 @@ def attest_invest(kwargs):
     else:
         ci_cost[1] = trs_costs
 
-    Option_Growth = 1  # Demand growth model
+    ## Demand growth model:
+    Option_Growth = 1  # define load growth in % per year, e.g. 3% each year between 2020 and 2030 = 30% growth in that period
+    # Option_Growth = 2  # define load growth in % per each time period specifically (relative to the initial period), e.g. 30% growth in 2030, then 65% in 2040
 
     growth = kwargs.pop('growth')
     if isinstance(growth, str):
@@ -883,6 +951,12 @@ def attest_invest(kwargs):
 
     DSR = kwargs.pop('dsr')
     Max_clusters = kwargs.pop('max_clusters')
+
+    use_load_data_update = kwargs.pop('add_load_data') # use new EV-PV-Storage data or not (True or False)
+    print('use_load_data_update: ',use_load_data_update)
+
+    add_load_data_case_name = kwargs.pop('add_load_data_case_name') # name of the Excel sheets to use
+    print('\nadd_load_data_case_name: ',add_load_data_case_name)
 
     keys = list(growth.keys())
     yrs = list(growth[keys[0]].keys())
@@ -921,6 +995,7 @@ def attest_invest(kwargs):
                 aux3 += aux4
         flex.append(dsr)
         multiplier.append(mul)
+    print('\nmultiplier: ',multiplier)
 
     print('\nScreening for investment options\n')
     NoScens = len(multiplier[-1])-1
@@ -930,7 +1005,7 @@ def attest_invest(kwargs):
         final_interv_clust, mpc = \
             Screenning_clusters(gen_status, line_status, test_case, multiplier,
                                flex, ci_catalogue, cont_list, ci_cost,
-                               Max_clusters)
+                               Max_clusters,use_load_data_update,add_load_data_case_name)
     else:
         final_interv_clust = eval(cluster)
         mpc = get_mpc(test_case)
@@ -973,35 +1048,79 @@ def attest_invest(kwargs):
         # Distribution network optimisation
         print('\nOptimising investment strategies\n')
         start = time.time()
-        solution, info = main_access_function(file_path=filename)
-        
-        if info.incumbent_interventions._container == []:
-            print()
-            print("WARNING: THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
-            print()
-            # Save output file
-            with open(output_dir, 'w') as fp:
-                json.dump("THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
-        else:
-            # # Get clusters
-            clusters_positions = []
-            clusters_capacity = []
-            print("info.incumbent_interventions:", info.incumbent_interventions)
-            for x in info.incumbent_interventions._container[0][1]._container:
-                aux = x[1]._container
-                if len(aux) > 0:
-                    clusters_positions.append(aux[0][1].element_position)
-                    clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
 
-            x1 = len(test_case)-1
-            while test_case[x1] != '.':
-                x1 -= 1
-            x2 = x1-1
-            while test_case[x2] != '/' and test_case[x2] != '\\':
-                x2 -= 1
-            case_name = test_case[x2+1:x1]
-            save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
-                        clusters_capacity, case_name, yrs, NoScens)
+        use_clusters_verification = True # if true, the new clusters verification algorithm will be used to check AC feasibility of investments
+        # use_clusters_verification = False
+
+        if use_clusters_verification == True: # use the clusters verification algorithm
+            print('\nVerifying the identified clusters')
+
+            ## Is this path leads to a *.m file? - if yes, must be converted to .mat
+            # MatPath = pandapower_mpc_settings_dict.pop("mat_file_path")
+            if test_case[-1] == 'm':
+                ## A *.mat file has to be created based on the *.m file
+                _build_mat_file(test_case)
+                # MatPath = MatPath + 'at'
+
+            solution, no_feasible_plan = clust_verification_function(test_case,use_load_data_update,add_load_data_case_name,mpc['branch']['TAP'])
+
+            if no_feasible_plan == True:
+                print("WARNING: CLUSTER VERIFICATION MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
+                ## Save this warning to the output file
+                with open(output_dir, 'w') as fp:
+                    json.dump("WARNING: CLUSTER VERIFICATION MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
+            else:
+                # # Get clusters
+                clusters_positions = []
+                clusters_capacity = []
+                # print("info.incumbent_interventions:", info.incumbent_interventions)
+                # for x in info.incumbent_interventions._container[0][1]._container:
+                #     aux = x[1]._container
+                #     if len(aux) > 0:
+                #         clusters_positions.append(aux[0][1].element_position)
+                #         clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+                x1 = len(test_case)-1
+                while test_case[x1] != '.':
+                    x1 -= 1
+                x2 = x1-1
+                while test_case[x2] != '/' and test_case[x2] != '\\':
+                    x2 -= 1
+                case_name = test_case[x2+1:x1]
+
+                save_in_jsonW_2(solution, output_dir, NoLines, case_name, yrs, NoScens)
+
+        
+
+        else: # use the recursive function
+            solution, info = main_access_function(file_path=filename)
+            if info.incumbent_interventions._container == []:
+                print()
+                print("WARNING: THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
+                print()
+                ## Save this warning to the output file
+                with open(output_dir, 'w') as fp:
+                    json.dump("THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
+            else:
+                # # Get clusters
+                clusters_positions = []
+                clusters_capacity = []
+                print("info.incumbent_interventions:", info.incumbent_interventions)
+                for x in info.incumbent_interventions._container[0][1]._container:
+                    aux = x[1]._container
+                    if len(aux) > 0:
+                        clusters_positions.append(aux[0][1].element_position)
+                        clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+                x1 = len(test_case)-1
+                while test_case[x1] != '.':
+                    x1 -= 1
+                x2 = x1-1
+                while test_case[x2] != '/' and test_case[x2] != '\\':
+                    x2 -= 1
+                case_name = test_case[x2+1:x1]
+                save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                            clusters_capacity, case_name, yrs, NoScens)
 
             end = time.time()
             print('\nTime required by the tool:', end - start)

@@ -445,12 +445,20 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
         
         # Nodal power balance
         def nodeBalance_rule(m, xb,xk,xt):
-    
+            
+            ## rule with a significant Q overestimation:
             return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
                     + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
                     == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
                     + mult[xb]*Pd[xb] + mult[xb]*Qd[xb]- m.Plc[xb,xk,xt] \
                     + Pd_additions[xb] # additional loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
+        
+            # ## rule with less Q overestimation:
+            # return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
+            #         + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
+            #         == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
+            #         + math.copysign(1,Pd[xb])*((mult[xb]*Pd[xb])**2 + (mult[xb]*Qd[xb])**2)**0.5 - m.Plc[xb,xk,xt] \
+            #         + Pd_additions[xb] # additional loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
     
         def loadcurtail_rule(m, xb,xk,xt):
             
@@ -719,7 +727,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
 
 
 def main_screening(mpc, gen_status, line_status, multiplier, cicost,
-                   penalty_cost, peak_Pd, peak_Qd, ci_catalogue, cont_list, Q_load_correction):
+                   penalty_cost, peak_Pd, peak_Qd, ci_catalogue, cont_list, Q_load_correction, use_load_data_update,add_load_data_case_name):
     ''' Time point '''
     # Number of time points
     NoTime = 1
@@ -736,22 +744,18 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
         for xsc in range(len(multiplier[xy])):
             mult = multiplier[xy][xsc]
 
-            # use_data_update = True # activate to use new loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
-            use_data_update = False # use initial load data (do not include additional EV-PV loads)
-
-            if use_data_update == True:
+            if use_load_data_update == 1:
                 if year_name[xy] != 2020:
-
-                    EV_data_path = "C:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\tests" # to be updated
-                    EV_data_file_name = 'EV-PV-Storage_Data_for_Simulations.xlsx' # !we need to add this to CLI!
+                    # EV_data_path = "C:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\tests" # to be updated
+                    EV_data_path = join(dirname(__file__), "..", "tests\\")
+                    EV_data_file_name = 'EV-PV-Storage_Data_for_Simulations.xlsx'
                     EV_data_file_path = os.path.join(EV_data_path, EV_data_file_name)
+                    EV_data_sheet_names = add_load_data_case_name
+                    # EV_data_sheet_names = 'PT_Dx_01_' # set via CLI
+                    # EV_data_sheet_names = 'HR_Dx_01_' # set via CLI
+                    # EV_data_sheet_names = 'UK_Dx_01_' # set via CLI
 
-
-                    # EV_data_sheet_names = 'PT_Dx_01_' # !we need to add this to CLI!
-                    # EV_data_sheet_names = 'HR_Dx_01_' # !we need to add this to CLI!
-                    EV_data_sheet_names = 'UK_Dx_01_' # !we need to add this to CLI!
-
-                    EV_load_data = pd.read_excel(EV_data_file_path, sheet_name = EV_data_sheet_names + str(year_name[xy]), skiprows = 1)
+                    EV_load_data = pd.read_excel(EV_data_file_path, sheet_name = str(EV_data_sheet_names) + str(year_name[xy]), skiprows = 1)
                     EV_load_data_MW_profile = EV_load_data["EV load (MW)"]
                     EV_load_data_MW_max = np.max(EV_load_data_MW_profile[0:24])
                     Pd_additions = EV_load_data["Node Ratio"]*EV_load_data_MW_max # how much new load per node

@@ -380,6 +380,15 @@ def pyensys_entry_point(**kwargs):
               ' be assign a growth of 0%. By default: ' +
               '{\'Active\': {\'2020\': 0, \'2030\': 1.89, \'2040\': 3.0, \'2050\': 3.0},' +
               '\'Slow\': {\'2020\': 0, \'2030\': 1.1, \'2040\': 2.0, \'2050\': 2.0}}.')
+@click.option('--add_load_data',
+              default=0,
+              help='Use additional ATTEST data for EV, PV and storage (EV-PV-Storage_Data_for_Simulations.xlsx). ' +
+              'By default: 0 (False). If 1 (True), additional EV data will be added for each bus per each year and scenario.')
+@click.option('--add_load_data_case_name',
+              default='UK_Dx_01_',
+              help='Name of the case for which the addiational load data should be included. ' +
+              'This name must be in the Excel sheet format to navigate in the file EV-PV-Storage_Data_for_Simulations.xlsx. ' +
+              'By default: UK_Dx_01_ ')
 @click.option('--DSR',
               default={"Active": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00},
                         "Slow": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00}},
@@ -397,9 +406,9 @@ def pyensys_entry_point(**kwargs):
               help='Option to intentionally oversize investments by ' +
               'selecting the next available value from the ' +
               '--line_capacities. By default it is set to 0 (no oversize).')
-@click.option('--Max_clusters', default=1,
+@click.option('--Max_clusters', default=3,
               help='Constraint on the maximum number of clusters considered' +
-              '. By default it is set to 5.')
+              '. By default it is set to 3.')
 @click.option('--scenarios', default=[],
               help='List of scenarios to model. By default it is left empty ' +
               '[] and the model will consider all available scenarios, ' +
