@@ -609,7 +609,7 @@
     },
     "pandapower_optimisation_settings": {
         "display_progress_bar": true,
-        "optimisation_software": "power models"
+        "optimisation_software": "pypower"
     },
     "optimisation_binary_variables": [
         {
