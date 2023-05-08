@@ -19,6 +19,11 @@ from pyensys.Optimisers.process_data import mult_for_bus
 from pyensys.Optimisers.screening_model_CLI import main_screening
 from pyensys.managers.GeneralManager import main_access_function, save_in_json
 
+from os.path import join, dirname
+
+from pyensys.Optimisers.clusters_verification_function import clust_verification_function
+from pyensys.readers.JSONReader import _build_mat_file
+
 
 def get_pyene(conf=None):
     """ Get pyene object."""
@@ -466,11 +471,22 @@ def get_mpc(test_case):
     return mpc
 
 
-def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                       flex, ci_catalogue, cont_list, Max_clusters):
+def Screenning_clusters(gen_status, line_status, test_case, multiplier,
+                       flex, ci_catalogue, cont_list, ci_cost,
+                       Max_clusters, use_load_data_update,add_load_data_case_name):
     '''Produce list of investment clusters'''
     mpc = get_mpc(test_case)
     cont_list = [[1]*mpc['NoBranch']]  # --> do not consider contingencies
+
+    PD_sum = sum(mpc["bus"]["PD"])
+    QD_sum = sum(mpc["bus"]["QD"])
+
+    # print('\nPD_sum: ',PD_sum)
+    # print('\nQD_sum: ',QD_sum)
+    
+
+    Q_load_correction = 1 + QD_sum/PD_sum # increase line capacity to match Q demand as well (DCOPF screening model cannot include Q)
+    # print('\nQ_load_correction: ',Q_load_correction)
 
     # multipliers for each bus
     busMult_input = []
@@ -481,6 +497,8 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     # update peak demand values, get peak load for screening model
     peak_Pd = []  # get_peak_data(mpc, base_time_series_data, peak_hour)
 
+    peak_Qd = [] # not used now
+
     # Cost information
     # linear cost for the screening model
     cicost = 20  # £/Mw/km --> actually used in the screening model!
@@ -490,8 +508,9 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
     # Outputs
     interv_dict, interv_clust = \
         main_screening(mpc, gen_status, line_status, multiplier_bus,
-                       cicost, penalty_cost, peak_Pd, ci_catalogue,
-                       cont_list)
+                       cicost, penalty_cost, peak_Pd, peak_Qd, ci_catalogue,
+                       cont_list, Q_load_correction, use_load_data_update, add_load_data_case_name)
+
 
     # reduce catalogue in the interv dictionary
     for xbr in range(mpc["NoBranch"]):
@@ -512,39 +531,92 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
             interv_dict[xbr] = []
 
     final_interv_clust = []
+    
+    print("interv_clust: ",interv_clust)
+    # Save all screening clusters:
+    file_name = "screen_result_all_interv_clust"
+    with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(interv_clust, fp)
 
+    # sum_interv_clust = 0
+    # for i in range(len(interv_clust)):
+    #     sum_interv_clust += sum(interv_clust[i])
+    # if sum_interv_clust == 0:
+    #     print()
+    #     print("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL ABORTS HERE")
+    #     print()
     for i in range(len(interv_clust)):
         fl = False
         for ii in range(len(final_interv_clust)):
             if interv_clust[i] == final_interv_clust[ii]:
                 fl = True
+                print("interv_clust[i] == final_interv_clust[ii] ...")
 
         if not fl:
             final_interv_clust.append(interv_clust[i])
+            print("appending final_interv_clust...")
 
-    # Limiting number of clusters to use
-    NoClusters = len(final_interv_clust)-1
+    # To limit the number of clusters to use, the clusters are first sorted
+    NoClusters = len(final_interv_clust)
     NoCols = len(final_interv_clust[0])
-    for x1 in range(1, NoClusters+1):
-        for x2 in range(NoClusters-x1):
+    for x1 in range(NoClusters):
+        for x2 in range(x1+1, NoClusters):
             flg = False
             x3 = 0
             while not flg and x3 < NoCols:
                 if final_interv_clust[x1][x3] > \
-                        final_interv_clust[x1+x2+1][x3]:
+                        final_interv_clust[x2][x3]:
                     flg = True
                 x3 += 1
             if flg:
                 aux = final_interv_clust[x1]
-                final_interv_clust[x1] = final_interv_clust[x1+x2+1]
-                final_interv_clust[x1+x2+1] = aux
-    if NoClusters > Max_clusters:
-        final_interv_clust = \
-            [final_interv_clust[int(plan)]
-             for plan in np.ceil(np.linspace(1, NoClusters, Max_clusters))]
+                final_interv_clust[x1] = final_interv_clust[x2]
+                final_interv_clust[x2] = aux
+
+    # print('Full list of clusters', final_interv_clust)
+    print('NoClusters = ',NoClusters)
+    print('Max_clusters = ',Max_clusters)
+    Option_Cluster = 1  # Clustering options
+    if NoClusters > Max_clusters:  
+        # Updated clustering approach based on costs
+        if Option_Cluster == 1:
+            # Calculate cluster costs
+            cluster_cost = [0 for x1 in range(NoClusters)]
+            for x1 in range(NoClusters):
+                for x2 in range(NoCols):
+                    if final_interv_clust[x1][x2] > 0:
+                        x3 = 0
+                        while final_interv_clust[x1][x2] != ci_catalogue[0][x3]:
+                            x3 += 1
+                        cluster_cost[x1] += ci_cost[0][x3]
+
+            # Select clusters that are closer to the ideal costs
+            Max_Cost = cluster_cost[NoClusters-1]
+            Ideal_Costs = \
+                np.linspace(Max_Cost/Max_clusters, Max_Cost, Max_clusters)
+            clust_list = [True for x1 in range(Max_clusters)]
+            clus_flg = [True for x1 in range(NoClusters)]
+            for x1 in range(Max_clusters):
+                aux1 = np.inf
+                for x2 in range(NoClusters):
+                    if clus_flg[x2]:
+                        aux2 = abs(Ideal_Costs[x1]-cluster_cost[x2])
+                        if abs(Ideal_Costs[x1]-aux1) > aux2:
+                            aux1 = cluster_cost[x2]
+                            clust_list[x1] = x2
+                clus_flg[clust_list[x1]] = False
+            clust_list.sort()
+            final_interv_clust = [final_interv_clust[x1] for x1 in clust_list]
+        else:  # Original clustering approach based on position in the list
+            final_interv_clust = \
+                [final_interv_clust[int(plan)]
+                 for plan in np.ceil(np.linspace(0, NoClusters-1, Max_clusters))]
+        print("NoClusters > Max_clusters")
     else:
+        # Append non-empty clusters
+        print("NoClusters < Max_clusters")
         pos = []
-        for x1 in range(NoClusters+1):
+        for x1 in range(NoClusters):
             flg = True
             x2 = 0
             while flg and x2 < NoCols:
@@ -554,6 +626,13 @@ def Sceenning_clusters(gen_status, line_status, test_case, multiplier,
             if not flg:
                 pos.append(x1)
         final_interv_clust = [final_interv_clust[x] for x in pos]
+
+    print("Sceenning_clusters (final_interv_clust) = ",final_interv_clust)
+
+    # Save final screening clusters:
+    file_name = "screen_result_final_interv_clust"
+    with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(final_interv_clust, fp)
 
     return final_interv_clust, mpc
 
@@ -621,6 +700,7 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
 
     # Add investment clusters
     NoClu = len(final_interv_clust)
+    print("final_interv_clust = ",final_interv_clust)
     NoBra = len(final_interv_clust[0])
     for xc in range(NoClu):
         costs = 0
@@ -638,11 +718,11 @@ def build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
                 capacity.append(ci_catalogue[0][x])
         data['optimisation_binary_variables'][0]['costs'].append(costs)
         (data['optimisation_binary_variables'][0]
-         ['elements_positions'].append(elements))
+        ['elements_positions'].append(elements))
         (data['optimisation_binary_variables'][0]
-         ['installation_time'].append(Ins_time))
+        ['installation_time'].append(Ins_time))
         (data['optimisation_binary_variables'][0]
-         ['capacity_to_be_added_MW'].append(capacity))
+        ['capacity_to_be_added_MW'].append(capacity))
 
     return data
 
@@ -660,19 +740,19 @@ def kwargs2ListF(kwargs, txt):
 
     return res
 
-
+## original function - to define the output format
 def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
                   clusters_capacity, case_name, yrs=[], scen=[]):
     '''Save results in json file'''
     data = {
         'Country': case_name,
         'Case name': case_name,
-        'Scenario 1': {
+        'Scenario 1 (Active economy)': {
             'Total investment cost (EUR-million)': 0,
             'Flexibility investment cost (EUR-million)': 0,
             'Net Present Operation Cost (EUR-million)': 0
             },
-        'Scenario 2': {
+        'Scenario 2 (Slow economy)': {
             'Total investment cost (EUR-million)': 0,
             'Flexibility investment cost (EUR-million)': 0,
             'Net Present Operation Cost (EUR-million)': 0
@@ -723,8 +803,13 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
         NoYrs = len(yrs)
 
     for xp in range(2):
+        if xp == 0:
+            economy_name = ' (Active economy)'
+        else:
+            economy_name = ' (Slow economy)'
+
         for xy in yrs:
-            data['Scenario ' + str(xp+1)][str(xy)] = {
+            data['Scenario ' + str(xp+1) + economy_name][str(xy)] = {
                 'Operation cost (EUR-million/year)': 0,
                 'Branch investment (MVA)': [0 for x in range(NoLines)],
                 'Flexibility investment (MW)': [0 for x in range(NoLines)]
@@ -758,10 +843,10 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
 
     for xs in solution[1]['data'].values:
         if xs[0] == 0:
-            data['Scenario 1']['Total investment cost (EUR-million)'] = \
+            data['Scenario 1 (Active economy)']['Total investment cost (EUR-million)'] = \
                 xs[1]/1000000
         if xs[0] == scen:
-            data['Scenario 2']['Total investment cost (EUR-million)'] = \
+            data['Scenario 2 (Slow economy)']['Total investment cost (EUR-million)'] = \
                 xs[1]/1000000
 
     # Save output file
@@ -769,11 +854,67 @@ def save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
         json.dump(data, fp, indent=4)
 
 
+## new function - save output of the cluster verification
+def save_in_jsonW_2(solution, output_dir, NoLines, case_name, yrs=[], scen=[]):
+    '''Save results in json file'''
+    data = {
+        'Country': case_name,
+        'Case name': case_name,
+        'Scenario 1 (Active economy)': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            },
+        'Scenario 2 (Slow economy)': {
+            'Total investment cost (EUR-million)': 0,
+            'Flexibility investment cost (EUR-million)': 0,
+            'Net Present Operation Cost (EUR-million)': 0
+            }
+        }
+
+    # print('NoLines: ',NoLines)
+    # print('yrs: ',yrs)
+    # print('scen: ',scen)
+    # print('output_dir: ',output_dir)
+    # print('case_name: ',case_name)
+    # print('\nsolution:')
+    # print(solution)
+    # print('\ndata: ')
+    # print(data)
+
+    for xp in range(2): # consider only two scenarios in the tree: active and slow
+            if xp == 0:
+                economy_name = ' (Active economy)'
+                node_i = [0, 1, 3, 7] # which tree nodes correspond to this scenario
+            else:
+                economy_name = ' (Slow economy)'
+                node_i = [0, 2, 6, 14] # which tree nodes correspond to this scenario
+
+            y_i = 0 # number of a time interval
+            for xy in yrs:
+                data['Scenario ' + str(xp+1) + economy_name][str(xy)] = {
+                    'Operation cost (EUR-million/year)': 0,
+                    'Branch investment (MVA)': solution[0][node_i[y_i]],
+                    'Flexibility investment (MW)': [0 for x in range(NoLines)],
+                    'Total investment cost (EUR-million)': solution[1][node_i[y_i]],
+                    }
+                data['Scenario ' + str(xp+1) + economy_name]['Total investment cost (EUR-million)'] = solution[1][node_i[y_i]]
+                    
+                y_i += 1
+
+    # Save output file
+    with open(output_dir, 'w') as fp:
+        json.dump(data, fp, indent=4)
+
+    print('\nResults have been saved to /pyensys/tests/outputs/output.json')
+
+
 def attest_invest(kwargs):
     '''Call ATTEST's distribution network planning tool '''
     Base_Path = os.path.dirname(__file__)
     output_dir = kwargs.pop('output_dir')
-    test_case = kwargs.pop('case')
+    # test_case = kwargs.pop('case') # to give an absolute path
+    test_case = os.path.join(os.path.dirname(__file__), 'tests', 'matpower', kwargs.pop('case')) 
     ci_catalogue = [kwargs2ListF(kwargs, 'line_capacities'),
                     kwargs2ListF(kwargs, 'trs_capacities')]
     cont_list = kwargs.pop('cont_list')
@@ -798,7 +939,11 @@ def attest_invest(kwargs):
     if len(trs_costs) == 0:
         ci_cost[1] = [7000 * i for i in ci_catalogue[1]]
     else:
-        ci_cost[0] = trs_costs
+        ci_cost[1] = trs_costs
+
+    ## Demand growth model:
+    Option_Growth = 1  # define load growth in % per year, e.g. 3% each year between 2020 and 2030 = 30% growth in that period
+    # Option_Growth = 2  # define load growth in % per each time period specifically (relative to the initial period), e.g. 30% growth in 2030, then 65% in 2040
 
     growth = kwargs.pop('growth')
     if isinstance(growth, str):
@@ -807,28 +952,50 @@ def attest_invest(kwargs):
     DSR = kwargs.pop('dsr')
     Max_clusters = kwargs.pop('max_clusters')
 
+    use_load_data_update = kwargs.pop('add_load_data') # use new EV-PV-Storage data or not (True or False)
+    print('use_load_data_update: ',use_load_data_update)
+
+    add_load_data_case_name = kwargs.pop('add_load_data_case_name') # name of the Excel sheets to use
+    print('\nadd_load_data_case_name: ',add_load_data_case_name)
+
     keys = list(growth.keys())
     yrs = list(growth[keys[0]].keys())
     multiplier = [[1*(1+growth[keys[0]][yrs[0]])]]
+
     flex = [[1-DSR[keys[0]][yrs[0]]]]
     for yr in range(len(yrs)-1):
         mul = []
-        aux = (int(yrs[yr+1])-int(yrs[yr]))/100
-        aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
-        aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
-        aux3 = (aux1-aux2)/(2**(yr+1)-1)
-
         dsr = []
-        dsrax1 = 1-DSR[keys[0]][yrs[yr+1]]
-        dsrax2 = (dsrax1+DSR[keys[1]][yrs[yr+1]]-1)/(2**(yr+1)-1)
+        
+        if Option_Growth == 1:  # Annual growth
+            aux = (int(yrs[yr+1])-int(yrs[yr]))/100
+            aux1 = multiplier[yr][0]*(1+growth[keys[0]][yrs[yr+1]]*aux)
+            aux2 = multiplier[yr][-1]*(1+growth[keys[1]][yrs[yr+1]]*aux)
+            aux3 = (aux1-aux2)/(2**(yr+1)-1)
 
-        for bs in range(2**(yr+1)):
-            mul.append(aux1)
-            dsr.append(dsrax1)
-            aux1 -= aux3
-            dsrax1 -= dsrax2
+            dsrax1 = 1-DSR[keys[0]][yrs[yr+1]]
+            dsrax2 = (dsrax1+DSR[keys[1]][yrs[yr+1]]-1)/(2**(yr+1)-1)
+
+            for bs in range(2**(yr+1)):
+                mul.append(aux1)
+                dsr.append(dsrax1)
+                aux1 -= aux3
+                dsrax1 -= dsrax2
+        else:  # Specific growth selected for each year
+            aux1 = 1+growth[keys[0]][yrs[yr+1]]/100
+            aux2 =(growth[keys[1]][yrs[yr+1]]-growth[keys[0]][yrs[yr+1]]) / \
+                100/(2**(yr+1)-1)
+            aux3 = 1-DSR[keys[0]][yrs[yr+1]]
+            aux4 = (-DSR[keys[1]][yrs[yr+1]]+DSR[keys[0]][yrs[yr+1]])/ \
+                (2**(yr+1)-1)
+            for bs in range(2**(yr+1)):
+                mul.append(aux1)
+                aux1 += aux2
+                dsr.append(aux3)
+                aux3 += aux4
         flex.append(dsr)
         multiplier.append(mul)
+    print('\nmultiplier: ',multiplier)
 
     print('\nScreening for investment options\n')
     NoScens = len(multiplier[-1])-1
@@ -836,8 +1003,9 @@ def attest_invest(kwargs):
         gen_status = False
         line_status = True
         final_interv_clust, mpc = \
-            Sceenning_clusters(gen_status, line_status, test_case, multiplier,
-                               flex, ci_catalogue, cont_list, Max_clusters)
+            Screenning_clusters(gen_status, line_status, test_case, multiplier,
+                               flex, ci_catalogue, cont_list, ci_cost,
+                               Max_clusters,use_load_data_update,add_load_data_case_name)
     else:
         final_interv_clust = eval(cluster)
         mpc = get_mpc(test_case)
@@ -850,42 +1018,112 @@ def attest_invest(kwargs):
         for x in range(NoLines-len(line_length)):
             line_length.append(line_length[0])
 
-    # Pass data to JSON file
-    filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
-    with open(filename, 'w', encoding='utf-8') as f:
-        data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
-                          ci_cost, ci_catalogue, line_length, scenarios,
-                          oversize)
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    if final_interv_clust == []:
+        print()
+        print("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL ABORTS HERE")
+        print()
+        # Save output file
+        with open(output_dir, 'w') as fp:
+            json.dump("NO INVESTMENTS IDENTIFIED BY THE SCREENING MODEL: THE PLANNING MODEL WAS ABORTED", fp, indent=4)
+    else:
+        # # manually add interventions for tests:
+        # final_interv_clust = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 0.75, 0.75, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0]]
+        # final_interv_clust = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
+        # final_interv_clust = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.045, 0.045, 0.045, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.045, 0.0]]
+        
+        # # Pass data to JSON file
+        filename = os.path.join(Base_Path, 'tests', 'json', 'ATTEST_Inputs.json')
+        with open(filename, 'w', encoding='utf-8') as f:
+            data = build_json(test_case, multiplier, mpc, final_interv_clust, yrs,
+                            ci_cost, ci_catalogue, line_length, scenarios,
+                            oversize)
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
-    # Distribution network optimisation
-    print('\nOptimising investment strategies\n')
-    start = time.time()
-    solution, info = main_access_function(file_path=filename)
+        # # Save a separate output with the costs of selected clusters:
+        # # just saves a catalogue - we should change it to the overall cluster costs
+        file_name = "screen_result_final_interv_clust_costs"
+        with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
+            json.dump(ci_cost, fp)
 
-    # Get clusters
-    clusters_positions = []
-    clusters_capacity = []
-    for x in info.incumbent_interventions._container[0][1]._container:
-        aux = x[1]._container
-        if len(aux) > 0:
-            clusters_positions.append(aux[0][1].element_position)
-            clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+        # Distribution network optimisation
+        print('\nOptimising investment strategies\n')
+        start = time.time()
 
-    x1 = len(test_case)-1
-    while test_case[x1] != '.':
-        x1 -= 1
-    x2 = x1-1
-    while test_case[x2] != '/' and test_case[x2] != '\\':
-        x2 -= 1
-    case_name = test_case[x2+1:x1]
-    save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
-                  clusters_capacity, case_name, yrs, NoScens)
+        use_clusters_verification = True # if true, the new clusters verification algorithm will be used to check AC feasibility of investments
+        # use_clusters_verification = False
 
-    # save_in_json(solution, output_dir)
+        if use_clusters_verification == True: # use the clusters verification algorithm
+            print('\nVerifying the identified clusters')
 
-    end = time.time()
-    print('\nTime required by the tool:', end - start)
+            ## Is this path leads to a *.m file? - if yes, must be converted to .mat
+            # MatPath = pandapower_mpc_settings_dict.pop("mat_file_path")
+            if test_case[-1] == 'm':
+                ## A *.mat file has to be created based on the *.m file
+                _build_mat_file(test_case)
+                # MatPath = MatPath + 'at'
+
+            solution, no_feasible_plan = clust_verification_function(test_case,use_load_data_update,add_load_data_case_name,mpc['branch']['TAP'])
+
+            if no_feasible_plan == True:
+                print("WARNING: CLUSTER VERIFICATION MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
+                ## Save this warning to the output file
+                with open(output_dir, 'w') as fp:
+                    json.dump("WARNING: CLUSTER VERIFICATION MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
+            else:
+                # # Get clusters
+                clusters_positions = []
+                clusters_capacity = []
+                # print("info.incumbent_interventions:", info.incumbent_interventions)
+                # for x in info.incumbent_interventions._container[0][1]._container:
+                #     aux = x[1]._container
+                #     if len(aux) > 0:
+                #         clusters_positions.append(aux[0][1].element_position)
+                #         clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+                x1 = len(test_case)-1
+                while test_case[x1] != '.':
+                    x1 -= 1
+                x2 = x1-1
+                while test_case[x2] != '/' and test_case[x2] != '\\':
+                    x2 -= 1
+                case_name = test_case[x2+1:x1]
+
+                save_in_jsonW_2(solution, output_dir, NoLines, case_name, yrs, NoScens)
+
+        
+
+        else: # use the recursive function
+            solution, info = main_access_function(file_path=filename)
+            if info.incumbent_interventions._container == []:
+                print()
+                print("WARNING: THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS")
+                print()
+                ## Save this warning to the output file
+                with open(output_dir, 'w') as fp:
+                    json.dump("THE INVESTMENT PLANNING MODEL FAILED TO FIND INTERVENTIONS - PLEASE CHECK FEASIBILITY AND CONVERGENCE OF ACOPF MODELS", fp, indent=4)
+            else:
+                # # Get clusters
+                clusters_positions = []
+                clusters_capacity = []
+                print("info.incumbent_interventions:", info.incumbent_interventions)
+                for x in info.incumbent_interventions._container[0][1]._container:
+                    aux = x[1]._container
+                    if len(aux) > 0:
+                        clusters_positions.append(aux[0][1].element_position)
+                        clusters_capacity.append(aux[0][1].capacity_to_be_added_MW)
+
+                x1 = len(test_case)-1
+                while test_case[x1] != '.':
+                    x1 -= 1
+                x2 = x1-1
+                while test_case[x2] != '/' and test_case[x2] != '\\':
+                    x2 -= 1
+                case_name = test_case[x2+1:x1]
+                save_in_jsonW(solution, output_dir, NoLines, clusters_positions,
+                            clusters_capacity, case_name, yrs, NoScens)
+
+            end = time.time()
+            print('\nTime required by the tool:', end - start)
 
 
 def attest_invest_path(kwargs):

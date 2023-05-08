@@ -1,7 +1,8 @@
 {
     "metadata": {
-        "title": "c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\A_KPC_35_v2",
-        "description": "power system of c:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\Optimisers\\..\\tests\\matpower\\A_KPC_35_v2"
+        "title": "A_KPC_35_v2",
+        "description": "power system of A_KPC_35_v2",
+        "minimum_version": "0.4"
     },
     "version": 2,
     "baseMVA": 100.0,

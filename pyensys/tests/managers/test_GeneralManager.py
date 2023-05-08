@@ -10,7 +10,7 @@ def test_main_access_function():
     start = time.time()
     # main_access_function(file_path=get_attest_json_test_data())
     path = dirname(__file__)
-    path = join(path, "..", "json", "ATTEST_Inputs.json")
+    path = join(path, "..", "json", "attest_input_format_m1_samelinestest2.json")
     solution = main_access_function(file_path=path)
     path = dirname(__file__)
     path = join(path, "..", "outputs")

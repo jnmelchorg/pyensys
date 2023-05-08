@@ -1,5 +1,5 @@
 % Distribution_Network_KPC_10
-function mpc = A_KPC_35()
+function mpc = A_KPC_35_v2()
 
 
 %% MATPOWER Case Format : Version 2
@@ -136,4 +136,6 @@ mpc.gencost = [
 	2	0	0	2	2	  0; 	
 	2	0	0	2	0.02	  0; 
 	2	0	0	2	3	  0; 
-];																			
+];			
+
+

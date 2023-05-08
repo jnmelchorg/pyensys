@@ -34,8 +34,8 @@ from pyomo.core import value as Val
 import networkx as nx
 import pyomo.environ as pyo
 from dataclasses import dataclass
-# import json
-# import os
+import json
+import os
 import math
 import numpy as np
 # from scenarios_multipliers import get_mult
@@ -45,6 +45,8 @@ import numpy as np
 # import pstats
 
 from os.path import join, dirname
+
+import pandas as pd # to read new EV load data
 
 @dataclass
 class network_parameter:
@@ -75,7 +77,7 @@ class nodes_info_network:
 # ####################################################################
 # ####################################################################
 def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
-                    cont_list, prev_invest, peak_Pd, mult, NoTime=1):
+                    cont_list, prev_invest, peak_Pd, peak_Qd, mult, Pd_additions, Q_load_correction, NoTime=1):
     ''''read paras and vars from jason file'''
     def readVarPara():
     
@@ -155,7 +157,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
                 nw_parameters.append(branch_para_temp)
         del auxBranch, branch_para_temp, branch_para_name
         
-     
+    
         
         return nw_parameters
     
@@ -443,11 +445,20 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
         
         # Nodal power balance
         def nodeBalance_rule(m, xb,xk,xt):
-    
+            
+            ## rule with a significant Q overestimation:
             return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
                     + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
                     == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
-                      + mult[xb] *Pd[xb] - m.Plc[xb,xk,xt]
+                    + mult[xb]*Pd[xb] + mult[xb]*Qd[xb]- m.Plc[xb,xk,xt] \
+                    + Pd_additions[xb] # additional loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
+        
+            # ## rule with less Q overestimation:
+            # return sum( m.Pgen[genCbus[xb][i],xk,xt]  for i in range(len(genCbus[xb])) )  \
+            #         + sum( m.Pbra[braTbus[xb][i]-noDiff,xk,xt]  for i in range(len(braTbus[xb])) )  \
+            #         == sum( m.Pbra[braFbus[xb][i]-noDiff,xk,xt]  for i in range(len(braFbus[xb])) ) \
+            #         + math.copysign(1,Pd[xb])*((mult[xb]*Pd[xb])**2 + (mult[xb]*Qd[xb])**2)**0.5 - m.Plc[xb,xk,xt] \
+            #         + Pd_additions[xb] # additional loads from "EV-PV-Storage_Data_for_Simulations.xlsx"
     
         def loadcurtail_rule(m, xb,xk,xt):
             
@@ -584,6 +595,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
         braTbus = []
         # only 1 timepoint for Pd
         Pd = []
+        Qd = [] # introducing Q loads as well
         for xb in range(mpc["NoBus"]):
             bus_number = mpc["bus"]["BUS_I"][xb]
             # find generator connections
@@ -599,14 +611,18 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
             
             # record demand value
             Pd.append( mpc['bus']['PD'][xb])
+            Qd.append( mpc['bus']['QD'][xb])
     
         if peak_Pd !=[] :
             Pd = peak_Pd
+
+        if peak_Qd !=[] :
+            Qd = peak_Qd
     
             
         
        
-        return (noDiff, genCbus, braFbus, braTbus, Pd)
+        return (noDiff, genCbus, braFbus, braTbus, Pd, Qd)
     
     
     
@@ -645,7 +661,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     NoPieces, lcost, min_y = genCost_rule(mpc)
     
     # if not specified, demand value PD is read from mpc file
-    noDiff, genCbus, braFbus, braTbus, Pd = nodeConnections_rule()
+    noDiff, genCbus, braFbus, braTbus, Pd, Qd = nodeConnections_rule()
     
     
     ''' Build a pyomo model '''
@@ -671,6 +687,7 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     # solve pyomo model
     solver = SolverFactory('glpk')
     results = solver.solve(model)
+    print("results.solver.status: ",results.solver.status)
 
 
     maxICbra=[]
@@ -688,11 +705,29 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
 
     interv_vect = Val(model.ICbra[:, 0])
 
+    # print('interv:')
+    # print(interv)
+    # print('maxICbra:')
+    # print(maxICbra)
+    # print('interv_vect:')
+    # print(interv_vect)
+
+    # # the following corrections can be used to account for additional Q power flows:
+    # print('\n-----> Q_load_correction: ',Q_load_correction)
+    # for ii in range(len(interv)):
+    #     interv[ii] *= Q_load_correction
+
+    # for ii in range(len(maxICbra)):
+    #     maxICbra[ii] *= Q_load_correction
+
+    # for ii in range(len(interv_vect)):
+    #     interv_vect[ii] *= Q_load_correction
+
     return interv, maxICbra, interv_vect
 
 
 def main_screening(mpc, gen_status, line_status, multiplier, cicost,
-                   penalty_cost, peak_Pd, ci_catalogue, cont_list):
+                   penalty_cost, peak_Pd, peak_Qd, ci_catalogue, cont_list, Q_load_correction, use_load_data_update,add_load_data_case_name):
     ''' Time point '''
     # Number of time points
     NoTime = 1
@@ -703,18 +738,41 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
     interv_clust = []  # clusters of investment options
 
     interv_dict = {k: [] for k in range(mpc["NoBranch"])}
+    year_name = [2020, 2030, 2040, 2050]
 
     for xy in range(len(multiplier)):
         for xsc in range(len(multiplier[xy])):
             mult = multiplier[xy][xsc]
 
+            if use_load_data_update == 1:
+                if year_name[xy] != 2020:
+                    # EV_data_path = "C:\\Users\\m36330ac\\Documents\\MEGA\\Eduardo Alejandro Martinez Cesena\\WP3\\Python\\from Nicolas\\pyensys\\pyensys\\tests" # to be updated
+                    EV_data_path = join(dirname(__file__), "..", "tests\\")
+                    EV_data_file_name = 'EV-PV-Storage_Data_for_Simulations.xlsx'
+                    EV_data_file_path = os.path.join(EV_data_path, EV_data_file_name)
+                    EV_data_sheet_names = add_load_data_case_name
+                    # EV_data_sheet_names = 'PT_Dx_01_' # set via CLI
+                    # EV_data_sheet_names = 'HR_Dx_01_' # set via CLI
+                    # EV_data_sheet_names = 'UK_Dx_01_' # set via CLI
+
+                    EV_load_data = pd.read_excel(EV_data_file_path, sheet_name = str(EV_data_sheet_names) + str(year_name[xy]), skiprows = 1)
+                    EV_load_data_MW_profile = EV_load_data["EV load (MW)"]
+                    EV_load_data_MW_max = np.max(EV_load_data_MW_profile[0:24])
+                    Pd_additions = EV_load_data["Node Ratio"]*EV_load_data_MW_max # how much new load per node
+                else:
+                    Pd_additions = [0] * mpc['NoBus'] # zero additional EV load
+            else:
+                Pd_additions = [0] * mpc['NoBus'] # zero additional EV load
+
             #  take preveious years investment
             temp_interv_list, temp_prev_invest, temp_interv_clust = \
                 model_screening(mpc, gen_status, line_status,  cicost,
-                                penalty_cost, cont_list, prev_invest, peak_Pd,
-                                mult, NoTime)
+                                penalty_cost, cont_list, prev_invest, peak_Pd, peak_Qd,
+                                mult, Pd_additions, Q_load_correction, NoTime)
             # interv_list.append(temp_interv_list)
             interv_list.extend(temp_interv_list)
+
+            
 
             # reduce catalogue in the interv. clustering:
             for xbr in range(mpc["NoBranch"]):
@@ -732,9 +790,15 @@ def main_screening(mpc, gen_status, line_status, multiplier, cicost,
 
             # record intervention lists for each branch
             for xbr in range(mpc["NoBranch"]):
-                interv_dict[xbr].append(temp_prev_invest[xbr])
+                # interv_dict[xbr].append(temp_prev_invest[xbr])
+                interv_dict[xbr].append(temp_prev_invest[xbr]) 
                 interv_dict[xbr].sort()
 
         prev_invest = [a+b for a, b in zip(temp_prev_invest, prev_invest)]
+
+    # Save screening results separately:
+    file_name = "screen_result_interv_dict"
+    with open(join(dirname(__file__), "..", "tests\\outputs\\")+file_name+".json", 'w') as fp:
+        json.dump(interv_dict, fp)
 
     return interv_dict, interv_clust

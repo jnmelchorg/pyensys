@@ -4,15 +4,18 @@ from pandapower.converter import from_mpc
 from pandapower.timeseries import DFData
 from pandapower.control import ConstControl
 from pandapower.timeseries.output_writer import OutputWriter
-from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid
+from pandapower import runopp, runpm_ac_opf, create_empty_network, create_sgen, create_poly_cost, create_ext_grid, create_gen
 from pandapower.timeseries.run_time_series import run_timeseries
+
+from pandapower import runpp
+import pandapower
 
 from pyensys.wrappers.PandapowerDataClasses import OutputVariableSet, Profile, TimeSeriesOutputFileSettings, \
     SimulationSettings
 
 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS = {
     "ac": {
-        'pypower': runopp,
+        'pypower': runopp, # runopp
         'power models': runpm_ac_opf
     }
 }
@@ -41,7 +44,7 @@ class PandaPowerWrapper:
                                     frequency_hz: float, case_name_in_mpc_file: str = "mpc"):
         self.network = from_mpc(file_path_with_extension, f_hz=frequency_hz, casename_mpc_file=case_name_in_mpc_file)
         # self.network.ext_grid.at[0,"vm_pu"] = 1.06 # volage tests
-        # bus = self.network.ext_grid.at[0,"vm_pu"] = 1.038 # 
+        # bus = self.network.ext_grid.at[0,"vm_pu"] = 1.038 # volage tests
 
     def add_controllers_to_network(self, profiles: List[Profile]):
         for profile in profiles:
@@ -100,11 +103,45 @@ class PandaPowerWrapper:
         return self.network.res_cost
 
     def run_ac_opf(self, settings: SimulationSettings):
+        # print('\nself.network.load:')
+        # print(self.network.load)
+        # print('\nself.network.line:')
+        # print(self.network.line)
+
+        # pandapower.to_json(self.network, "self_network_export.json") # save network for testing
+
         try:
             if settings.optimisation_software == "pypower":
+                # # Create a gerenator instead of ext_grid:
+                create_gen(self.network, bus=self.network.ext_grid['bus'][0], p_mw=1, vm_pu=1.06, max_q_mvar=self.network.ext_grid['max_q_mvar'][0], min_q_mvar=self.network.ext_grid['min_q_mvar'][0],\
+                            min_p_mw=self.network.ext_grid['min_p_mw'][0], max_p_mw=self.network.ext_grid['max_p_mw'][0], scaling=1.0, slack=True, controllable=True)
+                self.network.poly_cost['et'] = 'gen' # could be a problem if we have multiple generators/external grids
+                
+                # self.network.ext_grid['vm_pu'] = 1.06 # manually adjust voltage - does not work
+
+                empty_net = create_empty_network()
+                empty_ext_grid = empty_net.ext_grid
+                self.network.ext_grid = empty_net.ext_grid # removing the external grid
+
+                # print('self.network:')
+                # print(self.network)
+
+                # print('self.network.bus:')
+                # print(self.network.bus)
+
+                # print('self.network.ext_grid:')
+                # print(self.network.ext_grid)
+
+                # print('self.network.gen:')
+                # print(self.network.gen)
+
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     # settings.optimisation_software](self.network, verbose=settings.display_progress_bar, numba=False)
-                    settings.optimisation_software](self.network, verbose=1, numba=False) # change verbose=0 to silence the solver
+                    settings.optimisation_software](self.network, verbose=0, numba=False) # change verbose=0 to silence the solver
+                
+                # print('\nself.network.res_bus:')
+                # print(self.network.res_bus)
+
             elif settings.optimisation_software == "power models":
                 OPTIMAL_POWER_FLOW_SOFTWARE_OPTIONS[settings.opf_type][
                     settings.optimisation_software](self.network, silence=not settings.display_progress_bar)

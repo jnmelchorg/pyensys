@@ -1,7 +1,8 @@
 {
     "metadata": {
         "title": "Distribution_Network_Semi_Urban_UK_v2",
-        "description": "power system of Distribution_Network_Semi_Urban_UK_v2"
+        "description": "power system of Distribution_Network_Semi_Urban_UK_v2",
+        "minimum_version": "0.4"
     },
     "version": 2,
     "baseMVA": 100.0,

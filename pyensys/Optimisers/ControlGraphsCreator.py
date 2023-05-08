@@ -36,7 +36,7 @@ class GraphNodesCreator:
         for row in self._profile.data.index:
             clusters_centroids: Dict[float, int] = {}
             new_nodes: List[ClusterData] = []
-            for column, (_, value) in enumerate(self._profile.data.loc[row].iteritems()):
+            for column, (_, value) in enumerate(self._profile.data.loc[row].items()):
                 if clusters_centroids.get(value, None) is not None:
                     new_nodes[clusters_centroids[value]].scenarios.append(column)
                 else:
