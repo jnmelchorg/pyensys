@@ -88,7 +88,7 @@ def read_input_data(country = "HR", test_case = "HR_2020_Location_1" ):
         
         
     else:
-        print("Using default intervention lists and costs")
+        print("\nUsing default intervention lists and costs")
 
         # ci_catalogue = [10,50,100,200,500,800,1000,2000,5000]
         # ci_cost = [5 * i for i in ci_catalogue]
@@ -97,11 +97,15 @@ def read_input_data(country = "HR", test_case = "HR_2020_Location_1" ):
         # lines
         # ci_catalogue.append([10,50,100,200,500,800]) # MVA
         # ci_catalogue.append([0.003,0.006,0.009,0.015,0.03,0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0]) # more realistic data for distribution networks
-        ci_catalogue.append([0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0])
+        # ci_catalogue.append([0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0])
+        ## extended catalogue for KPIs:
+        ci_catalogue.append([0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,3.0,5.0,10.0,15.0,20.0,25.0,30.0,40.0,50.0,60.0,70.0,80.0,100.0,150.0,200.0,250.0,300.0,500.0,750.0,1000,1500,2000,3000,5000,7500,10000,15000,20000,25000,30000,40000,50000])
         ci_cost.append( [20 * i for i in ci_catalogue[0]])
-        # transformers
+        # transformers:
         # ci_catalogue.append([560,880,1200,2400,5600])
-        ci_catalogue.append([0.003,0.006,0.009,0.015,0.03,0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0]) # more realistic data for distribution networks
+        # ci_catalogue.append([0.003,0.006,0.009,0.015,0.03,0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,5.0,10.0,20.0,30.0,40.0,50.0,60.0,80.0,100.0,250.0,500.0]) # more realistic data for distribution networks
+        ## extended catalogue for KPIs:
+        ci_catalogue.append([0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,2.0,3.0,5.0,10.0,15.0,20.0,25.0,30.0,40.0,50.0,60.0,70.0,80.0,100.0,150.0,200.0,250.0,300.0,500.0,750.0,1000,1500,2000,3000,5000,7500,10000,15000,20000,25000,30000,40000,50000])
         ci_cost.append( [20 * i for i in ci_catalogue[1]])
         
         

@@ -533,6 +533,15 @@ def Screenning_clusters(gen_status, line_status, test_case, multiplier,
     final_interv_clust = []
     
     print("interv_clust: ",interv_clust)
+    print("interv_clust (2020): ",interv_clust[0])
+    print("interv_clust (2030 active): ",interv_clust[1])
+    print("interv_clust (2030 slow): ",interv_clust[2])
+    print("interv_clust (2040 active): ",interv_clust[3])
+    print("interv_clust (2040 slow): ",interv_clust[6])
+    print("interv_clust (2050 active): ",interv_clust[7])
+    print("interv_clust (2050 slow): ",interv_clust[14])
+
+
     # Save all screening clusters:
     file_name = "screen_result_all_interv_clust"
     with open(join(dirname(__file__), "tests\\outputs\\")+file_name+".json", 'w') as fp:
@@ -909,7 +918,7 @@ def save_in_jsonW_2(solution, output_dir, NoLines, case_name, yrs=[], scen=[]):
     print('\nResults have been saved to /pyensys/tests/outputs/output.json')
 
 
-def attest_invest(kwargs):
+def attest_invest(kwargs):    
     '''Call ATTEST's distribution network planning tool '''
     Base_Path = os.path.dirname(__file__)
     output_dir = kwargs.pop('output_dir')
@@ -950,6 +959,8 @@ def attest_invest(kwargs):
         growth = eval(growth)
 
     DSR = kwargs.pop('dsr')
+    if isinstance(DSR, str):
+        DSR = eval(DSR)
     Max_clusters = kwargs.pop('max_clusters')
 
     use_load_data_update = kwargs.pop('add_load_data') # use new EV-PV-Storage data or not (True or False)
@@ -961,6 +972,15 @@ def attest_invest(kwargs):
     keys = list(growth.keys())
     yrs = list(growth[keys[0]].keys())
     multiplier = [[1*(1+growth[keys[0]][yrs[0]])]]
+
+    # print('yrs: ',yrs)
+    # print('keys: ',keys)
+    # print('DSR: ',DSR)
+    # print('keys[0]:',keys[0])
+    # print('yrs[0]:',yrs[0])
+    # print('DSR[Active][2020]:',DSR['Active']['2020'])
+    # print('DSR.keys: ',DSR.keys())
+    # print('dir(DSR): ',dir(DSR))
 
     flex = [[1-DSR[keys[0]][yrs[0]]]]
     for yr in range(len(yrs)-1):

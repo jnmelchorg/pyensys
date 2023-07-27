@@ -415,4 +415,5 @@ mpc.gencost = [
 	2	0	0	2	2	0;																			
 ];				
 
-res = runopf(mpc)
+% res = runopf(mpc)
+plot_mpc(mpc,'MaxBusLabels',200)

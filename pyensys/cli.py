@@ -337,22 +337,25 @@ def pyensys_entry_point(**kwargs):
               os.path.join(os.path.dirname(__file__), 'tests', 'matpower',
                             'case3.m') + '.')
 @click.option('--line_capacities',
-              default=[0.045, 0.075, 0.1125, 0.15, 0.225, 0.3, 0.5, 0.75, 1.0,
-                        2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0,
-                        100.0, 250.0, 500.0],
+              default=[0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,
+                        2.0,3.0,5.0,10.0,15.0,20.0,25.0,30.0,40.0,50.0,60.0,70.0,80.0,
+                        100.0,150.0,200.0,250.0,300.0,500.0,750.0,1000,1500,
+                        2000,3000,5000,7500,10000,15000,20000,25000,30000,40000,50000],
               help='List of line capacities [MVA]. By default: ' +
               '[0.045, 0.075, 0.1125, 0.15, 0.225, 0.3, 0.5, 0.75, 1.0, ' +
               '2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, 100.0, ' +
               '250.0, 500.0].')
 @click.option('--TRS_capacities',
-              default=[1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0,
-                        80.0, 100.0, 250.0, 500.0],
+              default=[0.045,0.075,0.1125,0.15,0.225,0.3,0.5,0.75,1.0,
+                        2.0,3.0,5.0,10.0,15.0,20.0,25.0,30.0,40.0,50.0,60.0,70.0,80.0,
+                        100.0,150.0,200.0,250.0,300.0,500.0,750.0,1000,1500,
+                        2000,3000,5000,7500,10000,15000,20000,25000,30000,40000,50000],
               help='List of transformer capacities [MVA]. By default: ' +
               '[1.0, 2.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 80.0, ' +
               '100.0, 250.0, 500.0].')
 @click.option('--line_costs', default=[],
               help='Line costs [£/km]. By default it is an empty list [] ' +
-              'and the model assumes 60000*line capacity. The costs can also' +
+              'and the model assumes 60000*line capacity. The costs can also ' +
               'be added here, e.g., using the line capacities above: ' +
               '[1800, 3000, 4500, 6000, 9000, 12000, 20000, 30000, 40000, ' +
               '80000, 200000, 400000, 800000, 1200000, 1600000, 2000000, ' +
@@ -390,14 +393,15 @@ def pyensys_entry_point(**kwargs):
               'This name must be in the Excel sheet format to navigate in the file EV-PV-Storage_Data_for_Simulations.xlsx. ' +
               'By default: UK_Dx_01_ ')
 @click.option('--DSR',
-              default={"Active": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00},
-                        "Slow": {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00}},
-              help='Dictionary with DSR [%] for selected years ' +
+              default={'Active': {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00},
+                        'Slow': {'2020': 0, '2030': 0.00, '2040': 0.00, '2050': 0.00}},
+              help='Dictionary with DSR [share of flexible demand] for selected years ' +
               '(e.g., 2020, 2030 and 2040) and scenarios (e.g., active and ' +
               'slow). The format of the information must match --growth. ' +
               'By default: {\'Active\': {\'2020\': 0, \'2030\': 0.00, ' +
-              '\'2040\': 0.00, \'2050\': 3.0}, \'Slow\': {\'2020\': 0, \'2030\': 0.00, ' +
-              '\'2040\': 0.00, \'2050\': 0.00}}.')
+              '\'2040\': 0.00, \'2050\': 0.00}, \'Slow\': {\'2020\': 0.00, \'2030\': 0.00, ' +
+              '\'2040\': 0.00, \'2050\': 0.00}}.' +
+              ' [1.00 = 100% of demand for the given year/scenario is flexible; 0.05 = 5% demand flexibility]')
 @click.option('--cluster', default=None,
               help='List of investment clusters [MVA]. By default it is ' +
               'set to None and the model will calculate the adequate ' +

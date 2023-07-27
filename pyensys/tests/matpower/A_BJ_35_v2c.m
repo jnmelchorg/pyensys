@@ -109,3 +109,4 @@ mpc.gencost = [
 	2	0	0	2	0.02	  0; 
 	2	0	0	2	3	  0; 
 ];																					
+plot_mpc(mpc)

@@ -687,8 +687,13 @@ def model_screening(mpc, gen_status, line_status, cicost, penalty_cost,
     # solve pyomo model
     solver = SolverFactory('glpk')
     results = solver.solve(model)
-    print("results.solver.status: ",results.solver.status)
 
+    print("results.solver.status: ",results.solver.status)
+    print ('results.solver.termination_condition: ', results.solver.termination_condition)
+
+
+    ## Analyse load curtailment
+    print("Total load curtailment: ", sum(model.Plc[i,j,k].value for i in model.Set['Bus'] for j in model.Set['Cont'] for k in model.Set['Tim']))
 
     maxICbra=[]
     interv=[]

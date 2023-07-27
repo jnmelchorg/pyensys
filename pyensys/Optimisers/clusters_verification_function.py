@@ -8,7 +8,7 @@ Then, the feasible clusters with lowest costs are selected for each node in the 
 
 
 from pandapower.converter import from_mpc
-from pandapower import runpp, runopp
+from pandapower import runpp, runopp, rundcopp, runpm_tnep
 # from pandapower import from_json
 from pandapower import networks, create_gen, delete_std_type, create_empty_network
 from os.path import join, dirname
@@ -189,6 +189,7 @@ def clust_verification_function(case_path,use_load_data_update,add_load_data_cas
                             existing_gen += [net_test.poly_cost['element'][poly_cost_i]]
                         else:   
                             net_test.poly_cost.drop(poly_cost_i, inplace=True)
+                            print('gen cost duplicates found: ',next_gen)
 
 
             # # Solve OPF for different clusters:
@@ -199,7 +200,10 @@ def clust_verification_function(case_path,use_load_data_update,add_load_data_cas
 
                     # screen_result_final_interv_clust[cl] = [x/2 for x in screen_result_final_interv_clust[cl]] # <--- use this to create infeasibility (for testing purposes)
 
-                    
+                    ## Testing TNEP function:
+                    # print("\Testing TNEP function pandapower.runpm_tnep...")
+                    # runpm_tnep(net_test)
+
                     try:
                         ## Add line capacity upgrades:
                         if len(net_test.trafo) == 0: # if there are no transformers - update only line capacities
@@ -227,6 +231,7 @@ def clust_verification_function(case_path,use_load_data_update,add_load_data_cas
                                     t_count += 1
 
                         runopp(net_test,numba=False, verbose=0)
+                        # rundcopp(net_test,numba=False, verbose=0)
                         solution_found = 1
                     except:
                         pass
